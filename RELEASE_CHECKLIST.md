@@ -1,3 +1,19 @@
+> ## ⚠️ SUPERSEDED — see `BUILD.md`
+>
+> **This app is not going to any store.** It is private enterprise software distributed
+> inside the Onliversity ecosystem (Season One: 1,000 seats, capped in the database).
+> Everything below about Google Play ($25 account, closed testing, listings, content
+> ratings) and the App Store ($99/yr, TestFlight, review) is **not applicable**.
+>
+> Use **`BUILD.md`** for the real process: `npx eas build --platform android
+> --profile production` → signed APK → sideload.
+>
+> Kept only for the local-Gradle history at the bottom and the keystore note —
+> `android/app/proseason-upload.keystore` is **not in this repo**; if it exists only in an
+> old zip, find and back it up.
+
+---
+
 # ProSeasonAcademy — Release Checklist
 
 **Bundle identifier:** `com.onliversity.proseasonacademy` (lowercase everywhere — verified
