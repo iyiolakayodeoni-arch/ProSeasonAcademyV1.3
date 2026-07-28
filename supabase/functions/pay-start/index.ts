@@ -81,8 +81,22 @@ Deno.serve(async (req) => {
   const currency = String(p.currency ?? 'GBP');
   if (!(amount > 0)) return json({ ok: false, error: 'no price' }, 500);
 
-  // NGN has no minor unit at PayPal; GBP takes 2 decimals.
-  const value = currency === 'NGN' ? String(Math.round(amount)) : amount.toFixed(2);
+  // PayPal's REST API has a fixed list of currencies and NAIRA IS NOT ON
+  // IT. Sending NGN comes back as 422 CURRENCY_NOT_SUPPORTED, which the
+  // member would read as "payment broken" — and only ever on the Africa
+  // passes, making it look random. price_now() always returns GBP now;
+  // this refuses loudly if a product is ever mis-configured again.
+  if (currency !== 'GBP') {
+    return json({
+      ok: false,
+      error: 'misconfigured price',
+      detail:
+        `product ${product} is set to charge ${currency}, but PayPal only ` +
+        `accepts GBP on this account. Fix products.charge_currency — see supabase/fx3.sql.`,
+    }, 500);
+  }
+
+  const value = amount.toFixed(2);
 
   // ── create the order ──
   const token = await paypalToken();

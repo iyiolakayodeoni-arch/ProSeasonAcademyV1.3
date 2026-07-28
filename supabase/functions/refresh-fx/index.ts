@@ -69,5 +69,19 @@ Deno.serve(async (req) => {
     }, 202);
   }
 
-  return json({ ok: true, pair: 'NGN/GBP', rate: got.rate, source: got.source });
+  // Re-cost the stored £ fallback for the Africa passes. PayPal cannot
+  // charge naira, so those products carry a pence figure alongside the
+  // naira headline; this keeps it in step with the rate we just wrote.
+  // A failure here is not fatal — the old fallback is still valid.
+  const { data: resynced, error: rerr } =
+    await sb.rpc('resync_charge_amounts');
+
+  return json({
+    ok: true,
+    pair: 'NGN/GBP',
+    rate: got.rate,
+    source: got.source,
+    repriced: rerr ? null : resynced,
+    ...(rerr ? { reprice_error: rerr.message } : {}),
+  });
 });
