@@ -853,6 +853,91 @@ export async function founderCloseConsult(key: string): Promise<boolean> {
   return r?.ok === true;
 }
 
+// ── PAYING — claim, then the founder confirms ────────────────
+export interface PayMethod {
+  code: string; label: string; region: string | null;
+  currency: string; details: string; holder: string | null; note: string | null;
+}
+
+export interface MyClaim {
+  id: number; product: string; method: string; reference: string;
+  amount: string | null; status: 'pending' | 'approved' | 'rejected';
+  at: number; decidedNote: string | null;
+}
+
+/** where the money actually goes — held in the DB, not the build */
+export async function payMethods(region: string): Promise<PayMethod[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('pay_methods')
+      .select('code, label, region, currency, details, holder, note')
+      .eq('active', true)
+      .order('sort');
+    if (error) return null;
+    return (data ?? []).filter((m: any) => !m.region || m.region === region) as PayMethod[];
+  } catch {
+    return null;
+  }
+}
+
+/** "I have paid" — returns the reference to put in the payment */
+export async function claimPayment(
+  product: string, method: string, amount?: string, note?: string,
+): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
+  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  try {
+    const { data, error } = await supabase.rpc('claim_payment', {
+      p_product: product, p_method: method,
+      p_amount: amount ?? null, p_note: note ?? null,
+    });
+    if (error) {
+      if (String(error.message).includes('CLAIM_PENDING')) return { ok: false, error: 'CLAIM_PENDING' };
+      return { ok: false, error: 'FAILED' };
+    }
+    const r = Array.isArray(data) ? data[0] : data;
+    return { ok: true, reference: String(r?.reference ?? '') };
+  } catch {
+    return { ok: false, error: 'FAILED' };
+  }
+}
+
+export async function myClaims(): Promise<MyClaim[] | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.rpc('my_claims');
+    if (error) return null;
+    return (data ?? []).map((r: any) => ({
+      id: Number(r.id), product: r.product, method: r.method,
+      reference: r.reference, amount: r.amount ?? null,
+      status: r.status, at: new Date(r.at).getTime(),
+      decidedNote: r.decided_note ?? null,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+// founder side
+export interface ClaimRow {
+  id: number; academy_id: string; handle: string | null; product: string;
+  method: string; reference: string; amount: string | null;
+  sender_note: string | null; status: string; at: string;
+}
+
+export async function founderClaims(key: string): Promise<ClaimRow[] | null> {
+  const r = await deskFn(key, { action: 'claims' });
+  return r?.ok ? (r.claims ?? []) : null;
+}
+
+export async function founderDecideClaim(
+  key: string, id: number, approve: boolean, note?: string,
+): Promise<{ ok: boolean; tier?: string; error?: string }> {
+  const r = await deskFn(key, { action: 'decide_claim', id, approve, note });
+  if (!r) return { ok: false, error: 'UNREACHABLE' };
+  return r.ok ? { ok: true, tier: r.tier } : { ok: false, error: String(r.error) };
+}
+
 // ── TIERS — one ladder, two currencies ───────────────────────
 // FREE / ACADEMY / PRO mean the same thing in Lagos and London.
 // Only the price tag's currency differs. Access is decided by tier

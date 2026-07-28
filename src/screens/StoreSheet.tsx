@@ -5,6 +5,7 @@ import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, TillIcon, RefreshGlyphIcon } from '../components/Icons';
 import { colors, monoFont } from '../theme';
 import * as backend from '../data/backend';
+import PaySheet from './PaySheet';
 import { getCloud } from '../data/cloudSync';
 import { useSettings } from '../data/settings';
 import { FALLBACK_PRODUCTS, OFFLINE_GO_LIVE, TILL_COPY, goLiveLabel, isHttpPayLink, StoreProduct } from '../data/store';
@@ -24,6 +25,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const [bundles, setBundles] = useState<Record<string, string[]>>({});
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [paying, setPaying] = useState<{ code: string; price: string; title: string } | null>(null);
   const [ladder, setLadder] = useState<backend.TierRow[] | null>(null);
   const [catalog, setCatalog] = useState<backend.StoreCatalogWire | null>(null);
   const [balance, setBalance] = useState<backend.TillBalanceWire | null>(null);
@@ -58,13 +60,15 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const showAfrica = settings.geo !== 'world';
   const showWorld = settings.geo !== 'africa';
 
+  /** every purchase goes through the claim flow, so the member gets a
+   *  reference and a status instead of paying into silence */
   const buy = (p: StoreProduct) => {
-    if (live && isHttpPayLink(p.payLink)) void Linking.openURL(p.payLink).catch(() => {});
+    setPaying({ code: p.code, price: p.price, title: p.title });
   };
 
   const renderPack = (p: StoreProduct) => {
-    const canBuy = live && isHttpPayLink(p.payLink);
-    const btnLabel = !live ? `OPENS ${day}` : canBuy ? 'BUY ›' : 'LINK DROPS SOON';
+    const canBuy = live;
+    const btnLabel = !live ? `OPENS ${day}` : 'GET IT ›';
     return (
       <View key={p.code} style={styles.packRow}>
         <View style={{ flex: 1 }}>
@@ -204,6 +208,17 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
       <Pressable onPress={onClose} hitSlop={10} style={styles.backBtn}>
         <ChevronLeftIcon size={15} color={colors.fg} />
       </Pressable>
+      {paying && (
+        <View style={StyleSheet.absoluteFill}>
+          <PaySheet
+            product={paying.code}
+            price={paying.price}
+            title={paying.title}
+            onClose={() => { setPaying(null); void refresh(); }}
+          />
+        </View>
+      )}
+
     </Animated.View>
   );
 }

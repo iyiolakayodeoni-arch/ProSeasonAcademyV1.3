@@ -314,6 +314,32 @@ Deno.serve(async (req) => {
       return json({ ok: true, refundDays: r.refundDays, tier: r.tier, note: r.note });
     }
 
+    // ── PAYMENT CLAIMS ───────────────────────────────────────
+    case 'claims': {
+      const { data, error } = await sb
+        .from('payment_claims')
+        .select('id, academy_id, handle, product, method, reference, amount, sender_note, status, at')
+        .eq('status', 'pending')
+        .order('at', { ascending: true })
+        .limit(50);
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, claims: data ?? [] });
+    }
+
+    case 'decide_claim': {
+      const id = Number(body.id);
+      if (!id) return json({ ok: false, error: 'id required' }, 400);
+      const { data, error } = await sb.rpc('decide_claim', {
+        p_id: id,
+        p_approve: body.approve === true,
+        p_note: body.note ? String(body.note).slice(0, 300) : null,
+      });
+      if (error) return json({ ok: false, error: error.message }, 500);
+      const r = data as any;
+      if (!r?.ok) return json({ ok: false, error: r?.error ?? 'failed' }, 400);
+      return json({ ok: true, approved: r.approved, tier: r.tier });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');

@@ -67,6 +67,18 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [sweepNote, setSweepNote] = useState<string | null>(null);
   const loadFlags = async () => setFlags(await backend.founderFlags(founderKey));
 
+  const [claims, setClaims] = useState<backend.ClaimRow[] | null>(null);
+  const [claimBusy, setClaimBusy] = useState<number | null>(null);
+  const loadClaims = async () => setClaims(await backend.founderClaims(founderKey));
+
+  const decide = async (id: number, approve: boolean) => {
+    setClaimBusy(id);
+    const r = await backend.founderDecideClaim(founderKey, id, approve);
+    setClaimBusy(null);
+    if (!r.ok) setErr(r.error ?? 'CLAIM FAILED');
+    void loadClaims();
+  };
+
   const runSweep = async () => {
     if (!sweepArmed) { setSweepArmed(true); return; }
     setSweepArmed(false);
@@ -82,6 +94,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const dismissFlag = async (id: number) => {
     await backend.founderReviewFlag(founderKey, id, 'dismissed');
     void loadFlags();
+    void loadClaims();
   };
   const closeConsult = async () => {
     if (!closeArmed) { setCloseArmed(true); return; }
@@ -371,6 +384,44 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </Text>
           </Animated.View>
         )}
+
+        {/* ── MONEY WAITING ON YOU ── */}
+        <Animated.View entering={FadeInDown.delay(70).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>PAYMENT CLAIMS</Text>
+            <Text style={[styles.cardTag, (claims?.length ?? 0) > 0 && { color: colors.accent }]}>
+              {claims?.length ? `${claims.length} WAITING` : 'NONE WAITING'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            CHECK THE REFERENCE AGAINST YOUR PAYPAL / OPAY, THEN CONFIRM. CONFIRMING GRANTS THE
+            PASS AUTOMATICALLY — YOU CANNOT APPROVE A PAYMENT WITHOUT THEM GETTING WHAT THEY PAID FOR.
+          </Text>
+
+          {claims?.map((c) => (
+            <View key={c.id} style={styles.inboxRow}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.inboxWho}>{c.handle ?? c.academy_id}</Text>
+                <Text style={styles.inboxAt}>{new Date(c.at).toLocaleDateString()}</Text>
+              </View>
+              <Text style={styles.claimRef}>{c.reference}</Text>
+              <Text style={styles.invMeta}>
+                {c.product} · {c.amount ?? '—'} · via {String(c.method).toUpperCase()}
+              </Text>
+              {c.sender_note ? <Text style={styles.inboxBody}>{c.sender_note}</Text> : null}
+              <View style={styles.rowBetween}>
+                <Pressable onPress={() => void decide(c.id, false)} hitSlop={6} disabled={claimBusy === c.id}>
+                  <Text style={styles.ghostBtn}>CANNOT FIND IT</Text>
+                </Pressable>
+                <Pressable onPress={() => void decide(c.id, true)} hitSlop={6} disabled={claimBusy === c.id}>
+                  <Text style={styles.linkBtn}>
+                    {claimBusy === c.id ? 'GRANTING…' : 'CONFIRM & GRANT ›'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
 
         {/* ── FLAGGED FOR YOUR EYES ── */}
         <Animated.View entering={FadeInDown.delay(84).duration(320)} style={styles.splitCard}>
@@ -746,6 +797,7 @@ const styles = StyleSheet.create({
   invCode: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
   invDead: { color: 'rgba(143,184,155,0.4)', textDecorationLine: 'line-through' },
   invMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  claimRef: { marginTop: 3, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: colors.fg },
   consultBig: { marginTop: 4, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   consultRow: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
   consultNote: { marginTop: 2, fontFamily: monoFont, fontSize: 6.2, lineHeight: 9.6, color: 'rgba(143,184,155,0.85)' },
