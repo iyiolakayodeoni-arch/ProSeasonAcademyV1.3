@@ -86,6 +86,10 @@ end $$;
 grant execute on function access_state(text) to anon, authenticated;
 
 /** the caller's own state — what every screen reads */
+-- DROP first: tiers.sql created my_access() with 4 columns and we are
+-- widening it to 7. Postgres refuses to change a function's return type
+-- via CREATE OR REPLACE (42P13) — it must be dropped and rebuilt.
+drop function if exists my_access();
 create or replace function my_access()
 returns table (tier text, level int, expires_at timestamptz, days_left int,
                state text, grace_left int, paid_only boolean)

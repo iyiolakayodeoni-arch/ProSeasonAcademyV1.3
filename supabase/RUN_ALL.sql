@@ -4,7 +4,8 @@
 --
 -- Paste this whole file into Supabase → SQL Editor → Run.
 -- It is the 8 migration files joined in dependency order.
--- Safe to re-run: every statement is IF NOT EXISTS / OR REPLACE.
+-- Safe to re-run: every statement is IF NOT EXISTS / OR REPLACE,
+-- and functions whose shape changed are dropped first.
 -- (schema.sql is already live on your project, so it is not here.)
 -- ═══════════════════════════════════════════════════════════
 
@@ -1100,6 +1101,10 @@ end $$;
 grant execute on function access_state(text) to anon, authenticated;
 
 /** the caller's own state — what every screen reads */
+-- DROP first: tiers.sql created my_access() with 4 columns and we are
+-- widening it to 7. Postgres refuses to change a function's return type
+-- via CREATE OR REPLACE (42P13) — it must be dropped and rebuilt.
+drop function if exists my_access();
 create or replace function my_access()
 returns table (tier text, level int, expires_at timestamptz, days_left int,
                state text, grace_left int, paid_only boolean)
