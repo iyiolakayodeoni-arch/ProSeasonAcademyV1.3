@@ -53,6 +53,32 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [invNew, setInvNew] = useState<string | null>(null);
   const [inviteOnly, setInviteOnly] = useState<boolean | null>(null);
 
+  // ── packs: credits + the tricks inside ──
+  const [packs, setPacks] = useState<backend.PackRow[] | null>(null);
+  const [packPick, setPackPick] = useState<string>('NG-STARTER');
+  const loadPacks = async () => setPacks(await backend.founderPacks(founderKey));
+
+  const givePack = async () => {
+    const id = topId.trim().toUpperCase();
+    if (!id || tillBusy) return;
+    setTillBusy(true);
+    setTillNote(null);
+    const r = await backend.founderGrantPack(founderKey, id, packPick, topRef.trim() || undefined);
+    setTillBusy(false);
+    if (r.ok) {
+      const p = packs?.find((x) => x.code === packPick);
+      setTillNote(
+        `${packPick} DELIVERED TO ${id} · BALANCE ${r.balance}` +
+        (p && p.items.length ? ` · ${p.items.length} ITEM(S) UNLOCKED` : ''),
+      );
+      setTopId('');
+      setTopRef('');
+      void loadPacks();
+    } else {
+      setTillNote(r.error === 'unknown academy id' ? 'NO SUCH ACADEMY ID' : 'THAT DID NOT GO THROUGH');
+    }
+  };
+
   const loadInbox = async () => {
     const r = await backend.founderInbox(founderKey);
     if (r) { setInbox(r.messages); setUnread(r.unread); }
@@ -93,6 +119,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadInbox();
     void loadInvites();
     void loadDoor();
+    void loadPacks();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -341,8 +368,31 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </View>
           </View>
           <Text style={styles.tillHelp}>
-            BANK ALERT LANDS → TYPE THE PLAYER'S ACADEMY ID (THEY SEE IT IN THE TILL) → CREDIT THEM. THE REF IS YOUR RECEIPT.
+            BANK ALERT LANDS → TYPE THE PLAYER'S ACADEMY ID (THEY SEE IT IN THE TILL) → GIVE THEM THE PACK.
+            A PACK DELIVERS ITS CREDITS **AND** THE TRICKS INSIDE IT, IN ONE MOVE. THE REF IS YOUR RECEIPT.
           </Text>
+
+          {/* pick the pack they paid for */}
+          {packs && packs.length > 0 && (
+            <View style={styles.packWrap}>
+              {packs.map((p) => {
+                const on = packPick === p.code;
+                return (
+                  <Pressable key={p.code} onPress={() => setPackPick(p.code)} hitSlop={4}>
+                    <View style={[styles.packChip, on && styles.packChipOn]}>
+                      <Text style={[styles.packChipTxt, on && styles.packChipTxtOn]}>
+                        {p.title} · {p.price}
+                      </Text>
+                      <Text style={[styles.packChipSub, on && { color: '#05130a' }]}>
+                        {p.credits ? `${p.credits} CR` : p.plan ? String(p.plan).toUpperCase() : '—'}
+                        {p.items.length ? ` + ${p.items.length} ITEM(S)` : ' · NO ITEMS YET'}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
           <TextInput
             value={topId}
             onChangeText={(t) => setTopId(t.toUpperCase().slice(0, 12))}
@@ -369,6 +419,15 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
               autoCapitalize="characters"
             />
           </View>
+          <Pressable onPress={() => void givePack()} disabled={!topId.trim() || tillBusy}>
+            <View style={[styles.packCta, (!topId.trim() || tillBusy) && { opacity: 0.4 }]}>
+              <Text style={styles.packCtaTxt}>
+                {tillBusy ? 'DELIVERING…' : `GIVE ${packPick} — CREDITS + TRICKS ›`}
+              </Text>
+            </View>
+          </Pressable>
+
+          <Text style={styles.tillHelp}>OR MOVE CREDITS BY HAND:</Text>
           <View style={styles.tillBtnRow}>
             <Pressable onPress={topUp} disabled={!topId.trim() || !topCredits || tillBusy} style={{ flex: 1 }}>
               <View style={[styles.sendBtn, { marginTop: 0 }, (!topId.trim() || !topCredits || tillBusy) && styles.sendBtnOff]}>
@@ -464,6 +523,14 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 
 const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  packWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
+  packChip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 6 },
+  packChipOn: { borderColor: colors.accent, backgroundColor: colors.accent },
+  packChipTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1, color: 'rgba(238,242,236,0.9)' },
+  packChipTxtOn: { color: '#05130a' },
+  packChipSub: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 0.9, color: 'rgba(143,184,155,0.7)' },
+  packCta: { marginTop: 10, backgroundColor: colors.accent, borderRadius: 11, paddingVertical: 12, alignItems: 'center' },
+  packCtaTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: '#2a1410' },
   emptyNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, lineHeight: 9.5, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
 
   inboxRow: { marginTop: 9, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.14)', paddingTop: 8 },

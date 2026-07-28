@@ -104,6 +104,57 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ── PACKS — credits + the tricks inside, in one move ─────
+    case 'grant_pack': {
+      const academyId = String(body.academyId ?? '').toUpperCase().trim();
+      const pack = String(body.pack ?? '').toUpperCase().trim();
+      if (!academyId || !pack) return json({ ok: false, error: 'academyId + pack required' }, 400);
+      const { data, error } = await sb.rpc('grant_pack', {
+        p_academy: academyId,
+        p_pack: pack,
+        p_ref: body.ref ? String(body.ref).slice(0, 60) : null,
+      });
+      if (error) {
+        const msg = String(error.message);
+        const known = msg.includes('unknown academy id') || msg.includes('unknown or inactive pack');
+        return json({ ok: false, error: known ? msg : 'grant failed' }, known ? 404 : 500);
+      }
+      await audit(academyId, { pack, balance: data });
+      return json({ ok: true, academyId, pack, balance: data });
+    }
+
+    case 'packs': {
+      const { data: prods, error } = await sb
+        .from('products')
+        .select('code, title, region, credits, plan, price, sort')
+        .eq('active', true)
+        .order('sort');
+      if (error) return json({ ok: false, error: error.message }, 500);
+      const { data: items } = await sb.from('pack_items').select('pack_code, item, sort').order('sort');
+      const byPack: Record<string, string[]> = {};
+      for (const it of items ?? []) {
+        (byPack[it.pack_code] ??= []).push(it.item);
+      }
+      return json({
+        ok: true,
+        packs: (prods ?? []).map((p) => ({ ...p, items: byPack[p.code] ?? [] })),
+      });
+    }
+
+    case 'pack_set_items': {
+      const pack = String(body.pack ?? '').toUpperCase().trim();
+      const items: string[] = Array.isArray(body.items) ? body.items.map(String) : [];
+      if (!pack) return json({ ok: false, error: 'pack required' }, 400);
+      await sb.from('pack_items').delete().eq('pack_code', pack);
+      if (items.length) {
+        const rows = items.map((item, i) => ({ pack_code: pack, item, sort: i + 1 }));
+        const { error } = await sb.from('pack_items').insert(rows);
+        if (error) return json({ ok: false, error: error.message }, 500);
+      }
+      await audit(pack, { items });
+      return json({ ok: true, pack, items });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');

@@ -22,12 +22,21 @@ import { FALLBACK_PRODUCTS, OFFLINE_GO_LIVE, TILL_COPY, goLiveLabel, isHttpPayLi
 
 export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
+  const [bundles, setBundles] = useState<Record<string, string[]>>({});
   const [catalog, setCatalog] = useState<backend.StoreCatalogWire | null>(null);
   const [balance, setBalance] = useState<backend.TillBalanceWire | null>(null);
   const [offline, setOffline] = useState(false);
 
   const refresh = useCallback(async () => {
     const [cat, bal] = await Promise.all([backend.storeCatalog(settings.geo), backend.tillBalance()]);
+    // what each pack bundles beyond credits — the founder's "tricks in the packs"
+    if (cat) {
+      const codes = [...(cat.products?.africa ?? []), ...(cat.products?.world ?? [])].map((p: any) => p.code);
+      const pairs = await Promise.all(
+        codes.map(async (c: string) => [c, (await backend.packContents(c)) ?? []] as const),
+      );
+      setBundles(Object.fromEntries(pairs));
+    }
     setCatalog(cat);
     setBalance(bal);
     setOffline(!cat);
@@ -59,6 +68,15 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
           <Text style={styles.packMeta}>
             {p.credits != null ? `${p.credits} CREDITS` : `PLAN: ${(p.plan ?? 'PRO').toUpperCase()}`}
           </Text>
+          {(bundles[p.code]?.length ?? 0) > 0 && (
+            <Text style={styles.packIncludes}>
+              + {bundles[p.code].filter((i) => i.startsWith('trick:')).length} TRICK(S)
+              {bundles[p.code].some((i) => i.startsWith('stage:'))
+                ? ` · ${bundles[p.code].filter((i) => i.startsWith('stage:')).length} STAGE(S)`
+                : ''}
+              {' '}INCLUDED
+            </Text>
+          )}
         </View>
         <Text style={styles.packPrice}>{p.price}</Text>
         <Pressable onPress={() => buy(p)} disabled={!canBuy} hitSlop={6}>
@@ -203,6 +221,7 @@ const styles = StyleSheet.create({
   packRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 10 },
   packTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
   packMeta: { marginTop: 3, fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.1, color: colors.primary },
+  packIncludes: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 0.9, color: colors.accent },
   packPrice: { fontSize: 12, fontWeight: '900', color: colors.warm },
   buyBtn: { backgroundColor: colors.accent, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 8 },
   buyBtnOff: { backgroundColor: 'rgba(46,42,30,1)' },

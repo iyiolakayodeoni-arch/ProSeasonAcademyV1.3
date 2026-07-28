@@ -638,6 +638,54 @@ export async function founderSetStatus(
   return r?.ok === true;
 }
 
+export interface PackRow {
+  code: string;
+  title: string;
+  region: string;
+  credits: number | null;
+  plan: string | null;
+  price: string;
+  items: string[];
+}
+
+/** every pack with the tricks/stages bundled inside it */
+export async function founderPacks(key: string): Promise<PackRow[] | null> {
+  const r = await deskFn(key, { action: 'packs' });
+  return r?.ok ? (r.packs ?? []) : null;
+}
+
+/**
+ * Payment landed → give them the whole pack: credits AND the tricks
+ * inside it, atomically. Replaces the credits-only top-up for packs.
+ */
+export async function founderGrantPack(
+  key: string, academyId: string, pack: string, ref?: string,
+): Promise<{ ok: boolean; balance?: number; error?: string }> {
+  const r = await deskFn(key, { action: 'grant_pack', academyId, pack, ref });
+  if (!r) return { ok: false, error: 'UNREACHABLE' };
+  return r.ok ? { ok: true, balance: r.balance } : { ok: false, error: String(r.error ?? 'FAILED') };
+}
+
+/** re-cut what a pack contains (season to season, as the meta moves) */
+export async function founderSetPackItems(
+  key: string, pack: string, items: string[],
+): Promise<boolean> {
+  const r = await deskFn(key, { action: 'pack_set_items', pack, items });
+  return r?.ok === true;
+}
+
+/** what a member sees before buying — public */
+export async function packContents(pack: string): Promise<string[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('pack_contents', { p_pack: pack });
+    if (error) return null;
+    return (data ?? []).map((r: any) => String(r.item));
+  } catch {
+    return null;
+  }
+}
+
 // ── ACCESS — what this member has paid for ───────────────────
 /** every item this member owns: 'stage:3', 'trick:mb-…' */
 export async function myUnlocks(): Promise<string[] | null> {
