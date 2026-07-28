@@ -3,11 +3,33 @@
 -- Generated 2026-07-28
 --
 -- Paste this whole file into Supabase → SQL Editor → Run.
--- It is the 8 migration files joined in dependency order.
--- Safe to re-run: every statement is IF NOT EXISTS / OR REPLACE,
--- and functions whose shape changed are dropped first.
+-- Safe to re-run, and safe to run over a PARTIAL apply:
+-- it drops any function whose shape changed before rebuilding.
 -- (schema.sql is already live on your project, so it is not here.)
 -- ═══════════════════════════════════════════════════════════
+
+-- ▓▓▓▓▓▓▓▓▓▓ 0 · clear stale function shapes (42P13 guard) ▓▓▓▓▓▓▓▓▓▓
+
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('my_access', 'access_state', 'can_access', 'season_seats')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+    raise notice 'dropped %', r.sig;
+  end loop;
+end $$;
+
+-- ── Now re-create the ones the LATER files expect ────────────
+-- season_seats() is needed by seat-gate/security/access, so rebuild
+-- it here in its final 5-column shape rather than leaving a gap.
+create or replace function season_seats()
+returns table (season text, cap int, taken int, waiting int, is_full boolean)
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ seat-gate.sql ▓▓▓▓▓▓▓▓▓▓
