@@ -557,5 +557,145 @@ export async function founderWeek(): Promise<FounderWeek | null> {
   }
 }
 
+// ── FOUNDER DESK — inbox, invites, the door ──────────────────
+export interface InboxRow {
+  id: number;
+  handle: string | null;
+  academy_id: string | null;
+  kind: string;
+  body: string;
+  at: string;
+  read: boolean;
+  replied: boolean;
+  reply: string | null;
+}
+
+export interface InviteRow {
+  code: string;
+  label: string | null;
+  uses: number;
+  max_uses: number;
+  expires_at: string | null;
+  revoked: boolean;
+}
+
+async function deskFn(key: string, body: Record<string, unknown>): Promise<any | null> {
+  if (!supabase) return null;
+  try {
+    const resp = await supabase.functions.invoke('founder-desk', {
+      body,
+      headers: { 'x-founder-key': key },
+    });
+    if (resp.error) return null;
+    return resp.data;
+  } catch {
+    return null;
+  }
+}
+
+export async function founderInbox(key: string, unread = false):
+  Promise<{ messages: InboxRow[]; unread: number } | null> {
+  const r = await deskFn(key, { action: 'inbox', unread });
+  return r?.ok ? { messages: r.messages ?? [], unread: r.unread ?? 0 } : null;
+}
+
+export async function founderReply(key: string, id: number, reply: string): Promise<boolean> {
+  const r = await deskFn(key, { action: 'reply', id, reply });
+  return r?.ok === true;
+}
+
+export async function founderInvites(key: string): Promise<InviteRow[] | null> {
+  const r = await deskFn(key, { action: 'invites' });
+  return r?.ok ? (r.invites ?? []) : null;
+}
+
+export async function founderCreateInvite(
+  key: string, label: string, maxUses: number, expiresDays: number,
+): Promise<string | null> {
+  const r = await deskFn(key, { action: 'invite_create', label, maxUses, expiresDays });
+  return r?.ok ? String(r.code) : null;
+}
+
+export async function founderRevokeInvite(key: string, code: string): Promise<boolean> {
+  const r = await deskFn(key, { action: 'invite_revoke', code });
+  return r?.ok === true;
+}
+
+export async function founderConfig(key: string): Promise<Record<string, string> | null> {
+  const r = await deskFn(key, { action: 'config' });
+  return r?.ok ? (r.config ?? {}) : null;
+}
+
+export async function founderSetConfig(key: string, k: string, v: string): Promise<boolean> {
+  const r = await deskFn(key, { action: 'set_config', key: k, value: v });
+  return r?.ok === true;
+}
+
+export async function founderSetStatus(
+  key: string, academyId: string, status: 'active' | 'muted' | 'removed',
+): Promise<boolean> {
+  const r = await deskFn(key, { action: 'set_status', academyId, status });
+  return r?.ok === true;
+}
+
+// ── ACCESS — what this member has paid for ───────────────────
+/** every item this member owns: 'stage:3', 'trick:mb-…' */
+export async function myUnlocks(): Promise<string[] | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.from('unlocks').select('item');
+    if (error) return null;
+    return (data ?? []).map((r: any) => String(r.item));
+  } catch {
+    return null;
+  }
+}
+
+/** the free/paid split — config rows, so the founder can move them any time */
+export interface AccessRules {
+  freeStages: number;
+  stageCost: number;
+  trickCost: number;
+}
+
+export async function accessRules(): Promise<AccessRules | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('config').select('key, value')
+      .in('key', ['free_stages', 'stage_unlock_cost', 'trick_unlock_cost']);
+    if (error) return null;
+    const c = Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
+    return {
+      freeStages: Number(c.free_stages ?? 2),
+      stageCost: Number(c.stage_unlock_cost ?? 50),
+      trickCost: Number(c.trick_unlock_cost ?? 20),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Spend credits (or use PRO) to unlock a stage or a trick.
+ * Returns the new balance, or an error code the UI can explain.
+ */
+export async function unlockItem(item: string, cost: number):
+  Promise<{ ok: true; credits: number } | { ok: false; error: string }> {
+  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  try {
+    const { data, error } = await supabase.rpc('unlock_item', { p_item: item, p_cost: cost });
+    if (error) {
+      if (String(error.message).includes('INSUFFICIENT_CREDITS')) {
+        return { ok: false, error: 'INSUFFICIENT_CREDITS' };
+      }
+      return { ok: false, error: 'FAILED' };
+    }
+    return { ok: true, credits: Number(data ?? 0) };
+  } catch {
+    return { ok: false, error: 'FAILED' };
+  }
+}
+
 /** current platform label for server-side stats */
 export const DEVICE_LABEL = Platform.select({ ios: 'IOS', android: 'ANDROID', default: 'WEB' });

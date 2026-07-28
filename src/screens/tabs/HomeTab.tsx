@@ -16,6 +16,7 @@ import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
+import * as backend from '../../data/backend';
 import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -54,6 +55,38 @@ function LiveDot() {
 export default function HomeTab({ coach }: { coach: Coach }) {
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
+  // ── ACCESS — tricks come with the packs ──
+  const [rules, setRules] = useState<backend.AccessRules | null>(null);
+  const [unlocks, setUnlocks] = useState<string[]>([]);
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [unlockErr, setUnlockErr] = useState<string | null>(null);
+
+  const refreshAccess = () => {
+    void backend.accessRules().then((r) => r && setRules(r));
+    void backend.myUnlocks().then((u) => u && setUnlocks(u));
+  };
+  useEffect(refreshAccess, []);
+
+  /** the teachable kinds are the paid ones; news + community stay free */
+  const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
+  const trickOwned = (id: string) => unlocks.includes(`trick:${id}`);
+
+  const buyTrick = async (id: string) => {
+    if (!rules || unlockBusy) return;
+    setUnlockBusy(true);
+    setUnlockErr(null);
+    const r = await backend.unlockItem(`trick:${id}`, rules.trickCost);
+    setUnlockBusy(false);
+    if (r.ok) refreshAccess();
+    else setUnlockErr(
+      r.error === 'INSUFFICIENT_CREDITS'
+        ? `NOT ENOUGH CREDITS — THIS TRICK COSTS ${rules.trickCost}. GRAB A PACK IN THE TILL.`
+        : r.error === 'OFFLINE'
+          ? 'NO SIGNAL — RECONNECT TO UNLOCK.'
+          : 'THAT DIDN\u2019T GO THROUGH. TRY AGAIN.',
+    );
+  };
+
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
   const feed = useMemo(() => buildFeed(coach), [coach]);
@@ -152,10 +185,22 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           />
         </View>
 
-        {/* the feed */}
+        {/* the feed — tricks are part of the packs; news stays free */}
         {shown.map((card, i) => (
-          <FeedCard key={card.id + chip} card={card} coach={coach} delay={i * 40} liked={!!liked[card.id]} onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))} />
+          <FeedCard
+            key={card.id + chip}
+            card={card}
+            coach={coach}
+            delay={i * 40}
+            liked={!!liked[card.id]}
+            onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))}
+            locked={isTrick(card.kind) && !trickOwned(card.id)}
+            cost={rules?.trickCost ?? 20}
+            onUnlock={() => void buyTrick(card.id)}
+            busy={unlockBusy}
+          />
         ))}
+        {unlockErr && <Text style={styles.unlockErr}>{unlockErr}</Text>}
 
         {/* load more */}
         {!exhausted ? (
@@ -178,12 +223,21 @@ function FeedCard({
   delay,
   liked,
   onLike,
+  locked = false,
+  cost = 20,
+  onUnlock,
+  busy = false,
 }: {
   card: FeedCardData;
   coach: Coach;
   delay: number;
   liked: boolean;
   onLike: () => void;
+  /** a paid trick this member has not unlocked yet */
+  locked?: boolean;
+  cost?: number;
+  onUnlock?: () => void;
+  busy?: boolean;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
@@ -216,12 +270,27 @@ function FeedCard({
         <View style={styles.cardBody}>
           {card.authorHandle && <Text style={styles.cardHandle}>{card.authorHandle}</Text>}
           <Text style={styles.cardHeadline}>{card.headline}</Text>
-          {card.body && (
+          {card.body && !locked && (
             <Text style={styles.cardText} numberOfLines={3}>
               {card.body}
             </Text>
           )}
-          {(card.cta || card.reactions) && (
+
+          {/* locked trick — the headline teases, the method is in the pack */}
+          {locked && (
+            <View style={styles.lockBox}>
+              <Text style={styles.lockTag}>IN THE PACKS · {cost} CREDITS</Text>
+              <Text style={styles.lockBody}>
+                The how-to is part of a starter pack. Unlock it once and it stays yours.
+                PRO members already have it.
+              </Text>
+              <Pressable onPress={onUnlock} hitSlop={6} disabled={busy}>
+                <Text style={styles.lockCta}>{busy ? 'UNLOCKING…' : `UNLOCK THIS TRICK ›`}</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {(card.cta || card.reactions) && !locked && (
             <View style={styles.cardFoot}>
               {card.cta && (
                 <Pressable onPress={open} hitSlop={6}>
@@ -391,6 +460,19 @@ const styles = StyleSheet.create({
   cardHandle: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
   cardHeadline: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, color: colors.fg },
   cardText: { marginTop: 5, fontSize: 9.5, lineHeight: 13.5, color: '#a9bbae' },
+  lockBox: {
+    marginTop: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.4)',
+    backgroundColor: 'rgba(38,30,12,0.55)',
+    borderRadius: 9,
+    padding: 9,
+  },
+  lockTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
+  lockBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
+  lockCta: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
+  unlockErr: { marginTop: 8, marginHorizontal: 14, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.8, color: colors.loss },
+
   cardFoot: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardCta: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 1.5 },
   cardMetaRight: { fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },

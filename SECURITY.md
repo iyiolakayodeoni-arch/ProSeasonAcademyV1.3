@@ -4,7 +4,12 @@ ProSeasonAcademy is private software for an invited membership. It is not on any
 and is not meant to be found. This document is the threat model and what enforces it.
 
 **Apply:** run `supabase/security.sql` in the SQL Editor (after `schema.sql` and
-`seat-gate.sql`), then redeploy `ensure-profile`.
+`seat-gate.sql`), redeploy `ensure-profile`, and deploy the new **`founder-desk`**
+function (`supabase/functions/founder-desk/index.ts`).
+
+Once deployed you run the academy from inside the app — Settings → tap VERSION ×5 →
+Founder Desk gives you the inbox, replies, invite codes and the door switch. No SQL
+needed for day-to-day work; the queries in this file are the manual fallback.
 
 ---
 

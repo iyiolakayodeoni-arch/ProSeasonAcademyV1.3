@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import Constants from 'expo-constants';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -30,6 +30,7 @@ import { isContentStale } from '../../data/coaching';
 import { objectiveCount, useMatches } from '../../data/matches';
 import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
+import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
 import { colors, monoFont } from '../../theme';
@@ -80,6 +81,39 @@ export default function JourneyTab({
   const journal = useJournal();
   const settings = useSettings();
   const [sheet, setSheet] = useState<'vault' | 'journal' | null>(null);
+
+  // ── ACCESS — free stages vs credit-unlocked ones ──
+  const [rules, setRules] = useState<backend.AccessRules | null>(null);
+  const [unlocks, setUnlocks] = useState<string[]>([]);
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [unlockErr, setUnlockErr] = useState<string | null>(null);
+
+  const refreshAccess = () => {
+    void backend.accessRules().then((r) => r && setRules(r));
+    void backend.myUnlocks().then((u) => u && setUnlocks(u));
+  };
+  useEffect(refreshAccess, []);
+
+  /** paid stages sit beyond free_stages and must be bought once */
+  const isPaid = (n: number) => !!rules && n > rules.freeStages;
+  const owned = (n: number) => unlocks.includes(`stage:${n}`);
+  const needsUnlock = (n: number) => isPaid(n) && !owned(n);
+
+  const buyStage = async (n: number) => {
+    if (!rules || unlockBusy) return;
+    setUnlockBusy(true);
+    setUnlockErr(null);
+    const r = await backend.unlockItem(`stage:${n}`, rules.stageCost);
+    setUnlockBusy(false);
+    if (r.ok) refreshAccess();
+    else setUnlockErr(
+      r.error === 'INSUFFICIENT_CREDITS'
+        ? `NOT ENOUGH CREDITS — THIS STAGE COSTS ${rules.stageCost}. TOP UP IN THE TILL.`
+        : r.error === 'OFFLINE'
+          ? 'NO SIGNAL — RECONNECT TO UNLOCK.'
+          : 'THAT DIDN\u2019T GO THROUGH. TRY AGAIN.',
+    );
+  };
   const scrollRef = useRef<ScrollView>(null);
   const canvasRef = useRef<View>(null);
   const heroRef = useRef<View>(null);
@@ -316,8 +350,28 @@ export default function JourneyTab({
                 </View>
               )}
 
-              {/* CTA — zooms into the Coaching Screen from the node */}
-              <ContinueButton label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'} onPress={() => zoomIntoStage(selected)} />
+              {/* CTA — free stages open; paid ones ask once, then open forever */}
+              {needsUnlock(selected.n) ? (
+                <View style={styles.payWall}>
+                  <Text style={styles.payTag}>
+                    STAGES 1–{rules?.freeStages} ARE FREE · THIS ONE IS {rules?.stageCost} CREDITS
+                  </Text>
+                  <Text style={styles.payBody}>
+                    Unlock it once and it is yours for good — the film room, the mechanic and the
+                    scan. PRO members already have it.
+                  </Text>
+                  {unlockErr && <Text style={styles.payErr}>{unlockErr}</Text>}
+                  <ContinueButton
+                    label={unlockBusy ? 'UNLOCKING…' : `UNLOCK FOR ${rules?.stageCost} CREDITS ›`}
+                    onPress={() => void buyStage(selected.n)}
+                  />
+                </View>
+              ) : (
+                <ContinueButton
+                  label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'}
+                  onPress={() => zoomIntoStage(selected)}
+                />
+              )}
             </>
           )}
 
@@ -628,6 +682,18 @@ const styles = StyleSheet.create({
   footVersion: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2.6, color: 'rgba(143,184,155,0.4)' },
 
   // ── THE RECORD — vault + journal entry cards ──
+  payWall: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(38,30,12,0.6)',
+    borderRadius: 11,
+    padding: 11,
+  },
+  payTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
+  payBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.5, letterSpacing: 0.6, color: 'rgba(238,242,236,0.85)' },
+  payErr: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, lineHeight: 10, letterSpacing: 0.8, color: colors.loss },
+
   ledgerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   ledgerCard: {
     flex: 1,

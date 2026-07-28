@@ -38,8 +38,61 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [tillBusy, setTillBusy] = useState(false);
   const [tillNote, setTillNote] = useState<string | null>(null);
 
+  // ── the inbox ──
+  const [inbox, setInbox] = useState<backend.InboxRow[] | null>(null);
+  const [unread, setUnread] = useState(0);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyTxt, setReplyTxt] = useState('');
+  const [inboxBusy, setInboxBusy] = useState(false);
+
+  // ── invites ──
+  const [invites, setInvites] = useState<backend.InviteRow[] | null>(null);
+  const [invLabel, setInvLabel] = useState('');
+  const [invUses, setInvUses] = useState('1');
+  const [invDays, setInvDays] = useState('0');
+  const [invNew, setInvNew] = useState<string | null>(null);
+  const [inviteOnly, setInviteOnly] = useState<boolean | null>(null);
+
+  const loadInbox = async () => {
+    const r = await backend.founderInbox(founderKey);
+    if (r) { setInbox(r.messages); setUnread(r.unread); }
+  };
+  const loadInvites = async () => setInvites(await backend.founderInvites(founderKey));
+  const loadDoor = async () => {
+    const c = await backend.founderConfig(founderKey);
+    if (c) setInviteOnly(String(c.invite_only ?? 'false') === 'true');
+  };
+
+  const sendReply = async (id: number) => {
+    const t = replyTxt.trim();
+    if (!t || inboxBusy) return;
+    setInboxBusy(true);
+    const ok = await backend.founderReply(founderKey, id, t);
+    setInboxBusy(false);
+    if (ok) { setReplyTo(null); setReplyTxt(''); void loadInbox(); }
+    else setErr('REPLY FAILED');
+  };
+
+  const makeInvite = async () => {
+    const code = await backend.founderCreateInvite(
+      founderKey, invLabel.trim(), Number(invUses) || 1, Number(invDays) || 0,
+    );
+    if (code) { setInvNew(code); setInvLabel(''); void loadInvites(); }
+    else setErr('COULD NOT CREATE THE CODE');
+  };
+
+  const toggleDoor = async () => {
+    if (inviteOnly == null) return;
+    const next = !inviteOnly;
+    const ok = await backend.founderSetConfig(founderKey, 'invite_only', String(next));
+    if (ok) setInviteOnly(next);
+  };
+
   const refresh = useCallback(async () => {
     setErr(null);
+    void loadInbox();
+    void loadInvites();
+    void loadDoor();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -123,6 +176,113 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             <View key={c.l} style={styles.statCell}>
               <Text style={styles.statVal}>{c.v ?? '—'}</Text>
               <Text style={styles.statLbl}>{c.l}</Text>
+            </View>
+          ))}
+        </Animated.View>
+
+        {/* ── THE INBOX — members writing to you privately ── */}
+        <Animated.View entering={FadeInDown.delay(80).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>THE INBOX</Text>
+            <Text style={[styles.cardTag, unread > 0 && { color: colors.accent }]}>
+              {unread > 0 ? `${unread} UNREAD` : 'ALL READ'}
+            </Text>
+          </View>
+
+          {!inbox || inbox.length === 0 ? (
+            <Text style={styles.emptyNote}>NOTHING YET — THE LINE IS OPEN.</Text>
+          ) : (
+            inbox.slice(0, 12).map((m) => (
+              <View key={m.id} style={[styles.inboxRow, !m.read && styles.inboxUnread]}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.inboxWho}>
+                    {m.handle ?? 'PLAYER'} · {String(m.kind).toUpperCase()}
+                  </Text>
+                  <Text style={styles.inboxAt}>{new Date(m.at).toLocaleDateString()}</Text>
+                </View>
+                <Text style={styles.inboxBody}>{m.body}</Text>
+
+                {m.reply ? (
+                  <Text style={styles.inboxReplied}>YOU: {m.reply}</Text>
+                ) : replyTo === m.id ? (
+                  <View>
+                    <TextInput
+                      value={replyTxt}
+                      onChangeText={setReplyTxt}
+                      placeholder="Your reply…"
+                      placeholderTextColor="rgba(143,184,155,0.35)"
+                      multiline
+                      style={styles.replyInput}
+                    />
+                    <View style={styles.rowBetween}>
+                      <Pressable onPress={() => { setReplyTo(null); setReplyTxt(''); }} hitSlop={6}>
+                        <Text style={styles.ghostBtn}>CANCEL</Text>
+                      </Pressable>
+                      <Pressable onPress={() => void sendReply(m.id)} hitSlop={6}>
+                        <Text style={styles.linkBtn}>{inboxBusy ? 'SENDING…' : 'SEND REPLY ›'}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <Pressable onPress={() => { setReplyTo(m.id); setReplyTxt(''); }} hitSlop={6}>
+                    <Text style={styles.linkBtn}>REPLY ›</Text>
+                  </Pressable>
+                )}
+              </View>
+            ))
+          )}
+        </Animated.View>
+
+        {/* ── THE DOOR — invite codes ── */}
+        <Animated.View entering={FadeInDown.delay(90).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>THE DOOR</Text>
+            <Pressable onPress={() => void toggleDoor()} hitSlop={6}>
+              <Text style={[styles.doorPill, inviteOnly ? styles.doorShut : styles.doorOpen]}>
+                {inviteOnly == null ? '…' : inviteOnly ? 'INVITE-ONLY · TAP TO OPEN' : 'OPEN TO ALL · TAP TO CLOSE'}
+              </Text>
+            </Pressable>
+          </View>
+          <Text style={styles.emptyNote}>
+            OPEN IT FOR THE FREE WEEK, THEN CLOSE IT AGAIN. WHILE OPEN, ANYONE WITH THE APP CAN TAKE A SEAT.
+          </Text>
+
+          <View style={styles.invRow}>
+            <TextInput
+              value={invLabel} onChangeText={setInvLabel}
+              placeholder="WHO / WHERE (e.g. LAGOS DEC)"
+              placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 2 }]}
+            />
+            <TextInput
+              value={invUses} onChangeText={setInvUses} keyboardType="number-pad"
+              placeholder="USES" placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 1 }]}
+            />
+            <TextInput
+              value={invDays} onChangeText={setInvDays} keyboardType="number-pad"
+              placeholder="DAYS" placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 1 }]}
+            />
+          </View>
+          <Pressable onPress={() => void makeInvite()} hitSlop={6}>
+            <Text style={styles.linkBtn}>CREATE INVITE CODE ›</Text>
+          </Pressable>
+
+          {invNew && <Text style={styles.invNew}>NEW CODE — {invNew}</Text>}
+
+          {invites && invites.length > 0 && invites.slice(0, 8).map((iv) => (
+            <View key={iv.code} style={styles.invItem}>
+              <Text style={[styles.invCode, iv.revoked && styles.invDead]}>{iv.code}</Text>
+              <Text style={styles.invMeta}>
+                {iv.uses}/{iv.max_uses}{iv.label ? ` · ${iv.label}` : ''}
+                {iv.revoked ? ' · REVOKED' : ''}
+              </Text>
+              {!iv.revoked && (
+                <Pressable onPress={() => void backend.founderRevokeInvite(founderKey, iv.code).then(loadInvites)} hitSlop={6}>
+                  <Text style={styles.revoke}>REVOKE</Text>
+                </Pressable>
+              )}
             </View>
           ))}
         </Animated.View>
@@ -303,6 +463,34 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 }
 
 const styles = StyleSheet.create({
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  emptyNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, lineHeight: 9.5, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+
+  inboxRow: { marginTop: 9, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.14)', paddingTop: 8 },
+  inboxUnread: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: 7 },
+  inboxWho: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: colors.accent },
+  inboxAt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
+  inboxBody: { marginTop: 3, fontFamily: monoFont, fontSize: 7.6, lineHeight: 11.5, color: 'rgba(238,242,236,0.92)' },
+  inboxReplied: { marginTop: 5, fontFamily: monoFont, fontSize: 7, lineHeight: 11, color: colors.primary },
+  replyInput: {
+    marginTop: 6, minHeight: 54, textAlignVertical: 'top',
+    borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 8, padding: 8,
+    color: colors.fg, fontFamily: monoFont, fontSize: 8, backgroundColor: 'rgba(10,15,10,0.6)',
+  },
+  ghostBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)' },
+  linkBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
+
+  doorPill: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, overflow: 'hidden' },
+  doorShut: { color: '#05130a', backgroundColor: colors.primary },
+  doorOpen: { color: '#2a1410', backgroundColor: colors.accent },
+
+  invRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
+  invNew: { marginTop: 8, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: colors.accent },
+  invItem: { marginTop: 7, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 6 },
+  invCode: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
+  invDead: { color: 'rgba(143,184,155,0.4)', textDecorationLine: 'line-through' },
+  invMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  revoke: { marginTop: 2, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.2, color: colors.loss },
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
   headerWrap: { alignItems: 'center' },
   eyebrow: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 2.2, color: colors.muted },
