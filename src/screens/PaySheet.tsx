@@ -57,17 +57,35 @@ export default function PaySheet({
   const [starting, setStarting] = useState(false);
   const [startErr, setStartErr] = useState<string | null>(null);
 
+  /**
+   * The rescue path. A card that fails must never be a dead end — the
+   * member wanted to pay, which is the opposite of a problem. Once the
+   * checkout has been tried, the other two doors open underneath it:
+   * send it manually, or talk to the founder with your ID.
+   */
+  const [triedCard, setTriedCard] = useState(false);
+  const [helpState, setHelpState] = useState<'idle' | 'sending' | 'sent' | 'already'>('idle');
+
+  const askForHelp = async () => {
+    if (helpState === 'sending' || helpState === 'sent') return;
+    setHelpState('sending');
+    const r = await backend.reportPaymentTrouble(product, note.trim() || undefined);
+    setHelpState(r === 'ALREADY_SENT' ? 'already' : r === 'SENT' ? 'sent' : 'idle');
+    if (r === null) setStartErr('COULD NOT REACH THE FOUNDER. TRY SETTINGS → CONTACT.');
+  };
+
   const payNow = async () => {
     if (starting) return;
     setStarting(true);
     setStartErr(null);
     const r = await backend.startCheckout(product);
     setStarting(false);
+    setTriedCard(true);
     if (!r.ok) {
       setStartErr(
         r.error === 'RATE_STALE'
-          ? "TODAY'S RATE COULDN'T BE CONFIRMED. TRY AGAIN IN A MOMENT, OR SEND IT MANUALLY BELOW."
-          : 'COULD NOT OPEN THE CHECKOUT. TRY AGAIN, OR SEND IT MANUALLY BELOW.',
+          ? "TODAY'S RATE COULDN'T BE CONFIRMED. TRY AGAIN IN A MOMENT, OR USE ONE OF THE OPTIONS BELOW."
+          : 'COULD NOT OPEN THE CHECKOUT. USE ONE OF THE OPTIONS BELOW — YOU WILL NOT LOSE YOUR SEAT.',
       );
       return;
     }
@@ -208,6 +226,50 @@ export default function PaySheet({
                 NIGERIAN BANK CARDS WORK — GTBANK, UBA, ACCESS, FIRST BANK, ZENITH,
                 WEMA. IF YOUR BANK REFUSES IT, SEND IT MANUALLY BELOW.
               </Text>
+            )}
+          </Animated.View>
+        )}
+
+        {/* ── the rescue path: card refused, nobody is lost ── */}
+        {canAuto && !pending && !granted && (triedCard || !!startErr) && (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.helpCard}>
+            <Text style={styles.helpTag}>CARD DIDN'T GO THROUGH?</Text>
+            <Text style={styles.autoBody}>
+              That is usually your bank blocking an international payment, not you and
+              not us. Two ways round it — and your seat is safe either way.
+            </Text>
+
+            <Text style={styles.helpStep}>
+              1 · SEND IT MANUALLY — pick a method below, quote the reference it gives
+              you, and submit the claim.
+            </Text>
+            <Text style={styles.helpStep}>
+              2 · OR JUST TALK TO ME — one tap sends your ID and I will sort it with you
+              personally.
+            </Text>
+
+            {helpState === 'sent' || helpState === 'already' ? (
+              <View style={styles.helpDone}>
+                <Text style={styles.helpDoneTxt}>
+                  {helpState === 'already'
+                    ? '✓ ALREADY SENT — THE FOUNDER HAS YOUR ID'
+                    : '✓ SENT — THE FOUNDER HAS YOUR ID'}
+                </Text>
+                <Text style={styles.autoFine}>
+                  {me?.academyId ? `YOUR ID: ${me.academyId}` : ''}
+                </Text>
+                <Text style={styles.autoFine}>
+                  HE REPLIES IN SETTINGS → CONTACT, USUALLY THE SAME DAY.
+                </Text>
+              </View>
+            ) : (
+              <Pressable onPress={() => void askForHelp()} disabled={helpState === 'sending'}>
+                <View style={[styles.helpCta, helpState === 'sending' && { opacity: 0.5 }]}>
+                  <Text style={styles.helpCtaTxt}>
+                    {helpState === 'sending' ? 'SENDING…' : 'TALK TO THE FOUNDER ›'}
+                  </Text>
+                </View>
+              </Pressable>
             )}
           </Animated.View>
         )}
@@ -357,6 +419,23 @@ const styles = StyleSheet.create({
   autoCta: { marginTop: 11, backgroundColor: colors.primary, borderRadius: 11, paddingVertical: 14, alignItems: 'center' },
   autoCtaTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: '#05130a' },
   autoFine: { marginTop: 8, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+
+  // the rescue card — amber, not red. A failed card is a problem to
+  // solve together, not an error the member has committed.
+  helpCard: {
+    borderWidth: 1, borderColor: 'rgba(240,180,60,0.45)',
+    backgroundColor: 'rgba(30,22,8,0.85)', borderRadius: 12, padding: 13, marginBottom: 11,
+  },
+  helpTag: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.8, color: 'rgb(240,180,60)' },
+  helpStep: { marginTop: 8, fontFamily: monoFont, fontSize: 6.8, lineHeight: 11, color: 'rgba(238,242,236,0.82)' },
+  helpCta: {
+    marginTop: 12, borderWidth: 1, borderColor: 'rgb(240,180,60)',
+    borderRadius: 11, paddingVertical: 13, alignItems: 'center',
+  },
+  helpCtaTxt: { fontFamily: monoFont, fontSize: 8.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgb(240,180,60)' },
+  helpDone: { marginTop: 12, alignItems: 'center' },
+  helpDoneTxt: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+
   orLine: { marginBottom: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.8, color: 'rgba(143,184,155,0.5)' },
 
   card: {

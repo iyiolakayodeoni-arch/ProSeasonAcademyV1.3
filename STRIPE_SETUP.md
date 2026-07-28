@@ -28,24 +28,58 @@ full 1,000-seat season.
 
 ---
 
+## The three doors
+
+Nobody who wants to pay you ever hits a dead end:
+
+| | Door | What happens |
+|---|---|---|
+| **1** | **CARD** (Stripe) | Automatic. Seconds. You are not involved. |
+| **2** | **OPAY / TRANSFER** | Card refused → they send naira, quote a reference, you approve in the Desk. |
+| **3** | **TALK TO ME** | One tap sends you their ID, the pass they wanted and the price. You sort it personally. |
+
+Door 3 is the important one. A member whose card fails is someone who *wanted*
+to pay — the opposite of a problem. The till now says so in plain words, and
+your Founder Desk puts these people **above** the general inbox, because each
+one is a sale you still have if you answer today.
+
+---
+
 ## Step 1 · Finish the database (5 min)
 
-Two files, in this order, in Supabase → **SQL Editor**:
+Three files, in this order, in Supabase → **SQL Editor**:
 
 1. **`supabase/FINISH_PAYMENTS.sql`** — the prices and the till. Still not run.
 2. **`supabase/stripe.sql`** — makes CARD the payment method.
+3. **`supabase/rescue.sql`** — the OPay fallback and the "talk to me" path.
 
-Both are safe to re-run and both have been executed against a real Postgres
-loaded with a copy of your database. `stripe.sql` finishes by printing your
-active rails.
+All three are safe to re-run and all three have been executed against a real
+Postgres loaded with a copy of your database. `rescue.sql` finishes by printing
+your three doors in order.
 
 **Check it worked:**
 
 ```sql
-select code, label, sort, active from pay_methods order by sort;
+select code, label, sort, active from pay_methods where active order by sort;
 ```
 
-Expect `stripe · CARD · 0 · true` at the top.
+Expect exactly this:
+
+```
+stripe · CARD                 · 0 · true
+opay   · OPAY / BANK TRANSFER · 1 · true
+paypal · PAYPAL               · 2 · true
+```
+
+### Then put your real OPay details in
+
+Table Editor → **`pay_methods`** → the `opay` row:
+
+- `details` → your OPay number
+- `holder` → the name on the account
+
+It ships as `REPLACE-WITH-YOUR-OPAY-NUMBER`. Until you change it, door 2 is
+telling people to send money to a placeholder.
 
 ---
 
@@ -249,3 +283,40 @@ card reads as "my bank blocked it" rather than "this app is broken."
 | Tampered app buying PRO for a penny | Price comes from the database, never the phone |
 | Webhook slow | App polls ~100 seconds, opens the moment it lands |
 | Webhook fails entirely | Manual claim flow still underneath |
+| Member's bank refuses the card | Door 2 and door 3 open automatically underneath |
+| Someone spamming "my card failed" | One report an hour per member |
+
+---
+
+## When someone's card fails
+
+**What they see:** an amber panel opens under the pay button — not red, because
+this is a problem to solve together, not an error they committed. It explains
+that it is usually their bank blocking an international payment, offers the
+OPay route, and offers one tap to reach you.
+
+**What you get,** in the Founder Desk above the claims:
+
+```
+CARD REFUSED — THEY WANT TO PAY                    1
+
+PSA-A1B2C3                          WAITING ON YOU
+CARD DID NOT GO THROUGH
+
+ID: PSA-A1B2C3
+HANDLE: TUNDE
+REGION: AFRICA
+WANTS: NG-PRO-90 · ₦7,800
+
+THEY SAID: my gtbank card kept failing
+```
+
+Everything you need to answer with a solution rather than a question. Reply in
+the inbox and it reaches them in-app.
+
+The row updates itself: **● SENT IT MANUALLY** once they file an OPay claim,
+**✓ SORTED SINCE** if they got in another way — so you never chase a person who
+is already sorted.
+
+Meanwhile they get: *"We got it. Your ID is PSA-A1B2C3, that is all the founder
+needs. Your seat is not going anywhere while we sort this out."*

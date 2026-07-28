@@ -480,6 +480,31 @@ export function cloudReset() {
 // ── CONTACT — the private line to the founder ────────────────
 export type ContactKind = 'message' | 'bug' | 'suggestion' | 'question';
 
+/**
+ * "My card was refused." One tap, and the founder gets the member's ID,
+ * the pass they wanted and the price — so he can reply with a solution
+ * instead of a question.
+ *
+ * Returns 'SENT', 'ALREADY_SENT' (one an hour, so a stuck retry loop
+ * cannot flood the inbox), or null if it could not be delivered.
+ */
+export async function reportPaymentTrouble(
+  product?: string,
+  note?: string,
+): Promise<'SENT' | 'ALREADY_SENT' | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.rpc('payment_trouble', {
+      p_product: product ?? null,
+      p_note: note?.trim() ? note.trim().slice(0, 500) : null,
+    });
+    if (error) return null;
+    return data === 'ALREADY_SENT' ? 'ALREADY_SENT' : 'SENT';
+  } catch {
+    return null;
+  }
+}
+
 export interface ContactRow {
   id: number;
   kind: string;
@@ -1019,6 +1044,25 @@ export interface ClaimRow {
 export async function founderClaims(key: string): Promise<ClaimRow[] | null> {
   const r = await deskFn(key, { action: 'claims' });
   return r?.ok ? (r.claims ?? []) : null;
+}
+
+/** somebody whose card was refused and who asked for help */
+export interface StuckRow {
+  id: number; academy_id: string; handle: string | null;
+  body: string; at: string; read: boolean;
+  /** they already sent the money manually and are waiting on you */
+  has_claim: boolean;
+  /** they got in some other way since — you can close this one */
+  paid_since: boolean;
+}
+
+/**
+ * Members who tried to pay and could not. Above the general inbox on
+ * purpose: each one is a sale you still have if you answer today.
+ */
+export async function founderStuck(key: string): Promise<StuckRow[] | null> {
+  const r = await deskFn(key, { action: 'stuck' });
+  return r?.ok ? (r.stuck ?? []) : null;
 }
 
 export async function founderDecideClaim(

@@ -71,12 +71,17 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [claimBusy, setClaimBusy] = useState<number | null>(null);
   const loadClaims = async () => setClaims(await backend.founderClaims(founderKey));
 
+  /** people whose card was refused — a sale you still have if you answer */
+  const [stuck, setStuck] = useState<backend.StuckRow[] | null>(null);
+  const loadStuck = async () => setStuck(await backend.founderStuck(founderKey));
+
   const decide = async (id: number, approve: boolean) => {
     setClaimBusy(id);
     const r = await backend.founderDecideClaim(founderKey, id, approve);
     setClaimBusy(null);
     if (!r.ok) setErr(r.error ?? 'CLAIM FAILED');
     void loadClaims();
+    void loadStuck();
   };
 
   const runSweep = async () => {
@@ -95,6 +100,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     await backend.founderReviewFlag(founderKey, id, 'dismissed');
     void loadFlags();
     void loadClaims();
+    void loadStuck();
   };
   const closeConsult = async () => {
     if (!closeArmed) { setCloseArmed(true); return; }
@@ -188,6 +194,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadLapsed();
     void loadConsult();
     void loadFlags();
+    void loadStuck();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -382,6 +389,31 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             <Text style={styles.emptyNote}>
               MEDIAN, NOT AVERAGE — TWO SILLY NUMBERS CANNOT DRAG THE ANSWER.
             </Text>
+          </Animated.View>
+        )}
+
+        {/* ── COULDN'T PAY — answer these first ── */}
+        {(stuck?.length ?? 0) > 0 && (
+          <Animated.View entering={FadeInDown.delay(60).duration(320)} style={styles.stuckCard}>
+            <View style={styles.rowBetween}>
+              <Text style={[styles.cardTag, { color: 'rgb(240,180,60)' }]}>CARD REFUSED — THEY WANT TO PAY</Text>
+              <Text style={[styles.cardTag, { color: 'rgb(240,180,60)' }]}>{stuck!.length}</Text>
+            </View>
+            <Text style={styles.emptyNote}>
+              THESE PEOPLE TRIED TO GIVE YOU MONEY AND THEIR BANK REFUSED IT. EACH ONE IS A SALE
+              YOU STILL HAVE IF YOU ANSWER TODAY. REPLY IN THE INBOX ABOVE — THEY GET IT IN-APP.
+            </Text>
+            {stuck!.map((s) => (
+              <View key={s.id} style={styles.stuckRow}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.stuckId}>{s.academy_id}</Text>
+                  <Text style={styles.stuckWhen}>
+                    {s.paid_since ? '✓ SORTED SINCE' : s.has_claim ? '● SENT IT MANUALLY' : 'WAITING ON YOU'}
+                  </Text>
+                </View>
+                <Text style={styles.stuckBody}>{s.body}</Text>
+              </View>
+            ))}
           </Animated.View>
         )}
 
@@ -817,6 +849,19 @@ const styles = StyleSheet.create({
   statLbl: { marginTop: 2, fontFamily: monoFont, fontSize: 4.8, fontWeight: '800', letterSpacing: 1.1, color: colors.muted },
 
   splitCard: { marginTop: 12, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 14, backgroundColor: 'rgba(242,192,120,0.05)', padding: 13 },
+
+  // card refused — brighter than a claim, because these expire as
+  // people give up, whereas a claim is money already sent
+  stuckCard: {
+    marginTop: 12, borderWidth: 1.2, borderColor: 'rgb(240,180,60)',
+    borderRadius: 14, backgroundColor: 'rgba(240,180,60,0.09)', padding: 13,
+  },
+  stuckRow: {
+    marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(240,180,60,0.25)', paddingTop: 9,
+  },
+  stuckId: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
+  stuckWhen: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgb(240,180,60)' },
+  stuckBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: 'rgba(238,242,236,0.82)' },
   splitRow: { marginTop: 11, flexDirection: 'row' },
   splitHalf: { flex: 1, alignItems: 'center' },
   splitVal: { fontSize: 18, fontWeight: '900', color: colors.fg },

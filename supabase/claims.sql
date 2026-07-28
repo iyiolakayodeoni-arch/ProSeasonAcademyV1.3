@@ -104,9 +104,21 @@ begin
     raise exception 'CLAIM_PENDING';
   end if;
 
-  -- PSA-<seat>-<4 chars>: short enough to type into a transfer note
+  -- PSA-<seat>-<4 chars>: short enough to type into a transfer note.
+  --
+  -- md5(random()||clock_timestamp()) rather than gen_random_bytes():
+  -- the latter needs the pgcrypto extension, which is NOT enabled by
+  -- default on a Supabase project. Every claim would have died with
+  --     ERROR 42883: function gen_random_bytes(integer) does not exist
+  -- at the exact moment a member whose card failed tried the fallback.
+  -- md5() and random() are core Postgres and always present.
+  --
+  -- 4 hex chars = 65,536 combinations per seat, and the reference is
+  -- only ever matched against ONE member's payment, so a collision
+  -- across different seats is harmless. The unique index still catches
+  -- the improbable case.
   v_ref := replace(v_academy, 'PSA-', '') || '-' ||
-           upper(substr(encode(gen_random_bytes(3), 'hex'), 1, 4));
+           upper(substr(md5(random()::text || clock_timestamp()::text), 1, 4));
 
   insert into payment_claims (academy_id, handle, product, method, reference, amount, sender_note)
   values (v_academy, v_handle, upper(trim(p_product)), lower(trim(p_method)),

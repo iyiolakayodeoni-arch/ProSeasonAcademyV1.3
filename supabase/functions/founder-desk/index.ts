@@ -326,6 +326,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, claims: data ?? [] });
     }
 
+    // People whose card was refused. They are trying to give you money
+    // and failing, so they sit above the general inbox — every one of
+    // these is a sale you still have if you answer today.
+    case 'stuck': {
+      const { data, error } = await sb.rpc('stuck_payments');
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, stuck: data ?? [] });
+    }
+
     case 'decide_claim': {
       const id = Number(body.id);
       if (!id) return json({ ok: false, error: 'id required' }, 400);
