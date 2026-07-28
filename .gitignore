@@ -47,3 +47,6 @@ tests/.build/
 
 # backup server runtime database
 server/data/
+
+# distribution archives (may contain .env with live keys)
+*.zip
