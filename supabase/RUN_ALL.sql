@@ -2768,6 +2768,21 @@ grant execute on function grant_tier(text, text, text) to service_role;
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx.sql ▓▓▓▓▓▓▓▓▓▓
 
+-- shape of price_now/prices_now changes here — clear the old ones
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
+
 -- ═══════════════════════════════════════════════════════════
 -- LIVE EXCHANGE RATES — naira is the real price
 --
@@ -2953,6 +2968,21 @@ end $$;
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx2.sql ▓▓▓▓▓▓▓▓▓▓
 
+-- shape of price_now/prices_now changes here — clear the old ones
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
+
 -- ═══════════════════════════════════════════════════════════
 -- BOTH PRICES REAL — and the Nigerian one deliberately subsidised
 --
@@ -3112,6 +3142,21 @@ end $$;
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx3.sql ▓▓▓▓▓▓▓▓▓▓
+
+-- shape of price_now/prices_now changes here — clear the old ones
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
 
 -- ═══════════════════════════════════════════════════════════
 -- PAYPAL CANNOT CHARGE NAIRA — so the charge goes out in £

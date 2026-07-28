@@ -3,7 +3,53 @@
 You have the UK PayPal Business account. This is everything else.
 **About 30 minutes.** Do the steps in order — each one depends on the last.
 
-When it is done, this is what happens without you:
+---
+
+## Is the paywall already built? Yes.
+
+Short answer: **the paywall is written and wired. It is not switched on.**
+
+Nothing below is code you have to write. It already exists:
+
+| Piece | Where | Status |
+|---|---|---|
+| The locked door a lapsed member hits | `src/screens/LapsedGate.tsx` | built + wired into `MainScreen` |
+| The till (what they buy) | `src/screens/PaySheet.tsx` | built |
+| Price list with the subsidy shown | `src/screens/PricingTable.tsx` | built |
+| Terms shown before anything else | `src/screens/TermsSheet.tsx` | built |
+| Decides active / grace / lapsed | `access_state()` in the database | **applied ✅** |
+| 14-day trial, 3-day grace, paid-only | `config` table | **applied ✅** |
+| Creates the PayPal order at the right price | `pay-start` function | written, **not deployed** |
+| Hears back from PayPal and opens the pass | `pay-webhook` function | written, **not deployed** |
+| The prices themselves | `products` table | **missing — step 1** |
+
+So the three things standing between you and taking money are:
+**run the last SQL** (step 1), **deploy three functions** (step 5), and
+**paste four PayPal keys** (step 4).
+
+### How the paywall actually gates someone
+
+Every time the app opens, it asks the database one question: *what is this
+member's state?* The answer is one of three, and the app is already
+written to respond to each:
+
+- **`active`** — a paid pass with time left. Everything open.
+- **`grace`** — expired within the last 3 days. Still let in, but nudged.
+  This exists so a slow payment never locks out someone who has paid.
+- **`lapsed`** — out of time. `MainScreen` returns `LapsedGate` instead of
+  the app, and there is no way round it from the phone, because the
+  decision is made server-side.
+
+New members get **14 days** on the `mid` tier. Existing members get
+**30 days** to decide. Both numbers are rows in the `config` table — you
+change them by editing a value, no rebuild.
+
+Nothing is ever deleted when someone lapses. The gate says so, and keeps
+the contact line to you open.
+
+---
+
+When it is all done, this is what happens without you:
 
 ```
 member taps PAY → PayPal charges the card → PayPal calls your webhook
@@ -37,26 +83,40 @@ have looked completely random.
 
 ---
 
-## Step 1 · Finish the database (10 min)
+## Step 1 · Finish the database (5 min)
 
-Your database currently stops at `tiers.sql`. The payment tables —
-`pay_methods`, `price_now()`, `products.charge_currency` — **do not exist
-yet**, so nothing below will work until this is done.
+I checked your live database. You got further than we thought — `schema`,
+`seat-gate`, `security`, `packs`, `tiers`, `access`, `consult`,
+`enforcement` and `notices` are all applied. ✅
+
+What is missing is the last five: `claims`, `paypal-only`, `fx`, `fx2`,
+`fx3`. That is the till, the prices and PayPal — so nothing below works
+until they are in.
 
 Supabase → **SQL Editor** → **New query**.
 
-Open **`supabase/RUN_ALL.sql`**, select all, copy, paste, **Run**.
+Open **`supabase/FINISH_PAYMENTS.sql`**, select all, copy, paste, **Run**.
 
-It is safe to run over what you already applied — it skips what exists
-and only adds what is missing. Takes about 20 seconds.
+> Use `FINISH_PAYMENTS.sql`, **not** `RUN_ALL.sql`. It is a quarter of the
+> size and only contains what you are actually missing. (`RUN_ALL.sql`
+> still works and is safe to re-run — it is just the long way round.)
 
-> **If you see red**, send me the error text exactly as it appears. The
-> `42P13` one you hit twice before is now guarded at the top of the file.
+It ends by printing your six passes and their prices. If anything did not
+apply it raises a loud error instead of pretending it worked.
+
+> **If you see red**, send me the error text exactly as it appears.
+>
+> The `42P13` error you hit twice is now impossible here. The cause: the
+> three `fx` files each rebuild `price_now()` with a different set of
+> columns, and Postgres will not let you change a function's return type
+> in place. The file now drops those functions before each section that
+> reshapes them. They are read-only price calculators holding no data, so
+> dropping them costs nothing.
 
 **Check it worked** — new query, run this:
 
 ```sql
-select code, display, amount, currency, compare from prices_now();
+select code, display, amount, currency from prices_now();
 ```
 
 Six rows, every `currency` saying `GBP`. If any row says `NGN`, stop and
