@@ -25,7 +25,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const [bundles, setBundles] = useState<Record<string, string[]>>({});
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
-  const [paying, setPaying] = useState<{ code: string; price: string; title: string } | null>(null);
+  const [paying, setPaying] = useState<{ code: string; price: string; title: string; payLink?: string | null } | null>(null);
   const [ladder, setLadder] = useState<backend.TierRow[] | null>(null);
   const [catalog, setCatalog] = useState<backend.StoreCatalogWire | null>(null);
   const [balance, setBalance] = useState<backend.TillBalanceWire | null>(null);
@@ -63,7 +63,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   /** every purchase goes through the claim flow, so the member gets a
    *  reference and a status instead of paying into silence */
   const buy = (p: StoreProduct) => {
-    setPaying({ code: p.code, price: p.price, title: p.title });
+    setPaying({ code: p.code, price: p.price, title: p.title, payLink: p.payLink });
   };
 
   const renderPack = (p: StoreProduct) => {
@@ -215,6 +215,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
             product={paying.code}
             price={paying.price}
             title={paying.title}
+            payLink={paying.payLink}
             onClose={() => { setPaying(null); void refresh(); }}
           />
         </View>

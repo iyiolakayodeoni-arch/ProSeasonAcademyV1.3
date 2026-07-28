@@ -70,6 +70,49 @@ async function hmacSha512Hex(secret: string, body: string): Promise<string> {
   return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * PayPal signs with a certificate, not an HMAC. Rather than implement
+ * cert-chain crypto here, we hand the transmission back to PayPal's own
+ * verify endpoint and let them confirm it. Slower by one call, but it
+ * cannot be got subtly wrong — which matters when it gates access.
+ */
+async function paypalVerified(req: Request, raw: string): Promise<boolean> {
+  const id = Deno.env.get('PAYPAL_CLIENT_ID');
+  const secret = Deno.env.get('PAYPAL_SECRET');
+  const webhookId = Deno.env.get('PAYPAL_WEBHOOK_ID');
+  if (!id || !secret || !webhookId) return false;
+
+  const api = Deno.env.get('PAYPAL_API') ?? 'https://api-m.paypal.com';
+
+  const tokRes = await fetch(`${api}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      authorization: `Basic ${btoa(`${id}:${secret}`)}`,
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!tokRes.ok) return false;
+  const token = (await tokRes.json()).access_token;
+  if (!token) return false;
+
+  const vRes = await fetch(`${api}/v1/notifications/verify-webhook-signature`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      auth_algo: req.headers.get('paypal-auth-algo'),
+      cert_url: req.headers.get('paypal-cert-url'),
+      transmission_id: req.headers.get('paypal-transmission-id'),
+      transmission_sig: req.headers.get('paypal-transmission-sig'),
+      transmission_time: req.headers.get('paypal-transmission-time'),
+      webhook_id: webhookId,
+      webhook_event: JSON.parse(raw),
+    }),
+  });
+  if (!vRes.ok) return false;
+  return (await vRes.json()).verification_status === 'SUCCESS';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return json({}, 204);
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
@@ -83,6 +126,10 @@ Deno.serve(async (req) => {
     const sent = req.headers.get('x-paystack-signature') ?? '';
     if (!secret) return json({ ok: false, error: 'PAYSTACK_SECRET not set' }, 500);
     if (!safeEqual(await hmacSha512Hex(secret, raw), sent)) {
+      return json({ ok: false, error: 'bad signature' }, 401);
+    }
+  } else if (provider === 'paypal') {
+    if (!(await paypalVerified(req, raw))) {
       return json({ ok: false, error: 'bad signature' }, 401);
     }
   } else if (provider === 'flutterwave') {
@@ -101,18 +148,29 @@ Deno.serve(async (req) => {
   const event = String(body.event ?? body['event.type'] ?? '');
   const data = body.data ?? {};
   const status = String(data.status ?? '').toLowerCase();
+  const eventType = String(body.event_type ?? '');
   const succeeded =
     (provider === 'paystack' && event === 'charge.success') ||
-    (provider === 'flutterwave' && (status === 'successful' || event === 'charge.completed'));
-  if (!succeeded) return json({ ok: true, ignored: event || status });
+    (provider === 'flutterwave' && (status === 'successful' || event === 'charge.completed')) ||
+    (provider === 'paypal' && eventType === 'PAYMENT.CAPTURE.COMPLETED');
+  if (!succeeded) return json({ ok: true, ignored: event || eventType || status });
 
   // ── 3 · who paid, and for what ──────────────────────────────
+  // PayPal carries our data in resource.custom_id as "ACADEMYID|PRODUCT"
+  const resource = body.resource ?? {};
+  const custom = String(resource.custom_id ?? resource.invoice_id ?? '');
+  const [ppAcademy, ppProduct] = custom.includes('|') ? custom.split('|') : [custom, ''];
+
   const meta = data.metadata ?? data.meta ?? {};
   const academyId = String(
-    meta.academy_id ?? meta.academyId ?? data.customer?.name ?? '',
+    ppAcademy || meta.academy_id || meta.academyId || data.customer?.name || '',
   ).toUpperCase().trim();
-  const product = String(meta.product ?? meta.product_code ?? '').toUpperCase().trim();
-  const reference = String(data.reference ?? data.tx_ref ?? data.id ?? '');
+  const product = String(
+    ppProduct || meta.product || meta.product_code || '',
+  ).toUpperCase().trim();
+  const reference = String(
+    resource.id ?? data.reference ?? data.tx_ref ?? data.id ?? '',
+  );
 
   const sb = service();
 

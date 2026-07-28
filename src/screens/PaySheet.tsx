@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Clipboard, Linking } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
@@ -26,11 +26,14 @@ export default function PaySheet({
   product,
   price,
   title,
+  payLink,
   onClose,
 }: {
   product: string;
   price: string;
   title: string;
+  /** hosted PayPal button — when set, paying is fully automatic */
+  payLink?: string | null;
   onClose: () => void;
 }) {
   const [methods, setMethods] = useState<backend.PayMethod[] | null>(null);
@@ -40,8 +43,21 @@ export default function PaySheet({
   const [error, setError] = useState<string | null>(null);
   const [claims, setClaims] = useState<backend.MyClaim[] | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [granted, setGranted] = useState(false);
 
   const geo = getSettings().geo === 'africa' ? 'africa' : 'world';
+  const me = backend.getMe();
+
+  /**
+   * The automatic path. We tack the member's seat and the product onto
+   * the PayPal link as `custom`, PayPal echoes it back in the webhook,
+   * and the pass is granted before they have switched apps back.
+   * Nobody types a reference; nobody waits on a human.
+   */
+  const autoLink =
+    payLink && /^https?:\/\//i.test(payLink) && me
+      ? `${payLink}${payLink.includes('?') ? '&' : '?'}custom=${encodeURIComponent(`${me.academyId}|${product}`)}`
+      : null;
 
   const load = () => {
     void backend.payMethods(geo).then((m) => {
@@ -61,6 +77,24 @@ export default function PaySheet({
     Clipboard.setString(text);
     setCopied(what);
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  /**
+   * They tapped PayPal and left the app. The webhook usually lands
+   * within seconds, so poll for a short while — the pass then appears
+   * on its own and the welcome message is already waiting.
+   */
+  const watchForGrant = () => {
+    let tries = 0;
+    const tick = setInterval(async () => {
+      tries += 1;
+      const a = await backend.myAccess();
+      if (a && a.state === 'active' && a.level > 0) {
+        clearInterval(tick);
+        setGranted(true);
+      }
+      if (tries >= 20) clearInterval(tick);   // ~100s, then stop
+    }, 5000);
   };
 
   const submit = async () => {
@@ -98,6 +132,22 @@ export default function PaySheet({
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {/* ── it landed ── */}
+        {granted && (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.doneCard}>
+            <Text style={styles.doneTag}>✓ YOU'RE IN</Text>
+            <Text style={styles.doneBody}>
+              Payment confirmed and your pass is live. Welcome back — let's go and win
+              something.
+            </Text>
+            <Pressable onPress={onClose}>
+              <View style={styles.autoCta}>
+                <Text style={styles.autoCtaTxt}>BACK TO THE ACADEMY ›</Text>
+              </View>
+            </Pressable>
+          </Animated.View>
+        )}
+
         {/* ── already waiting on one ── */}
         {pending ? (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.waitCard}>
@@ -115,7 +165,35 @@ export default function PaySheet({
           </Animated.View>
         ) : (
           <>
-            {/* ── 1 · who you are paying ── */}
+            {/* ── the automatic path ── */}
+        {autoLink && !pending && (
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.autoCard}>
+            <Text style={styles.autoTag}>PAY WITH PAYPAL</Text>
+            <Text style={styles.autoBody}>
+              Card or PayPal balance. You come straight back and everything is already
+              open — no code to type, no waiting on anyone.
+            </Text>
+            <Pressable
+              onPress={() => {
+                void Linking.openURL(autoLink).catch(() => {});
+                watchForGrant();
+              }}
+            >
+              <View style={styles.autoCta}>
+                <Text style={styles.autoCtaTxt}>PAY {price} NOW ›</Text>
+              </View>
+            </Pressable>
+            <Text style={styles.autoFine}>
+              PAYPAL HANDLES THE PAYMENT. THE ACADEMY NEVER SEES YOUR CARD.
+            </Text>
+          </Animated.View>
+        )}
+
+        {autoLink && !pending && (
+          <Text style={styles.orLine}>OR SEND IT MANUALLY</Text>
+        )}
+
+        {/* ── 1 · who you are paying ── */}
             <Animated.View entering={FadeInDown.duration(300)} style={styles.card}>
               <Text style={styles.step}>1 · WHERE THE MONEY GOES</Text>
 
@@ -239,6 +317,24 @@ const styles = StyleSheet.create({
   eyebrow: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 2, color: colors.accent },
   price: { marginTop: 4, fontFamily: monoFont, fontSize: 20, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
   scroll: { paddingHorizontal: 15, paddingTop: 10 },
+
+  doneCard: {
+    borderWidth: 1, borderColor: colors.primary,
+    backgroundColor: 'rgba(10,32,17,0.9)', borderRadius: 12, padding: 14, marginBottom: 11,
+  },
+  doneTag: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: colors.primary },
+  doneBody: { marginTop: 7, fontFamily: monoFont, fontSize: 7.6, lineHeight: 12, color: 'rgba(238,242,236,0.92)' },
+
+  autoCard: {
+    borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)',
+    backgroundColor: 'rgba(10,26,15,0.85)', borderRadius: 12, padding: 13, marginBottom: 11,
+  },
+  autoTag: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  autoBody: { marginTop: 6, fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, color: 'rgba(238,242,236,0.9)' },
+  autoCta: { marginTop: 11, backgroundColor: colors.primary, borderRadius: 11, paddingVertical: 14, alignItems: 'center' },
+  autoCtaTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: '#05130a' },
+  autoFine: { marginTop: 8, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  orLine: { marginBottom: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.8, color: 'rgba(143,184,155,0.5)' },
 
   card: {
     borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)',
