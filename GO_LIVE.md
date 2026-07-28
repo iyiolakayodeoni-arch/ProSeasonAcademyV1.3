@@ -7,12 +7,19 @@ About 20 minutes. Do them in order — later files depend on earlier ones.
 
 ---
 
-## PART 1 — the SQL (8 files)
+## PART 1 — the SQL
 
-Supabase dashboard → **SQL Editor** → **New query** → paste the WHOLE file → **Run**.
-Then clear the box and do the next one.
+### Easiest: one paste
 
-Open each file from the `supabase/` folder in your project.
+Open **`supabase/RUN_ALL.sql`** — it is all 8 migrations joined in the right order.
+Supabase → **SQL Editor** → **New query** → paste the whole thing → **Run**.
+
+You should end with `THE ACADEMY BOT ARMED` in the notices.
+
+### Or one at a time
+
+If you would rather see each step succeed on its own (easier to pinpoint a failure),
+run these eight in this exact order instead. Same result.
 
 | # | File | Success message |
 |---|---|---|
