@@ -1,54 +1,18 @@
 -- ═══════════════════════════════════════════════════════════
 -- FINISH PAYMENTS — the only SQL you still need to run
 --
--- GENERATED FILE. Edit the section files, then re-run:
---     python3 supabase/build-finish.py
+-- GENERATED. Edit the section files, then: python3 supabase/build-finish.py
 --
--- Your database already has: schema, seat-gate, security, packs,
+-- Already on your database: schema, seat-gate, security, packs,
 -- tiers, access, consult, enforcement, notices.  ✅
---
--- Missing: claims, paypal-only, fx, fx2, fx3 — everything the till
--- and PayPal actually need.
---
--- ── RUN THIS WHOLE FILE. DO NOT RUN THE SECTIONS SEPARATELY. ──
---
--- Each section depends on columns the one before it adds:
---     tiers  → tier, duration_days
---     fx     → amount_minor, base_currency      ← easy one to miss
---     fx2    → charge_currency
---     fx3    → charge_minor
---
--- Running fx2 on its own gives:
---     ERROR 42703: column p.amount_minor does not exist
--- Running fx3 on its own gives:
---     ERROR 42703: column "charge_currency" ... does not exist
---
--- And because the SQL Editor wraps a script in ONE transaction, a
--- failure at the bottom silently undoes the columns added at the
--- top — so a half-run script leaves nothing behind. That is why the
--- errors repeat even though the ALTER TABLE "already ran".
---
--- Every column is created up front below, so this file no longer
--- depends on section order at all.
---
--- The price functions are dropped before each section that changes
--- their shape, so ERROR 42P13 cannot happen either. They hold no data.
+-- This adds the rest: claims, paypal-only, fx, fx2, fx3 — the till,
+-- the prices, and PayPal.
 --
 -- Paste the WHOLE file into Supabase → SQL Editor → Run.
 -- Safe to re-run. About 15 seconds.
+--
+-- Every column is created up front, so section order cannot break it.
 -- ═══════════════════════════════════════════════════════════
-
--- ── 0 · Every column this file needs, created up front ───────
--- Belt and braces: if a section is ever run out of order, or a past
--- partial run was rolled back, these still exist.
-alter table products add column if not exists tier            text;
-alter table products add column if not exists duration_days   int;
-alter table products add column if not exists currency        text;
-alter table products add column if not exists price_note      text;
-alter table products add column if not exists amount_minor    bigint;
-alter table products add column if not exists base_currency   text;
-alter table products add column if not exists charge_currency text;
-alter table products add column if not exists charge_minor    bigint;
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ claims.sql ▓▓▓▓▓▓▓▓▓▓
@@ -495,21 +459,6 @@ grant execute on function grant_tier(text, text, text) to service_role;
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx.sql ▓▓▓▓▓▓▓▓▓▓
 
--- shape of price_now/prices_now changes here — clear the old ones
-do $$
-declare r record;
-begin
-  for r in
-    select p.oid::regprocedure as sig
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public'
-       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
-  loop
-    execute 'drop function if exists ' || r.sig || ' cascade';
-  end loop;
-end $$;
-
 -- ═══════════════════════════════════════════════════════════
 -- LIVE EXCHANGE RATES — naira is the real price
 --
@@ -527,6 +476,81 @@ end $$;
 -- ═══════════════════════════════════════════════════════════
 
 -- ── 1 · Prices in their true currency ────────────────────────
+
+-- ── PREFLIGHT · make this file safe to run ON ITS OWN ────────
+-- Injected into the top of every fx file by build-finish.py.
+--
+-- WHY IT EXISTS
+--   These migrations used to form a chain — fx added amount_minor,
+--   fx2 added charge_currency, fx3 added charge_minor — so running
+--   one without the previous gave:
+--       ERROR 42703: column p.amount_minor does not exist
+--       ERROR 42703: column "charge_currency" ... does not exist
+--
+--   Worse, the Supabase SQL Editor wraps a script in ONE transaction.
+--   A failure near the bottom rolled back the ALTER TABLEs at the top,
+--   so the columns never appeared and re-running produced the exact
+--   same error — which looked like the fix had not been applied.
+--
+--   Now each file creates everything it needs first. Order no longer
+--   matters, and any of them can be pasted on its own.
+
+alter table products add column if not exists tier            text;
+alter table products add column if not exists duration_days   int;
+alter table products add column if not exists currency        text;
+alter table products add column if not exists price_note      text;
+alter table products add column if not exists amount_minor    bigint;
+alter table products add column if not exists base_currency   text;
+alter table products add column if not exists charge_currency text;
+alter table products add column if not exists charge_minor    bigint;
+
+-- The true prices, seeded only where missing so a later, deliberate
+-- price change is never overwritten by re-running this.
+update products set amount_minor = 3900,  base_currency = 'NGN' where code = 'NG-MID-90'  and amount_minor is null;
+update products set amount_minor = 7800,  base_currency = 'NGN' where code = 'NG-PRO-90'  and amount_minor is null;
+update products set amount_minor = 25000, base_currency = 'NGN' where code = 'NG-PRO-365' and amount_minor is null;
+update products set amount_minor = 799,   base_currency = 'GBP' where code = 'WD-MID-90'  and amount_minor is null;
+update products set amount_minor = 1599,  base_currency = 'GBP' where code = 'WD-PRO-90'  and amount_minor is null;
+update products set amount_minor = 4799,  base_currency = 'GBP' where code = 'WD-PRO-365' and amount_minor is null;
+
+create table if not exists fx_rates (
+  pair       text primary key,
+  rate       numeric(18,8) not null,
+  fetched_at timestamptz not null default now(),
+  source     text
+);
+alter table fx_rates enable row level security;
+drop policy if exists fx_read on fx_rates;
+create policy fx_read on fx_rates for select using (true);
+insert into fx_rates (pair, rate, source) values ('NGN/GBP', 1816.02, 'seed')
+on conflict (pair) do nothing;
+
+insert into config (key, value) values
+  ('fx_margin_pct',    '3'),
+  ('fx_max_age_hours', '48')
+on conflict (key) do nothing;
+
+-- price_now()/prices_now() change shape between these files, and
+-- Postgres refuses a return-type change via CREATE OR REPLACE
+-- (ERROR 42P13). They are read-only calculators holding no data, so
+-- clearing them costs nothing — each file rebuilds what it needs.
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now',
+                         'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
+
+-- ── end preflight ────────────────────────────────────────────
+
 alter table products add column if not exists amount_minor bigint;   -- ₦7800 or 799p
 alter table products add column if not exists base_currency text;    -- 'NGN' | 'GBP'
 
@@ -698,21 +722,6 @@ end $$;
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx2.sql ▓▓▓▓▓▓▓▓▓▓
 
--- shape of price_now/prices_now changes here — clear the old ones
-do $$
-declare r record;
-begin
-  for r in
-    select p.oid::regprocedure as sig
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public'
-       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
-  loop
-    execute 'drop function if exists ' || r.sig || ' cascade';
-  end loop;
-end $$;
-
 -- ═══════════════════════════════════════════════════════════
 -- BOTH PRICES REAL — and the Nigerian one deliberately subsidised
 --
@@ -737,6 +746,81 @@ end $$;
 -- ═══════════════════════════════════════════════════════════
 
 -- ── 1 · Both currencies are real, so both are charged natively ──
+
+-- ── PREFLIGHT · make this file safe to run ON ITS OWN ────────
+-- Injected into the top of every fx file by build-finish.py.
+--
+-- WHY IT EXISTS
+--   These migrations used to form a chain — fx added amount_minor,
+--   fx2 added charge_currency, fx3 added charge_minor — so running
+--   one without the previous gave:
+--       ERROR 42703: column p.amount_minor does not exist
+--       ERROR 42703: column "charge_currency" ... does not exist
+--
+--   Worse, the Supabase SQL Editor wraps a script in ONE transaction.
+--   A failure near the bottom rolled back the ALTER TABLEs at the top,
+--   so the columns never appeared and re-running produced the exact
+--   same error — which looked like the fix had not been applied.
+--
+--   Now each file creates everything it needs first. Order no longer
+--   matters, and any of them can be pasted on its own.
+
+alter table products add column if not exists tier            text;
+alter table products add column if not exists duration_days   int;
+alter table products add column if not exists currency        text;
+alter table products add column if not exists price_note      text;
+alter table products add column if not exists amount_minor    bigint;
+alter table products add column if not exists base_currency   text;
+alter table products add column if not exists charge_currency text;
+alter table products add column if not exists charge_minor    bigint;
+
+-- The true prices, seeded only where missing so a later, deliberate
+-- price change is never overwritten by re-running this.
+update products set amount_minor = 3900,  base_currency = 'NGN' where code = 'NG-MID-90'  and amount_minor is null;
+update products set amount_minor = 7800,  base_currency = 'NGN' where code = 'NG-PRO-90'  and amount_minor is null;
+update products set amount_minor = 25000, base_currency = 'NGN' where code = 'NG-PRO-365' and amount_minor is null;
+update products set amount_minor = 799,   base_currency = 'GBP' where code = 'WD-MID-90'  and amount_minor is null;
+update products set amount_minor = 1599,  base_currency = 'GBP' where code = 'WD-PRO-90'  and amount_minor is null;
+update products set amount_minor = 4799,  base_currency = 'GBP' where code = 'WD-PRO-365' and amount_minor is null;
+
+create table if not exists fx_rates (
+  pair       text primary key,
+  rate       numeric(18,8) not null,
+  fetched_at timestamptz not null default now(),
+  source     text
+);
+alter table fx_rates enable row level security;
+drop policy if exists fx_read on fx_rates;
+create policy fx_read on fx_rates for select using (true);
+insert into fx_rates (pair, rate, source) values ('NGN/GBP', 1816.02, 'seed')
+on conflict (pair) do nothing;
+
+insert into config (key, value) values
+  ('fx_margin_pct',    '3'),
+  ('fx_max_age_hours', '48')
+on conflict (key) do nothing;
+
+-- price_now()/prices_now() change shape between these files, and
+-- Postgres refuses a return-type change via CREATE OR REPLACE
+-- (ERROR 42P13). They are read-only calculators holding no data, so
+-- clearing them costs nothing — each file rebuilds what it needs.
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now',
+                         'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
+
+-- ── end preflight ────────────────────────────────────────────
+
 alter table products add column if not exists charge_currency text;
 
 update products set charge_currency = 'NGN' where region = 'africa' and tier is not null;
@@ -875,21 +959,6 @@ end $$;
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx3.sql ▓▓▓▓▓▓▓▓▓▓
 
--- shape of price_now/prices_now changes here — clear the old ones
-do $$
-declare r record;
-begin
-  for r in
-    select p.oid::regprocedure as sig
-      from pg_proc p
-      join pg_namespace n on n.oid = p.pronamespace
-     where n.nspname = 'public'
-       and p.proname in ('price_now', 'prices_now', 'subsidy_check', 'resync_charge_amounts')
-  loop
-    execute 'drop function if exists ' || r.sig || ' cascade';
-  end loop;
-end $$;
-
 -- ═══════════════════════════════════════════════════════════
 -- PAYPAL CANNOT CHARGE NAIRA — so the charge goes out in £
 --
@@ -925,6 +994,81 @@ end $$;
 -- ═══════════════════════════════════════════════════════════
 
 -- ── 1 · Everything is charged in the account's own currency ──
+
+-- ── PREFLIGHT · make this file safe to run ON ITS OWN ────────
+-- Injected into the top of every fx file by build-finish.py.
+--
+-- WHY IT EXISTS
+--   These migrations used to form a chain — fx added amount_minor,
+--   fx2 added charge_currency, fx3 added charge_minor — so running
+--   one without the previous gave:
+--       ERROR 42703: column p.amount_minor does not exist
+--       ERROR 42703: column "charge_currency" ... does not exist
+--
+--   Worse, the Supabase SQL Editor wraps a script in ONE transaction.
+--   A failure near the bottom rolled back the ALTER TABLEs at the top,
+--   so the columns never appeared and re-running produced the exact
+--   same error — which looked like the fix had not been applied.
+--
+--   Now each file creates everything it needs first. Order no longer
+--   matters, and any of them can be pasted on its own.
+
+alter table products add column if not exists tier            text;
+alter table products add column if not exists duration_days   int;
+alter table products add column if not exists currency        text;
+alter table products add column if not exists price_note      text;
+alter table products add column if not exists amount_minor    bigint;
+alter table products add column if not exists base_currency   text;
+alter table products add column if not exists charge_currency text;
+alter table products add column if not exists charge_minor    bigint;
+
+-- The true prices, seeded only where missing so a later, deliberate
+-- price change is never overwritten by re-running this.
+update products set amount_minor = 3900,  base_currency = 'NGN' where code = 'NG-MID-90'  and amount_minor is null;
+update products set amount_minor = 7800,  base_currency = 'NGN' where code = 'NG-PRO-90'  and amount_minor is null;
+update products set amount_minor = 25000, base_currency = 'NGN' where code = 'NG-PRO-365' and amount_minor is null;
+update products set amount_minor = 799,   base_currency = 'GBP' where code = 'WD-MID-90'  and amount_minor is null;
+update products set amount_minor = 1599,  base_currency = 'GBP' where code = 'WD-PRO-90'  and amount_minor is null;
+update products set amount_minor = 4799,  base_currency = 'GBP' where code = 'WD-PRO-365' and amount_minor is null;
+
+create table if not exists fx_rates (
+  pair       text primary key,
+  rate       numeric(18,8) not null,
+  fetched_at timestamptz not null default now(),
+  source     text
+);
+alter table fx_rates enable row level security;
+drop policy if exists fx_read on fx_rates;
+create policy fx_read on fx_rates for select using (true);
+insert into fx_rates (pair, rate, source) values ('NGN/GBP', 1816.02, 'seed')
+on conflict (pair) do nothing;
+
+insert into config (key, value) values
+  ('fx_margin_pct',    '3'),
+  ('fx_max_age_hours', '48')
+on conflict (key) do nothing;
+
+-- price_now()/prices_now() change shape between these files, and
+-- Postgres refuses a return-type change via CREATE OR REPLACE
+-- (ERROR 42P13). They are read-only calculators holding no data, so
+-- clearing them costs nothing — each file rebuilds what it needs.
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure as sig
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname in ('price_now', 'prices_now',
+                         'subsidy_check', 'resync_charge_amounts')
+  loop
+    execute 'drop function if exists ' || r.sig || ' cascade';
+  end loop;
+end $$;
+
+-- ── end preflight ────────────────────────────────────────────
+
 update products set charge_currency = 'GBP' where tier is not null;
 
 -- ── 2 · A stored £ fallback, so a dead rate never blocks a sale ──
@@ -1089,8 +1233,7 @@ end $$;
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ FINAL CHECK ▓▓▓▓▓▓▓▓▓▓
--- Fails loudly if anything above did not take, so you never think
--- this worked when it did not.
+-- Fails loudly rather than letting you think this worked when it did not.
 do $$
 declare n int; bad int; r record;
 begin
