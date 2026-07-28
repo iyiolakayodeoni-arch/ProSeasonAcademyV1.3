@@ -60,6 +60,8 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const cardWidth = Math.min((width - PAGE_PAD * 2 - CARD_GAP) / 2, 190);
 
   const [username, setUsername] = useState('');
+  const [invite, setInvite] = useState('');
+  const [doorError, setDoorError] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
   const [offline, setOffline] = useState(false);
@@ -90,9 +92,20 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const enter = async () => {
     if (!canEnter) return;
     setOffline(false);
+    setDoorError(null);
     const handle = username.trim();
     setDisplayName(handle); // the name he chose IS his academy name
-    const me = await enterAcademy(handle);
+    const me = await enterAcademy(handle, invite.trim());
+    // invite refused → say so plainly; this academy is invite-only
+    const door = backend.getDoorError();
+    if (door) {
+      setDoorError(
+        door === 'INVITE_REQUIRED'
+          ? 'THIS ACADEMY IS INVITE-ONLY. ENTER THE CODE YOU WERE GIVEN.'
+          : 'THAT CODE IS NOT VALID, ALREADY USED, OR EXPIRED.',
+      );
+      return;
+    }
     const gate = backend.getSeasonGate();
     if (gate) {
       setSeasonFull(gate); // season full → waitlist panel, solo training continues
@@ -199,10 +212,21 @@ export default function SignInScreen({ onSignedIn }: Props) {
               autoCapitalize="characters"
               maxLength={14}
             />
+            <View style={styles.fieldGap} />
+            <NeonInput
+              placeholder="INVITE CODE"
+              value={invite}
+              onChangeText={(t) => { setInvite(t); setDoorError(null); }}
+              autoCapitalize="characters"
+              maxLength={24}
+            />
           </View>
           <Text style={styles.geoNote}>
             THIS IS THE NAME YOUR COACH CALLS YOU AND THE HALL SEES. 3–14 CHARACTERS.
+            THE ACADEMY IS INVITE-ONLY — USE THE CODE YOU WERE GIVEN.
           </Text>
+
+          {doorError && <Text style={styles.doorError}>{doorError}</Text>}
 
           {offline && (
             <Text style={styles.offlineNote}>
@@ -340,6 +364,15 @@ const styles = StyleSheet.create({
   },
   ctaBusy: { opacity: 0.75 },
   ctaOff: { opacity: 0.4 },
+  doorError: {
+    marginTop: 10,
+    fontFamily: monoFont,
+    fontSize: 6.6,
+    lineHeight: 10.5,
+    letterSpacing: 1,
+    color: colors.loss,
+    textAlign: 'center',
+  },
   offlineNote: {
     marginTop: 10,
     fontFamily: monoFont,

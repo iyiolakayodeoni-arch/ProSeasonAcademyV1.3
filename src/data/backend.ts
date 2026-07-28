@@ -52,7 +52,18 @@ export async function probeHealth(timeoutMs = 2500): Promise<boolean> {
   }
 }
 
-export async function ensureAuth(handle: string, coachId: string, platform: string, region: string): Promise<CloudUser | null> {
+/** why the door refused, when it did */
+export type DoorError = 'INVITE_REQUIRED' | 'INVITE_INVALID' | null;
+let doorError: DoorError = null;
+export function getDoorError(): DoorError { return doorError; }
+
+export async function ensureAuth(
+  handle: string,
+  coachId: string,
+  platform: string,
+  region: string,
+  inviteCode?: string,
+): Promise<CloudUser | null> {
   if (!supabase) return null;
   try {
     const { data: sess } = await supabase.auth.getSession();
@@ -61,13 +72,18 @@ export async function ensureAuth(handle: string, coachId: string, platform: stri
       if (r.error || !r.data.session) return null;
     }
     const resp = await supabase.functions.invoke('ensure-profile', {
-      body: { handle, coachId, platform, region },
+      body: { handle, coachId, platform, region, inviteCode: inviteCode ?? '' },
     });
     if (resp.error) {
       // 409 SEASON_FULL arrives as a function error — read its body
       try {
         const ctx: any = (resp.error as any).context;
         const j = ctx?.json ? await ctx.json() : null;
+        if (j?.error === 'INVITE_REQUIRED' || j?.error === 'INVITE_INVALID') {
+          doorError = j.error;
+          me = null;
+          return null;
+        }
         if (j?.error === 'SEASON_FULL') {
           seasonGate = { season: j.season ?? 'SEASON ONE', cap: j.cap ?? 1000, taken: j.taken ?? j.cap ?? 1000 };
           me = null;
@@ -79,6 +95,7 @@ export async function ensureAuth(handle: string, coachId: string, platform: stri
     const p = resp.data?.profile;
     if (!p) return null;
     seasonGate = null;
+    doorError = null;
     me = { id: String(p.id), handle: String(p.handle), academyId: String(p.academy_id) };
     return me;
   } catch {
@@ -456,6 +473,88 @@ export function cloudReset() {
   me = null;
   seasonGate = null;
   void AsyncStorage.removeItem(LEGACY_TOKEN_KEY).catch(() => {});
+}
+
+// ── CONTACT — the private line to the founder ────────────────
+export type ContactKind = 'message' | 'bug' | 'suggestion' | 'question';
+
+export interface ContactRow {
+  id: number;
+  kind: string;
+  body: string;
+  at: number;
+  read: boolean;
+  replied: boolean;
+  reply: string | null;
+}
+
+/** send the founder a private note. Returns an error code, or null on success. */
+export async function sendContact(kind: ContactKind, body: string): Promise<string | null> {
+  if (!supabase || !me) return 'OFFLINE';
+  const text = String(body ?? '').trim().slice(0, 2000);
+  if (!text) return 'EMPTY';
+  try {
+    const { error } = await supabase.from('contact_messages').insert({
+      user_id: me.id, handle: me.handle, academy_id: me.academyId, kind, body: text,
+    });
+    if (error) {
+      if (String(error.message).includes('RATE_LIMITED')) return 'RATE_LIMITED';
+      return 'FAILED';
+    }
+    return null;
+  } catch {
+    return 'FAILED';
+  }
+}
+
+/** your own thread — including the founder's replies */
+export async function myContactThread(): Promise<ContactRow[] | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase
+      .from('contact_messages')
+      .select('id, kind, body, at, read, replied, reply')
+      .order('at', { ascending: false })
+      .limit(30);
+    if (error) return null;
+    return (data ?? []).map((r: any) => ({
+      id: Number(r.id), kind: r.kind, body: r.body,
+      at: new Date(r.at).getTime(), read: !!r.read,
+      replied: !!r.replied, reply: r.reply ?? null,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+// ── FOUNDER'S WEEK — the December listening window ───────────
+export interface FounderWeek {
+  live: boolean;
+  startsAt: number | null;
+  endsAt: number | null;
+  note: string;
+}
+
+/** is the founder in the halls right now? drives the Community banner */
+export async function founderWeek(): Promise<FounderWeek | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('config').select('key, value')
+      .in('key', ['founder_week_start', 'founder_week_end', 'founder_week_note']);
+    if (error) return null;
+    const cfg = Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
+    const startsAt = cfg.founder_week_start ? Date.parse(cfg.founder_week_start) : null;
+    const endsAt = cfg.founder_week_end ? Date.parse(cfg.founder_week_end) : null;
+    const now = Date.now();
+    return {
+      live: !!startsAt && !!endsAt && now >= startsAt && now < endsAt,
+      startsAt, endsAt,
+      note: cfg.founder_week_note ?? '',
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** current platform label for server-side stats */

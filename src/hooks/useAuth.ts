@@ -19,20 +19,20 @@ import { getSettings } from '../data/settings';
 export type AuthApi = {
   loading: boolean;
   /** claim (or re-claim) this device's academy seat */
-  enterAcademy: (handle: string) => Promise<backend.CloudUser | null>;
+  enterAcademy: (handle: string, inviteCode?: string) => Promise<backend.CloudUser | null>;
 };
 
 export function useAuth(): AuthApi {
   const [loading, setLoading] = useState(false);
 
   const enterAcademy = useCallback(
-    async (handle: string): Promise<backend.CloudUser | null> => {
+    async (handle: string, inviteCode?: string): Promise<backend.CloudUser | null> => {
       if (loading) return null;
       setLoading(true);
       try {
         const s = getSettings();
         const name = handle.trim() || s.displayName;
-        return await backend.ensureAuth(name, '', s.platform, s.geo);
+        return await backend.ensureAuth(name, '', s.platform, s.geo, inviteCode);
       } finally {
         setLoading(false);
       }

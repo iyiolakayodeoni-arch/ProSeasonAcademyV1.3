@@ -209,6 +209,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const recTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── panels / sheets ──
+  const [founder, setFounder] = useState<backend.FounderWeek | null>(null);
+  useEffect(() => { void backend.founderWeek().then(setFounder); }, [cloud.status]);
+
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
   const [profileUser, setProfileUser] = useState<UserWithAvatar | null>(null);
   const [picker, setPicker] = useState(false);
@@ -376,6 +379,12 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
       <View style={styles.headerRule} />
 
       {/* ── season gate: sold-out season → you train solo until your seat opens ── */}
+      {founder?.live && (
+        <View style={styles.founderWeek}>
+          <Text style={styles.founderWeekTag}>● THE FOUNDER IS IN THE HALLS</Text>
+          <Text style={styles.founderWeekTxt}>{founder.note}</Text>
+        </View>
+      )}
       {backend.getSeasonGate() ? (
         <View style={styles.gateBanner}>
           <Text style={styles.gateBannerTxt}>
@@ -835,6 +844,18 @@ function VoiceNote({ secs, accent }: { secs: number; accent: string }) {
 }
 
 const styles = StyleSheet.create({
+  founderWeek: {
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.5)',
+    backgroundColor: 'rgba(40,32,14,0.7)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 11,
+  },
+  founderWeekTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078' },
+  founderWeekTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
   flex: { flex: 1 },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 9 },

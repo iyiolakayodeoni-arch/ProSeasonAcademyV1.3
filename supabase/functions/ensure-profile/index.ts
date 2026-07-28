@@ -41,13 +41,29 @@ Deno.serve(async (req) => {
     return json({ ok: true, profile: { ...existing, ...patch }, seats: seats ?? null });
   }
 
-  // ── NEW PLAYER → THE SEASON GATE ───────────────────────────
-  // The REAL gate is a BEFORE INSERT trigger in Postgres (see
-  // supabase/seat-gate.sql). It locks the config row and recounts
-  // inside the transaction, so concurrent signups cannot both slip
-  // through at seat 999. This early check is only a courtesy: it
-  // saves generating an Academy ID for someone who clearly cannot
-  // have one. The trigger is what actually guarantees the cap.
+  // ── NEW PLAYER → THE DOOR ──────────────────────────────────
+  // Two gates, in order:
+  //   1. INVITE  — is this person one of ours? (private ecosystem)
+  //   2. SEAT    — is there room left? (the season cap)
+  // The seat cap alone was never enough: the anon key ships inside
+  // every APK, so without an invite anyone who got the file could
+  // spend one of the 1,000 seats.
+  const { data: inviteOnlyRow } = await sb
+    .from('config').select('value').eq('key', 'invite_only').maybeSingle();
+  const inviteOnly = String(inviteOnlyRow?.value ?? 'false') === 'true';
+
+  const code = String(body.inviteCode ?? '').toUpperCase().trim();
+
+  if (inviteOnly) {
+    if (!code) {
+      return json({ ok: false, error: 'INVITE_REQUIRED' }, 403);
+    }
+    const { data: claimed, error: cerr0 } = await sb.rpc('claim_invite', { p_code: code });
+    if (cerr0 || claimed !== true) {
+      return json({ ok: false, error: 'INVITE_INVALID' }, 403);
+    }
+  }
+
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
   const cap = seats0?.cap ?? 1000;
@@ -80,6 +96,7 @@ Deno.serve(async (req) => {
     platform: body.platform ? String(body.platform).slice(0, 24) : null,
     region: REGION(body.region),
     academy_id: academy,
+    invite_code: code || null,
   };
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
 

@@ -13,6 +13,7 @@ import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import FounderDesk from '../FounderDesk';
 import StoreSheet from '../StoreSheet';
+import ContactSheet from '../ContactSheet';
 import {
   PLANS,
   PLATFORMS,
@@ -157,6 +158,7 @@ export default function SettingsTab({
   const [founderKey, setFounderKey] = useState<string | null>(null);
   const [deskOpen, setDeskOpen] = useState(false);
   const [tillOpen, setTillOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   // a key verified on a previous run unlocks the desk straight away
   useEffect(() => {
@@ -421,6 +423,13 @@ export default function SettingsTab({
               sub="BUGS · BILLING · TALK TO A HUMAN"
               right={<Chevron />}
               onPress={() => open('help')}
+            />
+            <Row
+              icon={<AtIcon size={15} color="#f2c078" />}
+              title="Contact the founder"
+              sub="PRIVATE LINE — QUESTIONS, IDEAS, BUGS"
+              right={<Chevron />}
+              onPress={() => setContactOpen(true)}
               last
             />
           </View>
@@ -670,6 +679,13 @@ export default function SettingsTab({
             onForgetKey={forgetFounderKey}
             onClose={() => setDeskOpen(false)}
           />
+        </View>
+      )}
+
+      {/* ── CONTACT — private line to the founder ── */}
+      {contactOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <ContactSheet onClose={() => setContactOpen(false)} />
         </View>
       )}
 
