@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>ProSeasonAcademy — the whole experience</title>
+<style>
+  :root{--bg:#0a0f0a;--fg:#eef2ec;--neon:#39FF6A;--amber:#f2c078;--muted:#8fb89b;--border:#1f3826}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font-family:ui-monospace,Menlo,Consolas,monospace;padding:48px 24px 96px}
+  header{max-width:1180px;margin:0 auto 40px}
+  h1{color:var(--neon);font-size:22px;letter-spacing:2px;margin:0 0 10px}
+  .sub{color:var(--muted);font-size:12.5px;line-height:1.7;max-width:760px}
+  .note{margin-top:16px;padding:12px 14px;border-left:3px solid var(--amber);
+        background:rgba(242,192,120,.07);color:var(--amber);font-size:11.5px;
+        line-height:1.7;max-width:760px}
+  .grid{max-width:1180px;margin:0 auto;display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:30px}
+  figure{margin:0}
+  .shot{border:1px solid var(--border);border-radius:16px;overflow:hidden;
+        background:#000;display:block}
+  .shot img{width:100%;display:block}
+  figcaption{margin-top:11px}
+  .n{color:var(--neon);font-size:10.5px;letter-spacing:1.6px}
+  .t{font-size:13px;margin:3px 0 5px;letter-spacing:.5px}
+  .d{color:var(--muted);font-size:11px;line-height:1.65}
+</style>
+<header>
+  <h1>PROSEASONACADEMY — THE WHOLE EXPERIENCE</h1>
+  <div class="sub">
+    Splash to paid. Colours, copy and prices taken from the real code and the
+    live database. Palette: #0a0f0a background, #39FF6A neon, #f2c078 amber,
+    monospace throughout.
+  </div>
+  <div class="note">
+    READ THESE AS LAYOUT, NOT FINAL TEXT — the image model renders headings and
+    numbers correctly but garbles small paragraph copy. Judge the structure,
+    hierarchy and colour. Real wording lives in the screen files.
+  </div>
+</header>
+<div class="grid" id="g"></div>
+<script>
+const shots=[
+ ["01-splash.png","Splash","First 1.5 seconds. Crest, loading bar, version pinned at the bottom."],
+ ["02-signin.png","Sign in — the door","Academy name, invite code, country. Invite-only is enforced server-side; country decides ₦ or £."],
+ ["03-coach-select.png","Coach selection","Three coaches, scout files, and a permanent lock. You cannot switch later — that is the point."],
+ ["04-home.png","Home","Live feed, trick of the week, days left. Bottom bar: HOME · JOURNEY · HALLS · SETTINGS."],
+ ["05-journey.png","The Journey","Stages cleared, current, locked, ending at FINISH. Match Vault and Loss Journal below."],
+ ["06-community.png","The halls","Clubhouse, Coaches, DMs. Rate-limited. THE ACADEMY speaks in amber so a warning is never mistaken for chat."],
+ ["07-lapsed-gate.png","Lapsed gate","Trial over. The floor closes — but NOTHING HAS BEEN DELETED, and the contact line stays open."],
+ ["08-pricing.png","Pricing","₦3,900 / ₦7,800 / ₦25,000 with the honest CHARGED AS £x line. The subsidy is stated, not hidden."],
+ ["09-card-refused.png","Card refused","Amber, not red. Send to OPay 8112179292 with a reference, or one tap to reach the founder."],
+ ["10-paid.png","You're in","Webhook fires, pass opens, welcome lands. Seconds, with nobody involved."],
+];
+document.getElementById('g').innerHTML=shots.map(([f,t,d],i)=>`
+ <figure>
+   <a class="shot" href="${f}" target="_blank"><img src="${f}" alt="${t}" loading="lazy"></a>
+   <figcaption>
+     <div class="n">${String(i+1).padStart(2,'0')}</div>
+     <div class="t">${t}</div>
+     <div class="d">${d}</div>
+   </figcaption>
+ </figure>`).join('');
+</script>
