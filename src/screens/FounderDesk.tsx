@@ -55,27 +55,32 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 
   // ── packs: credits + the tricks inside ──
   const [packs, setPacks] = useState<backend.PackRow[] | null>(null);
-  const [packPick, setPackPick] = useState<string>('NG-STARTER');
+  const [packPick, setPackPick] = useState<string>('NG-MID-30');
   const loadPacks = async () => setPacks(await backend.founderPacks(founderKey));
 
+  /** sell a timed pass — time stacks, upgrades carry days over */
   const givePack = async () => {
     const id = topId.trim().toUpperCase();
     if (!id || tillBusy) return;
     setTillBusy(true);
     setTillNote(null);
-    const r = await backend.founderGrantPack(founderKey, id, packPick, topRef.trim() || undefined);
+    const r = await backend.founderGrantTier(founderKey, id, packPick, topRef.trim() || undefined);
     setTillBusy(false);
     if (r.ok) {
-      const p = packs?.find((x) => x.code === packPick);
+      const until = r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : '';
       setTillNote(
-        `${packPick} DELIVERED TO ${id} · BALANCE ${r.balance}` +
-        (p && p.items.length ? ` · ${p.items.length} ITEM(S) UNLOCKED` : ''),
+        `${id} IS NOW ${String(r.tier ?? '').toUpperCase() === 'MID' ? 'ACADEMY' : String(r.tier ?? '').toUpperCase()}` +
+        (until ? ` UNTIL ${until}` : ''),
       );
       setTopId('');
       setTopRef('');
       void loadPacks();
     } else {
-      setTillNote(r.error === 'unknown academy id' ? 'NO SUCH ACADEMY ID' : 'THAT DID NOT GO THROUGH');
+      setTillNote(
+        r.error?.includes('higher') ? 'THEY ALREADY HOLD A HIGHER LIVE PASS'
+        : r.error?.includes('unknown academy') ? 'NO SUCH ACADEMY ID'
+        : 'THAT DID NOT GO THROUGH',
+      );
     }
   };
 
@@ -369,7 +374,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           </View>
           <Text style={styles.tillHelp}>
             BANK ALERT LANDS → TYPE THE PLAYER'S ACADEMY ID (THEY SEE IT IN THE TILL) → GIVE THEM THE PACK.
-            A PACK DELIVERS ITS CREDITS **AND** THE TRICKS INSIDE IT, IN ONE MOVE. THE REF IS YOUR RECEIPT.
+            PASSES ARE TIMED. BUYING THE SAME TIER AGAIN ADDS DAYS; UPGRADING CARRIES THE
+            REMAINING DAYS OVER. THE REF IS YOUR RECEIPT.
           </Text>
 
           {/* pick the pack they paid for */}
@@ -384,8 +390,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                         {p.title} · {p.price}
                       </Text>
                       <Text style={[styles.packChipSub, on && { color: '#05130a' }]}>
-                        {p.credits ? `${p.credits} CR` : p.plan ? String(p.plan).toUpperCase() : '—'}
-                        {p.items.length ? ` + ${p.items.length} ITEM(S)` : ' · NO ITEMS YET'}
+                        {String(p.region).toUpperCase()}
+                        {p.items.length ? ` · +${p.items.length} EXTRA` : ''}
                       </Text>
                     </View>
                   </Pressable>
@@ -422,7 +428,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           <Pressable onPress={() => void givePack()} disabled={!topId.trim() || tillBusy}>
             <View style={[styles.packCta, (!topId.trim() || tillBusy) && { opacity: 0.4 }]}>
               <Text style={styles.packCtaTxt}>
-                {tillBusy ? 'DELIVERING…' : `GIVE ${packPick} — CREDITS + TRICKS ›`}
+                {tillBusy ? 'DELIVERING…' : `GIVE ${packPick} ›`}
               </Text>
             </View>
           </Pressable>

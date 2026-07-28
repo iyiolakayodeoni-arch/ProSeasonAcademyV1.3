@@ -42,32 +42,48 @@ cannot be bypassed. Removed members free their seat.
 
 ---
 
-## Money — different by region, deliberately unsettled
+## Money — ONE ladder, two currencies
 
-### Africa → **credits**
-Some of the journey is free; the rest is bought with credit packs. Pay for what you
-want, when you have it. No monthly commitment in a market where that is a barrier.
+The first cut had Africa buying credits (permanent unlocks) and abroad paying a monthly
+sub (loses everything if they stop). Same academy, two different deals. The founder's
+call, and it is the right one:
 
-- `config.free_stages = 2` — first two stages free for everyone
-- `config.stage_unlock_cost = 50` credits per stage after that
-- `config.trick_unlock_cost = 20` credits per Home trick
-- **Home tricks are bundled into the starter packs** — a pack is not just credits, it is
-  a set of tricks you keep
+> *"so that it does not seem like we are cheating them when they start chatting with
+> each other"*
 
-### World → **subscription**
-Flat monthly, everything unlocked. `PRO-MONTHLY`, currently $4.99.
+Members talk. If two of them compare what they paid for and the deals are not
+equivalent, trust is gone — and trust is the whole product here.
 
-### Both are config rows, not code
-Every number above lives in `config` or `products` and is editable in the Supabase
-dashboard. **The founder was explicit: the pricing is not set in stone.** The pricing
-halls (`#division-africa`, `#division-world`) exist so members argue it out before it
-locks. `unlock_item()` handles both models — subscribers unlock at zero credit cost, so
-one code path serves both regions.
+### The three rungs, identical everywhere
 
-The till stays shut until `config.go_live` (currently 2027-01-01). Prices are visible
-before then; nothing can be bought.
+| Tier | What it opens |
+|---|---|
+| **FREE** | Stages 1–2, the whole Match Vault, Loss Journal, scans, the halls. Forever — not a trial. |
+| **ACADEMY** | The full journey, every stage, and the weekly tricks as they drop. |
+| **PRO** | Everything, plus the film room and first call on the founder's time. |
 
----
+Passes are **timed**, in both regions: 1 month · 3 months · 1 season.
+
+| | Africa (₦) | World ($) |
+|---|---|---|
+| ACADEMY · 1 month | ₦1,500 | $3.99 |
+| ACADEMY · 3 months | ₦3,900 | $9.99 |
+| PRO · 1 month | ₦3,000 | $7.99 |
+| PRO · 3 months | ₦7,800 | $19.99 |
+| PRO · 1 season | ₦25,000 | $59.99 |
+
+**Only the currency differs.** Same rungs, same durations, same access.
+
+### The fairness rules, enforced in SQL
+- Same tier again → days **add** to what is left
+- Upgrade mid-period → remaining days **carry over** at the better tier
+- A cheaper pass can **never** strip a live higher one (`ACTIVE_HIGHER_TIER`)
+- An expired pass silently drops to FREE — nobody is locked out of their own vault
+
+### Still not set in stone
+Every price, duration and tier boundary is a row in `products` or `config`, editable in
+the dashboard. The pricing halls exist so members argue it out before it locks. The till
+stays shut until `config.go_live`.
 
 ## December — the listening week
 

@@ -17,7 +17,8 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 | 1 | `supabase/schema.sql` | tables, RLS, the till *(already run — skip if so)* | "Success. No rows returned" |
 | 2 | `supabase/seat-gate.sql` | the 1,000-seat cap, enforced in Postgres | `SEAT GATE ARMED · SEASON ONE · 0/1000` |
 | 3 | `supabase/security.sql` | invite-only door, rate limits, contact inbox, founder's week | `SECURITY ARMED · … invite_only=true` |
-| 4 | `supabase/packs.sql` | starter packs that bundle tricks | `PACK CONTENTS` + a line per pack |
+| 4 | `supabase/packs.sql` | bundle extras onto a product | `PACK CONTENTS` + a line per pack |
+| 5 | `supabase/tiers.sql` | **FREE / ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
 
 Then **Edge Functions** — paste each file's contents into a function of the same name:
 
@@ -62,9 +63,9 @@ uses and expiry days → CREATE. Use `1` use for people you actually know.
 **2. Hand them out.** A member types the code on the sign-in screen. No code, or a
 used/expired one, and no seat is spent.
 
-**3. When someone pays.** THE TILL panel → their Academy ID → pick the pack → **GIVE
-{PACK} — CREDITS + TRICKS**. Credits and the bundled tricks land together, atomically.
-There is no state where they got one and not the other.
+**3. When someone pays.** THE TILL panel → their Academy ID → pick the pass → **GIVE
+{PASS}**. Passes are timed: buying the same tier again *adds* days, and upgrading
+carries the remaining days over. A cheaper pass can never strip a live higher one.
 
 **4. Read your inbox.** THE INBOX panel shows every private message with an unread
 count. Reply inline; it appears in their thread.
@@ -94,8 +95,10 @@ halls. When the week ends, tap the pill back to `INVITE-ONLY`.
 |---|---|
 | Open Season Two (2,000 seats) | `update config set value = '2000' where key = 'seat_cap';` |
 | More/fewer free stages | `update config set value = '3' where key = 'free_stages';` |
-| Stage or trick price | `stage_unlock_cost` / `trick_unlock_cost` |
-| Pack prices | Table Editor → `products` → edit `price` |
+| Where ACADEMY stops / PRO starts | `mid_stages` |
+| Which tier sees tricks / film room | `tricks_min_tier` · `filmroom_min_tier` |
+| Any price, either currency | Table Editor → `products` → edit `price` |
+| Pass durations | `products.duration_days` |
 | Which tricks are in a pack | Table Editor → `pack_items`, or the desk's `pack_set_items` |
 | Open the till for real | `go_live` → any past date |
 

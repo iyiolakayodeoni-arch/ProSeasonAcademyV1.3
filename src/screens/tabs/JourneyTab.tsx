@@ -33,6 +33,7 @@ import { useSettings } from '../../data/settings';
 import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
+import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
@@ -80,40 +81,30 @@ export default function JourneyTab({
   const vault = useMatches();
   const journal = useJournal();
   const settings = useSettings();
-  const [sheet, setSheet] = useState<'vault' | 'journal' | null>(null);
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | null>(null);
 
-  // ── ACCESS — free stages vs credit-unlocked ones ──
+  // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
+  // Identical rungs in every country; only the currency differs.
+  const [access, setAccess] = useState<backend.MyAccess | null>(null);
   const [rules, setRules] = useState<backend.AccessRules | null>(null);
   const [unlocks, setUnlocks] = useState<string[]>([]);
-  const [unlockBusy, setUnlockBusy] = useState(false);
-  const [unlockErr, setUnlockErr] = useState<string | null>(null);
 
   const refreshAccess = () => {
+    void backend.myAccess().then((a) => a && setAccess(a));
     void backend.accessRules().then((r) => r && setRules(r));
     void backend.myUnlocks().then((u) => u && setUnlocks(u));
   };
   useEffect(refreshAccess, []);
 
-  /** paid stages sit beyond free_stages and must be bought once */
-  const isPaid = (n: number) => !!rules && n > rules.freeStages;
-  const owned = (n: number) => unlocks.includes(`stage:${n}`);
-  const needsUnlock = (n: number) => isPaid(n) && !owned(n);
+  const freeStages = rules?.freeStages ?? 2;
+  const midStages = rules?.midStages ?? 6;
+  const level = access?.level ?? 0;
 
-  const buyStage = async (n: number) => {
-    if (!rules || unlockBusy) return;
-    setUnlockBusy(true);
-    setUnlockErr(null);
-    const r = await backend.unlockItem(`stage:${n}`, rules.stageCost);
-    setUnlockBusy(false);
-    if (r.ok) refreshAccess();
-    else setUnlockErr(
-      r.error === 'INSUFFICIENT_CREDITS'
-        ? `NOT ENOUGH CREDITS — THIS STAGE COSTS ${rules.stageCost}. TOP UP IN THE TILL.`
-        : r.error === 'OFFLINE'
-          ? 'NO SIGNAL — RECONNECT TO UNLOCK.'
-          : 'THAT DIDN\u2019T GO THROUGH. TRY AGAIN.',
-    );
-  };
+  /** the tier a stage needs: 0 free · 1 academy · 2 pro */
+  const tierFor = (n: number) => (n <= freeStages ? 0 : n <= midStages ? 1 : 2);
+  const owned = (n: number) => unlocks.includes(`stage:${n}`);
+  const needsUnlock = (n: number) => !owned(n) && level < tierFor(n);
+  const tierName = (lvl: number) => (lvl >= 2 ? 'PRO' : 'ACADEMY');
   const scrollRef = useRef<ScrollView>(null);
   const canvasRef = useRef<View>(null);
   const heroRef = useRef<View>(null);
@@ -354,17 +345,18 @@ export default function JourneyTab({
               {needsUnlock(selected.n) ? (
                 <View style={styles.payWall}>
                   <Text style={styles.payTag}>
-                    STAGES 1–{rules?.freeStages} ARE FREE · THIS ONE IS {rules?.stageCost} CREDITS
+                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.n))}
                   </Text>
                   <Text style={styles.payBody}>
-                    Unlock it once and it is yours for good — the film room, the mechanic and the
-                    scan. PRO members already have it.
+                    {tierFor(selected.n) >= 2
+                      ? 'The summit stages are PRO. One pass opens every stage, every trick and the film room — for the whole period, not per item.'
+                      : 'ACADEMY opens the full journey for the period you pick. Same tier, same access, wherever you are — only the currency changes.'}
                   </Text>
-                  {unlockErr && <Text style={styles.payErr}>{unlockErr}</Text>}
-                  <ContinueButton
-                    label={unlockBusy ? 'UNLOCKING…' : `UNLOCK FOR ${rules?.stageCost} CREDITS ›`}
-                    onPress={() => void buyStage(selected.n)}
-                  />
+                  <Text style={styles.payNote}>
+                    YOU ARE ON {(access?.tier ?? 'free').toUpperCase()}
+                    {access?.daysLeft != null ? ` · ${access.daysLeft} DAYS LEFT` : ''}
+                  </Text>
+                  <ContinueButton label="SEE THE PASSES ›" onPress={() => setSheet('till')} />
                 </View>
               ) : (
                 <ContinueButton
@@ -413,6 +405,7 @@ export default function JourneyTab({
       {/* full-screen ledgers */}
       {sheet === 'vault' && <MatchVault coach={coach} onClose={() => setSheet(null)} />}
       {sheet === 'journal' && <LossJournal coach={coach} onClose={() => setSheet(null)} />}
+      {sheet === 'till' && <StoreSheet onClose={() => { setSheet(null); refreshAccess(); }} />}
     </View>
   );
 }
@@ -692,7 +685,7 @@ const styles = StyleSheet.create({
   },
   payTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
   payBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.5, letterSpacing: 0.6, color: 'rgba(238,242,236,0.85)' },
-  payErr: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, lineHeight: 10, letterSpacing: 0.8, color: colors.loss },
+  payNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(143,184,155,0.7)' },
 
   ledgerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
   ledgerCard: {

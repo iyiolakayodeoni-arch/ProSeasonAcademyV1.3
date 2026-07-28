@@ -17,6 +17,7 @@ import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
 import * as backend from '../../data/backend';
+import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -55,37 +56,22 @@ function LiveDot() {
 export default function HomeTab({ coach }: { coach: Coach }) {
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
-  // ── ACCESS — tricks come with the packs ──
-  const [rules, setRules] = useState<backend.AccessRules | null>(null);
+  // ── ACCESS — tricks ride on the tier, not on per-item credits ──
+  const [access, setAccess] = useState<backend.MyAccess | null>(null);
   const [unlocks, setUnlocks] = useState<string[]>([]);
-  const [unlockBusy, setUnlockBusy] = useState(false);
-  const [unlockErr, setUnlockErr] = useState<string | null>(null);
 
   const refreshAccess = () => {
-    void backend.accessRules().then((r) => r && setRules(r));
+    void backend.myAccess().then((a) => a && setAccess(a));
     void backend.myUnlocks().then((u) => u && setUnlocks(u));
   };
   useEffect(refreshAccess, []);
 
-  /** the teachable kinds are the paid ones; news + community stay free */
-  const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
-  const trickOwned = (id: string) => unlocks.includes(`trick:${id}`);
+  const [tillOpen, setTillOpen] = useState(false);
 
-  const buyTrick = async (id: string) => {
-    if (!rules || unlockBusy) return;
-    setUnlockBusy(true);
-    setUnlockErr(null);
-    const r = await backend.unlockItem(`trick:${id}`, rules.trickCost);
-    setUnlockBusy(false);
-    if (r.ok) refreshAccess();
-    else setUnlockErr(
-      r.error === 'INSUFFICIENT_CREDITS'
-        ? `NOT ENOUGH CREDITS — THIS TRICK COSTS ${rules.trickCost}. GRAB A PACK IN THE TILL.`
-        : r.error === 'OFFLINE'
-          ? 'NO SIGNAL — RECONNECT TO UNLOCK.'
-          : 'THAT DIDN\u2019T GO THROUGH. TRY AGAIN.',
-    );
-  };
+  /** the teachable kinds are the gated ones; news + community stay free */
+  const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
+  /** ACADEMY (level 1) and above see the tricks; a bundled unlock also counts */
+  const trickOpen = (id: string) => (access?.level ?? 0) >= 1 || unlocks.includes(`trick:${id}`);
 
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
@@ -194,13 +180,10 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             delay={i * 40}
             liked={!!liked[card.id]}
             onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))}
-            locked={isTrick(card.kind) && !trickOwned(card.id)}
-            cost={rules?.trickCost ?? 20}
-            onUnlock={() => void buyTrick(card.id)}
-            busy={unlockBusy}
+            locked={isTrick(card.kind) && !trickOpen(card.id)}
+            onUnlock={() => setTillOpen(true)}
           />
         ))}
-        {unlockErr && <Text style={styles.unlockErr}>{unlockErr}</Text>}
 
         {/* load more */}
         {!exhausted ? (
@@ -213,6 +196,12 @@ export default function HomeTab({ coach }: { coach: Coach }) {
 
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
       </ScrollView>
+
+      {tillOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <StoreSheet onClose={() => { setTillOpen(false); refreshAccess(); }} />
+        </View>
+      )}
     </View>
   );
 }
@@ -224,20 +213,16 @@ function FeedCard({
   liked,
   onLike,
   locked = false,
-  cost = 20,
   onUnlock,
-  busy = false,
 }: {
   card: FeedCardData;
   coach: Coach;
   delay: number;
   liked: boolean;
   onLike: () => void;
-  /** a paid trick this member has not unlocked yet */
+  /** a gated trick this member's tier does not open yet */
   locked?: boolean;
-  cost?: number;
   onUnlock?: () => void;
-  busy?: boolean;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
@@ -279,13 +264,13 @@ function FeedCard({
           {/* locked trick — the headline teases, the method is in the pack */}
           {locked && (
             <View style={styles.lockBox}>
-              <Text style={styles.lockTag}>IN THE PACKS · {cost} CREDITS</Text>
+              <Text style={styles.lockTag}>ACADEMY & PRO</Text>
               <Text style={styles.lockBody}>
-                The how-to is part of a starter pack. Unlock it once and it stays yours.
-                PRO members already have it.
+                The how-to comes with an ACADEMY or PRO pass — every trick, for the whole
+                period, not one at a time. Same tier wherever you are; only the currency changes.
               </Text>
-              <Pressable onPress={onUnlock} hitSlop={6} disabled={busy}>
-                <Text style={styles.lockCta}>{busy ? 'UNLOCKING…' : `UNLOCK THIS TRICK ›`}</Text>
+              <Pressable onPress={onUnlock} hitSlop={6}>
+                <Text style={styles.lockCta}>SEE THE PASSES ›</Text>
               </Pressable>
             </View>
           )}

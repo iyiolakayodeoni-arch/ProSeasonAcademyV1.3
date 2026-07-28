@@ -155,13 +155,59 @@ Deno.serve(async (req) => {
       return json({ ok: true, pack, items });
     }
 
+    // ── TIER PASSES — the same ladder in both currencies ─────
+    case 'grant_tier': {
+      const academyId = String(body.academyId ?? '').toUpperCase().trim();
+      const product = String(body.product ?? '').toUpperCase().trim();
+      if (!academyId || !product) return json({ ok: false, error: 'academyId + product required' }, 400);
+      const { data, error } = await sb.rpc('grant_tier', {
+        p_academy: academyId,
+        p_product: product,
+        p_ref: body.ref ? String(body.ref).slice(0, 60) : null,
+      });
+      if (error) {
+        const m = String(error.message);
+        if (m.includes('ACTIVE_HIGHER_TIER')) {
+          return json({ ok: false, error: 'They already hold a higher, still-active pass.' }, 409);
+        }
+        const known = m.includes('unknown academy id') || m.includes('unknown or non-tier product');
+        return json({ ok: false, error: known ? m : 'grant failed' }, known ? 404 : 500);
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      await audit(academyId, { product, tier: row?.tier, expiresAt: row?.expires_at });
+      return json({ ok: true, academyId, tier: row?.tier, expiresAt: row?.expires_at });
+    }
+
+    case 'members': {
+      const { data, error } = await sb
+        .from('profiles')
+        .select('handle, academy_id, region, status, created_at')
+        .neq('academy_id', 'PSA-FOUNDER')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) return json({ ok: false, error: error.message }, 500);
+      const { data: ents } = await sb.from('entitlements').select('academy_id, tier, expires_at');
+      const byId: Record<string, { tier: string; expires_at: string | null }> = {};
+      for (const e of ents ?? []) byId[e.academy_id] = { tier: e.tier, expires_at: e.expires_at };
+      const now = Date.now();
+      return json({
+        ok: true,
+        members: (data ?? []).map((m) => {
+          const e = byId[m.academy_id];
+          const live = e?.expires_at ? Date.parse(e.expires_at) > now : e?.tier === 'free';
+          return { ...m, tier: live ? (e?.tier ?? 'free') : 'free', expires_at: e?.expires_at ?? null };
+        }),
+      });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');
       const value = String(body.value ?? '');
       const ALLOWED = [
         'invite_only', 'seat_cap', 'season_name', 'go_live',
-        'free_stages', 'stage_unlock_cost', 'trick_unlock_cost',
+        'free_stages', 'mid_stages', 'stage_unlock_cost', 'trick_unlock_cost',
+        'tricks_min_tier', 'filmroom_min_tier',
         'founder_week_start', 'founder_week_end', 'founder_week_note',
       ];
       if (!ALLOWED.includes(key)) return json({ ok: false, error: 'key not allowed' }, 400);

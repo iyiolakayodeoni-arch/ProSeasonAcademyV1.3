@@ -23,11 +23,15 @@ import { FALLBACK_PRODUCTS, OFFLINE_GO_LIVE, TILL_COPY, goLiveLabel, isHttpPayLi
 export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const [bundles, setBundles] = useState<Record<string, string[]>>({});
+  const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [ladder, setLadder] = useState<backend.TierRow[] | null>(null);
   const [catalog, setCatalog] = useState<backend.StoreCatalogWire | null>(null);
   const [balance, setBalance] = useState<backend.TillBalanceWire | null>(null);
   const [offline, setOffline] = useState(false);
 
   const refresh = useCallback(async () => {
+    void backend.myAccess().then((a) => a && setAccess(a));
+    void backend.tierLadder().then((l) => l && setLadder(l));
     const [cat, bal] = await Promise.all([backend.storeCatalog(settings.geo), backend.tillBalance()]);
     // what each pack bundles beyond credits — the founder's "tricks in the packs"
     if (cat) {
@@ -98,6 +102,22 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
           {live ? 'YOUR WALLET, YOUR RISE — SPEND IT WELL' : `PRICES POSTED · THE TILL OPENS ${day}`}
         </Text>
       </View>
+
+      {/* WHERE YOU STAND — the same three rungs everywhere */}
+      {access && (
+        <View style={styles.tierNow}>
+          <Text style={styles.tierNowTag}>
+            YOU ARE ON {access.tier === 'mid' ? 'ACADEMY' : access.tier.toUpperCase()}
+            {access.daysLeft != null ? ` · ${access.daysLeft} DAYS LEFT` : ''}
+          </Text>
+          <Text style={styles.tierNowSub}>
+            {ladder?.find((t) => t.key === access.tier)?.blurb ?? ''}
+          </Text>
+          <Text style={styles.tierFair}>
+            THE SAME THREE TIERS IN EVERY COUNTRY — ONLY THE CURRENCY CHANGES.
+          </Text>
+        </View>
+      )}
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
         {offline ? <Text style={styles.banner}>{TILL_COPY.offline}</Text> : null}
@@ -221,6 +241,14 @@ const styles = StyleSheet.create({
   packRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 10 },
   packTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
   packMeta: { marginTop: 3, fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.1, color: colors.primary },
+  tierNow: {
+    marginHorizontal: 14, marginBottom: 8, borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(10,22,14,0.8)',
+    borderRadius: 10, padding: 11,
+  },
+  tierNowTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  tierNowSub: { marginTop: 4, fontFamily: monoFont, fontSize: 6.3, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
+  tierFair: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: 'rgba(143,184,155,0.65)' },
   packIncludes: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 0.9, color: colors.accent },
   packPrice: { fontSize: 12, fontWeight: '900', color: colors.warm },
   buyBtn: { backgroundColor: colors.accent, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 8 },

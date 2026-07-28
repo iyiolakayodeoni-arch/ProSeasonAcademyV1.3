@@ -686,6 +686,72 @@ export async function packContents(pack: string): Promise<string[] | null> {
   }
 }
 
+// ── TIERS — one ladder, two currencies ───────────────────────
+// FREE / ACADEMY / PRO mean the same thing in Lagos and London.
+// Only the price tag's currency differs. Access is decided by tier
+// + expiry, so two members comparing notes see the same deal.
+
+export interface MyAccess {
+  tier: 'free' | 'mid' | 'pro';
+  level: number;          // 0 | 1 | 2
+  expiresAt: number | null;
+  daysLeft: number | null;
+}
+
+export async function myAccess(): Promise<MyAccess | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.rpc('my_access');
+    if (error) return null;
+    const r = Array.isArray(data) ? data[0] : data;
+    if (!r) return { tier: 'free', level: 0, expiresAt: null, daysLeft: null };
+    return {
+      tier: (r.tier ?? 'free') as MyAccess['tier'],
+      level: Number(r.level ?? 0),
+      expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : null,
+      daysLeft: r.days_left == null ? null : Number(r.days_left),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** may this member open this stage / trick / the film room? */
+export async function canAccess(item: string): Promise<boolean> {
+  if (!supabase || !me) return false;
+  try {
+    const { data, error } = await supabase.rpc('can_access', { p_item: item });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+/** the whole ladder, for the till */
+export interface TierRow { key: string; level: number; title: string; blurb: string | null }
+
+export async function tierLadder(): Promise<TierRow[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.from('tiers').select('key, level, title, blurb').order('level');
+    if (error) return null;
+    return (data ?? []) as TierRow[];
+  } catch {
+    return null;
+  }
+}
+
+/** founder: sell a timed pass (time stacks; upgrades carry days over) */
+export async function founderGrantTier(
+  key: string, academyId: string, product: string, ref?: string,
+): Promise<{ ok: boolean; tier?: string; expiresAt?: string; error?: string }> {
+  const r = await deskFn(key, { action: 'grant_tier', academyId, product, ref });
+  if (!r) return { ok: false, error: 'UNREACHABLE' };
+  return r.ok
+    ? { ok: true, tier: r.tier, expiresAt: r.expiresAt }
+    : { ok: false, error: String(r.error ?? 'FAILED') };
+}
+
 // ── ACCESS — what this member has paid for ───────────────────
 /** every item this member owns: 'stage:3', 'trick:mb-…' */
 export async function myUnlocks(): Promise<string[] | null> {
@@ -701,7 +767,8 @@ export async function myUnlocks(): Promise<string[] | null> {
 
 /** the free/paid split — config rows, so the founder can move them any time */
 export interface AccessRules {
-  freeStages: number;
+  freeStages: number;   // stages open on FREE
+  midStages: number;    // stages open on ACADEMY; beyond this is PRO
   stageCost: number;
   trickCost: number;
 }
@@ -711,11 +778,12 @@ export async function accessRules(): Promise<AccessRules | null> {
   try {
     const { data, error } = await supabase
       .from('config').select('key, value')
-      .in('key', ['free_stages', 'stage_unlock_cost', 'trick_unlock_cost']);
+      .in('key', ['free_stages', 'mid_stages', 'stage_unlock_cost', 'trick_unlock_cost']);
     if (error) return null;
     const c = Object.fromEntries((data ?? []).map((r: any) => [r.key, r.value]));
     return {
       freeStages: Number(c.free_stages ?? 2),
+      midStages: Number(c.mid_stages ?? 6),
       stageCost: Number(c.stage_unlock_cost ?? 50),
       trickCost: Number(c.trick_unlock_cost ?? 20),
     };
