@@ -53,18 +53,25 @@ sandbox credentials. Delete that secret to go live.)*
 There is nothing to set up here. Amounts are generated at checkout from today's exchange
 rate, so there are no fixed buttons to go stale.
 
-**Africa prices are set in naira** and converted at the live rate every time:
+**Both prices are real.** Neither is a conversion of the other, and each side is charged
+in the money it actually earns:
 
-| Pass | True price | Today (approx) |
+| Pass | Africa (charged in ₦) | World (charged in £) |
 |---|---|---|
-| NG-MID-90 · Academy 3mo | ₦3,900 | ~£2.20 |
-| NG-PRO-90 · Pro 3mo | ₦7,800 | ~£4.45 |
-| NG-PRO-365 · Pro season | ₦25,000 | ~£14.20 |
+| Academy · 3 months | ₦3,900 | £7.99 |
+| Pro · 3 months | ₦7,800 | £15.99 |
+| Pro · 1 season | ₦25,000 | £47.99 |
 
-**World prices are set in GBP** and never converted: £7.99 · £15.99 · £47.99.
+Africa sits at roughly **28% of the world price** — a deliberate ~72% subsidy, because
+most members there do not earn in pounds. That is stated to members in the till, not
+hidden.
 
-To change a price: **Table Editor → products → `amount_minor`** (₦7,800 or 799 pence).
-Never edit the `price` text — it is only a fallback.
+The live rate is used only to show the other figure underneath for comparison
+("≈ £4.30 TODAY"), and to warn you if the subsidy drifts. **It never sets a price**, so a
+dead rate feed can never block a sale or move what someone is charged.
+
+To change a price: **Table Editor → products → `amount_minor`** — ₦7,800 for Africa rows,
+799 (pence) for World rows.
 
 Deploy **`refresh-fx`** as well, and schedule it daily (Edge Functions → Cron). It pulls
 the NGN/GBP rate from a free source, refuses any move over 25% in a day as a likely bad

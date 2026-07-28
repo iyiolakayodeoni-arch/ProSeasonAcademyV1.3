@@ -862,14 +862,16 @@ export interface LivePrice {
   region: string;
   tier: string;
   durationDays: number;
-  /** what they pay today, e.g. "£4.30" */
+  /** what they are charged, in their own money — "₦7,800" or "£15.99" */
   display: string;
-  amountGbp: number | null;
-  /** the true price, e.g. 7800 (naira) */
+  amount: number;
+  currency: string;
+  /** the other side's figure, for context only — "≈ £4.30 TODAY" */
+  compare: string | null;
   baseAmount: number;
   baseCurrency: string;
   priceNote: string | null;
-  /** the rate could not be confirmed — show the stored price instead */
+  /** the rate is old, so `compare` is hidden — the price itself is fine */
   stale: boolean;
 }
 
@@ -886,7 +888,9 @@ export async function livePrices(region?: string): Promise<LivePrice[] | null> {
       tier: r.tier,
       durationDays: Number(r.duration_days ?? 0),
       display: r.display ?? '',
-      amountGbp: r.amount_gbp == null ? null : Number(r.amount_gbp),
+      amount: Number(r.amount ?? 0),
+      currency: r.currency ?? 'GBP',
+      compare: r.compare ?? null,
       baseAmount: Number(r.base_amount ?? 0),
       baseCurrency: r.base_currency ?? 'GBP',
       priceNote: r.price_note ?? null,
@@ -904,7 +908,7 @@ export async function livePrices(region?: string): Promise<LivePrice[] | null> {
  */
 export async function startCheckout(
   product: string,
-): Promise<{ ok: true; approveUrl: string; display: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; approveUrl: string; display: string; currency: string } | { ok: false; error: string }> {
   if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
   try {
     const resp = await supabase.functions.invoke('pay-start', { body: { product } });
@@ -918,7 +922,12 @@ export async function startCheckout(
     }
     const d = resp.data;
     if (!d?.ok || !d.approveUrl) return { ok: false, error: 'FAILED' };
-    return { ok: true, approveUrl: String(d.approveUrl), display: String(d.display ?? '') };
+    return {
+      ok: true,
+      approveUrl: String(d.approveUrl),
+      display: String(d.display ?? ''),
+      currency: String(d.currency ?? 'GBP'),
+    };
   } catch {
     return { ok: false, error: 'FAILED' };
   }

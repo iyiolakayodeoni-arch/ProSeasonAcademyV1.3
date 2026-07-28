@@ -74,17 +74,15 @@ Deno.serve(async (req) => {
   const { data: priced, error: perr } = await sb.rpc('price_now', { p_product: product }).single();
   if (perr || !priced) return json({ ok: false, error: 'unknown product' }, 404);
 
+  // Both prices are REAL and stored, not derived, so a stale rate can
+  // never block a sale — it only blanks the comparison line in the app.
   const p = priced as any;
-  if (p.stale) {
-    return json({
-      ok: false,
-      error: 'RATE_STALE',
-      note: 'Today\u2019s rate could not be confirmed. Try again shortly.',
-    }, 503);
-  }
-
-  const amount = Number(p.amount_gbp);
+  const amount = Number(p.amount);
+  const currency = String(p.currency ?? 'GBP');
   if (!(amount > 0)) return json({ ok: false, error: 'no price' }, 500);
+
+  // NGN has no minor unit at PayPal; GBP takes 2 decimals.
+  const value = currency === 'NGN' ? String(Math.round(amount)) : amount.toFixed(2);
 
   // ── create the order ──
   const token = await paypalToken();
@@ -97,7 +95,7 @@ Deno.serve(async (req) => {
       'content-type': 'application/json',
       // idempotent per seat+product+price, so a double-tap cannot
       // create two orders for the same purchase
-      'PayPal-Request-Id': `${profile.academy_id}-${product}-${amount.toFixed(2)}`,
+      'PayPal-Request-Id': `${profile.academy_id}-${product}-${value}`,
     },
     body: JSON.stringify({
       intent: 'CAPTURE',
@@ -105,7 +103,9 @@ Deno.serve(async (req) => {
         // the webhook reads this back and grants exactly this pass
         custom_id: `${profile.academy_id}|${product}`,
         description: `ProSeasonAcademy · ${product}`,
-        amount: { currency_code: 'GBP', value: amount.toFixed(2) },
+        // charged in the member's OWN currency — a Nigerian is billed
+        // naira, a world member pounds. Neither is a conversion.
+        amount: { currency_code: currency, value },
       }],
       payment_source: {
         paypal: {
@@ -133,14 +133,15 @@ Deno.serve(async (req) => {
   await sb.rpc('audit', {
     p_action: 'pay_start',
     p_target: profile.academy_id,
-    p_detail: { product, amount: amount.toFixed(2), order: order.id },
+    p_detail: { product, amount: value, currency, order: order.id },
   });
 
   return json({
     ok: true,
     orderId: order.id,
     approveUrl: approve.href,
-    amount: amount.toFixed(2),
+    amount: value,
+    currency,
     display: p.display,
   });
 });
