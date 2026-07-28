@@ -52,6 +52,7 @@ import {
 } from '../../data/community';
 import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
+import PricingTable from '../PricingTable';
 import { colors, monoFont } from '../../theme';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
@@ -210,6 +211,13 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   // ── panels / sheets ──
   const [founder, setFounder] = useState<backend.FounderWeek | null>(null);
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [consultLeft, setConsultLeft] = useState<number | null>(null);
+  useEffect(() => {
+    void backend.myConsult().then((qs) => {
+      if (qs) setConsultLeft(qs.filter((q) => !q.answered).length);
+    });
+  }, [pricingOpen]);
   useEffect(() => { void backend.founderWeek().then(setFounder); }, [cloud.status]);
 
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
@@ -379,6 +387,16 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
       <View style={styles.headerRule} />
 
       {/* ── season gate: sold-out season → you train solo until your seat opens ── */}
+      {consultLeft !== null && consultLeft > 0 && (
+        <Pressable onPress={() => setPricingOpen(true)}>
+          <View style={styles.consultBar}>
+            <Text style={styles.consultTag}>THE PRICING TABLE · {consultLeft} LEFT</Text>
+            <Text style={styles.consultTxt}>
+              YOU HELP SET THE PRICE — THE FOUNDER READS EVERY ANSWER ›
+            </Text>
+          </View>
+        </Pressable>
+      )}
       {founder?.live && (
         <View style={styles.founderWeek}>
           <Text style={styles.founderWeekTag}>● THE FOUNDER IS IN THE HALLS</Text>
@@ -781,6 +799,12 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Animated.View>
         </View>
       )}
+
+      {pricingOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <PricingTable onClose={() => setPricingOpen(false)} />
+        </View>
+      )}
     </View>
   );
 }
@@ -844,6 +868,14 @@ function VoiceNote({ secs, accent }: { secs: number; accent: string }) {
 }
 
 const styles = StyleSheet.create({
+  consultBar: {
+    marginHorizontal: 12, marginTop: 8, borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.5)', backgroundColor: 'rgba(10,26,15,0.85)',
+    borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11,
+  },
+  consultTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  consultTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+
   founderWeek: {
     marginHorizontal: 12,
     marginTop: 8,

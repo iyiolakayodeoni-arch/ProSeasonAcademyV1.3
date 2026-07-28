@@ -58,6 +58,15 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 
   const loadLapsed = async () => setLapsed(await backend.founderLapsed(founderKey));
 
+  const [consult, setConsult] = useState<any[] | null>(null);
+  const [closeArmed, setCloseArmed] = useState(false);
+  const loadConsult = async () => setConsult(await backend.founderConsultResults(founderKey));
+  const closeConsult = async () => {
+    if (!closeArmed) { setCloseArmed(true); return; }
+    setCloseArmed(false);
+    if (await backend.founderCloseConsult(founderKey)) void loadConsult();
+  };
+
   /** open the free window to everyone holding a seat */
   const openTrial = async () => {
     if (!trialArmed) { setTrialArmed(true); return; }
@@ -89,6 +98,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
       setTopRef('');
       void loadPacks();
     void loadLapsed();
+    void loadConsult();
     } else {
       setTillNote(
         r.error?.includes('higher') ? 'THEY ALREADY HOLD A HIGHER LIVE PASS'
@@ -140,6 +150,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadDoor();
     void loadPacks();
     void loadLapsed();
+    void loadConsult();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -279,6 +290,63 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             ))
           )}
         </Animated.View>
+
+        {/* ── WHAT THE MEMBERS SAID ── */}
+        {consult && consult.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(82).duration(320)} style={styles.splitCard}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTag}>THE PRICING TABLE</Text>
+              <Pressable onPress={() => void closeConsult()} hitSlop={6}>
+                <Text style={[styles.linkBtn, { marginTop: 0 }, closeArmed && { color: colors.loss }]}>
+                  {closeArmed ? 'TAP AGAIN TO CLOSE IT' : 'CLOSE THE TABLE'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {consult.map((r: any) => (
+              <View key={r.slug} style={styles.inboxRow}>
+                <Text style={styles.inboxWho}>{r.prompt}</Text>
+                <Text style={styles.invMeta}>
+                  {r.answers} ANSWER(S)
+                  {r.region ? ` · ${String(r.region).toUpperCase()}` : ''}
+                  {!r.open ? ' · CLOSED' : ''}
+                </Text>
+
+                {r.median != null && (
+                  <Text style={styles.consultBig}>
+                    MEDIAN {Number(r.median).toLocaleString()}
+                    {r.low != null ? `  (${Number(r.low).toLocaleString()}–${Number(r.high).toLocaleString()})` : ''}
+                  </Text>
+                )}
+
+                {r.choices && Object.keys(r.choices).length > 0 && (
+                  <View style={{ marginTop: 4 }}>
+                    {Object.entries(r.choices as Record<string, number>)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([k, n]) => (
+                        <Text key={k} style={styles.consultRow}>
+                          {n}× {k}
+                        </Text>
+                      ))}
+                  </View>
+                )}
+
+                {Array.isArray(r.notes) && r.notes.length > 0 && (
+                  <View style={{ marginTop: 5 }}>
+                    {r.notes.slice(0, 4).map((n: any, i: number) => (
+                      <Text key={i} style={styles.consultNote}>
+                        “{n.note}” — {n.handle}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+            <Text style={styles.emptyNote}>
+              MEDIAN, NOT AVERAGE — TWO SILLY NUMBERS CANNOT DRAG THE ANSWER.
+            </Text>
+          </Animated.View>
+        )}
 
         {/* ── THE FREE WEEK ── */}
         <Animated.View entering={FadeInDown.delay(85).duration(320)} style={styles.splitCard}>
@@ -607,6 +675,9 @@ const styles = StyleSheet.create({
   invCode: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
   invDead: { color: 'rgba(143,184,155,0.4)', textDecorationLine: 'line-through' },
   invMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  consultBig: { marginTop: 4, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
+  consultRow: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
+  consultNote: { marginTop: 2, fontFamily: monoFont, fontSize: 6.2, lineHeight: 9.6, color: 'rgba(143,184,155,0.85)' },
   revoke: { marginTop: 2, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.2, color: colors.loss },
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
   headerWrap: { alignItems: 'center' },

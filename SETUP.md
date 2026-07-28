@@ -20,6 +20,7 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 | 4 | `supabase/packs.sql` | bundle extras onto a product | `PACK CONTENTS` + a line per pack |
 | 5 | `supabase/tiers.sql` | **ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
 | 6 | `supabase/access.sql` | **the trial, then paid-only + the grace window** | `ACCESS ARMED · trial=MID for 14 days` |
+| 7 | `supabase/consult.sql` | **the pricing table — members help set the price** | `PRICING TABLE ARMED · 7 open question(s)` |
 
 Then **Edge Functions** — paste each file's contents into a function of the same name:
 
@@ -148,3 +149,30 @@ human rather than a dead end.
 ```sql
 select set_member_status('PSA-ABC123', 'removed');   -- frees the seat
 ```
+
+
+---
+
+## The fortnight, end to end
+
+**Day 0 — open it.** Founder Desk → THE FREE WEEK → *OPEN THE FREE WEEK*. Everyone with
+a seat gets a 14-day ACADEMY pass. Set the Community banner dates.
+
+**Days 1–14 — be in the halls.** `#founders-week` is live. Members see **THE PRICING
+TABLE** banner in Community with a count of questions left. Seven questions: did it make
+you better, would you pay, what is a fair price *in your own currency*, which duration,
+what is worth paying for, what is missing.
+
+One answer per member, editable while it is open, private from the halls. They can be
+blunt without performing for an audience.
+
+**Day 14 — read the numbers.** Founder Desk → THE PRICING TABLE shows counts per choice,
+the **median** price per region (median, not average, so two silly numbers cannot drag
+it), the range, and their own words as quotes.
+
+**Then set the real prices** in `products` and tap *CLOSE THE TABLE*. Answers freeze, so
+nobody can edit a vote after you have published what it produced.
+
+**Day 15 — paid only.** `paid_only` is already `true`. Lapsed members meet the gate:
+nothing deleted, coach's words, passes one tap away, 3 days of grace for anyone whose
+manual payment is still with you.

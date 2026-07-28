@@ -686,6 +686,71 @@ export async function packContents(pack: string): Promise<string[] | null> {
   }
 }
 
+// ── THE PRICING TABLE — deciding it together ─────────────────
+export interface ConsultQ {
+  slug: string;
+  prompt: string;
+  helper: string | null;
+  kind: 'choice' | 'price' | 'text';
+  options: string[] | null;
+  myChoice: string | null;
+  myAmount: number | null;
+  myNote: string | null;
+  answered: boolean;
+}
+
+/** the open questions, with whatever this member already said */
+export async function myConsult(): Promise<ConsultQ[] | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.rpc('my_consult');
+    if (error) return null;
+    return (data ?? []).map((r: any) => ({
+      slug: r.slug,
+      prompt: r.prompt,
+      helper: r.helper ?? null,
+      kind: (r.kind ?? 'choice') as ConsultQ['kind'],
+      options: Array.isArray(r.options) ? r.options.map(String) : null,
+      myChoice: r.my_choice ?? null,
+      myAmount: r.my_amount == null ? null : Number(r.my_amount),
+      myNote: r.my_note ?? null,
+      answered: r.answered === true,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/** answer, or change your mind while it is still open */
+export async function answerConsult(
+  slug: string,
+  a: { choice?: string; amount?: number; note?: string },
+): Promise<boolean> {
+  if (!supabase || !me) return false;
+  try {
+    const { data, error } = await supabase.rpc('consult_answer', {
+      p_slug: slug,
+      p_choice: a.choice ?? null,
+      p_amount: a.amount ?? null,
+      p_note: a.note ?? null,
+    });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+/** founder: the counts, the medians and the quotes */
+export async function founderConsultResults(key: string): Promise<any[] | null> {
+  const r = await deskFn(key, { action: 'consult_results' });
+  return r?.ok ? (r.results ?? []) : null;
+}
+
+export async function founderCloseConsult(key: string): Promise<boolean> {
+  const r = await deskFn(key, { action: 'consult_close' });
+  return r?.ok === true;
+}
+
 // ── TIERS — one ladder, two currencies ───────────────────────
 // FREE / ACADEMY / PRO mean the same thing in Lagos and London.
 // Only the price tag's currency differs. Access is decided by tier

@@ -217,6 +217,20 @@ Deno.serve(async (req) => {
       return json({ ok: true, lapsed: data ?? [] });
     }
 
+    // ── THE PRICING TABLE ────────────────────────────────────
+    case 'consult_results': {
+      const { data, error } = await sb.rpc('consult_results');
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, results: data ?? [] });
+    }
+
+    case 'consult_close': {
+      const { error } = await sb.from('consult_questions').update({ open: false }).eq('open', true);
+      if (error) return json({ ok: false, error: error.message }, 500);
+      await audit('ALL', { closed: true });
+      return json({ ok: true });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');
