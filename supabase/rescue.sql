@@ -26,18 +26,37 @@
 -- ── 1 · The three doors, in the order the member should try them ──
 update pay_methods set sort = 0, active = true where code = 'stripe';
 
--- OPay: the fallback, priced in naira because that is what they hold
+-- OPay: the fallback, priced in naira because that is what they hold.
+--
+-- The number lives HERE and in the database — never in the app build.
+-- Change it in Table Editor → pay_methods → opay → details and every
+-- member sees the new one immediately, with no new APK to sideload.
+--
+-- `details` is what the member copies. `holder` is the name their OPay
+-- app will show when they type the number in — it is there so they can
+-- check they are paying the right person before they send anything.
 insert into pay_methods (code, label, region, currency, details, holder, note, sort, active)
 values ('opay', 'OPAY / BANK TRANSFER', 'africa', 'NGN',
-        'REPLACE-WITH-YOUR-OPAY-NUMBER', 'REPLACE WITH THE ACCOUNT NAME',
+        '8112179292', 'CONFIRM THE NAME YOUR OPAY APP SHOWS',
         'Only if your card was refused. Put your REFERENCE in the transfer narration — that is how the payment gets matched to your seat. Then submit the claim below so it reaches the founder.',
         1, true)
 on conflict (code) do update
-  set label  = 'OPAY / BANK TRANSFER',
-      region = 'africa',
-      note   = excluded.note,
-      sort   = 1,
-      active = true;
+  set label   = 'OPAY / BANK TRANSFER',
+      region  = 'africa',
+      -- only overwrite the number while it is still the placeholder, so
+      -- re-running this file can never undo a change made in the Table
+      -- Editor. Once it is real, the database is the source of truth.
+      details = case
+                  when pay_methods.details like 'REPLACE-WITH%' or pay_methods.details is null
+                  then excluded.details else pay_methods.details
+                end,
+      holder  = case
+                  when pay_methods.holder like 'REPLACE%' or pay_methods.holder is null
+                  then excluded.holder else pay_methods.holder
+                end,
+      note    = excluded.note,
+      sort    = 1,
+      active  = true;
 
 -- PayPal stays available but last: it is the rail Nigerian cards
 -- struggle with most, so it should never be the suggestion.
@@ -148,17 +167,36 @@ declare r record; n int;
 begin
   raise notice '─────────────────────────────────────────────';
   raise notice 'THE THREE DOORS';
-  for r in select code, label, coalesce(region, 'both') as region, sort
+  for r in select code, label, coalesce(region, 'both') as region, sort, details
              from pay_methods where active order by sort loop
-    raise notice '  %. % · % · %', r.sort + 1, rpad(r.code, 8), rpad(r.label, 22), r.region;
+    raise notice '  %. % · % · % · %',
+      r.sort + 1, rpad(r.code, 8), rpad(r.label, 22), rpad(r.region, 6), r.details;
   end loop;
 
   select count(*) into n from pay_methods
-   where active and details like 'REPLACE-WITH%';
+   where active and (details like 'REPLACE-WITH%' or holder like 'REPLACE%');
   if n > 0 then
     raise notice '';
-    raise notice '  ⚠  % method(s) still hold PLACEHOLDER details.', n;
-    raise notice '     Table Editor → pay_methods → set your real OPay number.';
+    raise notice '  ⚠  % method(s) still need real details:', n;
+    for r in select code, details, holder from pay_methods
+              where active and (details like 'REPLACE-WITH%' or holder like 'REPLACE%') loop
+      raise notice '     % → % / %', rpad(r.code, 8), r.details, r.holder;
+    end loop;
+    raise notice '     Table Editor → pay_methods → fix these before launch.';
+  end if;
+
+  -- The name matters as much as the number. A member typing 8112179292
+  -- into OPay will see a name come back — if it is not the one shown in
+  -- the till, they should stop. That check is the whole defence against
+  -- somebody posting a fake number in the halls.
+  select count(*) into n from pay_methods
+   where code = 'opay' and active and holder = 'CONFIRM THE NAME YOUR OPAY APP SHOWS';
+  if n > 0 then
+    raise notice '';
+    raise notice '  ⚠  OPay number is set, but the ACCOUNT NAME is not.';
+    raise notice '     Send yourself ₦100 on OPay, note the exact name shown,';
+    raise notice '     then: update pay_methods set holder = ''THAT NAME'' where code = ''opay'';';
+    raise notice '     Members check it before sending — it is their fraud guard.';
   end if;
 
   raise notice '';
