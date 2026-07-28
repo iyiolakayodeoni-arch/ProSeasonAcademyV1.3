@@ -87,10 +87,28 @@ CREATE TABLE IF NOT EXISTS ledger (
   at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
 );
 
+CREATE TABLE IF NOT EXISTS waitlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  handle TEXT NOT NULL,
+  region TEXT NOT NULL DEFAULT 'unset',
+  device TEXT UNIQUE,               -- one line per device, re-entry is idempotent
+  at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
+);
+
+CREATE TABLE IF NOT EXISTS config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_channel_seq ON messages(channel_id, seq);
 CREATE INDEX IF NOT EXISTS idx_matches_user ON matches(user_id, at);
 CREATE INDEX IF NOT EXISTS idx_ledger_academy ON ledger(academy_id, at);
 `);
+
+// SEASON ONE defaults — mirrors supabase/schema.sql so the two backends
+// agree on the rules. Edit the rows, not the code, to open Season Two.
+db.prepare(`INSERT OR IGNORE INTO config (key, value) VALUES ('seat_cap', '1000')`).run();
+db.prepare(`INSERT OR IGNORE INTO config (key, value) VALUES ('season_name', 'SEASON ONE')`).run();
 
 // migrate older DBs (added THE MIND columns after first ship)
 for (const stmt of [
@@ -133,12 +151,54 @@ function cleanHandle(raw) {
   return base || `PLAYER${crypto.randomInt(1000, 9999)}`;
 }
 
-function createGuest({ handle, coachId, platform, region }) {
+// ── SEASON SEATS — the cap, mirrored from Postgres ───────────
+// Parity note: in Supabase this is a BEFORE INSERT trigger that locks
+// the config row. SQLite is single-writer, so wrapping the count and
+// the insert in one IMMEDIATE transaction gives the same guarantee:
+// two devices racing for the last seat are serialised, and the loser
+// is refused. Seat cap+1 cannot exist on either backend.
+
+function seasonSeats() {
+  const cap = Number(db.prepare(`SELECT value FROM config WHERE key = 'seat_cap'`).get()?.value ?? 0);
+  const season = db.prepare(`SELECT value FROM config WHERE key = 'season_name'`).get()?.value ?? 'SEASON ONE';
+  const taken = db.prepare(`SELECT COUNT(*) AS n FROM users WHERE academy_id != 'PSA-FOUNDER'`).get().n;
+  const waiting = db.prepare(`SELECT COUNT(*) AS n FROM waitlist`).get().n;
+  return { season, cap, taken, waiting, isFull: cap > 0 && taken >= cap };
+}
+
+const qJoinWaitlist = db.prepare(`
+  INSERT INTO waitlist (handle, region, device) VALUES (?, ?, ?)
+  ON CONFLICT(device) DO UPDATE SET handle = excluded.handle, region = excluded.region
+`);
+
+/**
+ * Claim a seat. Throws SEASON_FULL (with .seats attached) when the
+ * season is full — the caller turns that into a 409, same shape the
+ * app already handles from the Supabase edge function.
+ */
+const claimSeat = db.transaction(({ handle, coachId, platform, region, device }) => {
+  const seats = seasonSeats();
+  if (seats.isFull) {
+    qJoinWaitlist.run(cleanHandle(handle), region || 'unset', device || crypto.randomUUID());
+    const err = new Error('SEASON_FULL');
+    err.code = 'SEASON_FULL';
+    err.seats = seasonSeats();
+    throw err;
+  }
   const token = crypto.randomBytes(24).toString('hex');
-  const academyId = `PSA-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-  const clean = cleanHandle(handle);
-  qInsertUser.run(token, clean, coachId || null, platform || null, region || null, academyId);
+  let academyId = '';
+  for (let i = 0; i < 8; i++) {
+    academyId = `PSA-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+    if (!db.prepare(`SELECT 1 FROM users WHERE academy_id = ?`).get(academyId)) break;
+  }
+  qInsertUser.run(token, cleanHandle(handle), coachId || null, platform || null, region || null, academyId);
   return { token, user: qUserByToken.get(token) };
+});
+
+function createGuest(body) {
+  // BEGIN IMMEDIATE: take the write lock up front so the count below
+  // cannot go stale before the insert lands.
+  return claimSeat.immediate(body);
 }
 
 function userByToken(token) {
@@ -349,7 +409,7 @@ function adminSummary() {
     FROM matches m JOIN users u ON u.id = m.user_id
     ORDER BY m.at DESC LIMIT 10
   `).all();
-  return { users, matches, watcherMatches, messages, matchesThisWeek, regions, coaches, topScorersWeek, recentMatches, till: tillSummary(), generatedAt: Date.now() };
+  return { users, matches, watcherMatches, messages, matchesThisWeek, regions, coaches, topScorersWeek, recentMatches, till: tillSummary(), seats: seasonSeats(), generatedAt: Date.now() };
 }
 
-module.exports = { db, createGuest, userByToken, founderUser, syncMatches, listMatches, qChannels: () => qChannels.all(), qChannel: (s) => qChannel.get(s), postMessage, messagesAfter, toggleReaction, adminSummary, walletFor, topUp, activatePlan, spendFor, ledgerFor, tillSummary };
+module.exports = { db, createGuest, seasonSeats, userByToken, founderUser, syncMatches, listMatches, qChannels: () => qChannels.all(), qChannel: (s) => qChannel.get(s), postMessage, messagesAfter, toggleReaction, adminSummary, walletFor, topUp, activatePlan, spendFor, ledgerFor, tillSummary };

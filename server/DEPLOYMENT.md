@@ -12,11 +12,12 @@
 >    (`src/data/backend.ts` — the single seam); no screen would change.
 > 2. **The map.** It documents exactly what the database must do.
 >
-> ⚠️ If you revive this, the **1,000-seat SEASON ONE gate lives in Supabase**
-> (`config.seat_cap` + the `ensure-profile` edge function). This server predates
-> that gate and does **not** enforce it — you would have to port the seat count,
-> the waitlist table and the `SEASON_FULL` response before letting anyone in,
-> or the cap silently stops existing.
+> ✅ **The 1,000-seat cap now works here too.** It was missing; it has been added
+> (`config` + `waitlist` tables, a `BEGIN IMMEDIATE` seat claim, 409 `SEASON_FULL`,
+> and `GET /season/seats`). Proven by `server/test/seat-gate.test.js` — 10/10 green.
+> Switching backends no longer uncaps the season.
+>
+> **How to switch: `server/SWITCHING.md`.**
 >
 > Ignore the rest of this file unless you are actually making that move.
 
