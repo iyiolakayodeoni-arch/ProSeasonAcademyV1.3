@@ -855,6 +855,75 @@ export async function founderCloseConsult(key: string): Promise<boolean> {
   return r?.ok === true;
 }
 
+// ── LIVE PRICING — naira is the master, £ follows the rate ───
+export interface LivePrice {
+  code: string;
+  title: string;
+  region: string;
+  tier: string;
+  durationDays: number;
+  /** what they pay today, e.g. "£4.30" */
+  display: string;
+  amountGbp: number | null;
+  /** the true price, e.g. 7800 (naira) */
+  baseAmount: number;
+  baseCurrency: string;
+  priceNote: string | null;
+  /** the rate could not be confirmed — show the stored price instead */
+  stale: boolean;
+}
+
+/** today's price list, converted at the live rate */
+export async function livePrices(region?: string): Promise<LivePrice[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('prices_now', { p_region: region ?? null });
+    if (error) return null;
+    return (data ?? []).map((r: any) => ({
+      code: r.code,
+      title: r.title,
+      region: r.region,
+      tier: r.tier,
+      durationDays: Number(r.duration_days ?? 0),
+      display: r.display ?? '',
+      amountGbp: r.amount_gbp == null ? null : Number(r.amount_gbp),
+      baseAmount: Number(r.base_amount ?? 0),
+      baseCurrency: r.base_currency ?? 'GBP',
+      priceNote: r.price_note ?? null,
+      stale: r.stale === true,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start a PayPal checkout at TODAY'S price. The amount is computed
+ * server-side from the database, so what was displayed is what gets
+ * charged — and a tampered client cannot set its own price.
+ */
+export async function startCheckout(
+  product: string,
+): Promise<{ ok: true; approveUrl: string; display: string } | { ok: false; error: string }> {
+  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  try {
+    const resp = await supabase.functions.invoke('pay-start', { body: { product } });
+    if (resp.error) {
+      try {
+        const ctx: any = (resp.error as any).context;
+        const j = ctx?.json ? await ctx.json() : null;
+        if (j?.error === 'RATE_STALE') return { ok: false, error: 'RATE_STALE' };
+      } catch { /* fall through */ }
+      return { ok: false, error: 'FAILED' };
+    }
+    const d = resp.data;
+    if (!d?.ok || !d.approveUrl) return { ok: false, error: 'FAILED' };
+    return { ok: true, approveUrl: String(d.approveUrl), display: String(d.display ?? '') };
+  } catch {
+    return { ok: false, error: 'FAILED' };
+  }
+}
+
 // ── PAYING — claim, then the founder confirms ────────────────
 export interface PayMethod {
   code: string; label: string; region: string | null;

@@ -49,15 +49,33 @@ export default function PaySheet({
   const me = backend.getMe();
 
   /**
-   * The automatic path. We tack the member's seat and the product onto
-   * the PayPal link as `custom`, PayPal echoes it back in the webhook,
-   * and the pass is granted before they have switched apps back.
-   * Nobody types a reference; nobody waits on a human.
+   * The automatic path. The server builds a PayPal order at TODAY'S
+   * converted price with this member's seat attached, so the number
+   * shown is exactly the number charged — no fixed button to go stale.
    */
-  const autoLink =
-    payLink && /^https?:\/\//i.test(payLink) && me
-      ? `${payLink}${payLink.includes('?') ? '&' : '?'}custom=${encodeURIComponent(`${me.academyId}|${product}`)}`
-      : null;
+  const [starting, setStarting] = useState(false);
+  const [startErr, setStartErr] = useState<string | null>(null);
+
+  const payNow = async () => {
+    if (starting) return;
+    setStarting(true);
+    setStartErr(null);
+    const r = await backend.startCheckout(product);
+    setStarting(false);
+    if (!r.ok) {
+      setStartErr(
+        r.error === 'RATE_STALE'
+          ? "TODAY'S RATE COULDN'T BE CONFIRMED. TRY AGAIN IN A MOMENT, OR SEND IT MANUALLY BELOW."
+          : 'COULD NOT OPEN PAYPAL. TRY AGAIN, OR SEND IT MANUALLY BELOW.',
+      );
+      return;
+    }
+    void Linking.openURL(r.approveUrl).catch(() => {});
+    watchForGrant();
+  };
+
+  /** automatic checkout is available whenever the member has a seat */
+  const canAuto = !!me;
 
   const load = () => {
     void backend.payMethods(geo).then((m) => {
@@ -166,21 +184,19 @@ export default function PaySheet({
         ) : (
           <>
             {/* ── the automatic path ── */}
-        {autoLink && !pending && (
+        {canAuto && !pending && !granted && (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.autoCard}>
             <Text style={styles.autoTag}>PAY WITH PAYPAL</Text>
             <Text style={styles.autoBody}>
               Card or PayPal balance. You come straight back and everything is already
               open — no code to type, no waiting on anyone.
             </Text>
-            <Pressable
-              onPress={() => {
-                void Linking.openURL(autoLink).catch(() => {});
-                watchForGrant();
-              }}
-            >
-              <View style={styles.autoCta}>
-                <Text style={styles.autoCtaTxt}>PAY {price} NOW ›</Text>
+            {startErr && <Text style={styles.error}>{startErr}</Text>}
+            <Pressable onPress={() => void payNow()} disabled={starting}>
+              <View style={[styles.autoCta, starting && { opacity: 0.5 }]}>
+                <Text style={styles.autoCtaTxt}>
+                  {starting ? 'OPENING PAYPAL…' : `PAY ${price} NOW ›`}
+                </Text>
               </View>
             </Pressable>
             <Text style={styles.autoFine}>
@@ -189,7 +205,7 @@ export default function PaySheet({
           </Animated.View>
         )}
 
-        {autoLink && !pending && (
+        {canAuto && !pending && !granted && (
           <Text style={styles.orLine}>OR SEND IT MANUALLY</Text>
         )}
 

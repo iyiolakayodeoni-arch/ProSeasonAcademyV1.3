@@ -25,6 +25,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   const settings = useSettings();
   const [bundles, setBundles] = useState<Record<string, string[]>>({});
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [fx, setFx] = useState<Record<string, backend.LivePrice>>({});
   const [paying, setPaying] = useState<{ code: string; price: string; title: string; payLink?: string | null } | null>(null);
   const [ladder, setLadder] = useState<backend.TierRow[] | null>(null);
   const [catalog, setCatalog] = useState<backend.StoreCatalogWire | null>(null);
@@ -33,6 +34,10 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
 
   const refresh = useCallback(async () => {
     void backend.myAccess().then((a) => a && setAccess(a));
+    // today's converted prices — naira is the master for Africa
+    void backend.livePrices().then((rows) => {
+      if (rows) setFx(Object.fromEntries(rows.map((r) => [r.code, r])));
+    });
     void backend.tierLadder().then((l) => l && setLadder(l));
     const [cat, bal] = await Promise.all([backend.storeCatalog(settings.geo), backend.tillBalance()]);
     // what each pack bundles beyond credits — the founder's "tricks in the packs"
@@ -63,7 +68,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   /** every purchase goes through the claim flow, so the member gets a
    *  reference and a status instead of paying into silence */
   const buy = (p: StoreProduct) => {
-    setPaying({ code: p.code, price: p.price, title: p.title, payLink: p.payLink });
+    setPaying({ code: p.code, price: fx[p.code]?.display || p.price, title: p.title, payLink: p.payLink });
   };
 
   const renderPack = (p: StoreProduct) => {
@@ -76,7 +81,9 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
           <Text style={styles.packMeta}>
             {p.credits != null ? `${p.credits} CREDITS` : `PLAN: ${(p.plan ?? 'PRO').toUpperCase()}`}
           </Text>
-          {p.priceNote ? <Text style={styles.priceNote}>{p.priceNote}</Text> : null}
+          {(fx[p.code]?.priceNote ?? p.priceNote) ? (
+            <Text style={styles.priceNote}>{fx[p.code]?.priceNote ?? p.priceNote}</Text>
+          ) : null}
           {(bundles[p.code]?.length ?? 0) > 0 && (
             <Text style={styles.packIncludes}>
               + {bundles[p.code].filter((i) => i.startsWith('trick:')).length} TRICK(S)
@@ -87,7 +94,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
             </Text>
           )}
         </View>
-        <Text style={styles.packPrice}>{p.price}</Text>
+        <Text style={styles.packPrice}>{fx[p.code]?.display || p.price}</Text>
         <Pressable onPress={() => buy(p)} disabled={!canBuy} hitSlop={6}>
           <View style={[styles.buyBtn, !canBuy && styles.buyBtnOff]}>
             <Text style={styles.buyTxt}>{btnLabel}</Text>

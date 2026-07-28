@@ -42,23 +42,33 @@ Edge Functions → **Secrets**:
 | `PAYPAL_SECRET` | from step 1 |
 | `PAYPAL_WEBHOOK_ID` | from step 2 |
 
+Deploy three functions: **`pay-start`** (creates the order at today's price),
+**`pay-webhook`** (grants the pass), **`refresh-fx`** (keeps the rate current).
+
 *(Sandbox testing? Add `PAYPAL_API` = `https://api-m.sandbox.paypal.com` and use your
 sandbox credentials. Delete that secret to go live.)*
 
-### 4 · Make one payment button per pass
-PayPal → **Pay & Get Paid** → **PayPal Buttons** (or Payment Links). Create one per pass
-with the exact amount:
+### 4 · No buttons to create — prices are live
 
-| Pass | Amount |
-|---|---|
-| NG-MID-90 · Academy 3mo (Africa) | £1.95 |
-| NG-PRO-90 · Pro 3mo (Africa) | £3.90 |
-| NG-PRO-365 · Pro season (Africa) | £12.50 |
-| WD-MID-90 · Academy 3mo (World) | £7.99 |
-| WD-PRO-90 · Pro 3mo (World) | £15.99 |
-| WD-PRO-365 · Pro season (World) | £47.99 |
+There is nothing to set up here. Amounts are generated at checkout from today's exchange
+rate, so there are no fixed buttons to go stale.
 
-Copy each link into **Table Editor → products → `pay_link`** on the matching row.
+**Africa prices are set in naira** and converted at the live rate every time:
+
+| Pass | True price | Today (approx) |
+|---|---|---|
+| NG-MID-90 · Academy 3mo | ₦3,900 | ~£2.20 |
+| NG-PRO-90 · Pro 3mo | ₦7,800 | ~£4.45 |
+| NG-PRO-365 · Pro season | ₦25,000 | ~£14.20 |
+
+**World prices are set in GBP** and never converted: £7.99 · £15.99 · £47.99.
+
+To change a price: **Table Editor → products → `amount_minor`** (₦7,800 or 799 pence).
+Never edit the `price` text — it is only a fallback.
+
+Deploy **`refresh-fx`** as well, and schedule it daily (Edge Functions → Cron). It pulls
+the NGN/GBP rate from a free source, refuses any move over 25% in a day as a likely bad
+feed, and leaves the old rate alone if the source is unreachable.
 
 ### 5 · Your PayPal address (the fallback)
 Table Editor → **`pay_methods`** → row `paypal` → set **details** and **holder**.
