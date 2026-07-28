@@ -1,0 +1,159 @@
+{
+  "updatedAt": "2026-07-24T21:56:33.816Z",
+  "currentPatch": "FC Mobile 26",
+  "posts": [
+    {
+      "id": "mb-2026-07-24-011",
+      "origin": "metabot",
+      "kind": "SKILL_MOVE",
+      "headline": "BEST SKILL MOVES AFTER THE UPDATE IN FC MOBILE 26! (RANKED",
+      "body": "the move everyone's adding this week: the clips are linked — watch it once, then go drill it. drill it in the arena before ranked.",
+      "cta": "ADD IT TO YOUR GAME ›",
+      "patchVersion": "FC Mobile 26",
+      "discoveredAt": "2026-07-24",
+      "sourceName": "YouTube — FC Mobile search",
+      "sourceUrl": "https://www.youtube.com/watch?v=2QKSjLAc18E",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "lane-change",
+        "name": "THE LANE CHANGE",
+        "headline": "Beat the press in one snap of the stick.",
+        "why": "AFTER THE UPDATE THE DEFENSIVE AI OVER-COMMITS TO YOUR FIRST DIRECTION. LURE IT, SNAP ACROSS, AND THE LANE IS YOURS — THAT'S WHY EVERYONE ON THE LADDER IS ADDING IT THIS WEEK.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "LURE",
+            "desc": "CARRY AT THE DEFENDER’S SHOULDER · BAIT THE COMMIT"
+          },
+          {
+            "icon": "waves",
+            "title": "SNAP",
+            "desc": "FLICK HARD ACROSS · ONE BEAT, NO DOUBLE TOUCH"
+          },
+          {
+            "icon": "arrow",
+            "title": "EXIT",
+            "desc": "EXPLODE INTO THE OPEN LANE · SPRINT ON"
+          }
+        ],
+        "rule": "THREE BEATS MAX — LURE, SNAP, EXIT — EVERY CHANGE HAS AN EXIT",
+        "clip": {
+          "variant": "pitchRun",
+          "duration": "03:58",
+          "caption": "WATCH IT LIVE · THE LANE CHANGE IN RANKED PLAY",
+          "subcaption": "SEE THE LURE SET THE SNAP UP — THEN DON’T REPLY, GO DO IT"
+        },
+        "scan": [
+          {
+            "label": "Lane changes completed in the final third",
+            "target": "5+"
+          },
+          {
+            "label": "Shots created within 6s of a lane change",
+            "target": "2+"
+          },
+          {
+            "label": "Skill-spam flags (3+ moves in one carry)",
+            "target": "0 FLAGS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mb-2026-07-24-009",
+      "origin": "metabot",
+      "kind": "EXPLOIT",
+      "headline": "BROKEN TACTICS FOR 10, 20 & 40",
+      "body": "there's a window open right now. discover the best fc mobile tactics for 10, 20, and 40 ranks. these custom tactics are designed to help you improve your ... use it before the patch catches up.",
+      "cta": "DRILL IT ›",
+      "patchVersion": "FC Mobile 26",
+      "discoveredAt": "2026-07-24",
+      "sourceName": "YouTube — FC Mobile search",
+      "sourceUrl": "https://www.youtube.com/watch?v=2jk2Jk7KTq8",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "tactics-window",
+        "name": "THE TACTIC WINDOW",
+        "headline": "One spring-loaded shape wins ranked nights.",
+        "why": "THE COMMUNITY FOUND A CUSTOM-TACTICS SETUP THAT HOLDS FROM DIVISION 10 TO TOP RANKS — SIT NARROW, TRIGGER THE RUN, PUNISH THE GAP BEFORE THE PATCH CATCHES UP.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "SET",
+            "desc": "NARROW SHAPE · FORWARDS ON GET-IN-BEHIND"
+          },
+          {
+            "icon": "waves",
+            "title": "TRIGGER",
+            "desc": "MANUAL RUN ON THE REGAIN · 8-SECOND WINDOW"
+          },
+          {
+            "icon": "arrow",
+            "title": "PUNISH",
+            "desc": "THROUGH THE CHANNEL · FINISH ACROSS GOAL"
+          }
+        ],
+        "rule": "ONE WINDOW PER ATTACK — SET IT, SPRING IT, DEFEND WHAT IT EARNS",
+        "clip": {
+          "variant": "pitchFade",
+          "duration": "05:21",
+          "caption": "WATCH IT LIVE · THE TACTIC WINDOW AGAINST THE PRESS",
+          "subcaption": "SEE THE TRIGGER TIMING — THEN DON’T REPLY, GO DO IT"
+        },
+        "scan": [
+          {
+            "label": "Counters started within 8s of a regain",
+            "target": "4+"
+          },
+          {
+            "label": "Through-balls into open channels",
+            "target": "3+"
+          },
+          {
+            "label": "Panic long balls under no pressure",
+            "target": "0 FLAGS"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mb-2026-07-24-006",
+      "origin": "metabot",
+      "kind": "PATCH_NOTE",
+      "headline": "FC MOBILE 26 UPDATE",
+      "body": "the lab notes just dropped. the new fc mobile 26 update brings new gameplay improvements, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
+      "cta": "READ THE BREAKDOWN ›",
+      "patchVersion": "FC Mobile 26",
+      "discoveredAt": "2026-07-24",
+      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-26-patch-notes",
+      "lifecycle": "fresh"
+    },
+    {
+      "id": "mb-2026-07-24-002",
+      "origin": "metabot",
+      "kind": "PATCH_NOTE",
+      "headline": "PLAYSTYLES DEEP DIVE",
+      "body": "fresh patch, straight from the source. playstyles aim to diversify build-up play and chance creation, deepen your team-building and strategies, and - in combination with high player attributes - push gameplay to the next level! we went through the changes so you play the update, not read it.",
+      "cta": "READ THE BREAKDOWN ›",
+      "patchVersion": "FC Mobile 26",
+      "discoveredAt": "2026-07-24",
+      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/playstyles-deep-dive",
+      "lifecycle": "fresh"
+    },
+    {
+      "id": "mb-2026-07-24-001",
+      "origin": "metabot",
+      "kind": "PATCH_NOTE",
+      "headline": "THE WORLD’S GAME UPDATE",
+      "body": "fresh patch, straight from the source. the new fc mobile the world’s game update brings new global football tournament mode, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
+      "cta": "READ THE BREAKDOWN ›",
+      "patchVersion": "FC Mobile 26",
+      "discoveredAt": "2026-07-24",
+      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-worlds-game-update",
+      "lifecycle": "fresh"
+    }
+  ]
+}

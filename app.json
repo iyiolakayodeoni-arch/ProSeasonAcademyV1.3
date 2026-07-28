@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "ProSeason Academy",
+    "slug": "proseasonacademy",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "proseasonacademy",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0f0a",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0f0a",
+      "imageWidth": 230
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.onliversity.proseasonacademy",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.onliversity.proseasonacademy",
+      "versionCode": 1,
+      "permissions": [],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#0a0f0a",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0a0f0a",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 230,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#0a0f0a",
+            "image": "./assets/splash-icon.png"
+          }
+        }
+      ]
+    ]
+  }
+}

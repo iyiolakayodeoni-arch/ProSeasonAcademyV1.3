@@ -1,0 +1,958 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking } from 'react-native';
+import Constants from 'expo-constants';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import GridBackground from '../components/GridBackground';
+import LogoMark from '../components/LogoMark';
+import MiniPitch from '../components/MiniPitch';
+import {
+  ArrowOutIcon,
+  CheckIcon,
+  CheckRingIcon,
+  ChevronLeftIcon,
+  ClockGlyphIcon,
+  PauseGlyphIcon,
+  RefreshGlyphIcon,
+  ScanGlyphIcon,
+  TargetGlyphIcon,
+  WavesGlyphIcon,
+  XMarkIcon,
+} from '../components/Icons';
+import { Coach } from '../data/coaches';
+import { JourneyStage } from '../data/journey';
+import {
+  buildCoachChat,
+  buildPrepChat,
+  parseHot,
+  resolveStageLesson,
+  LessonPlan,
+} from '../data/coaching';
+import { assignLessonRef, recordStagePass, useJourneyProgress } from '../data/progress';
+import { ScanResult, useMatchScan } from '../hooks/useMatchScan';
+import { useTrailLoop } from '../hooks/useTrailLoop';
+import { colors, monoFont } from '../theme';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const VOICE_LEN = 42; // seconds
+
+function hhmm(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function mmss(total: number): string {
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+// ── pulsing green presence dot ────────────────────────────────
+function OnlineDot({ size = 5 }: { size?: number }) {
+  const v = useSharedValue(0.55);
+  useEffect(() => {
+    v.value = withRepeat(withTiming(1, { duration: 900 }), -1, true);
+  }, [v]);
+  const s = useAnimatedStyle(() => ({ opacity: v.value }));
+  return <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.9, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } }, s]} />;
+}
+
+// ── voice-note waveform (bars dance while playing) ────────────
+function WaveBar({ h, i, playing }: { h: number; i: number; playing: boolean }) {
+  const v = useSharedValue(0.4);
+  useEffect(() => {
+    if (playing) {
+      v.value = 0.15;
+      v.value = withDelay(i * 45, withRepeat(withTiming(1, { duration: 210 + (i % 5) * 55 }), -1, true));
+    } else {
+      v.value = withTiming(0.4, { duration: 200 });
+    }
+  }, [playing, i, v]);
+  const s = useAnimatedStyle(() => ({ transform: [{ scaleY: 0.3 + v.value * 0.7 }] }));
+  return <Animated.View style={[{ width: 2.6, height: h, borderRadius: 2, backgroundColor: colors.primary }, s]} />;
+}
+
+// ── spinning read ring for the MATCH SCAN row ─────────────────
+function ScanRing() {
+  const r = useSharedValue(0);
+  useEffect(() => {
+    r.value = withRepeat(withTiming(360, { duration: 1100, easing: Easing.linear }), -1, false);
+  }, [r]);
+  const s = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value}deg` }] }));
+  return (
+    <Animated.View
+      style={[
+        {
+          width: 15,
+          height: 15,
+          borderRadius: 8,
+          borderWidth: 1.6,
+          borderColor: colors.primary,
+          borderTopColor: 'transparent',
+        },
+        s,
+      ]}
+    />
+  );
+}
+
+function ScanStatusIcon({ status }: { status: 'armed' | 'scanning' | 'passed' | 'failed' }) {
+  if (status === 'scanning') return <ScanRing />;
+  if (status === 'passed') return <CheckRingIcon size={15} color={colors.primary} />;
+  if (status === 'failed') return <XMarkIcon size={11} color={colors.loss} />;
+  return <ScanGlyphIcon size={14} color={colors.primary} />;
+}
+
+// ── chat bubble with inline **hot** highlight parsing ─────────
+function RichText({ text, style, hotStyle }: { text: string; style: object; hotStyle: object }) {
+  const parts = useMemo(() => parseHot(text), [text]);
+  return (
+    <Text style={style}>
+      {parts.map((p, i) => (
+        <Text key={i} style={p.hot ? hotStyle : undefined}>
+          {p.t}
+        </Text>
+      ))}
+    </Text>
+  );
+}
+
+function MessageMeta({ time }: { time: string }) {
+  return <Text style={styles.msgTime}>{time}</Text>;
+}
+
+type Props = {
+  coach: Coach;
+  stage: JourneyStage;
+  /** live match-ingest seam — null until the real service lands */
+  liveResult?: ScanResult | null;
+  onClose: () => void;
+};
+
+// ─────────────────────────────────────────────────────────────
+// THE COACHING SCREEN — one-way film-room session for one stage.
+// Mechanic, tiles, rule and scan targets all come from the live
+// approved MetaBot feed (see src/data/coaching.ts).
+// ─────────────────────────────────────────────────────────────
+export default function CoachingScreen({ coach, stage, liveResult = null, onClose }: Props) {
+  const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2200, eraseMs: 2200 });
+  const prog = useJourneyProgress();
+  const coachFirst = coach.name.split(' ')[0];
+
+  // ── resolve TODAY'S MECHANIC from the live bot feed ──
+  const lessonResult = useMemo(
+    () => resolveStageLesson(stage.n, prog.lessonRefs),
+    [stage.n, prog.lessonRefs],
+  );
+  useEffect(() => {
+    if (lessonResult.status === 'ok' && !lessonResult.fromRef) {
+      // claim this live item for the stage — stored so a future patch
+      // flagging it stale routes the coach to swap in a fresh one
+      assignLessonRef(stage.n, lessonResult.plan.contentId);
+    }
+  }, [lessonResult, stage.n]);
+
+  const plan: LessonPlan | null = lessonResult.status === 'ok' ? lessonResult.plan : null;
+  const staleName = lessonResult.status === 'stale' ? lessonResult.mechanicName : undefined;
+  const chat = plan ? buildCoachChat(coach, plan) : buildPrepChat(coach, staleName);
+  const planContentId = plan?.contentId ?? (lessonResult.status === 'stale' ? lessonResult.contentId : null);
+  const cleared = prog.completed[stage.n];
+
+  // ── session clock (timestamps track when the room opened) ──
+  const sessionStart = useMemo(() => Date.now(), []);
+  const t = (addMin: number) => hhmm(new Date(sessionStart + addMin * 60000));
+
+  // ── voice note: real play/pause + countdown state ──
+  const [voicePlaying, setVoicePlaying] = useState(false);
+  const [voiceLeft, setVoiceLeft] = useState(VOICE_LEN);
+  useEffect(() => {
+    if (!voicePlaying) return;
+    const id = setInterval(() => {
+      setVoiceLeft((s) => {
+        if (s <= 1) {
+          setVoicePlaying(false);
+          return VOICE_LEN;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [voicePlaying]);
+  const waveHeights = useMemo(
+    () => Array.from({ length: 22 }, (_, i) => 5 + ((i * i * 7 + i * 13 + 9) % 21)),
+    [],
+  );
+  // TODO(real-audio): hook the toggle to the recorded voice note asset.
+
+  // ── clip block: real play/pause + countdown state ──
+  const clipTotal = useMemo(() => {
+    if (!plan) return 0;
+    const [m, s] = plan.clip.duration.split(':').map((x) => parseInt(x, 10));
+    return m * 60 + s;
+  }, [plan]);
+  const [clipPlaying, setClipPlaying] = useState(false);
+  const [clipLeft, setClipLeft] = useState(clipTotal);
+  useEffect(() => setClipLeft(clipTotal), [clipTotal]);
+  useEffect(() => {
+    if (!clipPlaying) return;
+    const id = setInterval(() => {
+      setClipLeft((s) => {
+        if (s <= 1) {
+          setClipPlaying(false);
+          return clipTotal;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [clipPlaying, clipTotal]);
+  // TODO(real-video): feed the clip reference into the in-app player.
+
+  const [clipW, setClipW] = useState(0);
+
+  // ── MATCH SCAN ──
+  const { status, result, start } = useMatchScan(plan ? plan.scanTargets : [], liveResult, () => {
+    recordStagePass(stage.n, {
+      contentId: planContentId,
+      passedAt: Date.now(),
+      xp: stage.rewardXp ?? 100,
+      badge: stage.rewardBadge,
+    });
+  });
+
+  const scanDisabled = !plan || status === 'scanning';
+  const ctaLabel = !plan
+    ? 'MECHANIC PENDING'
+    : status === 'scanning'
+      ? 'SCANNING…'
+      : status === 'passed' || (cleared && status === 'armed')
+        ? 'BACK TO THE MAP ›'
+        : status === 'failed'
+          ? 'RUN IT BACK — PLAY AGAIN ›'
+          : 'GO PLAY — START THE SCAN ›';
+  const handleCta = () => {
+    if (scanDisabled) return;
+    if (status === 'passed' || (cleared && status === 'armed')) onClose();
+    else start(); // armed / failed → real CTA: arm the scan (mock result for now)
+  };
+
+  const TileIcon = { target: TargetGlyphIcon, waves: WavesGlyphIcon, arrow: ArrowOutIcon };
+
+  return (
+    <View style={styles.root}>
+      <GridBackground />
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
+        {/* ── header ── */}
+        <View style={styles.headerWrap}>
+          <LogoMark size={26} loopProps={loopProps} glowStyle={glowStyle} />
+          <Text style={styles.eyebrow}>
+            STAGE {stage.n} — {stage.key}
+          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.coachBig}>{coachFirst}</Text>
+            <OnlineDot />
+            <Text style={styles.online}>ONLINE</Text>
+          </View>
+        </View>
+
+        {/* ── coach identity card ── */}
+        <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.identity}>
+          <View style={styles.avatarWrap}>
+            <Image source={coach.portrait} style={styles.avatar} />
+            <View style={styles.onlineBadge} />
+          </View>
+          <View style={styles.identityText}>
+            <Text style={styles.identityName}>{coachFirst}</Text>
+            <Text style={styles.identityRole}>YOUR COACH · CONSOLE PRO</Text>
+            <Text style={styles.identitySub}>IN THE FILM ROOM · TALKING TO YOU ONLY</Text>
+          </View>
+        </Animated.View>
+
+        <View style={styles.sessionRow}>
+          <View style={styles.sessionLine} />
+          <Text style={styles.sessionTxt}>ONE-WAY SESSION · TODAY {t(0)}</Text>
+          <View style={styles.sessionLine} />
+        </View>
+
+        {/* ── chat thread (coach-only, read-only) ── */}
+        <Animated.View entering={FadeInDown.delay(200).duration(360)}>
+          <CoachBubble coach={coach} label={coach.name}>
+            <RichText text={chat.greeting} style={styles.bubbleText} hotStyle={styles.hot} />
+          </CoachBubble>
+          <MessageMeta time={t(0)} />
+
+          <CoachBubble coach={coach} label={coach.name}>
+            <View style={styles.voiceRow}>
+              <Pressable onPress={() => setVoicePlaying((p) => !p)} hitSlop={6}>
+                <View style={[styles.voicePlay, voicePlaying && styles.voicePlayOn]}>
+                  {voicePlaying ? (
+                    <PauseGlyphIcon size={11} color="#05130a" />
+                  ) : (
+                    <View style={styles.voiceTri} />
+                  )}
+                </View>
+              </Pressable>
+              <View style={styles.waveRow}>
+                {waveHeights.map((h, i) => (
+                  <WaveBar key={i} h={h} i={i} playing={voicePlaying} />
+                ))}
+              </View>
+              <Text style={styles.voiceDur}>{mmss(voiceLeft)}</Text>
+            </View>
+            <Text style={styles.voiceCaption}>{chat.voiceCaption}</Text>
+          </CoachBubble>
+          <MessageMeta time={t(1)} />
+
+          <CoachBubble coach={coach} label={coach.name}>
+            <RichText text={chat.mechanic} style={styles.bubbleText} hotStyle={styles.hot} />
+          </CoachBubble>
+          <MessageMeta time={t(2)} />
+        </Animated.View>
+
+        {/* ── TODAY'S MECHANIC — lesson pulled from the live bot feed ── */}
+        <Animated.View entering={FadeInDown.delay(280).duration(360)}>
+          {staleName && (
+            <View style={styles.staleBanner}>
+              <RefreshGlyphIcon size={11} color={colors.accent} />
+              <Text style={styles.staleTxt}>
+                MECHANIC PATCHED OUT · {coachFirst} IS SWAPPING IN A FRESH ONE
+              </Text>
+            </View>
+          )}
+
+          {plan ? (
+            <View style={styles.lessonCard}>
+              <View style={styles.tagRow}>
+                <View style={styles.tagGreen}>
+                  <Text style={styles.tagGreenTxt}>TODAY’S MECHANIC · STAGE {stage.n}</Text>
+                </View>
+                <View style={styles.tagGold}>
+                  <Text style={styles.tagGoldTxt}>{plan.mechanicName}</Text>
+                </View>
+              </View>
+
+              <Text style={styles.lessonHeadline}>{plan.headline}</Text>
+              <Text style={styles.lessonWhy}>{plan.why}</Text>
+
+              {/* 3-step breakdown — structured fields from the bot item */}
+              <View style={styles.tilesRow}>
+                {plan.tiles.map((tile, i) => {
+                  const Icon = TileIcon[tile.icon] ?? TargetGlyphIcon;
+                  return (
+                    <View key={i} style={styles.tile}>
+                      <View style={styles.tileIconWrap}>
+                        <Icon size={15} color={colors.primary} />
+                      </View>
+                      <Text style={styles.tileTitle}>{tile.title}</Text>
+                      <Text style={styles.tileDesc}>{tile.desc}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* the rule — quotable, from the same bot item */}
+              <View style={styles.ruleStrip}>
+                <ClockGlyphIcon size={12} color={colors.primary} />
+                <Text style={styles.ruleTxt}>
+                  {coachFirst}’S RULE · {plan.rule}
+                </Text>
+              </View>
+
+              {/* embedded clip preview */}
+              <View
+                style={[styles.clipWrap, clipPlaying && styles.clipWrapPlaying]}
+                onLayout={(e) => setClipW(e.nativeEvent.layout.width)}
+              >
+                {clipW > 0 && <MiniPitch width={clipW - 2} height={126} variant={plan.clip.variant} />}
+                <Pressable onPress={() => setClipPlaying((p) => !p)} hitSlop={8} style={styles.clipHit}>
+                  <View style={[styles.clipPlay, clipPlaying && styles.clipPlayOn]}>
+                    {clipPlaying ? <PauseGlyphIcon size={11} color="#05130a" /> : <View style={styles.clipTri} />}
+                  </View>
+                </Pressable>
+                <View style={styles.clipDur}>
+                  <Text style={styles.clipDurTxt}>{mmss(clipLeft)}</Text>
+                </View>
+              </View>
+              <View style={styles.clipCaptionRow}>
+                <Text style={styles.clipCaption}>{plan.clip.caption}</Text>
+                <Text style={styles.clipSubcaption}>{plan.clip.subcaption}</Text>
+                <Pressable
+                  onPress={() => Linking.openURL(plan.sourceUrl).catch(() => console.log('[coaching] clip link failed'))}
+                  hitSlop={6}
+                >
+                  <Text style={styles.clipSource}>SOURCE · {plan.sourceName.toUpperCase()} ›</Text>
+                </Pressable>
+              </View>
+
+              <Text style={styles.trace}>
+                TRACKING FEED ITEM {plan.contentId} · {plan.patchVersion}
+              </Text>
+            </View>
+          ) : (
+            /* clearly-marked placeholder — never broken/empty UI */
+            <View style={styles.prepCard}>
+              <RefreshGlyphIcon size={16} color="rgba(143,184,155,0.6)" />
+              <Text style={styles.prepTitle}>
+                {staleName ? `${coachFirst.toUpperCase()} IS RECUTTING TODAY’S TAPE` : `${coachFirst.toUpperCase()} IS PREPPING TODAY’S MECHANIC`}
+              </Text>
+              <Text style={styles.prepTxt}>
+                {staleName
+                  ? 'THE OLD MECHANIC WAS FLAGGED STALE AFTER A PATCH — THIS STAGE IS WAITING ON A FRESH, APPROVED ONE FROM THE LIVE FEED.'
+                  : 'NO APPROVED, FRESH MECHANIC IS AVAILABLE FOR THIS STAGE YET. IT APPEARS HERE THE MOMENT THE LIVE FEED SHIPS ONE.'}
+              </Text>
+            </View>
+          )}
+        </Animated.View>
+
+        {/* ── closer message ── */}
+        <Animated.View entering={FadeInDown.delay(340).duration(360)}>
+          <CoachBubble coach={coach} label={coach.name}>
+            <RichText text={chat.closer} style={styles.bubbleText} hotStyle={styles.hot} />
+          </CoachBubble>
+          <MessageMeta time={t(3)} />
+        </Animated.View>
+
+        {/* ── MATCH SCAN — the graded part; passing unlocks the next node ── */}
+        <Animated.View entering={FadeInDown.delay(400).duration(360)} style={styles.scanCard}>
+          {cleared && status !== 'passed' && (
+            <View style={styles.clearedBanner}>
+              <CheckRingIcon size={11} color={colors.primary} />
+              <Text style={styles.clearedTxt}>STAGE ALREADY CLEARED — REPLAYING THE FILM ROOM</Text>
+            </View>
+          )}
+          <View style={styles.tagRow}>
+            <View style={styles.tagGreen}>
+              <Text style={styles.tagGreenTxt}>MATCH SCAN</Text>
+            </View>
+            <View style={styles.tagGold}>
+              <Text style={styles.tagGoldTxt}>REQUIRED TO PASS STAGE {stage.n}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.scanHeadline}>Prove it in a real match.</Text>
+          <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
+
+          {plan ? (
+            <View style={styles.scanList}>
+              {plan.scanTargets.map((row, i) => {
+                const v = result?.values[i];
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      styles.scanRow,
+                      status === 'armed' && i === 1 && styles.scanRowLive,
+                      v && (v.met ? styles.scanRowMet : styles.scanRowMissed),
+                    ]}
+                  >
+                    <View style={[styles.scanBox, v && (v.met ? styles.scanBoxMet : styles.scanBoxMissed)]}>
+                      {v ? (
+                        v.met ? (
+                          <CheckIcon size={8} color="#05130a" />
+                        ) : (
+                          <XMarkIcon size={7} color="#05130a" />
+                        )
+                      ) : null}
+                    </View>
+                    <Text style={[styles.scanLabel, v && !v.met && { color: colors.loss }]} numberOfLines={2}>
+                      {row.label}
+                    </Text>
+                    <Text style={[styles.scanTarget, v && { color: v.met ? colors.primary : colors.loss }]}>
+                      {v ? `${v.met ? 'HIT' : 'MISSED'} ${v.value}/${row.target}` : `TARGET ${row.target}`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.scanPendingRow}>
+              <ScanGlyphIcon size={13} color="rgba(143,184,155,0.55)" />
+              <Text style={styles.scanPendingTxt}>TARGETS LOCK IN WHEN THE MECHANIC DROPS</Text>
+            </View>
+          )}
+
+          {/* status row */}
+          <View style={[styles.scanStatus, status === 'failed' && styles.scanStatusFailed]}>
+            <ScanStatusIcon status={status} />
+            <View style={styles.scanStatusText}>
+              <Text style={[styles.scanStatusTitle, status === 'failed' && { color: colors.loss }]}>
+                {status === 'armed'
+                  ? cleared
+                    ? `SCAN COMPLETE · STAGE ${stage.n} CLEARED`
+                    : 'SCAN ARMED · AWAITING YOUR MATCH'
+                  : status === 'scanning'
+                    ? 'READING YOUR MATCH…'
+                    : status === 'passed'
+                      ? `SCAN COMPLETE · STAGE ${stage.n} CLEARED`
+                      : 'SCAN FAILED · RUN IT BACK'}
+              </Text>
+              <Text style={styles.scanStatusSub}>
+                {status === 'armed'
+                  ? `RESULT LANDS WITH ${coach.name} THE SECOND IT READS`
+                  : status === 'scanning'
+                    ? 'THE SCAN IS READING YOUR GAME — HOLD TIGHT'
+                    : status === 'passed'
+                      ? `${coachFirst.toUpperCase()} HAS YOUR RESULT — THE NEXT NODE IS OPEN`
+                      : 'THE MECHANIC DIDN’T SHOW UP ENOUGH — BACK TO THE LAB'}
+              </Text>
+            </View>
+          </View>
+
+          {/* CTA */}
+          <Pressable onPress={handleCta} disabled={scanDisabled}>
+            <View style={[styles.cta, scanDisabled && styles.ctaDisabled]}>
+              <Text style={styles.ctaTxt}>{ctaLabel}</Text>
+            </View>
+          </Pressable>
+
+          <Text style={styles.oneWay}>{chat.footer}</Text>
+        </Animated.View>
+
+        <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
+        <View style={{ height: 18 }} />
+      </ScrollView>
+
+      {/* back chevron — reverses the zoom back out to the map */}
+      <Pressable onPress={onClose} hitSlop={10} style={styles.backBtn}>
+        <ChevronLeftIcon size={15} color={colors.fg} />
+      </Pressable>
+    </View>
+  );
+}
+
+// ── coach bubble shell: avatar + name label above rounded glow card ──
+function CoachBubble({ coach, label, children }: { coach: Coach; label: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.msgRow}>
+      <Image source={coach.portrait} style={styles.msgAvatar} />
+      <View style={styles.msgCol}>
+        <Text style={styles.msgLabel}>{label}</Text>
+        <View style={styles.bubble}>{children}</View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 8 },
+
+  backBtn: {
+    position: 'absolute',
+    top: 58,
+    left: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.2,
+    borderColor: 'rgba(143,184,155,0.4)',
+    backgroundColor: 'rgba(10,17,12,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  headerWrap: { alignItems: 'center', paddingTop: 2 },
+  eyebrow: {
+    marginTop: 6,
+    fontFamily: monoFont,
+    fontSize: 7,
+    letterSpacing: 2.6,
+    color: 'rgba(143,184,155,0.75)',
+  },
+  nameRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  coachBig: {
+    fontSize: 15,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+    color: colors.fg,
+    textShadowColor: 'rgba(238,242,236,0.25)',
+    textShadowRadius: 8,
+  },
+  online: {
+    fontFamily: monoFont,
+    fontSize: 5.8,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    color: colors.primary,
+    marginTop: 2,
+  },
+
+  identity: { marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 6 },
+  avatarWrap: { width: 46, height: 46 },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 1.4,
+    borderColor: 'rgba(57,255,106,0.55)',
+  },
+  onlineBadge: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    borderWidth: 2.4,
+    borderColor: colors.bg,
+  },
+  identityText: { flex: 1 },
+  identityName: { fontSize: 15, fontWeight: '900', letterSpacing: 0.8, color: colors.fg },
+  identityRole: { marginTop: 3, fontSize: 8.2, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
+  identitySub: { marginTop: 3, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.5, color: 'rgba(143,184,155,0.7)' },
+
+  sessionRow: { marginTop: 14, marginBottom: 4, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  sessionLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.18)' },
+  sessionTxt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.8, color: 'rgba(143,184,155,0.55)' },
+
+  msgRow: { flexDirection: 'row', marginTop: 12, alignItems: 'flex-start' },
+  msgAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.4)',
+    marginTop: 12,
+  },
+  msgCol: { flex: 1, marginLeft: 8 },
+  msgLabel: {
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    fontWeight: '700',
+    letterSpacing: 2.2,
+    color: colors.primary,
+    marginBottom: 4,
+    marginLeft: 2,
+  },
+  bubble: {
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.32)',
+    borderRadius: 15,
+    backgroundColor: 'rgba(15,26,19,0.78)',
+    paddingHorizontal: 13,
+    paddingVertical: 11,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  bubbleText: { fontSize: 11.5, lineHeight: 17.5, color: '#c9d8cd', fontWeight: '600' },
+  hot: { color: colors.primary, fontWeight: '900' },
+  msgTime: {
+    marginLeft: 32,
+    marginTop: 4,
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 1.4,
+    color: 'rgba(143,184,155,0.45)',
+  },
+
+  voiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  voicePlay: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  voicePlayOn: { backgroundColor: colors.primary },
+  voiceTri: {
+    width: 0,
+    height: 0,
+    marginLeft: 2,
+    borderLeftWidth: 9,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderLeftColor: '#05130a',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  waveRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2.6, height: 26 },
+  voiceDur: { fontFamily: monoFont, fontSize: 8, fontWeight: '700', color: 'rgba(143,184,155,0.8)' },
+  voiceCaption: {
+    marginTop: 8,
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 1.4,
+    color: 'rgba(143,184,155,0.6)',
+  },
+
+  staleBanner: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: 'rgba(242,192,120,0.06)',
+  },
+  staleTxt: { flex: 1, fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.4, color: colors.accent },
+
+  lessonCard: {
+    marginTop: 14,
+    borderWidth: 1.2,
+    borderColor: 'rgba(57,255,106,0.5)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(12,20,14,0.94)',
+    padding: 14,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  tagRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  tagGreen: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+    backgroundColor: 'rgba(57,255,106,0.07)',
+  },
+  tagGreenTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  tagGold: {
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.55)',
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3.5,
+  },
+  tagGoldTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+
+  lessonHeadline: { marginTop: 12, fontSize: 20, lineHeight: 23, fontWeight: '900', letterSpacing: 0.2, color: colors.fg },
+  lessonWhy: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
+
+  tilesRow: { marginTop: 13, flexDirection: 'row', gap: 7 },
+  tile: {
+    flex: 1,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.34)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(15,26,19,0.6)',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+  },
+  tileIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(57,255,106,0.06)',
+  },
+  tileTitle: { marginTop: 7, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
+  tileDesc: { marginTop: 4, fontFamily: monoFont, fontSize: 4.9, lineHeight: 8.5, letterSpacing: 1, textAlign: 'center', color: 'rgba(143,184,155,0.72)' },
+
+  ruleStrip: {
+    marginTop: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.5)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(57,255,106,0.08)',
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  ruleTxt: { flex: 1, fontFamily: monoFont, fontSize: 6.6, lineHeight: 11, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
+
+  clipWrap: {
+    marginTop: 11,
+    height: 128,
+    borderRadius: 12,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.35)',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clipWrapPlaying: { borderColor: colors.primary },
+  clipHit: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  clipPlay: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.6,
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(10,15,10,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  clipPlayOn: { backgroundColor: colors.primary },
+  clipTri: {
+    width: 0,
+    height: 0,
+    marginLeft: 3,
+    borderLeftWidth: 13,
+    borderTopWidth: 8.5,
+    borderBottomWidth: 8.5,
+    borderLeftColor: colors.primary,
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  clipDur: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    borderRadius: 5,
+    backgroundColor: 'rgba(8,13,9,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(143,184,155,0.3)',
+    paddingHorizontal: 5,
+    paddingVertical: 2.5,
+  },
+  clipDurTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
+  clipCaptionRow: { marginTop: 9 },
+  clipCaption: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.5, color: colors.fg },
+  clipSubcaption: { marginTop: 4, fontFamily: monoFont, fontSize: 5.9, lineHeight: 10, letterSpacing: 1.1, color: 'rgba(143,184,155,0.7)' },
+  clipSource: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  trace: { marginTop: 10, fontFamily: monoFont, fontSize: 5.2, letterSpacing: 1.2, color: 'rgba(143,184,155,0.38)' },
+
+  prepCard: {
+    marginTop: 14,
+    borderWidth: 1.2,
+    borderColor: 'rgba(143,184,155,0.3)',
+    borderStyle: 'dashed',
+    borderRadius: 18,
+    backgroundColor: 'rgba(12,20,14,0.8)',
+    padding: 18,
+    alignItems: 'center',
+  },
+  prepTitle: { marginTop: 10, fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.8, color: colors.fg, textAlign: 'center' },
+  prepTxt: { marginTop: 8, fontFamily: monoFont, fontSize: 6.4, lineHeight: 12, letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+
+  scanCard: {
+    marginTop: 16,
+    borderWidth: 1.3,
+    borderColor: 'rgba(57,255,106,0.62)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(12,20,14,0.96)',
+    padding: 14,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.22,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  clearedBanner: {
+    marginBottom: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.4)',
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    backgroundColor: 'rgba(57,255,106,0.05)',
+  },
+  clearedTxt: { flex: 1, fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  scanHeadline: { marginTop: 12, fontSize: 20, lineHeight: 23, fontWeight: '900', letterSpacing: 0.2, color: colors.primary, textShadowColor: 'rgba(57,255,106,0.4)', textShadowRadius: 12 },
+  scanIntro: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
+
+  scanList: { marginTop: 12, gap: 7 },
+  scanRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.3)',
+    borderRadius: 11,
+    backgroundColor: 'rgba(15,26,19,0.5)',
+    paddingHorizontal: 11,
+    paddingVertical: 10,
+  },
+  scanRowLive: { borderColor: 'rgba(57,255,106,0.55)', backgroundColor: 'rgba(57,255,106,0.05)' },
+  scanRowMet: { borderColor: 'rgba(57,255,106,0.6)', backgroundColor: 'rgba(57,255,106,0.07)' },
+  scanRowMissed: { borderColor: 'rgba(224,96,92,0.55)', backgroundColor: 'rgba(224,96,92,0.06)' },
+  scanBox: {
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    borderWidth: 1.4,
+    borderColor: 'rgba(143,184,155,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scanBoxMet: { backgroundColor: colors.primary, borderColor: colors.primary },
+  scanBoxMissed: { backgroundColor: colors.loss, borderColor: colors.loss },
+  scanLabel: { flex: 1, fontSize: 10.2, fontWeight: '600', color: '#c9d8cd' },
+  scanTarget: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(143,184,155,0.75)' },
+
+  scanPendingRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(143,184,155,0.25)',
+    borderStyle: 'dashed',
+    borderRadius: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 11,
+  },
+  scanPendingTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.4, color: 'rgba(143,184,155,0.6)' },
+
+  scanStatus: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.4)',
+    borderRadius: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    backgroundColor: 'rgba(57,255,106,0.05)',
+  },
+  scanStatusFailed: { borderColor: 'rgba(224,96,92,0.5)', backgroundColor: 'rgba(224,96,92,0.05)' },
+  scanStatusText: { flex: 1 },
+  scanStatusTitle: { fontFamily: monoFont, fontSize: 7.6, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
+  scanStatusSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.1, color: 'rgba(143,184,155,0.65)' },
+
+  cta: {
+    marginTop: 12,
+    height: 48,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.55,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  ctaDisabled: { backgroundColor: 'rgba(31,56,38,1)', shadowOpacity: 0 },
+  ctaTxt: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 2.4, color: '#05130a' },
+
+  oneWay: {
+    marginTop: 12,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 6,
+    letterSpacing: 1.6,
+    color: 'rgba(143,184,155,0.55)',
+  },
+
+  footVersion: { marginTop: 14, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2.6, color: 'rgba(143,184,155,0.4)' },
+});

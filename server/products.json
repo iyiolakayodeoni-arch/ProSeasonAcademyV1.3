@@ -1,0 +1,12 @@
+{
+  "_readme": "THIS IS YOUR PRICE LIST — the only file you ever edit to change prices or payment links. Save it and every phone sees it instantly, no restart. RULES: africa packs need a \"credits\" number; world items need \"plan\": \"pro\". \"payLink\" is the secure payment page for that product: paste your Paystack or Flutterwave PAYMENT LINK (free to create once your merchant account passes KYC) — while it says ASK-IN-HALL the app shows a 'link drops soon' state and nothing can be bought. \"price\" is display text, type exactly what players should read.",
+  "africa": [
+    { "code": "NG-STARTER", "title": "STARTER PACK", "credits": 100, "price": "₦500", "payLink": "ASK-IN-HALL" },
+    { "code": "NG-REGULAR", "title": "REGULAR PACK", "credits": 300, "price": "₦1,200", "payLink": "ASK-IN-HALL" },
+    { "code": "NG-GRINDER", "title": "GRINDER PACK", "credits": 750, "price": "₦2,500", "payLink": "ASK-IN-HALL" },
+    { "code": "NG-PATRON", "title": "PATRON PACK", "credits": 1700, "price": "₦5,000", "payLink": "ASK-IN-HALL" }
+  ],
+  "world": [
+    { "code": "PRO-MONTHLY", "title": "PRO MONTHLY", "plan": "pro", "price": "$4.99 / MONTH", "payLink": "ASK-IN-HALL" }
+  ]
+}

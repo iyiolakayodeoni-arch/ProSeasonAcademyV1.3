@@ -1,0 +1,60 @@
+{
+  "currentPatch": "FC Mobile 26",
+  "note": "Demo batch — REAL findings pulled from live web searches on 2026-07-24 ( EA official patch notes, r/FUTMobile, Carry1st, EA Forums, YouTube tutorial transcripts). In production the Anthropic web_search step produces this same shape automatically.",
+  "findings": [
+    {
+      "topicKey": "fc-mobile-26-patch-notes",
+      "kind": "PATCH_NOTE",
+      "patchVersion": "FC Mobile 26",
+      "summary": "The FC Mobile 26 season update changed core H2H gameplay: defenders react faster after kickoff, lofted through passes depend on passer attributes and distance, crossing and headers favour positioning and timing, small bumps are no longer automatic fouls, and seven new formations were added across H2H, VS Attack and Manager Mode.",
+      "whyItMatters": "Every mechanic the old season's meta was built on has shifted.",
+      "sourceUrl": "https://www.ea.com/en/games/ea-sports-fc/fc-mobile/news/fc-mobile-26-patch-notes",
+      "sourceName": "EA SPORTS FC Mobile — official patch notes"
+    },
+    {
+      "topicKey": "kickoff-rush-remaining-window",
+      "kind": "EXPLOIT",
+      "patchVersion": "FC Mobile 26",
+      "summary": "After the nerf, the kickoff long ball only lands when an elite-passing sender combines with a genuine pace mismatch against the last defender; in every other case defenders now close it down in time.",
+      "whyItMatters": "Stops players spamming a dead tactic and teaches the one window that still works.",
+      "sourceUrl": "https://www.carry1st.com/blog/fc-mobile-26-update-gameplay-changes-meta-picks",
+      "sourceName": "Carry1st FC Mobile blog"
+    },
+    {
+      "topicKey": "kickoff-rush-defensive-counter",
+      "kind": "EXPLOIT",
+      "patchVersion": "FC Mobile 26",
+      "summary": "A community-tested counter to kickoff spammers: switch early to the covering defender, sit on the runner's lane with the second defender, and rush the goalkeeper off his line; players report stopping the large majority of attempts and note that failed spammers usually have no plan B.",
+      "whyItMatters": "Gives defenders an answer to the most complained-about routine in the game.",
+      "sourceUrl": "https://www.reddit.com/r/FUTMobile/comments/1ldhw6i/for_everyone_complaining_about_kick_off_glitch/",
+      "sourceName": "r/FUTMobile community thread"
+    },
+    {
+      "topicKey": "h2h-narrow-shape-meta",
+      "kind": "META_SHIFT",
+      "patchVersion": "FC Mobile 26",
+      "summary": "Current H2H consensus favours narrow central shapes — 4-2-3-1 Narrow and 4-3-2-1 — for midfield dominance and quick one-twos; 4-3-3 Holding remains the popular classic, VS Attack players favour 4-2-4 chaos, and the seven newly added formations may reshuffle this soon.",
+      "whyItMatters": "Formation meta decides what the academy should drill this week.",
+      "sourceUrl": "https://forums.ea.com/discussions/fc-mobile-general-discussion-en/fc-mobile-26-formations-guide-%E2%80%93-win-more-matches-%F0%9F%94%A5/13130770",
+      "sourceName": "EA Forums — FC Mobile 26 formations guide"
+    },
+    {
+      "topicKey": "lane-change-stepover-skill-meta",
+      "kind": "SKILL_MOVE",
+      "patchVersion": "FC Mobile 26",
+      "summary": "Community creators agree lane change and step over define the current skill-move meta: lane change is spammable for separation, one step over into a sprint beats most defenders, elastico is strong but only on five-star skill movers in isolation, and hard stop has fallen off badly.",
+      "whyItMatters": "Skill-move priorities feed the Trick of the Week slot.",
+      "sourceUrl": "https://www.youtube.com/watch?v=yQ_KreuaZmk",
+      "sourceName": "FC Mobile complete tutorial (YouTube)"
+    },
+    {
+      "topicKey": "fc-mobile-26-patch-notes",
+      "kind": "PATCH_NOTE",
+      "patchVersion": "FC Mobile 26",
+      "summary": "Third-party coverage of the same FC Mobile 26 update — duplicate of the official patch-notes finding above, included to demonstrate de-duplication by topic+patch instead of by URL.",
+      "whyItMatters": "Duplicate — the pipeline must drop this.",
+      "sourceUrl": "https://www.sportskeeda.com/mobile-games/ea-fc-mobile-26-update-patch-notes-all-fixes-improvements-explored",
+      "sourceName": "Sportskeeda"
+    }
+  ]
+}

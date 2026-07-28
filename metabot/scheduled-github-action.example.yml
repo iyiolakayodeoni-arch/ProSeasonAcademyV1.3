@@ -1,0 +1,24 @@
+# copy to .github/workflows/metabot.yml — no secrets needed at all
+name: ProSeason MetaBot
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # every 6 hours; use '0 8 * * *' for daily 08:00
+  workflow_dispatch: {}      # manual "run now" button in the Actions tab
+
+jobs:
+  metabot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fetch → dedupe → classify/compose → store (pending review)
+        run: node metabot/src/run.js
+      - name: Commit new findings
+        run: |
+          git config user.name "proseason-metabot"
+          git config user.email "bot@proseason.academy"
+          git add metabot/data src/data/liveFeed.json
+          git diff --cached --quiet || git commit -m "metabot: $(date -u +%F) findings"
+          git push
