@@ -10,7 +10,8 @@ import { getSettings } from '../data/settings';
 // ─────────────────────────────────────────────────────────────
 // PAYING — the trust screen.
 //
-// The founder takes payment by PayPal / OPay and confirms by hand.
+// Card checkout (Stripe) is the automatic path; the manual claim
+// below is the fallback for anyone whose bank refuses the card.
 // The danger in that is silence: a member sends money and then has
 // no receipt, no status, and no way to prove anything. That is
 // exactly when a real business starts to look like a scam.
@@ -32,7 +33,7 @@ export default function PaySheet({
   product: string;
   price: string;
   title: string;
-  /** hosted PayPal button — when set, paying is fully automatic */
+  /** automatic card checkout — the pass opens on its own */
   payLink?: string | null;
   onClose: () => void;
 }) {
@@ -49,7 +50,7 @@ export default function PaySheet({
   const me = backend.getMe();
 
   /**
-   * The automatic path. The server builds a PayPal order at TODAY'S
+   * The automatic path. The server builds the checkout at TODAY'S
    * converted price with this member's seat attached, so the number
    * shown is exactly the number charged — no fixed button to go stale.
    */
@@ -66,7 +67,7 @@ export default function PaySheet({
       setStartErr(
         r.error === 'RATE_STALE'
           ? "TODAY'S RATE COULDN'T BE CONFIRMED. TRY AGAIN IN A MOMENT, OR SEND IT MANUALLY BELOW."
-          : 'COULD NOT OPEN PAYPAL. TRY AGAIN, OR SEND IT MANUALLY BELOW.',
+          : 'COULD NOT OPEN THE CHECKOUT. TRY AGAIN, OR SEND IT MANUALLY BELOW.',
       );
       return;
     }
@@ -98,7 +99,7 @@ export default function PaySheet({
   };
 
   /**
-   * They tapped PayPal and left the app. The webhook usually lands
+   * They tapped PAY and left the app. The webhook usually lands
    * within seconds, so poll for a short while — the pass then appears
    * on its own and the welcome message is already waiting.
    */
@@ -186,22 +187,28 @@ export default function PaySheet({
             {/* ── the automatic path ── */}
         {canAuto && !pending && !granted && (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.autoCard}>
-            <Text style={styles.autoTag}>PAY WITH PAYPAL</Text>
+            <Text style={styles.autoTag}>PAY BY CARD</Text>
             <Text style={styles.autoBody}>
-              Card or PayPal balance. You come straight back and everything is already
+              Your normal bank card. You come straight back and everything is already
               open — no code to type, no waiting on anyone.
             </Text>
             {startErr && <Text style={styles.error}>{startErr}</Text>}
             <Pressable onPress={() => void payNow()} disabled={starting}>
               <View style={[styles.autoCta, starting && { opacity: 0.5 }]}>
                 <Text style={styles.autoCtaTxt}>
-                  {starting ? 'OPENING PAYPAL…' : `PAY ${price} NOW ›`}
+                  {starting ? 'OPENING CHECKOUT…' : `PAY ${price} NOW ›`}
                 </Text>
               </View>
             </Pressable>
             <Text style={styles.autoFine}>
-              PAYPAL HANDLES THE PAYMENT. THE ACADEMY NEVER SEES YOUR CARD.
+              STRIPE HANDLES THE PAYMENT. THE ACADEMY NEVER SEES YOUR CARD.
             </Text>
+            {geo === 'africa' && (
+              <Text style={styles.autoFine}>
+                NIGERIAN BANK CARDS WORK — GTBANK, UBA, ACCESS, FIRST BANK, ZENITH,
+                WEMA. IF YOUR BANK REFUSES IT, SEND IT MANUALLY BELOW.
+              </Text>
+            )}
           </Animated.View>
         )}
 

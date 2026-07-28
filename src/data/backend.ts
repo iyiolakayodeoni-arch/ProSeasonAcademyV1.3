@@ -902,16 +902,26 @@ export async function livePrices(region?: string): Promise<LivePrice[] | null> {
 }
 
 /**
- * Start a PayPal checkout at TODAY'S price. The amount is computed
+ * Start a card checkout at TODAY'S price. The amount is computed
  * server-side from the database, so what was displayed is what gets
  * charged — and a tampered client cannot set its own price.
+ *
+ * Stripe unless a provider is named. Most members are Nigerian, and a
+ * plain card checkout lets their own bank make the decision rather than
+ * PayPal's risk layer, which stays wary of Nigeria even now that the
+ * banks allow international payments again.
  */
 export async function startCheckout(
   product: string,
-): Promise<{ ok: true; approveUrl: string; display: string; currency: string } | { ok: false; error: string }> {
+  provider?: 'stripe' | 'paypal',
+): Promise<{
+  ok: true; approveUrl: string; display: string; currency: string; provider: string;
+} | { ok: false; error: string }> {
   if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
   try {
-    const resp = await supabase.functions.invoke('pay-start', { body: { product } });
+    const resp = await supabase.functions.invoke('pay-start', {
+      body: provider ? { product, provider } : { product },
+    });
     if (resp.error) {
       try {
         const ctx: any = (resp.error as any).context;
@@ -927,6 +937,7 @@ export async function startCheckout(
       approveUrl: String(d.approveUrl),
       display: String(d.display ?? ''),
       currency: String(d.currency ?? 'GBP'),
+      provider: String(d.provider ?? 'stripe'),
     };
   } catch {
     return { ok: false, error: 'FAILED' };

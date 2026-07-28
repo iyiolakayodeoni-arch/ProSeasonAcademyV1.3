@@ -1,15 +1,31 @@
-// PAY-START — creates a PayPal order at TODAY'S price.
+// PAY-START — creates a checkout at TODAY'S price.
 //
-// This is what makes live pricing honest. A hosted PayPal button has a
-// fixed amount baked in, so the moment the rate moves the app would
-// show one number and charge another — which looks like a bait and
-// switch. Instead the order is created here, server-side, at the price
-// the member was just shown, with their seat attached.
+// STRIPE IS THE DEFAULT. PayPal is still here as a fallback, because a
+// working second rail costs nothing to keep and a dead checkout costs
+// a sale.
 //
-// The price is calculated by the DATABASE (price_now), never sent up
-// from the phone, so a tampered client cannot buy PRO for a penny.
+// WHY STRIPE LEADS
+//   Most members are Nigerian. Since July 2025 Nigerian banks allow
+//   international payments on ordinary naira cards again (GTBank, UBA,
+//   Access, First Bank, Zenith, Wema...), but PayPal's own risk layer
+//   stays conservative about Nigeria regardless of what the issuing
+//   bank permits — a card that works on Netflix can still be refused
+//   by PayPal. Stripe is a plain card checkout: the member types his
+//   card and HIS BANK decides. It is also cheaper on every pass
+//   (1.5%+20p UK / 3.25%+20p international vs PayPal's ~2.9%+30p).
+//
+// WHY THE ORDER IS CREATED SERVER-SIDE
+//   A hosted button has a fixed amount baked in, so the moment the
+//   rate moves the app shows one number and charges another — which
+//   looks like a bait and switch. The price comes from the DATABASE
+//   (price_now), never from the phone, so a tampered client cannot
+//   buy PRO for a penny.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+// ── helpers, inlined on purpose ──────────────────────────────
+// The Supabase DASHBOARD deploys one file and cannot resolve
+// '../_shared/...'. Keeping these here means this file deploys by
+// copy-paste as well as by CLI. Do not re-extract them.
 const cors = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, content-type',
@@ -42,6 +58,14 @@ async function paypalToken(): Promise<string | null> {
   return (await r.json()).access_token ?? null;
 }
 
+/** Which rail to use. Stripe unless explicitly asked otherwise. */
+function chooseProvider(asked: string): 'stripe' | 'paypal' {
+  const want = asked.toLowerCase();
+  if (want === 'paypal') return 'paypal';
+  if (want === 'stripe') return 'stripe';
+  return Deno.env.get('STRIPE_SECRET') ? 'stripe' : 'paypal';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return json({}, 204);
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
@@ -69,36 +93,105 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const product = String(body.product ?? '').toUpperCase().trim();
   if (!product) return json({ ok: false, error: 'product required' }, 400);
+  const provider = chooseProvider(String(body.provider ?? ''));
 
   // ── the price comes from the DATABASE, never from the client ──
   const { data: priced, error: perr } = await sb.rpc('price_now', { p_product: product }).single();
   if (perr || !priced) return json({ ok: false, error: 'unknown product' }, 404);
 
-  // Both prices are REAL and stored, not derived, so a stale rate can
-  // never block a sale — it only blanks the comparison line in the app.
   const p = priced as any;
   const amount = Number(p.amount);
   const currency = String(p.currency ?? 'GBP');
   if (!(amount > 0)) return json({ ok: false, error: 'no price' }, 500);
 
-  // PayPal's REST API has a fixed list of currencies and NAIRA IS NOT ON
-  // IT. Sending NGN comes back as 422 CURRENCY_NOT_SUPPORTED, which the
-  // member would read as "payment broken" — and only ever on the Africa
-  // passes, making it look random. price_now() always returns GBP now;
-  // this refuses loudly if a product is ever mis-configured again.
+  // Neither rail can charge naira: NGN is not on PayPal's currency list
+  // at all, and this account settles in GBP. price_now() always returns
+  // GBP now; this refuses loudly if a product is ever mis-configured.
   if (currency !== 'GBP') {
     return json({
       ok: false,
       error: 'misconfigured price',
       detail:
-        `product ${product} is set to charge ${currency}, but PayPal only ` +
-        `accepts GBP on this account. Fix products.charge_currency — see supabase/fx3.sql.`,
+        `product ${product} is set to charge ${currency}, but this account ` +
+        `only accepts GBP. Fix products.charge_currency — see supabase/fx3.sql.`,
     }, 500);
   }
 
   const value = amount.toFixed(2);
+  // the webhook reads this back and grants exactly this pass
+  const customId = `${profile.academy_id}|${product}`;
 
-  // ── create the order ──
+  // ════════════════════ STRIPE ════════════════════
+  if (provider === 'stripe') {
+    const key = Deno.env.get('STRIPE_SECRET');
+    if (!key) return json({ ok: false, error: 'stripe not configured' }, 500);
+
+    // Stripe takes the amount in the smallest unit — pence.
+    const pence = Math.round(amount * 100);
+
+    const form = new URLSearchParams({
+      mode: 'payment',
+      'payment_method_types[0]': 'card',
+      // survives the round trip and comes back on the webhook
+      client_reference_id: customId,
+      'metadata[academy_id]': profile.academy_id,
+      'metadata[product]': product,
+      // mirrored onto the PaymentIntent so a charge-level event also
+      // carries the identity — belt and braces if the session event
+      // is ever missed
+      'payment_intent_data[metadata][academy_id]': profile.academy_id,
+      'payment_intent_data[metadata][product]': product,
+      'payment_intent_data[description]': `ProSeasonAcademy · ${product}`,
+      'line_items[0][quantity]': '1',
+      'line_items[0][price_data][currency]': 'gbp',
+      'line_items[0][price_data][unit_amount]': String(pence),
+      'line_items[0][price_data][product_data][name]': `PROSEASONACADEMY · ${product}`,
+      'line_items[0][price_data][product_data][description]':
+        `${p.display ?? ''}${p.compare ? ' — ' + p.compare : ''}`.trim() || product,
+      success_url: 'proseasonacademy://paid',
+      cancel_url: 'proseasonacademy://cancelled',
+    });
+
+    const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${key}`,
+        'content-type': 'application/x-www-form-urlencoded',
+        // a double-tap cannot create two sessions for the same purchase
+        'idempotency-key': `${profile.academy_id}-${product}-${pence}`,
+      },
+      body: form,
+    });
+
+    if (!r.ok) {
+      const detail = await r.text();
+      return json(
+        { ok: false, error: 'stripe rejected the checkout', detail: detail.slice(0, 300) },
+        502,
+      );
+    }
+
+    const session = await r.json();
+    if (!session.url) return json({ ok: false, error: 'no checkout url' }, 502);
+
+    await sb.rpc('audit', {
+      p_action: 'pay_start',
+      p_target: profile.academy_id,
+      p_detail: { provider: 'stripe', product, amount: value, currency, session: session.id },
+    });
+
+    return json({
+      ok: true,
+      provider: 'stripe',
+      orderId: session.id,
+      approveUrl: session.url,
+      amount: value,
+      currency,
+      display: p.display,
+    });
+  }
+
+  // ════════════════════ PAYPAL (fallback) ════════════════════
   const token = await paypalToken();
   if (!token) return json({ ok: false, error: 'paypal not configured' }, 500);
 
@@ -107,18 +200,13 @@ Deno.serve(async (req) => {
     headers: {
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
-      // idempotent per seat+product+price, so a double-tap cannot
-      // create two orders for the same purchase
       'PayPal-Request-Id': `${profile.academy_id}-${product}-${value}`,
     },
     body: JSON.stringify({
       intent: 'CAPTURE',
       purchase_units: [{
-        // the webhook reads this back and grants exactly this pass
-        custom_id: `${profile.academy_id}|${product}`,
+        custom_id: customId,
         description: `ProSeasonAcademy · ${product}`,
-        // charged in the member's OWN currency — a Nigerian is billed
-        // naira, a world member pounds. Neither is a conversion.
         amount: { currency_code: currency, value },
       }],
       payment_source: {
@@ -147,11 +235,12 @@ Deno.serve(async (req) => {
   await sb.rpc('audit', {
     p_action: 'pay_start',
     p_target: profile.academy_id,
-    p_detail: { product, amount: value, currency, order: order.id },
+    p_detail: { provider: 'paypal', product, amount: value, currency, order: order.id },
   });
 
   return json({
     ok: true,
+    provider: 'paypal',
     orderId: order.id,
     approveUrl: approve.href,
     amount: value,
