@@ -193,15 +193,17 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
 /** placeholder voice when there’s no approved mechanic yet (or it went stale) */
 export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
   const calm = coach.id === 'obinna';
+  // The scan grades this stage's OBJECTIVES against the vault, so it works
+  // with or without a fresh mechanic. Only the bonus tape is pending.
   const scanIntro =
-    'THE SCAN IS ARMED, BUT ITS TARGETS LOCK IN THE MOMENT TODAY’S MECHANIC LANDS — NOTHING TO PROVE UNTIL THE TAPE DROPS.';
+    'THE SCAN IS LIVE — IT GRADES THIS STAGE’S OBJECTIVES OFF YOUR VAULT. TODAY’S EXTRA MECHANIC IS STILL BEING CUT; THE WORK DOESN’T WAIT FOR IT.';
   if (staleName) {
     return {
       greeting: calm
         ? 'Come in — quick one today. The lesson changed under our feet.'
         : 'You’re here. Good. Quick one today — the game moved under us.',
       voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
-      mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Scroll down, you’ll see where it lands.`,
+      mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Your stage objectives are untouched though, and the scan still grades them off the vault.`,
       closer: `When the fresh tape lands, same rule — **the scan will know.** It always knows.`,
       scanIntro,
       footer: 'THE CHAT IS ONE WAY — THE UPDATED TAPE LANDS HERE FIRST.',
@@ -213,8 +215,8 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
       : 'You’re here. Good. Pull up, little bro — today is just **me talking.**',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
     mechanic:
-      'Today’s mechanic isn’t cleared for the room yet — the scouts are checking the tape. Scroll down, you’ll see exactly where it lands.',
-    closer: `When it lands, remember the house rule — **the scan will know.** It always knows.`,
+      'Today’s extra mechanic isn’t cleared for the room yet — the scouts are still checking the tape. That changes nothing about your job: **the stage objectives below are live**, and the scan reads them straight off your vault. Go and play.',
+    closer: `Do the work now, take the bonus tape when it lands. Either way — **the scan will know.** It always knows.`,
     scanIntro,
     footer: 'THE CHAT IS ONE WAY — THE MECHANIC LANDS HERE THE MOMENT IT’S APPROVED.',
   };

@@ -44,10 +44,13 @@ import {
   setActiveThread,
   shareScanResult,
   startMockTraffic,
+  startLiveRooms,
+  getRemoteUsers,
   toggleMute,
   toggleReaction,
   useCommunityState,
 } from '../../data/community';
+import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
 import { colors, monoFont } from '../../theme';
 
@@ -173,14 +176,26 @@ function Dot({ delay }: { delay: number }) {
 
 export default function CommunityTab({ coach }: { coach: Coach }) {
   const st = useCommunityState();
+  const cloud = useCloud();
   const users: Record<string, UserWithAvatar> = useMemo(() => {
     const u = buildUsers(coach);
-    return { ...u, coach: { ...u.coach, avatar: coach.portrait } };
-  }, [coach]);
+    // real players from the live rooms join the same map the UI renders
+    return { ...u, ...getRemoteUsers(), coach: { ...u.coach, avatar: coach.portrait } };
+  }, [coach, st.messages, st.live]);
 
+  // LIVE first: if the academy cloud answers, the public channels mirror
+  // real Supabase rooms. Only a genuinely offline hall gets the scripted
+  // engine, so the room never looks abandoned on a dead network.
   useEffect(() => {
-    startMockTraffic(coach); // singleton — keeps the room alive across tab switches
-  }, [coach]);
+    let cancelled = false;
+    void (async () => {
+      const live = await startLiveRooms(backend.getMe());
+      if (!cancelled && !live) startMockTraffic(coach);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coach, cloud.status]);
 
   const inDm = isDm(st.activeThreadId, st.dms);
   const channel = CHANNELS.find((c) => c.id === st.activeThreadId);

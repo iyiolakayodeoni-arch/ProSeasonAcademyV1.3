@@ -1,13 +1,28 @@
 import { useSyncExternalStore } from 'react';
 import { Coach } from './coaches';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
-// COMMUNITY DATA LAYER — channels + private DMs + mock presence.
+// COMMUNITY DATA LAYER — channels + private DMs + presence.
 // Structural rule: a thread is either type 'channel' or 'dm' —
 // a private message can NEVER render inside a public channel.
-// TODO(real-community): swap the mock store + traffic engine for
-// the real chat backend (same message/thread shapes).
+//
+// LIVE MODE: when the academy cloud is reachable the three public
+// channels (#general / #wins / #losses) mirror real Supabase rooms
+// — real players, real messages, realtime fan-out. The scripted
+// engine only runs OFFLINE so an empty hall never feels dead.
+// DMs remain local in v1 (no per-pair rooms in the schema yet).
 // ─────────────────────────────────────────────────────────────
+
+/** local channel id → the server room slug seeded in schema.sql */
+export const CHANNEL_SLUGS: Record<string, string> = {
+  general: 'dressing-room',
+  wins: 'match-receipts',
+  losses: 'the-lab',
+};
+const SLUG_TO_CHANNEL: Record<string, string> = Object.fromEntries(
+  Object.entries(CHANNEL_SLUGS).map(([id, slug]) => [slug, id]),
+);
 
 export type ReactionIcon = 'fire' | 'laugh' | 'eye';
 
@@ -150,6 +165,8 @@ export interface CommunityState {
   presence: Record<string, number>;
   dms: DmDef[];
   joinedSquads: Record<string, boolean>;
+  /** true once a public channel is mirroring a real Supabase room */
+  live: boolean;
 }
 
 let state: CommunityState = {
@@ -162,6 +179,7 @@ let state: CommunityState = {
   presence: Object.fromEntries(CHANNELS.map((c) => [c.id, c.baseCount])),
   dms: SEED_DMS,
   joinedSquads: {},
+  live: false,
 };
 
 const listeners = new Set<() => void>();
@@ -229,6 +247,14 @@ export function openDm(userId: string): string {
 export function sendText(threadId: string, text: string) {
   const t = text.trim();
   if (!t) return;
+  const slug = CHANNEL_SLUGS[threadId];
+  if (state.live && slug) {
+    // LIVE room: the server is the source of truth. Send it up and let
+    // realtime echo it back so ordering matches every other player's
+    // screen — no optimistic duplicate to reconcile later.
+    backend.sendRoomMessage(slug, t);
+    return;
+  }
   append(threadId, { id: mid(), authorId: 'you', at: Date.now(), text: t });
   maybeReply(threadId);
 }
@@ -268,7 +294,115 @@ export function toggleMute(userId: string) {
 }
 
 export function shareScanResult(threadId: string, text: string) {
+  const slug = CHANNEL_SLUGS[threadId];
+  if (state.live && slug) {
+    backend.sendRoomMessage(slug, text);
+    return;
+  }
   append(threadId, { id: mid(), authorId: 'you', at: Date.now(), text });
+}
+
+// ── LIVE BRIDGE — real Supabase rooms ─────────────────────────
+// Remote players are folded into the same ChatUser map the UI
+// already renders, so nothing downstream knows the difference
+// between a scripted member and a real one.
+
+const REMOTE_COLORS = ['#39FF6A', '#8fb89b', '#f2c078', '#ffcf7a', '#e0605c', '#7fd4ff'];
+/** academyId → synthesized ChatUser id, so colors stay stable per person */
+const remoteUsers = new Map<string, ChatUser>();
+let myAcademyId: string | null = null;
+
+export function getRemoteUsers(): Record<string, ChatUser> {
+  return Object.fromEntries(remoteUsers.entries());
+}
+
+function remoteUser(handle: string, academyId: string, kind: string): ChatUser {
+  const key = academyId || handle;
+  const found = remoteUsers.get(key);
+  if (found) return found;
+  const isFounder = kind === 'founder' || academyId === 'PSA-FOUNDER';
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+  const u: ChatUser = {
+    id: key,
+    handle: handle || 'PLAYER',
+    color: isFounder ? '#f2c078' : REMOTE_COLORS[hash % REMOTE_COLORS.length],
+    role: isFounder ? 'coach' : 'member',
+    online: true,
+    tagline: isFounder ? 'THE FOUNDER · SPEAKS FOR THE ACADEMY' : `ACADEMY PLAYER · ${key}`,
+  };
+  remoteUsers.set(key, u);
+  return u;
+}
+
+/** server row → the ChatMessage shape the UI already renders */
+function wireToMessage(m: backend.ServerMessage): ChatMessage {
+  const mine = !!myAcademyId && m.academyId === myAcademyId;
+  const author = mine ? 'you' : remoteUser(m.author, m.academyId ?? '', m.kind).id;
+  return {
+    id: `srv-${m.id}`,
+    authorId: author,
+    at: typeof m.at === 'number' ? m.at : Date.parse(String(m.at)) || Date.now(),
+    text: m.text,
+    kind: 'text',
+  };
+}
+
+function mergeRoom(threadId: string, rows: backend.ServerMessage[]) {
+  if (!rows.length) return;
+  const existing = state.messages[threadId] ?? [];
+  const seen = new Set(existing.map((m) => m.id));
+  const incoming = rows.map(wireToMessage).filter((m) => !seen.has(m.id));
+  if (!incoming.length) return;
+  const merged = [...existing, ...incoming].sort((a, b) => a.at - b.at);
+  set({ messages: { ...state.messages, [threadId]: merged } });
+  if (threadId !== state.activeThreadId) {
+    const add = incoming.filter((m) => m.authorId !== 'you').length;
+    if (add) set({ unreads: { ...state.unreads, [threadId]: (state.unreads[threadId] ?? 0) + add } });
+  }
+}
+
+let liveStarted = false;
+
+/**
+ * Attach the three public channels to their real rooms. Safe to
+ * call repeatedly; a failed probe simply leaves the app offline
+ * and the scripted engine keeps the hall warm.
+ */
+export async function startLiveRooms(me: { academyId: string } | null): Promise<boolean> {
+  if (liveStarted) return state.live;
+  // No claimed seat = no identity to post or subscribe with. Staying
+  // offline is the honest outcome: better a warm scripted hall than a
+  // real one the player can only stare at.
+  if (!me) return false;
+  const channels = await backend.listChannels();
+  if (!channels) return false; // offline → caller falls back to mock traffic
+  liveStarted = true;
+  myAcademyId = me.academyId;
+
+  // clear the seeded fiction out of the public rooms — this is a real hall now
+  const cleared = { ...state.messages };
+  for (const id of Object.keys(CHANNEL_SLUGS)) cleared[id] = [];
+  set({ messages: cleared, live: true });
+
+  for (const [threadId, slug] of Object.entries(CHANNEL_SLUGS)) {
+    const history = await backend.pullMessages(slug, 0, 50);
+    if (history) mergeRoom(threadId, history);
+    backend.joinRoom(slug, (e) => {
+      if (e.type === 'message') {
+        const tid = SLUG_TO_CHANNEL[e.channel];
+        if (tid) mergeRoom(tid, [e.message]);
+      } else if (e.type === 'presence') {
+        const tid = SLUG_TO_CHANNEL[e.channel];
+        if (tid) set({ presence: { ...state.presence, [tid]: e.users.length } });
+      }
+    });
+  }
+  return true;
+}
+
+export function isLive(): boolean {
+  return state.live;
 }
 
 // ── mock live traffic — scripted presence + inbound messages ──

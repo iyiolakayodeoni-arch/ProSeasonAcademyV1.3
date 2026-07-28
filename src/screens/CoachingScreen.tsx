@@ -36,7 +36,10 @@ import {
   LessonPlan,
 } from '../data/coaching';
 import { assignLessonRef, recordStagePass, useJourneyProgress } from '../data/progress';
-import { ScanResult, useMatchScan } from '../hooks/useMatchScan';
+import { useMatchScan } from '../hooks/useMatchScan';
+import { objectiveCount, useMatches } from '../data/matches';
+import { useJournal } from '../data/journal';
+import StageScanSheet from './StageScanSheet';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { colors, monoFont } from '../theme';
 
@@ -127,8 +130,6 @@ function MessageMeta({ time }: { time: string }) {
 type Props = {
   coach: Coach;
   stage: JourneyStage;
-  /** live match-ingest seam — null until the real service lands */
-  liveResult?: ScanResult | null;
   onClose: () => void;
 };
 
@@ -137,10 +138,14 @@ type Props = {
 // Mechanic, tiles, rule and scan targets all come from the live
 // approved MetaBot feed (see src/data/coaching.ts).
 // ─────────────────────────────────────────────────────────────
-export default function CoachingScreen({ coach, stage, liveResult = null, onClose }: Props) {
+export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2200, eraseMs: 2200 });
   const prog = useJourneyProgress();
   const coachFirst = coach.name.split(' ')[0];
+  // the ledgers the scan is graded from
+  const vault = useMatches();
+  const journal = useJournal();
+  const [scanSheet, setScanSheet] = useState(false);
 
   // ── resolve TODAY'S MECHANIC from the live bot feed ──
   const lessonResult = useMemo(
@@ -213,31 +218,57 @@ export default function CoachingScreen({ coach, stage, liveResult = null, onClos
 
   const [clipW, setClipW] = useState(0);
 
-  // ── MATCH SCAN ──
-  const { status, result, start } = useMatchScan(plan ? plan.scanTargets : [], liveResult, () => {
-    recordStagePass(stage.n, {
-      contentId: planContentId,
-      passedAt: Date.now(),
-      xp: stage.rewardXp ?? 100,
-      badge: stage.rewardBadge,
-    });
-  });
+  // ── MATCH SCAN — graded against the REAL vault, never a timer ──
+  const { status, result, start, gradeNow } = useMatchScan(
+    stage,
+    vault.matches,
+    journal.entries.length,
+    () => {
+      recordStagePass(stage.n, {
+        contentId: planContentId,
+        passedAt: Date.now(),
+        xp: stage.rewardXp ?? 100,
+        badge: stage.rewardBadge,
+      });
+    },
+  );
 
-  const scanDisabled = !plan || status === 'scanning';
-  const ctaLabel = !plan
-    ? 'MECHANIC PENDING'
-    : status === 'scanning'
-      ? 'SCANNING…'
+  const scanDisabled = status === 'scanning';
+  const ctaLabel =
+    status === 'scanning'
+      ? 'READING THE VAULT…'
       : status === 'passed' || (cleared && status === 'armed')
         ? 'BACK TO THE MAP ›'
         : status === 'failed'
-          ? 'RUN IT BACK — PLAY AGAIN ›'
-          : 'GO PLAY — START THE SCAN ›';
+          ? 'RUN IT BACK — SCAN A MATCH ›'
+          : 'SCAN A MATCH ›';
+
   const handleCta = () => {
     if (scanDisabled) return;
-    if (status === 'passed' || (cleared && status === 'armed')) onClose();
-    else start(); // armed / failed → real CTA: arm the scan (mock result for now)
+    if (status === 'passed' || (cleared && status === 'armed')) return onClose();
+    setScanSheet(true); // the full ritual: log the match, then it grades
   };
+
+  /** the in-room scan closed — if a match was logged, grade immediately */
+  const handleScanSheetClose = (didLog: boolean) => {
+    setScanSheet(false);
+    if (didLog) gradeNow();
+  };
+
+  /** live objective standings, so the card is honest BEFORE any scan runs */
+  const liveTargets = useMemo(
+    () =>
+      (stage.objectives ?? []).map((o) => {
+        const count = o.check ? objectiveCount(o.check, vault.matches, journal.entries.length) : o.done;
+        return {
+          label: o.label,
+          target: String(o.target),
+          value: String(Math.min(count, o.target)),
+          met: count >= o.target,
+        };
+      }),
+    [stage.objectives, vault.matches, journal.entries.length],
+  );
 
   const TileIcon = { target: TargetGlyphIcon, waves: WavesGlyphIcon, arrow: ArrowOutIcon };
 
@@ -435,33 +466,34 @@ export default function CoachingScreen({ coach, stage, liveResult = null, onClos
           <Text style={styles.scanHeadline}>Prove it in a real match.</Text>
           <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
 
-          {plan ? (
+          {/* what the scan ACTUALLY grades — live counts off the vault */}
+          {liveTargets.length ? (
             <View style={styles.scanList}>
-              {plan.scanTargets.map((row, i) => {
+              {liveTargets.map((row, i) => {
                 const v = result?.values[i];
+                const met = v ? v.met : row.met;
+                const shown = v ? v.value : row.value;
                 return (
                   <View
                     key={i}
                     style={[
                       styles.scanRow,
-                      status === 'armed' && i === 1 && styles.scanRowLive,
-                      v && (v.met ? styles.scanRowMet : styles.scanRowMissed),
+                      met && styles.scanRowMet,
+                      v && !v.met && styles.scanRowMissed,
                     ]}
                   >
-                    <View style={[styles.scanBox, v && (v.met ? styles.scanBoxMet : styles.scanBoxMissed)]}>
-                      {v ? (
-                        v.met ? (
-                          <CheckIcon size={8} color="#05130a" />
-                        ) : (
-                          <XMarkIcon size={7} color="#05130a" />
-                        )
+                    <View style={[styles.scanBox, met && styles.scanBoxMet, v && !v.met && styles.scanBoxMissed]}>
+                      {met ? (
+                        <CheckIcon size={8} color="#05130a" />
+                      ) : v ? (
+                        <XMarkIcon size={7} color="#05130a" />
                       ) : null}
                     </View>
                     <Text style={[styles.scanLabel, v && !v.met && { color: colors.loss }]} numberOfLines={2}>
                       {row.label}
                     </Text>
-                    <Text style={[styles.scanTarget, v && { color: v.met ? colors.primary : colors.loss }]}>
-                      {v ? `${v.met ? 'HIT' : 'MISSED'} ${v.value}/${row.target}` : `TARGET ${row.target}`}
+                    <Text style={[styles.scanTarget, met && { color: colors.primary }, v && !v.met && { color: colors.loss }]}>
+                      {met ? `HIT ${shown}/${row.target}` : `${shown}/${row.target}`}
                     </Text>
                   </View>
                 );
@@ -471,6 +503,18 @@ export default function CoachingScreen({ coach, stage, liveResult = null, onClos
             <View style={styles.scanPendingRow}>
               <ScanGlyphIcon size={13} color="rgba(143,184,155,0.55)" />
               <Text style={styles.scanPendingTxt}>TARGETS LOCK IN WHEN THE MECHANIC DROPS</Text>
+            </View>
+          )}
+
+          {/* the coach's-eye watch-list for today's mechanic (honour rows) */}
+          {plan && plan.scanTargets.length > 0 && (
+            <View style={styles.watchList}>
+              <Text style={styles.watchTitle}>{coachFirst.toUpperCase()} IS ALSO WATCHING FOR</Text>
+              {plan.scanTargets.map((row, i) => (
+                <Text key={i} style={styles.watchRow} numberOfLines={2}>
+                  · {row.label} — {row.target}
+                </Text>
+              ))}
             </View>
           )}
 
@@ -508,6 +552,13 @@ export default function CoachingScreen({ coach, stage, liveResult = null, onClos
             </View>
           </Pressable>
 
+          {/* ghost CTA — grade the matches already in the vault, no new scan */}
+          {status !== 'scanning' && status !== 'passed' && !cleared && vault.played > 0 && (
+            <Pressable onPress={start} hitSlop={6}>
+              <Text style={styles.ghostCta}>OR GRADE THE {vault.played} MATCH{vault.played === 1 ? '' : 'ES'} ALREADY IN MY VAULT ›</Text>
+            </Pressable>
+          )}
+
           <Text style={styles.oneWay}>{chat.footer}</Text>
         </Animated.View>
 
@@ -519,6 +570,13 @@ export default function CoachingScreen({ coach, stage, liveResult = null, onClos
       <Pressable onPress={onClose} hitSlop={10} style={styles.backBtn}>
         <ChevronLeftIcon size={15} color={colors.fg} />
       </Pressable>
+
+      {/* ── THE SCAN RITUAL — full-screen, in-room ── */}
+      {scanSheet && (
+        <View style={StyleSheet.absoluteFill}>
+          <StageScanSheet coach={coach} stage={stage} plan={plan} onClose={handleScanSheetClose} />
+        </View>
+      )}
     </View>
   );
 }
@@ -953,6 +1011,37 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
     color: 'rgba(143,184,155,0.55)',
   },
+
+  ghostCta: {
+    marginTop: 9,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 6.2,
+    fontWeight: '900',
+    letterSpacing: 1.3,
+    color: 'rgba(57,255,106,0.72)',
+  },
+
+  // coach's-eye honour rows for today's mechanic
+  watchList: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.22)',
+    backgroundColor: 'rgba(30,25,12,0.35)',
+    borderRadius: 9,
+    paddingVertical: 9,
+    paddingHorizontal: 10,
+    gap: 3,
+  },
+  watchTitle: {
+    fontFamily: monoFont,
+    fontSize: 6,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    color: 'rgba(242,192,120,0.9)',
+    marginBottom: 2,
+  },
+  watchRow: { fontFamily: monoFont, fontSize: 6.2, lineHeight: 9.5, letterSpacing: 0.8, color: 'rgba(143,184,155,0.8)' },
 
   footVersion: { marginTop: 14, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2.6, color: 'rgba(143,184,155,0.4)' },
 });

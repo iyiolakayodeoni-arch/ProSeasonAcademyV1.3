@@ -10,6 +10,21 @@
 // On web / iOS / devices without the native module it reports
 // `available: false` and the Match Vault UI degrades gracefully
 // to manual logging (which is fully supported).
+//
+// ⚠️ STATUS: the native Android module is NOT in this repo. The
+// pure frame logic below (ScoreTracker in frameAnalysis.ts) is
+// complete and unit-tested — it simply has nothing feeding it
+// pixels yet. To light THE EYE up you need, in a prebuilt
+// `android/` project:
+//   1. a MatchWatcherModule (ReactContextBaseJavaModule) exposing
+//      arm() / finish() / cancel() and emitting 'MatchWatcherFrame'
+//      events carrying base64 96×54 grayscale frames at ~1fps,
+//   2. a foreground Service holding the MediaProjection consent,
+//   3. FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PROJECTION in
+//      AndroidManifest.xml,
+//   4. an Expo config plugin so `expo prebuild` re-applies 1–3.
+// Until then every scan is logged by hand, which the whole scan
+// ritual already supports as a first-class path.
 // ─────────────────────────────────────────────────────────────
 
 import { useSyncExternalStore } from 'react';

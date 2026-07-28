@@ -1,3 +1,8 @@
+> ⚠️ **SUPERSEDED — 28 July 2026.** All nine blockers in §3 are FIXED and the app is
+> wired to the live Supabase project. §4 (Play Store) is **not applicable**: this is
+> private enterprise software distributed inside the Onliversity ecosystem, never a
+> public store listing. Kept as the historical record. See `FIXES.md` for what changed.
+
 # ProSeasonAcademy V1.3 — Repository Audit
 
 **Audited:** 28 July 2026 · **Commit:** `d095733` (first commit) · **Branch:** `arena/019fa755-proseasonacademyv1-3`

@@ -34,6 +34,11 @@ export function getSeasonGate(): SeasonGate | null {
   return seasonGate;
 }
 
+/** the signed-in academy identity, or null when offline/unclaimed */
+export function getMe(): CloudUser | null {
+  return me;
+}
+
 // ── health + auth ────────────────────────────────────────────
 export async function probeHealth(timeoutMs = 2500): Promise<boolean> {
   if (!supabase) return false;
@@ -402,20 +407,22 @@ export type CloudEvent =
   | { type: 'presence'; channel: string; users: { id: string; handle: string; academyId: string }[] }
   | { type: 'typing'; channel: string; user: { handle: string } };
 
-let onEvent: ((e: CloudEvent) => void) | null = null;
+/** one handler PER ROOM — the community mirrors 3 rooms at once */
+const roomHandlers = new Map<string, (e: CloudEvent) => void>();
 const rooms = new Map<string, RealtimeChannel>();
+const onEventFor = (slug: string) => roomHandlers.get(slug);
 
 /** join a channel room; leaves nothing (rooms are cheap) */
 export function joinRoom(slug: string, handler: (e: CloudEvent) => void) {
   if (!supabase || !me) return;
-  onEvent = handler; // v1: single active room listener (community tab)
+  roomHandlers.set(slug, handler);
   if (rooms.has(slug)) return;
   const ch = supabase
     .channel(`room:${slug}`, { config: { presence: { key: me.academyId } } })
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_slug=eq.${slug}` },
-      (payload) => onEvent?.({ type: 'message', channel: slug, message: mapMsg(payload.new) }),
+      (payload) => onEventFor(slug)?.({ type: 'message', channel: slug, message: mapMsg(payload.new) }),
     )
     .on('presence', { event: 'sync' }, () => {
       const state = ch.presenceState() as Record<string, any[]>;
@@ -424,7 +431,7 @@ export function joinRoom(slug: string, handler: (e: CloudEvent) => void) {
         handle: String(u.handle ?? 'PLAYER'),
         academyId: String(u.academyId ?? u.academy_id ?? ''),
       }));
-      onEvent?.({ type: 'presence', channel: slug, users });
+      onEventFor(slug)?.({ type: 'presence', channel: slug, users });
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED' && me) {
@@ -445,7 +452,7 @@ export function cloudReset() {
     void supabase.auth.signOut();
   }
   rooms.clear();
-  onEvent = null;
+  roomHandlers.clear();
   me = null;
   seasonGate = null;
   void AsyncStorage.removeItem(LEGACY_TOKEN_KEY).catch(() => {});

@@ -107,12 +107,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
         <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <Animated.View style={[styles.zoomShell, shellStyle]}>
             <Animated.View style={[styles.zoomContent, contentStyle]}>
-              <CoachingScreen
-                coach={coach}
-                stage={room.stage}
-                liveResult={null /* TODO(real-match-scan): wire the match-ingest service here */}
-                onClose={closeRoom}
-              />
+              <CoachingScreen coach={coach} stage={room.stage} onClose={closeRoom} />
             </Animated.View>
           </Animated.View>
           {/* node ghost — blooms out of the map as the shell takes over */}

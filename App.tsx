@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Animated, {
@@ -17,22 +17,69 @@ import BaselineScanScreen from './src/screens/BaselineScanScreen';
 import SetupLoaderScreen from './src/screens/SetupLoaderScreen';
 import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
+import { hydrateProgress } from './src/data/progress';
+import { initCloudSync } from './src/data/cloudSync';
+import {
+  endSession,
+  getSession,
+  hydrateSession,
+  lockCoach,
+  markBaselineDone,
+  markIntroDone,
+  markSignedIn,
+  setReferral as persistReferral,
+} from './src/data/session';
 import { colors } from './src/theme';
 
-// SPLASH → SIGN IN → COACH SELECTION → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
+// SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → BASELINE SCAN
+//        → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
 type Route = 'signin' | 'coach' | 'intro' | 'scan' | 'hear' | 'setup' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
   const [route, setRoute] = useState<Route>('signin');
   const [coachId, setCoachId] = useState<string | null>(null);
-  const [referral, setReferral] = useState<string | null>(null);
   const [splashGone, setSplashGone] = useState(false);
+  /** false until the saved session has been read off the disk */
+  const [restored, setRestored] = useState(false);
 
   const splashOpacity = useSharedValue(1);
   const appOpacity = useSharedValue(0);
 
   const markGone = useCallback(() => setSplashGone(true), []);
+
+  // ── RESTORE: pick up exactly where this player left off ──
+  // Runs while the splash is still on screen, so a returning
+  // player never sees the sign-in door or re-sits the baseline.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      await hydrateSession();
+      if (!alive) return;
+      const s = getSession();
+      if (s.coachId) {
+        // the lock is permanent — his ledger loads before the map renders
+        await hydrateProgress(s.coachId);
+        if (!alive) return;
+        setCoachId(s.coachId);
+      }
+      if (!s.signedIn) setRoute('signin');
+      else if (!s.coachId) setRoute('coach');
+      else if (!s.introDone) setRoute('intro');
+      else if (!s.baselineDone) setRoute('scan');
+      else setRoute('hub');
+      setRestored(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // ── CLOUD: start the academy's uplink once a coach is known ──
+  // Idempotent + fail-soft: no network just means offline-first.
+  useEffect(() => {
+    if (coachId) initCloudSync({ coachId });
+  }, [coachId]);
 
   // Splash finished its progress run → crossfade to whatever sits underneath.
   const handleSplashFinish = useCallback(() => {
@@ -50,24 +97,44 @@ export default function App() {
     [coachId],
   );
 
+  const handleSignedIn = useCallback(() => {
+    markSignedIn();
+    const s = getSession();
+    // a returning player who already locked in skips straight to his floor
+    if (s.coachId && s.baselineDone) setRoute('hub');
+    else if (s.coachId && s.introDone) setRoute('scan');
+    else if (s.coachId) setRoute('intro');
+    else setRoute('coach');
+  }, []);
+
   /** coach lock is PERMANENT — from here onboarding only moves forward */
   const handleLocked = useCallback((id: string) => {
-    console.log('[season] coach locked permanently →', id); // TODO(real-persistence)
+    lockCoach(id); // persisted; a second call can never overwrite it
     setCoachId(id);
+    void hydrateProgress(id);
     setRoute('intro'); // coach speaks first, then the Baseline Scan gate
   }, []);
 
+  const handleIntroDone = useCallback(() => {
+    markIntroDone();
+    setRoute('scan');
+  }, []);
+
+  const handleBaselineDone = useCallback(() => {
+    markBaselineDone();
+    setRoute('hear');
+  }, []);
+
   const handleHearDone = useCallback((choice: string | null) => {
-    setReferral(choice); // TODO(real-persistence): attach to the player profile
+    persistReferral(choice);
     setRoute('setup');
   }, []);
 
   const handleSetupDone = useCallback(() => setRoute('hub'), []);
 
   const handleSignOut = useCallback(() => {
-    // TODO(real-auth): auth sign-out goes here; dev reset only
-    setCoachId(null);
-    setReferral(null);
+    // the ledger and the coach lock survive — only the floor is left
+    endSession();
     setRoute('signin');
   }, []);
 
@@ -77,21 +144,23 @@ export default function App() {
 
       {/* active route stays mounted underneath the splash for a true crossfade */}
       <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
-        {route === 'signin' && <SignInScreen onSignedIn={() => setRoute('coach')} />}
-        {route === 'coach' && (
-          <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
-        )}
-        {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={() => setRoute('scan')} />}
-        {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={() => setRoute('hear')} />}
-        {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
-        {route === 'setup' && (
-          <SetupLoaderScreen
-            coachFirstName={lockedCoach.name.split(' ')[0]}
-            onDone={handleSetupDone}
-          />
-        )}
-        {route === 'hub' && (
-          <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />
+        {restored && (
+          <>
+            {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
+            {route === 'coach' && (
+              <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
+            )}
+            {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
+            {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
+            {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
+            {route === 'setup' && (
+              <SetupLoaderScreen
+                coachFirstName={lockedCoach.name.split(' ')[0]}
+                onDone={handleSetupDone}
+              />
+            )}
+            {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
+          </>
         )}
       </Animated.View>
 

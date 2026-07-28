@@ -1,63 +1,44 @@
 import { useCallback, useState } from 'react';
+import * as backend from '../data/backend';
+import { getSettings } from '../data/settings';
 
 // ─────────────────────────────────────────────────────────────
-// AUTH SEAM — everything auth-related lives behind this one hook.
-// Right now every function is a STUB: logs to console + simulates
-// latency. To go live, replace the bodies with real calls
-// (Supabase/Firebase/your API) — the UI never changes.
+// AUTH SEAM — the academy has no passwords, by design.
+//
+// Sign-up and sign-in are the SAME tap: the device claims an
+// anonymous Supabase session, then `ensure-profile` either hands
+// back an existing profile or claims one of SEASON ONE's seats.
+// There is nothing to remember, nothing to reset, and no web form
+// to phish — which is exactly why there is no password field.
+//
+// Returns the claimed identity, or null when the academy is
+// unreachable (the app then runs fully offline) — the caller
+// checks `backend.getSeasonGate()` to tell "offline" from "full".
 // ─────────────────────────────────────────────────────────────
-
-export type SignInPayload = { email: string; username: string; password: string };
 
 export type AuthApi = {
-  loading: 'signin' | 'create' | 'forgot' | null;
-  handleSignIn: (payload: SignInPayload) => Promise<void>;
-  handleCreateAccount: () => Promise<void>;
-  handleForgotPassword: (email: string) => Promise<void>;
+  loading: boolean;
+  /** claim (or re-claim) this device's academy seat */
+  enterAcademy: (handle: string) => Promise<backend.CloudUser | null>;
 };
 
-const FAKE_LATENCY_MS = 900;
-
 export function useAuth(): AuthApi {
-  const [loading, setLoading] = useState<AuthApi['loading']>(null);
+  const [loading, setLoading] = useState(false);
 
-  const simulate = useCallback(async (kind: NonNullable<AuthApi['loading']>, work: () => void) => {
-    if (loading) return;
-    setLoading(kind);
-    try {
-      work();
-      await new Promise((r) => setTimeout(r, FAKE_LATENCY_MS));
-    } finally {
-      setLoading(null);
-    }
-  }, [loading]);
-
-  const handleSignIn = useCallback(
-    (payload: SignInPayload) =>
-      simulate('signin', () => {
-        // TODO(real-auth): e.g. supabase.auth.signInWithPassword({ email, password })
-        console.log('[auth] signIn →', { email: payload.email, username: payload.username });
-      }),
-    [simulate],
+  const enterAcademy = useCallback(
+    async (handle: string): Promise<backend.CloudUser | null> => {
+      if (loading) return null;
+      setLoading(true);
+      try {
+        const s = getSettings();
+        const name = handle.trim() || s.displayName;
+        return await backend.ensureAuth(name, '', s.platform, s.geo);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading],
   );
 
-  const handleCreateAccount = useCallback(
-    () =>
-      simulate('create', () => {
-        // TODO(real-auth): navigate to a Create Account flow / supabase.auth.signUp(...)
-        console.log('[auth] createAccount tapped (stub — no navigation yet)');
-      }),
-    [simulate],
-  );
-
-  const handleForgotPassword = useCallback(
-    (email: string) =>
-      simulate('forgot', () => {
-        // TODO(real-auth): supabase.auth.resetPasswordForEmail(email)
-        console.log('[auth] forgotPassword tapped (stub) →', email || '(no email entered)');
-      }),
-    [simulate],
-  );
-
-  return { loading, handleSignIn, handleCreateAccount, handleForgotPassword };
+  return { loading, enterAcademy };
 }
