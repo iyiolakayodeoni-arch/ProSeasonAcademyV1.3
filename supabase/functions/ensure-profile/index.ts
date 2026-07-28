@@ -115,6 +115,10 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: String(cerr.message) }, 500);
   }
 
+  // joined during the announced free window → they get the trial too,
+  // so nobody who took a seat that week is left out.
+  await sb.rpc('grant_trial_one', { p_academy: academy });
+
   const { data: seats1 } = await sb.rpc('season_seats').single();
   return json({ ok: true, profile: created, seats: seats1 ?? null });
 });

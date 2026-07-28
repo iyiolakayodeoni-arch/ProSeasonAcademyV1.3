@@ -52,6 +52,19 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [invDays, setInvDays] = useState('0');
   const [invNew, setInvNew] = useState<string | null>(null);
   const [inviteOnly, setInviteOnly] = useState<boolean | null>(null);
+  const [trialArmed, setTrialArmed] = useState(false);
+  const [trialNote, setTrialNote] = useState<string | null>(null);
+  const [lapsed, setLapsed] = useState<backend.LapsedRow[] | null>(null);
+
+  const loadLapsed = async () => setLapsed(await backend.founderLapsed(founderKey));
+
+  /** open the free window to everyone holding a seat */
+  const openTrial = async () => {
+    if (!trialArmed) { setTrialArmed(true); return; }
+    setTrialArmed(false);
+    const n = await backend.founderGrantTrial(founderKey);
+    setTrialNote(n == null ? 'THAT DID NOT GO THROUGH' : `${n} MEMBER(S) NOW ON THE TRIAL PASS`);
+  };
 
   // ── packs: credits + the tricks inside ──
   const [packs, setPacks] = useState<backend.PackRow[] | null>(null);
@@ -75,6 +88,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
       setTopId('');
       setTopRef('');
       void loadPacks();
+    void loadLapsed();
     } else {
       setTillNote(
         r.error?.includes('higher') ? 'THEY ALREADY HOLD A HIGHER LIVE PASS'
@@ -125,6 +139,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadInvites();
     void loadDoor();
     void loadPacks();
+    void loadLapsed();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -262,6 +277,35 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                 )}
               </View>
             ))
+          )}
+        </Animated.View>
+
+        {/* ── THE FREE WEEK ── */}
+        <Animated.View entering={FadeInDown.delay(85).duration(320)} style={styles.splitCard}>
+          <Text style={styles.cardTag}>THE FREE WEEK</Text>
+          <Text style={styles.emptyNote}>
+            GIVES EVERY SEATED MEMBER THE TRIAL PASS. ANYONE ALREADY HOLDING A LONGER PASS KEEPS IT —
+            NOBODY IS DOWNGRADED. PEOPLE WHO JOIN DURING THE WINDOW GET IT AUTOMATICALLY.
+          </Text>
+          <Pressable onPress={() => void openTrial()} hitSlop={6}>
+            <Text style={[styles.linkBtn, trialArmed && { color: colors.accent }]}>
+              {trialArmed ? 'TAP AGAIN TO CONFIRM — GRANT TO EVERYONE' : 'OPEN THE FREE WEEK ›'}
+            </Text>
+          </Pressable>
+          {trialNote && <Text style={styles.invNew}>{trialNote}</Text>}
+
+          {lapsed && lapsed.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.cardTag}>SEATS THAT COULD BE RECLAIMED</Text>
+              {lapsed.slice(0, 8).map((m) => (
+                <Text key={m.academy_id} style={styles.invMeta}>
+                  {m.handle} · {m.academy_id} · LAPSED {m.days_lapsed}D
+                </Text>
+              ))}
+              <Text style={styles.emptyNote}>
+                NOTHING IS AUTOMATIC — REMOVING SOMEONE IS ALWAYS YOUR CALL.
+              </Text>
+            </View>
           )}
         </Animated.View>
 

@@ -18,7 +18,8 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 | 2 | `supabase/seat-gate.sql` | the 1,000-seat cap, enforced in Postgres | `SEAT GATE ARMED · SEASON ONE · 0/1000` |
 | 3 | `supabase/security.sql` | invite-only door, rate limits, contact inbox, founder's week | `SECURITY ARMED · … invite_only=true` |
 | 4 | `supabase/packs.sql` | bundle extras onto a product | `PACK CONTENTS` + a line per pack |
-| 5 | `supabase/tiers.sql` | **FREE / ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
+| 5 | `supabase/tiers.sql` | **ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
+| 6 | `supabase/access.sql` | **the trial, then paid-only + the grace window** | `ACCESS ARMED · trial=MID for 14 days` |
 
 Then **Edge Functions** — paste each file's contents into a function of the same name:
 
@@ -72,12 +73,16 @@ count. Reply inline; it appears in their thread.
 
 ---
 
-## December — the free listening week
+## December — the free trial fortnight
 
-Two moves, both from the desk:
+Three moves:
 
-1. **THE DOOR** → tap the pill to `OPEN TO ALL`. Anyone with the app can take a seat.
-2. Set the dates so the banner appears in Community:
+1. **THE FREE WEEK** panel → **OPEN THE FREE WEEK** (tap twice to confirm). Every seated
+   member gets a real ACADEMY pass for 14 days. Anyone already holding something longer
+   keeps it — nobody is downgraded. People who claim a seat *during* the window get it
+   automatically.
+2. **THE DOOR** → tap the pill to `OPEN TO ALL` if you want new people in without a code.
+3. Set the dates so the banner appears in Community:
 
 ```sql
 update config set value = '2026-12-01T00:00:00Z' where key = 'founder_week_start';
@@ -101,6 +106,9 @@ halls. When the week ends, tap the pill back to `INVITE-ONLY`.
 | Pass durations | `products.duration_days` |
 | Which tricks are in a pack | Table Editor → `pack_items`, or the desk's `pack_set_items` |
 | Open the till for real | `go_live` → any past date |
+| Trial length / tier | `trial_days` · `trial_tier` |
+| Grace window after expiry | `grace_days` (default 3) |
+| Turn paid-only off again | `update config set value='false' where key='paid_only';` |
 
 No deploy, no rebuild, no code change. That was deliberate: you said the pricing is not
 set in stone, so none of it is hardcoded.
@@ -114,3 +122,29 @@ set in stone, so none of it is hardcoded.
   committed, but the source is the product.
 - **Back up the signing keystore** once EAS creates it (`npx eas credentials`). Lose it
   and members cannot install updates over the top of what they have.
+
+
+---
+
+## After the trial — the paid academy
+
+`paid_only = true` means a lapsed member cannot use the app. They see the **lapsed gate**:
+nothing deleted, their vault and progress intact, the coach explaining it in his own
+voice, and the passes one tap away.
+
+**The grace window matters.** Payments are confirmed by hand — someone pays, you see the
+alert, you grant the pass. Without a cushion, a member who paid at 11pm gets locked out at
+midnight through no fault of theirs. `grace_days` (default **3**) keeps them inside while
+your confirmation catches up, with an honest banner counting it down.
+
+The gate also keeps **Contact the founder** reachable, so anyone stuck can always reach a
+human rather than a dead end.
+
+### Reclaiming seats
+
+`THE FREE WEEK` panel lists members lapsed beyond `lapsed_seat_days` (default 30). It
+**only reports** — nothing is automatic. Removing someone is always your decision:
+
+```sql
+select set_member_status('PSA-ABC123', 'removed');   -- frees the seat
+```

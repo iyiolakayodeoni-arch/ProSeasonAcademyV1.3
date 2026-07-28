@@ -58,7 +58,7 @@ equivalent, trust is gone — and trust is the whole product here.
 
 | Tier | What it opens |
 |---|---|
-| **FREE** | Stages 1–2, the whole Match Vault, Loss Journal, scans, the halls. Forever — not a trial. |
+| **LAPSED** | Door shut. Nothing deleted — vault, journal, XP and badges all wait. |
 | **ACADEMY** | The full journey, every stage, and the weekly tricks as they drop. |
 | **PRO** | Everything, plus the film room and first call on the founder's time. |
 
@@ -84,6 +84,23 @@ Passes are **timed**, in both regions: 1 month · 3 months · 1 season.
 Every price, duration and tier boundary is a row in `products` or `config`, editable in
 the dashboard. The pricing halls exist so members argue it out before it locks. The till
 stays shut until `config.go_live`.
+
+## The academy is paid — and that is the point
+
+After the two-week trial, **no plan means no app**. The founder's reasoning:
+
+> *"if u cant drop some sort of money then u are not serious and there is limited seats
+> it's like going for an event or a school and not paying when there is limited seats"*
+
+A capped intake only works if the people in it are committed. A free rider holding one of
+1,000 seats is taking it from someone who would use it.
+
+Two things keep this from feeling harsh:
+- **Nothing is deleted.** The lapsed gate says so before it asks for anything.
+- **A 3-day grace window.** Payments are manual; nobody who has already paid gets locked
+  out while waiting on confirmation.
+
+Seats lapsed beyond 30 days are *reported* to the founder, never auto-removed.
 
 ## December — the listening week
 

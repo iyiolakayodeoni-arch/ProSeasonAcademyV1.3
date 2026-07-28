@@ -696,6 +696,11 @@ export interface MyAccess {
   level: number;          // 0 | 1 | 2
   expiresAt: number | null;
   daysLeft: number | null;
+  /** active = paid up · grace = expired but inside the cushion · lapsed = shut */
+  state: 'active' | 'grace' | 'lapsed';
+  graceLeft: number;
+  /** when true, a lapsed member cannot use the academy */
+  paidOnly: boolean;
 }
 
 export async function myAccess(): Promise<MyAccess | null> {
@@ -704,12 +709,18 @@ export async function myAccess(): Promise<MyAccess | null> {
     const { data, error } = await supabase.rpc('my_access');
     if (error) return null;
     const r = Array.isArray(data) ? data[0] : data;
-    if (!r) return { tier: 'free', level: 0, expiresAt: null, daysLeft: null };
+    if (!r) {
+      return { tier: 'free', level: 0, expiresAt: null, daysLeft: null,
+               state: 'lapsed', graceLeft: 0, paidOnly: true };
+    }
     return {
       tier: (r.tier ?? 'free') as MyAccess['tier'],
       level: Number(r.level ?? 0),
       expiresAt: r.expires_at ? new Date(r.expires_at).getTime() : null,
       daysLeft: r.days_left == null ? null : Number(r.days_left),
+      state: (r.state ?? 'lapsed') as MyAccess['state'],
+      graceLeft: Number(r.grace_left ?? 0),
+      paidOnly: r.paid_only !== false,
     };
   } catch {
     return null;
@@ -739,6 +750,25 @@ export async function tierLadder(): Promise<TierRow[] | null> {
   } catch {
     return null;
   }
+}
+
+export interface LapsedRow {
+  academy_id: string; handle: string; tier: string;
+  expired_at: string; days_lapsed: number;
+}
+
+/** founder: open the free window to every seated member at once */
+export async function founderGrantTrial(
+  key: string, days?: number, tier?: string,
+): Promise<number | null> {
+  const r = await deskFn(key, { action: 'grant_trial', days, tier });
+  return r?.ok ? Number(r.granted ?? 0) : null;
+}
+
+/** founder: who has been lapsed long enough to reclaim their seat */
+export async function founderLapsed(key: string): Promise<LapsedRow[] | null> {
+  const r = await deskFn(key, { action: 'lapsed' });
+  return r?.ok ? (r.lapsed ?? []) : null;
 }
 
 /** founder: sell a timed pass (time stacks; upgrades carry days over) */

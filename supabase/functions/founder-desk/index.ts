@@ -200,6 +200,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── THE FREE WEEK + LAPSED SEATS ─────────────────────────
+    case 'grant_trial': {
+      const { data, error } = await sb.rpc('grant_trial', {
+        p_days: body.days ? Number(body.days) : null,
+        p_tier: body.tier ? String(body.tier) : null,
+      });
+      if (error) return json({ ok: false, error: error.message }, 500);
+      await audit('ALL', { granted: data, days: body.days ?? null });
+      return json({ ok: true, granted: data ?? 0 });
+    }
+
+    case 'lapsed': {
+      const { data, error } = await sb.rpc('lapsed_members');
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, lapsed: data ?? [] });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');
@@ -208,6 +225,7 @@ Deno.serve(async (req) => {
         'invite_only', 'seat_cap', 'season_name', 'go_live',
         'free_stages', 'mid_stages', 'stage_unlock_cost', 'trick_unlock_cost',
         'tricks_min_tier', 'filmroom_min_tier',
+        'trial_tier', 'trial_days', 'grace_days', 'lapsed_seat_days', 'paid_only',
         'founder_week_start', 'founder_week_end', 'founder_week_note',
       ];
       if (!ALLOWED.includes(key)) return json({ ok: false, error: 'key not allowed' }, 400);
