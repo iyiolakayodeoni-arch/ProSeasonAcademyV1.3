@@ -9,37 +9,31 @@ more than the choice of processor does.
 
 ---
 
-## The thing nobody tells you about PayPal and Nigeria
+## Nigeria: corrected — see NIGERIA_PAYMENTS.md
 
-**Most Nigerian bank cards do not work on PayPal.**
+> **An earlier version of this file said most Nigerian naira cards cannot pay
+> internationally. That was true from 2022 until mid-2025. It is out of date.**
+>
+> In July 2025 Nigerian banks restored international payments on ordinary naira
+> debit cards — GTBank, UBA, Access, First Bank, Zenith, Wema, Stanbic and
+> others. There are caps (GTBank $1,000/quarter, First Bank and Wema
+> $500/month), but your most expensive pass is **£14.20 ≈ $18** — under **2%**
+> of the smallest allowance. The caps do not affect you.
+>
+> A Nigerian member pays with his **normal bank card, straight through the
+> app.** No dollar card needed.
+>
+> Full detail, caveats and the fallback for the ~1 in 5 who still fail:
+> **`NIGERIA_PAYMENTS.md`**
 
-Since the CBN foreign-exchange restrictions, Nigerian banks stopped allowing
-naira Mastercard and Visa cards to be used for international online payments.
-GTBank, Access, First Bank and the rest all did it. PayPal's own community
-support says plainly that Nigerian accounts cannot receive, and naira cards are
-routinely declined when sending. Verve cards are not supported by PayPal at all.
+The one wrinkle that remains: **PayPal specifically** has a poor record with
+Nigerian cards, even now that the banks allow it — its fraud systems are
+conservative about Nigeria regardless of what the issuing bank permits. A card
+that works fine on Netflix may still be refused by PayPal.
 
-So a Lagos member taps PAY, gets bounced by his bank, and concludes your app is
-broken. You would see failed checkouts with no obvious cause.
-
-**What actually works for a Nigerian paying you:**
-
-| Method | Works? |
-|---|---|
-| Naira Mastercard / Visa debit | ❌ usually declined |
-| Verve card | ❌ never |
-| Domiciliary USD card (Zenith, GTB, UBA…) | ✅ yes |
-| Virtual USD card (Grey, Chipper, Cardtonic) | ✅ yes, most common |
-
-This is true **whether you use PayPal or Stripe**. It is a Nigerian banking
-restriction, not a processor one. The difference is that naira cards are
-declined by PayPal almost always, and by Stripe merely often — Stripe checkouts
-have a noticeably better record with Nigerian cards.
-
-**What this means for you:** a chunk of your Nigerian members will need a
-virtual dollar card to pay you. That is a five-minute signup on Grey or
-Cardtonic, and many of them will already have one. But you should say it up
-front in the till, not let them discover it as a failure.
+That is the strongest argument for adding Stripe below: it is a plain card
+checkout with no PayPal risk layer in between, so the member's own bank makes
+the decision.
 
 ---
 
