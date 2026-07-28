@@ -686,6 +686,81 @@ export async function packContents(pack: string): Promise<string[] | null> {
   }
 }
 
+// ── TERMS, DEADLINE, CONDUCT ─────────────────────────────────
+export interface MyTos {
+  version: number;
+  body: string;
+  accepted: boolean;
+  deadlineAt: number | null;
+  strikes: number;
+}
+
+/** the terms + this member's standing (deadline, warnings) */
+export async function myTos(): Promise<MyTos | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase.rpc('my_tos');
+    if (error) return null;
+    const r = Array.isArray(data) ? data[0] : data;
+    if (!r) return null;
+    return {
+      version: Number(r.version ?? 1),
+      body: String(r.body ?? ''),
+      accepted: r.accepted === true,
+      deadlineAt: r.deadline_at ? new Date(r.deadline_at).getTime() : null,
+      strikes: Number(r.strikes ?? 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function acceptTos(version: number): Promise<boolean> {
+  if (!supabase || !me) return false;
+  try {
+    const { data, error } = await supabase.rpc('accept_tos', { p_version: version });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+// ── FOUNDER: enforcement ─────────────────────────────────────
+export async function founderSweep(key: string): Promise<{ academy_id: string; handle: string; reason: string }[] | null> {
+  const r = await deskFn(key, { action: 'sweep' });
+  return r?.ok ? (r.removed ?? []) : null;
+}
+
+export interface FlagRow {
+  id: number; handle: string | null; academy_id: string | null;
+  channel: string | null; text: string; matched: string; at: string; reviewed: boolean;
+}
+
+export async function founderFlags(key: string): Promise<FlagRow[] | null> {
+  const r = await deskFn(key, { action: 'flags' });
+  return r?.ok ? (r.flags ?? []) : null;
+}
+
+export async function founderStrike(
+  key: string, academyId: string, reason: string, severity: 'warning' | 'severe' = 'warning',
+): Promise<number | null> {
+  const r = await deskFn(key, { action: 'strike', academyId, reason, severity });
+  return r?.ok ? Number(r.strikes ?? 0) : null;
+}
+
+export async function founderRemove(
+  key: string, academyId: string, reason: string,
+): Promise<{ ok: boolean; refundDays?: number; error?: string }> {
+  const r = await deskFn(key, { action: 'remove', academyId, reason });
+  if (!r) return { ok: false, error: 'UNREACHABLE' };
+  return r.ok ? { ok: true, refundDays: r.refundDays } : { ok: false, error: String(r.error) };
+}
+
+export async function founderReviewFlag(key: string, id: number, action: string): Promise<boolean> {
+  const r = await deskFn(key, { action: 'flag_review', id, decision: action });
+  return r?.ok === true;
+}
+
 // ── THE PRICING TABLE — deciding it together ─────────────────
 export interface ConsultQ {
   slug: string;

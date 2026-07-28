@@ -21,6 +21,7 @@ import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
 import * as backend from '../data/backend';
 import LapsedGate from './LapsedGate';
+import TermsSheet from './TermsSheet';
 import { colors, monoFont } from '../theme';
 
 type Props = {
@@ -37,6 +38,9 @@ type RoomState = { stage: JourneyStage; origin: StageOrigin };
 // and the back chevron zooms straight back out onto the map.
 export default function MainScreen({ coach, onSignOut }: Props) {
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [tos, setTos] = useState<backend.MyTos | null>(null);
+  const checkTos = useCallback(() => { void backend.myTos().then(setTos); }, []);
+  useEffect(checkTos, [checkTos]);
   const checkAccess = useCallback(() => {
     void backend.myAccess().then((a) => setAccess(a));
   }, []);
@@ -92,6 +96,11 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     opacity: interpolate(zoom.value, [0.3, 0.8], [0, 1]),
   }));
 
+  // the terms come first — nobody is ever removed wondering why
+  if (tos && !tos.accepted) {
+    return <TermsSheet onAccepted={() => { checkTos(); checkAccess(); }} />;
+  }
+
   // paid-only academy: a lapsed pass closes the floor. Nothing is
   // deleted — the gate explains that and keeps the contact line open.
   if (access && access.paidOnly && access.state === 'lapsed') {
@@ -113,6 +122,18 @@ export default function MainScreen({ coach, onSignOut }: Props) {
           <SettingsTab coach={coach} onSignOut={onSignOut} onOpenJourney={() => setTab('journey')} />
         )}
       </View>
+
+      {tos?.deadlineAt != null && access?.state !== 'lapsed' && (() => {
+        const d = Math.max(0, Math.ceil((tos.deadlineAt! - Date.now()) / 86400000));
+        if (d > 7) return null;
+        return (
+          <View style={styles.deadlineBar}>
+            <Text style={styles.deadlineTxt}>
+              {d === 0 ? 'YOUR SEAT IS DECIDED TODAY' : `${d} DAY${d === 1 ? '' : 'S'} TO TAKE A PLAN`} — SETTINGS › THE TILL
+            </Text>
+          </View>
+        );
+      })()}
 
       {access?.state === 'grace' && (
         <View style={styles.graceBar}>
@@ -144,6 +165,8 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
+  deadlineBar: { backgroundColor: 'rgba(224,96,92,0.92)', paddingVertical: 6, paddingHorizontal: 12 },
+  deadlineTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: '#fff', textAlign: 'center' },
   graceBar: { backgroundColor: 'rgba(242,192,120,0.92)', paddingVertical: 6, paddingHorizontal: 12 },
   graceTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: '#2a1410', textAlign: 'center' },
   crestWrap: { alignItems: 'center', height: 36, justifyContent: 'center' },

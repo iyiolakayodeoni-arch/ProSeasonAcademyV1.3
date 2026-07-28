@@ -21,13 +21,15 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 | 5 | `supabase/tiers.sql` | **ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
 | 6 | `supabase/access.sql` | **the trial, then paid-only + the grace window** | `ACCESS ARMED · trial=MID for 14 days` |
 | 7 | `supabase/consult.sql` | **the pricing table — members help set the price** | `PRICING TABLE ARMED · 7 open question(s)` |
+| 8 | `supabase/enforcement.sql` | **deadlines, auto-removal, strikes, terms, refunds** | `ENFORCEMENT ARMED` |
 
 Then **Edge Functions** — paste each file's contents into a function of the same name:
 
 | Function | Source | Why |
 |---|---|---|
 | `ensure-profile` | `supabase/functions/ensure-profile/index.ts` | **redeploy** — now checks invites |
-| `founder-desk` | `supabase/functions/founder-desk/index.ts` | **new** — inbox, invites, packs |
+| `founder-desk` | `supabase/functions/founder-desk/index.ts` | **new** — inbox, invites, packs, moderation |
+| `pay-webhook` | `supabase/functions/pay-webhook/index.ts` | **new** — payments grant access automatically |
 
 Confirm `FOUNDER_KEY` is set under **Edge Functions → Secrets**.
 
@@ -176,3 +178,74 @@ nobody can edit a vote after you have published what it produced.
 **Day 15 — paid only.** `paid_only` is already `true`. Lapsed members meet the gate:
 nothing deleted, coach's words, passes one tap away, 3 days of grace for anyone whose
 manual payment is still with you.
+
+
+---
+
+## Automatic payments — no more validating by hand
+
+`pay-webhook` turns a successful charge into access with no involvement from you.
+
+### Set it up once
+
+**Paystack (₦)** → Settings → API Keys & Webhooks → Webhook URL:
+```
+https://ymnkphqgjxexsnbgtqvk.supabase.co/functions/v1/pay-webhook?p=paystack
+```
+Add the secret as `PAYSTACK_SECRET` under Edge Functions → Secrets.
+
+**Flutterwave ($)** → Settings → Webhooks → same URL with `?p=flutterwave`.
+Add your hash as `FLW_SECRET_HASH`.
+
+### The one thing that must be right
+
+The payment has to carry **`academy_id`** and **`product`** in its metadata. Put them in
+the payment link you give members — their Academy ID is shown to them in the till exactly
+so they can paste it at checkout.
+
+Safety built in:
+- **Signature verified** on every call (constant-time compare) — a forged webhook grants
+  nothing.
+- **Idempotent** — providers retry, and a retry cannot extend a pass twice.
+- **Unmatched payments are never dropped.** If the metadata is missing, it lands in your
+  inbox with the reference and amount so you can grant it by hand.
+- Paying **clears the removal deadline** automatically.
+
+Until the merchant accounts exist, the Founder Desk's manual grant still works — same
+`grant_tier` function, same audit trail.
+
+---
+
+## The deadlines
+
+| Who | Clock | Then |
+|---|---|---|
+| Existing members who never paid | **30 days** from running paste #8 | seat released |
+| Every new member | **14 days** from joining | seat released |
+
+`sweep_unpaid()` runs nightly (or from the Desk). It removes **only** people past their
+deadline who never paid — anyone holding a live pass, inside the 3-day grace, or who has
+ever paid is left alone. The founder row is never touched, and nothing is deleted: status
+becomes `removed`, the seat frees, and the reason is logged.
+
+Members see a red countdown banner in their final week, and the exact date in Settings.
+
+## Conduct
+
+Three warnings and out. Swearing, jokes and arguing about football are explicitly fine.
+
+The filter catches **only** sexual content and hate speech, and it **never removes anyone
+by itself** — it flags for you in FLAGGED CONTENT, where you can warn or dismiss. Extreme
+matches are marked `severe`, which never auto-removes, so you speak to those people first.
+
+## Refunds
+
+`refund_due()` calculates unused days only. Used time is not refunded; if you remove
+someone with paid time left, that balance is owed. Removing from the Desk returns the
+refund figure so you know what to send back.
+
+## The terms
+
+Every member sees `TermsSheet` before anything else and must scroll to the end to accept.
+It covers the trial, the deadline, what happens if a pass lapses, conduct, refunds and
+data. Edit the text in the `tos` table; bump `tos_version` to re-show it to everyone.

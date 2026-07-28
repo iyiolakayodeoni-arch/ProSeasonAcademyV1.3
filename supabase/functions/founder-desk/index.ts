@@ -231,6 +231,61 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    // ── ENFORCEMENT ──────────────────────────────────────────
+    case 'sweep': {
+      const { data, error } = await sb.rpc('sweep_unpaid');
+      if (error) return json({ ok: false, error: error.message }, 500);
+      await audit('ALL', { removed: (data ?? []).length });
+      return json({ ok: true, removed: data ?? [] });
+    }
+
+    case 'flags': {
+      const { data, error } = await sb
+        .from('flagged_messages')
+        .select('id, handle, academy_id, channel, text, matched, at, reviewed')
+        .eq('reviewed', false)
+        .order('at', { ascending: false })
+        .limit(50);
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, flags: data ?? [] });
+    }
+
+    case 'flag_review': {
+      const id = Number(body.id);
+      if (!id) return json({ ok: false, error: 'id required' }, 400);
+      await sb.from('flagged_messages')
+        .update({ reviewed: true, action: String(body.decision ?? 'noted') }).eq('id', id);
+      return json({ ok: true });
+    }
+
+    case 'strike': {
+      const academyId = String(body.academyId ?? '').toUpperCase().trim();
+      if (!academyId) return json({ ok: false, error: 'academyId required' }, 400);
+      const { data, error } = await sb.rpc('add_strike', {
+        p_academy: academyId,
+        p_reason: String(body.reason ?? 'CONDUCT').slice(0, 120),
+        p_detail: body.detail ? String(body.detail).slice(0, 500) : null,
+        p_severity: body.severity === 'severe' ? 'severe' : 'warning',
+        p_founder: true,
+      });
+      if (error) return json({ ok: false, error: error.message }, 500);
+      await audit(academyId, { strikes: data, reason: body.reason });
+      return json({ ok: true, strikes: data });
+    }
+
+    case 'remove': {
+      const academyId = String(body.academyId ?? '').toUpperCase().trim();
+      if (!academyId) return json({ ok: false, error: 'academyId required' }, 400);
+      const { data, error } = await sb.rpc('remove_member', {
+        p_academy: academyId,
+        p_reason: String(body.reason ?? 'REMOVED BY THE FOUNDER').slice(0, 120),
+      });
+      if (error) return json({ ok: false, error: error.message }, 500);
+      const r = data as any;
+      if (!r?.ok) return json({ ok: false, error: r?.error ?? 'failed' }, 404);
+      return json({ ok: true, refundDays: r.refundDays, tier: r.tier, note: r.note });
+    }
+
     // ── THE DOOR + THE SEASON ────────────────────────────────
     case 'set_config': {
       const key = String(body.key ?? '');
@@ -240,6 +295,7 @@ Deno.serve(async (req) => {
         'free_stages', 'mid_stages', 'stage_unlock_cost', 'trick_unlock_cost',
         'tricks_min_tier', 'filmroom_min_tier',
         'trial_tier', 'trial_days', 'grace_days', 'lapsed_seat_days', 'paid_only',
+        'existing_grace_days', 'strikes_to_remove', 'auto_remove', 'tos_version',
         'founder_week_start', 'founder_week_end', 'founder_week_note',
       ];
       if (!ALLOWED.includes(key)) return json({ ok: false, error: 'key not allowed' }, 400);

@@ -61,6 +61,28 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [consult, setConsult] = useState<any[] | null>(null);
   const [closeArmed, setCloseArmed] = useState(false);
   const loadConsult = async () => setConsult(await backend.founderConsultResults(founderKey));
+
+  const [flags, setFlags] = useState<backend.FlagRow[] | null>(null);
+  const [sweepArmed, setSweepArmed] = useState(false);
+  const [sweepNote, setSweepNote] = useState<string | null>(null);
+  const loadFlags = async () => setFlags(await backend.founderFlags(founderKey));
+
+  const runSweep = async () => {
+    if (!sweepArmed) { setSweepArmed(true); return; }
+    setSweepArmed(false);
+    const r = await backend.founderSweep(founderKey);
+    setSweepNote(r == null ? 'SWEEP FAILED' : r.length === 0 ? 'NOBODY WAS DUE — NOTHING CHANGED' : `${r.length} SEAT(S) RELEASED`);
+    void loadLapsed();
+  };
+
+  const strike = async (academyId: string, reason: string, id: number) => {
+    const n = await backend.founderStrike(founderKey, academyId, reason, 'warning');
+    if (n != null) { await backend.founderReviewFlag(founderKey, id, `warned (${n})`); void loadFlags(); }
+  };
+  const dismissFlag = async (id: number) => {
+    await backend.founderReviewFlag(founderKey, id, 'dismissed');
+    void loadFlags();
+  };
   const closeConsult = async () => {
     if (!closeArmed) { setCloseArmed(true); return; }
     setCloseArmed(false);
@@ -99,6 +121,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
       void loadPacks();
     void loadLapsed();
     void loadConsult();
+    void loadFlags();
     } else {
       setTillNote(
         r.error?.includes('higher') ? 'THEY ALREADY HOLD A HIGHER LIVE PASS'
@@ -151,6 +174,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadPacks();
     void loadLapsed();
     void loadConsult();
+    void loadFlags();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -347,6 +371,53 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </Text>
           </Animated.View>
         )}
+
+        {/* ── FLAGGED FOR YOUR EYES ── */}
+        <Animated.View entering={FadeInDown.delay(84).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>FLAGGED CONTENT</Text>
+            <Text style={[styles.cardTag, (flags?.length ?? 0) > 0 && { color: colors.loss }]}>
+              {flags?.length ? `${flags.length} TO READ` : 'NOTHING PENDING'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            THE FILTER ONLY CATCHES EXTREME THINGS — SEXUAL CONTENT AND HATE. SWEARING AND BANTER
+            NEVER APPEAR HERE. NOBODY IS REMOVED AUTOMATICALLY FOR THIS; YOU READ IT AND DECIDE.
+          </Text>
+
+          {flags?.slice(0, 8).map((f) => (
+            <View key={f.id} style={styles.inboxRow}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.inboxWho}>{f.handle ?? '—'} · #{f.channel}</Text>
+                <Text style={styles.inboxAt}>MATCHED "{f.matched}"</Text>
+              </View>
+              <Text style={styles.inboxBody}>{f.text}</Text>
+              <View style={styles.rowBetween}>
+                <Pressable onPress={() => void dismissFlag(f.id)} hitSlop={6}>
+                  <Text style={styles.ghostBtn}>FALSE ALARM</Text>
+                </Pressable>
+                <Pressable onPress={() => void strike(f.academy_id ?? '', 'INAPPROPRIATE CONTENT', f.id)} hitSlop={6}>
+                  <Text style={[styles.linkBtn, { color: colors.loss }]}>WARN THEM ›</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
+
+        {/* ── THE SWEEPER ── */}
+        <Animated.View entering={FadeInDown.delay(86).duration(320)} style={styles.splitCard}>
+          <Text style={styles.cardTag}>UNPAID SEATS</Text>
+          <Text style={styles.emptyNote}>
+            REMOVES ONLY MEMBERS PAST THEIR DEADLINE WHO NEVER PAID. ANYONE HOLDING A LIVE PASS,
+            INSIDE GRACE, OR WHO HAS EVER PAID IS LEFT ALONE. RUNS NIGHTLY BY ITSELF.
+          </Text>
+          <Pressable onPress={() => void runSweep()} hitSlop={6}>
+            <Text style={[styles.linkBtn, sweepArmed && { color: colors.loss }]}>
+              {sweepArmed ? 'TAP AGAIN — RELEASE THOSE SEATS' : 'RUN THE SWEEP NOW ›'}
+            </Text>
+          </Pressable>
+          {sweepNote && <Text style={styles.invNew}>{sweepNote}</Text>}
+        </Animated.View>
 
         {/* ── THE FREE WEEK ── */}
         <Animated.View entering={FadeInDown.delay(85).duration(320)} style={styles.splitCard}>
