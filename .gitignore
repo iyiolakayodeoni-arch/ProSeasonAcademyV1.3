@@ -48,5 +48,6 @@ tests/.build/
 # backup server runtime database
 server/data/
 
-# distribution archives (may contain .env with live keys)
-*.zip
+# distribution archives — may bundle .env with live keys.
+# download/ is the deliberate exception: a clean, .env-free copy for the founder.
+/*.zip
