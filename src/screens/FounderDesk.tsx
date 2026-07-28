@@ -147,7 +147,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {data?.seats ? (
             <Text style={styles.seatsLine}>
               {data.seats.season} · {data.seats.taken}/{data.seats.cap} SEATS CLAIMED
-              {data.seats.taken >= data.seats.cap ? ' · FULL — WAITLIST RUNNING' : ''}
+              {data.seats.taken >= data.seats.cap
+                ? ` · FULL — ${data.seats.waiting ?? 0} WAITING`
+                : ` · ${data.seats.cap - data.seats.taken} LEFT${data.seats.waiting ? ` · ${data.seats.waiting} WAITING` : ''}`}
             </Text>
           ) : null}
           <View style={styles.coachRow}>

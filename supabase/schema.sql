@@ -153,9 +153,19 @@ alter table config enable row level security;
 drop policy if exists profiles_select_own on profiles;
 create policy profiles_select_own on profiles
   for select to authenticated using (auth_user_id = auth.uid());
+-- NOTE: players do NOT insert their own row. Allowing that let any
+-- signed-in device mint a seat directly via /rest/v1/profiles and skip
+-- the season gate entirely (the anon key is public — it ships in the
+-- app). Only ensure-profile (service_role) mints seats, so the cap is
+-- always on the path. See supabase/seat-gate.sql for the trigger that
+-- enforces it inside Postgres.
 drop policy if exists profiles_insert_own on profiles;
-create policy profiles_insert_own on profiles
-  for insert to authenticated with check (auth_user_id = auth.uid());
+
+drop policy if exists profiles_update_own on profiles;
+create policy profiles_update_own on profiles
+  for update to authenticated
+  using (auth_user_id = auth.uid())
+  with check (auth_user_id = auth.uid());
 
 -- waitlist: you may join the list as yourself; nobody reads it
 drop policy if exists waitlist_insert_own on waitlist;
@@ -210,6 +220,11 @@ begin
 end $$;
 
 -- ── 5 · SEASON SEATS — the 1,000-seat gate, COUNTED IN SQL ───
+-- ⚠️ Counting alone does NOT enforce the cap. After running this file,
+--    run supabase/seat-gate.sql — it installs the BEFORE INSERT trigger
+--    that locks the config row and recounts inside the transaction, so
+--    concurrent signups cannot both take the last seat.
+
 
 create or replace function season_seats()
 returns table (season text, cap int, taken int)
@@ -358,7 +373,8 @@ begin
           'id', id, 'academyId', academy_id, 'delta', delta, 'reason', reason,
           'ref', ref, 'actor', actor, 'at', (extract(epoch from at) * 1000)::bigint) order by at desc), '[]'::jsonb)
         from (select * from ledger order by at desc, id desc limit 8) l)),
-    'seats', (select jsonb_build_object('season', season, 'cap', cap, 'taken', taken)
+    'seats', (select jsonb_build_object('season', season, 'cap', cap, 'taken', taken,
+                                        'waiting', waiting, 'isFull', is_full)
       from season_seats()),
     'generatedAt', (extract(epoch from now()) * 1000)::bigint
   );

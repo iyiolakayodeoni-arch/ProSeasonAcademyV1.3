@@ -41,18 +41,28 @@ Deno.serve(async (req) => {
     return json({ ok: true, profile: { ...existing, ...patch }, seats: seats ?? null });
   }
 
-  // new player → SEASON GATE: count first, never over-sell a seat
+  // ── NEW PLAYER → THE SEASON GATE ───────────────────────────
+  // The REAL gate is a BEFORE INSERT trigger in Postgres (see
+  // supabase/seat-gate.sql). It locks the config row and recounts
+  // inside the transaction, so concurrent signups cannot both slip
+  // through at seat 999. This early check is only a courtesy: it
+  // saves generating an Academy ID for someone who clearly cannot
+  // have one. The trigger is what actually guarantees the cap.
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
   const cap = seats0?.cap ?? 1000;
-  const taken = seats0?.taken ?? 0;
-  if (taken >= cap) {
+
+  const joinWaitlist = async () => {
     await sb.from('waitlist').upsert({
       auth_user_id: user.id,
       handle: cleanHandle(body.handle),
       region: REGION(body.region),
     });
-    return json({ ok: false, error: 'SEASON_FULL', season, cap, taken }, 409);
+  };
+
+  if ((seats0?.taken ?? 0) >= cap) {
+    await joinWaitlist();
+    return json({ ok: false, error: 'SEASON_FULL', season, cap, taken: seats0?.taken ?? cap }, 409);
   }
 
   // unique Academy ID (PSA-XXXXXX), then the seat is theirs forever
@@ -72,7 +82,22 @@ Deno.serve(async (req) => {
     academy_id: academy,
   };
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
-  if (cerr) return json({ ok: false, error: String(cerr.message) }, 500);
+
+  if (cerr) {
+    // The trigger fired between our check and this insert — someone
+    // else took the last seat first. This is the race path, and it
+    // now ends honestly instead of over-selling.
+    if (String(cerr.message).includes('SEASON_FULL')) {
+      await joinWaitlist();
+      const { data: sNow } = await sb.rpc('season_seats').single();
+      return json(
+        { ok: false, error: 'SEASON_FULL', season, cap, taken: sNow?.taken ?? cap },
+        409,
+      );
+    }
+    return json({ ok: false, error: String(cerr.message) }, 500);
+  }
+
   const { data: seats1 } = await sb.rpc('season_seats').single();
   return json({ ok: true, profile: created, seats: seats1 ?? null });
 });

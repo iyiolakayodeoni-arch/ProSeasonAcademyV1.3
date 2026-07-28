@@ -268,7 +268,7 @@ export interface AdminSummary {
   till: { wallets: number; creditsOut: number; proSubs: number; recentLedger: TillLedgerRow[] };
   tillLive: boolean;
   goLive: string;
-  seats?: { season: string; cap: number; taken: number };
+  seats?: { season: string; cap: number; taken: number; waiting?: number; isFull?: boolean };
   generatedAt: number;
 }
 
