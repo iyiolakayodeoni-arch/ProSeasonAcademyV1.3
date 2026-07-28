@@ -1,5 +1,27 @@
 # ProSeasonAcademy Server — Zero-Naira Deployment Guide
 
+> ## 🅑 BACKUP ONLY — NOT IN USE
+>
+> **The academy runs on Supabase.** This self-hosted Node/SQLite server is kept
+> as a proven fallback in case you ever want off Supabase — it is **not wired
+> into the app** and nothing contacts it at runtime.
+>
+> It still earns its place for two reasons:
+> 1. **Escape hatch.** Every behaviour Supabase provides is already implemented
+>    here, tested. Switching back means re-pointing one file
+>    (`src/data/backend.ts` — the single seam); no screen would change.
+> 2. **The map.** It documents exactly what the database must do.
+>
+> ⚠️ If you revive this, the **1,000-seat SEASON ONE gate lives in Supabase**
+> (`config.seat_cap` + the `ensure-profile` edge function). This server predates
+> that gate and does **not** enforce it — you would have to port the seat count,
+> the waitlist table and the `SEASON_FULL` response before letting anyone in,
+> or the cap silently stops existing.
+>
+> Ignore the rest of this file unless you are actually making that move.
+
+---
+
 This is **your own backend**: guest auth, match-vault sync, and the
 Discord-style live community. It costs **₦0/month** to run, 24/7, if you
 follow this file. No rented AI, no paid APIs, no credit card surprises.
