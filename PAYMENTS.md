@@ -1,5 +1,8 @@
 # Getting the Paystack and Flutterwave secrets
 
+> **Need an account first?** See **`MERCHANT_ACCOUNTS.md`** — which account type you need,
+> why ₦ goes live before $, and why you must never buy a "pre-verified" account.
+
 The two work differently, and that trips most people up:
 
 | | Where the secret comes from |
