@@ -62,17 +62,13 @@ paste from **`supabase/functions/founder-desk/index.ts`** → **Deploy**.
 
 *This is what makes payments automatic.*
 
-> ### ⚠️ "Module not found `../_shared/cors.ts`"
+> **Every function file is self-contained.** There is no `_shared` folder to create and
+> nothing to import — paste `supabase/functions/<name>/index.ts` and Deploy.
 >
-> The dashboard deploys **one file** and has no sibling `_shared/` folder, so that import
-> resolves to nothing. (The CLI uploads whole directories, which is why it only bites in
-> the dashboard.)
->
-> **Fix: paste from `supabase/functions-standalone/` instead.** Same code with the 24
-> lines of helpers inlined — no imports, nothing else to create.
->
-> | Paste | Into function named |
-> |---|---|
+> If you still see *Module not found `../_shared/cors.ts`*, the editor is holding an older
+> paste: select all in the code box, delete it, then paste the file again.
+
+---|---|
 > | `functions-standalone/ensure-profile.ts` | `ensure-profile` |
 > | `functions-standalone/founder-desk.ts` | `founder-desk` |
 > | `functions-standalone/pay-webhook.ts` | `pay-webhook` |
