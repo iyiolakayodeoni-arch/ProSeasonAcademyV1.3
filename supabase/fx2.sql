@@ -57,9 +57,12 @@ declare
   v_amt bigint; v_cur text; v_rate numeric; v_age numeric; v_max int;
   v_val numeric; v_disp text; v_cmp text; v_stale boolean := false;
 begin
-  select amount_minor, coalesce(charge_currency, base_currency)
+  -- p.-qualified: base_currency is ALSO an OUT parameter here, and an
+  -- unqualified reference is ambiguous (Postgres aborts rather than
+  -- guessing between the column and the variable).
+  select p.amount_minor, coalesce(p.charge_currency, p.base_currency)
     into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::int into v_max from config where key = 'fx_max_age_hours';

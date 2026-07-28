@@ -54,12 +54,45 @@ HEADER = """-- ═════════════════════�
 -- Missing: claims, paypal-only, fx, fx2, fx3 — everything the till
 -- and PayPal actually need.
 --
+-- ── RUN THIS WHOLE FILE. DO NOT RUN THE SECTIONS SEPARATELY. ──
+--
+-- Each section depends on columns the one before it adds:
+--     tiers  → tier, duration_days
+--     fx     → amount_minor, base_currency      ← easy one to miss
+--     fx2    → charge_currency
+--     fx3    → charge_minor
+--
+-- Running fx2 on its own gives:
+--     ERROR 42703: column p.amount_minor does not exist
+-- Running fx3 on its own gives:
+--     ERROR 42703: column "charge_currency" ... does not exist
+--
+-- And because the SQL Editor wraps a script in ONE transaction, a
+-- failure at the bottom silently undoes the columns added at the
+-- top — so a half-run script leaves nothing behind. That is why the
+-- errors repeat even though the ALTER TABLE "already ran".
+--
+-- Every column is created up front below, so this file no longer
+-- depends on section order at all.
+--
 -- The price functions are dropped before each section that changes
--- their shape, so ERROR 42P13 cannot happen. They hold no data.
+-- their shape, so ERROR 42P13 cannot happen either. They hold no data.
 --
 -- Paste the WHOLE file into Supabase → SQL Editor → Run.
 -- Safe to re-run. About 15 seconds.
 -- ═══════════════════════════════════════════════════════════
+
+-- ── 0 · Every column this file needs, created up front ───────
+-- Belt and braces: if a section is ever run out of order, or a past
+-- partial run was rolled back, these still exist.
+alter table products add column if not exists tier            text;
+alter table products add column if not exists duration_days   int;
+alter table products add column if not exists currency        text;
+alter table products add column if not exists price_note      text;
+alter table products add column if not exists amount_minor    bigint;
+alter table products add column if not exists base_currency   text;
+alter table products add column if not exists charge_currency text;
+alter table products add column if not exists charge_minor    bigint;
 """
 
 FOOTER = """
@@ -95,11 +128,26 @@ begin
     raise exception '% pass(es) have no charge amount', bad;
   end if;
 
+  -- the naira headline must survive: Africa prices are stored in NGN
+  select count(*) into bad from products
+   where region = 'africa' and tier is not null and active
+     and coalesce(amount_minor, 0) <= 0;
+  if bad > 0 then
+    raise exception '% Africa pass(es) lost their naira price', bad;
+  end if;
+
+  -- the 1-month passes stay retired: PayPal's flat ~30p fee ate them
+  select count(*) into bad from products
+   where duration_days = 30 and tier is not null and active;
+  if bad > 0 then
+    raise exception '% monthly pass(es) still active — should be retired', bad;
+  end if;
+
   raise notice 'PAYMENTS READY · % passes, all charging GBP', n;
   raise notice '';
   for r in select code, display, amount from prices_now() loop
     raise notice '  % shown %  → charges £%',
-      rpad(r.code, 12), rpad(r.display, 10), r.amount;
+      rpad(r.code, 12), rpad(r.display, 10), to_char(r.amount, 'FM999990.00');
   end loop;
   raise notice '';
   raise notice 'NEXT: deploy pay-start, pay-webhook, refresh-fx,';

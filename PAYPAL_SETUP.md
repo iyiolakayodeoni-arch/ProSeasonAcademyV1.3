@@ -97,9 +97,29 @@ Supabase → **SQL Editor** → **New query**.
 
 Open **`supabase/FINISH_PAYMENTS.sql`**, select all, copy, paste, **Run**.
 
+> **Run the whole file. Do not run `fx`, `fx2`, `fx3` separately.**
+>
+> Each one needs columns the one before it adds — `fx` adds
+> `amount_minor`, `fx2` adds `charge_currency`, `fx3` adds
+> `charge_minor`. Run `fx2` on its own and you get
+> `column p.amount_minor does not exist`; run `fx3` on its own and you
+> get `column "charge_currency" does not exist`.
+>
+> And because the SQL Editor wraps a script in **one transaction**, a
+> failure at the bottom silently undoes the columns added at the top.
+> That is why re-running kept giving the same error even though the
+> `ALTER TABLE` "already ran" — it had been rolled back every time.
+>
+> `FINISH_PAYMENTS.sql` now creates every column up front, so section
+> order cannot bite you at all.
+
 > Use `FINISH_PAYMENTS.sql`, **not** `RUN_ALL.sql`. It is a quarter of the
 > size and only contains what you are actually missing. (`RUN_ALL.sql`
 > still works and is safe to re-run — it is just the long way round.)
+
+This file has been **executed end-to-end against a real Postgres**, on a
+copy of your exact database state, and it runs clean — twice in a row, so
+re-pasting it is safe.
 
 It ends by printing your six passes and their prices. If anything did not
 apply it raises a loud error instead of pretending it worked.

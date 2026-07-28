@@ -86,9 +86,12 @@ declare
   v_pence bigint; v_val numeric; v_disp text; v_cmp text;
   v_stale boolean := false;
 begin
-  select amount_minor, region, charge_minor
+  -- always p.-qualified: several OUT parameter names collide with
+  -- column names on this table, and Postgres aborts on ambiguity
+  -- rather than guessing.
+  select p.amount_minor, p.region, p.charge_minor
     into v_amt, v_region, v_stored
-    from products where code = upper(trim(p_product));
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::int     into v_max    from config where key = 'fx_max_age_hours';
@@ -123,6 +126,31 @@ begin
                       v_rate, v_stale;
 end $$;
 grant execute on function price_now(text) to anon, authenticated;
+
+-- ── 3b · Rebuild the list view on top of the corrected price ──
+-- price_now() was just redefined, so prices_now() has to be rebuilt
+-- against it. Repeated here (rather than relying on fx2) so this file
+-- is self-contained: dropping the price functions to avoid 42P13 takes
+-- prices_now() with it, and nothing else puts it back.
+create or replace function prices_now(p_region text default null)
+returns table (code text, title text, region text, tier text, duration_days int,
+               display text, amount numeric, currency text, compare text,
+               base_amount bigint, base_currency text, price_note text, stale boolean)
+language sql security definer stable set search_path = public as $$
+  select p.code, p.title, p.region, p.tier, p.duration_days,
+         n.display, n.amount, n.currency, n.compare,
+         p.amount_minor, n.base_currency,
+         case when p.region = 'africa'
+              then (select value from config where key = 'subsidy_note')
+              else p.price_note end,
+         coalesce(n.stale, false)
+    from products p
+    left join lateral price_now(p.code) n on true
+   where p.active and p.tier is not null
+     and (p_region is null or p.region = p_region)
+   order by p.sort;
+$$;
+grant execute on function prices_now(text) to anon, authenticated;
 
 -- ── 4 · Keep the stored fallback in step with the live rate ──
 /**

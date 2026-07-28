@@ -80,8 +80,11 @@ declare
   v_marg  numeric;
   v_gbp   numeric;
 begin
-  select amount_minor, base_currency into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+  -- p.-qualified: base_currency is ALSO an OUT parameter of this
+  -- function, and an unqualified reference is ambiguous (Postgres
+  -- cannot tell the column from the variable and aborts).
+  select p.amount_minor, p.base_currency into v_amt, v_cur
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::numeric into v_marg from config where key = 'fx_margin_pct';

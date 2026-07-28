@@ -10,12 +10,45 @@
 -- Missing: claims, paypal-only, fx, fx2, fx3 — everything the till
 -- and PayPal actually need.
 --
+-- ── RUN THIS WHOLE FILE. DO NOT RUN THE SECTIONS SEPARATELY. ──
+--
+-- Each section depends on columns the one before it adds:
+--     tiers  → tier, duration_days
+--     fx     → amount_minor, base_currency      ← easy one to miss
+--     fx2    → charge_currency
+--     fx3    → charge_minor
+--
+-- Running fx2 on its own gives:
+--     ERROR 42703: column p.amount_minor does not exist
+-- Running fx3 on its own gives:
+--     ERROR 42703: column "charge_currency" ... does not exist
+--
+-- And because the SQL Editor wraps a script in ONE transaction, a
+-- failure at the bottom silently undoes the columns added at the
+-- top — so a half-run script leaves nothing behind. That is why the
+-- errors repeat even though the ALTER TABLE "already ran".
+--
+-- Every column is created up front below, so this file no longer
+-- depends on section order at all.
+--
 -- The price functions are dropped before each section that changes
--- their shape, so ERROR 42P13 cannot happen. They hold no data.
+-- their shape, so ERROR 42P13 cannot happen either. They hold no data.
 --
 -- Paste the WHOLE file into Supabase → SQL Editor → Run.
 -- Safe to re-run. About 15 seconds.
 -- ═══════════════════════════════════════════════════════════
+
+-- ── 0 · Every column this file needs, created up front ───────
+-- Belt and braces: if a section is ever run out of order, or a past
+-- partial run was rolled back, these still exist.
+alter table products add column if not exists tier            text;
+alter table products add column if not exists duration_days   int;
+alter table products add column if not exists currency        text;
+alter table products add column if not exists price_note      text;
+alter table products add column if not exists amount_minor    bigint;
+alter table products add column if not exists base_currency   text;
+alter table products add column if not exists charge_currency text;
+alter table products add column if not exists charge_minor    bigint;
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ claims.sql ▓▓▓▓▓▓▓▓▓▓
@@ -559,8 +592,11 @@ declare
   v_marg  numeric;
   v_gbp   numeric;
 begin
-  select amount_minor, base_currency into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+  -- p.-qualified: base_currency is ALSO an OUT parameter of this
+  -- function, and an unqualified reference is ambiguous (Postgres
+  -- cannot tell the column from the variable and aborts).
+  select p.amount_minor, p.base_currency into v_amt, v_cur
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::numeric into v_marg from config where key = 'fx_margin_pct';
@@ -736,9 +772,12 @@ declare
   v_amt bigint; v_cur text; v_rate numeric; v_age numeric; v_max int;
   v_val numeric; v_disp text; v_cmp text; v_stale boolean := false;
 begin
-  select amount_minor, coalesce(charge_currency, base_currency)
+  -- p.-qualified: base_currency is ALSO an OUT parameter here, and an
+  -- unqualified reference is ambiguous (Postgres aborts rather than
+  -- guessing between the column and the variable).
+  select p.amount_minor, coalesce(p.charge_currency, p.base_currency)
     into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::int into v_max from config where key = 'fx_max_age_hours';
@@ -939,9 +978,12 @@ declare
   v_pence bigint; v_val numeric; v_disp text; v_cmp text;
   v_stale boolean := false;
 begin
-  select amount_minor, region, charge_minor
+  -- always p.-qualified: several OUT parameter names collide with
+  -- column names on this table, and Postgres aborts on ambiguity
+  -- rather than guessing.
+  select p.amount_minor, p.region, p.charge_minor
     into v_amt, v_region, v_stored
-    from products where code = upper(trim(p_product));
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::int     into v_max    from config where key = 'fx_max_age_hours';
@@ -976,6 +1018,31 @@ begin
                       v_rate, v_stale;
 end $$;
 grant execute on function price_now(text) to anon, authenticated;
+
+-- ── 3b · Rebuild the list view on top of the corrected price ──
+-- price_now() was just redefined, so prices_now() has to be rebuilt
+-- against it. Repeated here (rather than relying on fx2) so this file
+-- is self-contained: dropping the price functions to avoid 42P13 takes
+-- prices_now() with it, and nothing else puts it back.
+create or replace function prices_now(p_region text default null)
+returns table (code text, title text, region text, tier text, duration_days int,
+               display text, amount numeric, currency text, compare text,
+               base_amount bigint, base_currency text, price_note text, stale boolean)
+language sql security definer stable set search_path = public as $$
+  select p.code, p.title, p.region, p.tier, p.duration_days,
+         n.display, n.amount, n.currency, n.compare,
+         p.amount_minor, n.base_currency,
+         case when p.region = 'africa'
+              then (select value from config where key = 'subsidy_note')
+              else p.price_note end,
+         coalesce(n.stale, false)
+    from products p
+    left join lateral price_now(p.code) n on true
+   where p.active and p.tier is not null
+     and (p_region is null or p.region = p_region)
+   order by p.sort;
+$$;
+grant execute on function prices_now(text) to anon, authenticated;
 
 -- ── 4 · Keep the stored fallback in step with the live rate ──
 /**
@@ -1052,11 +1119,26 @@ begin
     raise exception '% pass(es) have no charge amount', bad;
   end if;
 
+  -- the naira headline must survive: Africa prices are stored in NGN
+  select count(*) into bad from products
+   where region = 'africa' and tier is not null and active
+     and coalesce(amount_minor, 0) <= 0;
+  if bad > 0 then
+    raise exception '% Africa pass(es) lost their naira price', bad;
+  end if;
+
+  -- the 1-month passes stay retired: PayPal's flat ~30p fee ate them
+  select count(*) into bad from products
+   where duration_days = 30 and tier is not null and active;
+  if bad > 0 then
+    raise exception '% monthly pass(es) still active — should be retired', bad;
+  end if;
+
   raise notice 'PAYMENTS READY · % passes, all charging GBP', n;
   raise notice '';
   for r in select code, display, amount from prices_now() loop
     raise notice '  % shown %  → charges £%',
-      rpad(r.code, 12), rpad(r.display, 10), r.amount;
+      rpad(r.code, 12), rpad(r.display, 10), to_char(r.amount, 'FM999990.00');
   end loop;
   raise notice '';
   raise notice 'NEXT: deploy pay-start, pay-webhook, refresh-fx,';
