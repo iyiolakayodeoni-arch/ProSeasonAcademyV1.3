@@ -76,6 +76,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
           <Text style={styles.packMeta}>
             {p.credits != null ? `${p.credits} CREDITS` : `PLAN: ${(p.plan ?? 'PRO').toUpperCase()}`}
           </Text>
+          {p.priceNote ? <Text style={styles.priceNote}>{p.priceNote}</Text> : null}
           {(bundles[p.code]?.length ?? 0) > 0 && (
             <Text style={styles.packIncludes}>
               + {bundles[p.code].filter((i) => i.startsWith('trick:')).length} TRICK(S)
@@ -264,6 +265,7 @@ const styles = StyleSheet.create({
   tierNowTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
   tierNowSub: { marginTop: 4, fontFamily: monoFont, fontSize: 6.3, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
   tierFair: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: 'rgba(143,184,155,0.65)' },
+  priceNote: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, lineHeight: 8.6, letterSpacing: 0.5, color: 'rgba(143,184,155,0.72)' },
   packIncludes: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 0.9, color: colors.accent },
   packPrice: { fontSize: 12, fontWeight: '900', color: colors.warm },
   buyBtn: { backgroundColor: colors.accent, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 8 },

@@ -318,6 +318,8 @@ export async function postFounderMessage(key: string, slug: string, text: string
 export interface StoreProductWire {
   code: string;
   title: string;
+  /** the honest explanation of where the number came from */
+  priceNote?: string | null;
   credits?: number;
   plan?: string;
   price: string;
@@ -352,7 +354,7 @@ export async function storeCatalog(region: string): Promise<StoreCatalogWire | n
   if (!supabase) return null;
   try {
     const [{ data: prods, error }, { data: gl }] = await Promise.all([
-      supabase.from('products').select('code, region, title, credits, plan, price, pay_link').eq('active', true).order('sort', { ascending: true }),
+      supabase.from('products').select('code, region, title, credits, plan, price, pay_link, price_note').eq('active', true).order('sort', { ascending: true }),
       supabase.from('config').select('value').eq('key', 'go_live').maybeSingle(),
     ]);
     if (error) return null;
@@ -360,7 +362,7 @@ export async function storeCatalog(region: string): Promise<StoreCatalogWire | n
     const africa: StoreProductWire[] = [];
     const world: StoreProductWire[] = [];
     for (const p of prods ?? []) {
-      const w: StoreProductWire = { code: p.code, title: p.title, credits: p.credits ?? undefined, plan: p.plan ?? undefined, price: p.price, payLink: p.pay_link };
+      const w: StoreProductWire = { code: p.code, title: p.title, credits: p.credits ?? undefined, plan: p.plan ?? undefined, price: p.price, payLink: p.pay_link, priceNote: p.price_note ?? null };
       if (p.region === 'africa') africa.push(w);
       else world.push(w);
     }

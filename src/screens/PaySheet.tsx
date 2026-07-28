@@ -146,7 +146,12 @@ export default function PaySheet({
                       </Text>
                     </View>
                   </Pressable>
-                  {method.note && <Text style={styles.methodNote}>{method.note}</Text>}
+                  {method.note && (
+                    <View style={styles.gsBox}>
+                      <Text style={styles.gsTag}>⚠ SEND AS GOODS AND SERVICES</Text>
+                      <Text style={styles.gsBody}>{method.note}</Text>
+                    </View>
+                  )}
                 </>
               ) : (
                 <Text style={styles.dim}>LOADING PAYMENT DETAILS…</Text>
@@ -259,6 +264,12 @@ const styles = StyleSheet.create({
   tapCopy: { marginTop: 7, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
   methodNote: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: '#f2c078' },
 
+  gsBox: {
+    marginTop: 9, borderWidth: 1, borderColor: 'rgba(242,192,120,0.55)',
+    backgroundColor: 'rgba(40,32,14,0.7)', borderRadius: 9, padding: 10,
+  },
+  gsTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
+  gsBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.4, color: 'rgba(238,242,236,0.9)' },
   input: {
     marginTop: 9, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 9,
     paddingHorizontal: 11, paddingVertical: 10, color: colors.fg,
