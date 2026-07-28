@@ -131,24 +131,38 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
         {/* the thread — his replies land here */}
         {thread && thread.length > 0 && (
           <Animated.View entering={FadeInDown.delay(120).duration(320)} style={styles.card}>
-            <Text style={styles.label}>YOUR MESSAGES</Text>
-            {thread.map((m) => (
-              <View key={m.id} style={styles.threadRow}>
-                <View style={styles.threadHead}>
-                  <Text style={styles.threadKind}>{String(m.kind).toUpperCase()}</Text>
-                  <Text style={styles.threadAt}>{new Date(m.at).toLocaleDateString()}</Text>
-                </View>
-                <Text style={styles.threadBody}>{m.body}</Text>
-                {m.reply ? (
-                  <View style={styles.replyBox}>
-                    <Text style={styles.replyWho}>FOUNDER</Text>
-                    <Text style={styles.replyTxt}>{m.reply}</Text>
+            <Text style={styles.label}>YOUR THREAD</Text>
+            {thread.map((m) => {
+              // messages FROM the academy (warnings, reminders, the welcome)
+              // must never look like something the member wrote themselves
+              const warn = m.fromAcademy && m.kind === 'warning';
+              return (
+                <View
+                  key={m.id}
+                  style={[
+                    styles.threadRow,
+                    m.fromAcademy && styles.fromAcademy,
+                    warn && styles.fromWarning,
+                  ]}
+                >
+                  <View style={styles.threadHead}>
+                    <Text style={[styles.threadKind, warn && { color: colors.loss }]}>
+                      {m.fromAcademy ? (warn ? '⚠ THE ACADEMY' : 'THE ACADEMY') : String(m.kind).toUpperCase()}
+                    </Text>
+                    <Text style={styles.threadAt}>{new Date(m.at).toLocaleDateString()}</Text>
                   </View>
-                ) : (
-                  <Text style={styles.pending}>WAITING ON HIM</Text>
-                )}
-              </View>
-            ))}
+                  <Text style={styles.threadBody}>{m.body}</Text>
+                  {m.reply ? (
+                    <View style={styles.replyBox}>
+                      <Text style={styles.replyWho}>FOUNDER</Text>
+                      <Text style={styles.replyTxt}>{m.reply}</Text>
+                    </View>
+                  ) : !m.fromAcademy ? (
+                    <Text style={styles.pending}>WAITING ON HIM</Text>
+                  ) : null}
+                </View>
+              );
+            })}
           </Animated.View>
         )}
 
@@ -214,6 +228,8 @@ const styles = StyleSheet.create({
   ctaTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 2, color: '#05130a' },
 
   threadRow: { marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.14)', paddingTop: 9 },
+  fromAcademy: { borderLeftWidth: 2, borderLeftColor: colors.primary, paddingLeft: 8 },
+  fromWarning: { borderLeftColor: colors.loss },
   threadHead: { flexDirection: 'row', justifyContent: 'space-between' },
   threadKind: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
   threadAt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },

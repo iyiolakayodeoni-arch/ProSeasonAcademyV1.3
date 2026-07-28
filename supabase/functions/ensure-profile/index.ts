@@ -119,6 +119,15 @@ Deno.serve(async (req) => {
   // so nobody who took a seat that week is left out.
   await sb.rpc('grant_trial_one', { p_academy: academy });
 
+  // start their clock and send the welcome + terms to their inbox
+  const { data: trialCfg } = await sb
+    .from('config').select('value').eq('key', 'trial_days').maybeSingle();
+  await sb.rpc('set_deadline', {
+    p_academy: academy,
+    p_days: Number(trialCfg?.value ?? 14),
+  });
+  await sb.rpc('welcome_member', { p_academy: academy });
+
   const { data: seats1 } = await sb.rpc('season_seats').single();
   return json({ ok: true, profile: created, seats: seats1 ?? null });
 });

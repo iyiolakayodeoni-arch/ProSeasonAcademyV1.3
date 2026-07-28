@@ -22,6 +22,7 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 | 6 | `supabase/access.sql` | **the trial, then paid-only + the grace window** | `ACCESS ARMED · trial=MID for 14 days` |
 | 7 | `supabase/consult.sql` | **the pricing table — members help set the price** | `PRICING TABLE ARMED · 7 open question(s)` |
 | 8 | `supabase/enforcement.sql` | **deadlines, auto-removal, strikes, terms, refunds** | `ENFORCEMENT ARMED` |
+| 9 | `supabase/notices.sql` | **the academy bot — nobody is removed without being told** | `THE ACADEMY BOT ARMED` |
 
 Then **Edge Functions** — paste each file's contents into a function of the same name:
 
@@ -249,3 +250,31 @@ refund figure so you know what to send back.
 Every member sees `TermsSheet` before anything else and must scroll to the end to accept.
 It covers the trial, the deadline, what happens if a pass lapses, conduct, refunds and
 data. Edit the text in the `tos` table; bump `tos_version` to re-show it to everyone.
+
+
+---
+
+## Nobody is removed in silence
+
+Strikes were being recorded without the member ever seeing one — they could collect three
+warnings and simply find themselves gone. That is the exact surprise you said you wanted
+to avoid, so `notices.sql` closes it.
+
+Every one of these now lands in the member's own inbox, from **THE ACADEMY**:
+
+| Event | What they get |
+|---|---|
+| Enrolment | Welcome + the terms in short, and their trial length |
+| 7 days left | "One week left — if it has not been worth it, tell me why" |
+| 3 days left | "Your seat is released in three days" |
+| Last day | "Settings → THE TILL. If money is the problem, reply and talk to me" |
+| Warning 1 or 2 | The reason, the count, and how many are left |
+| Severe flag | "The founder will speak to you himself. Nothing has happened yet." |
+| Removed | The reason, and the refund position, and how to appeal |
+
+Warnings show with a red bar and a ⚠ so they cannot be mistaken for an ordinary note, and
+Settings carries an unread badge. Every message is replyable — someone who thinks they
+were wrongly warned reaches a human, not a wall.
+
+Reminders are idempotent (one per milestone per member), so running them twice never
+double-messages. They go out daily at 09:00 UTC via pg_cron, or from the Desk.

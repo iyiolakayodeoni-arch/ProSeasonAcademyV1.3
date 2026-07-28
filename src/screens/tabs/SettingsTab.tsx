@@ -159,6 +159,8 @@ export default function SettingsTab({
   const [deskOpen, setDeskOpen] = useState(false);
   const [tillOpen, setTillOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [unreadAcademy, setUnreadAcademy] = useState(0);
+  useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
 
   // a key verified on a previous run unlocks the desk straight away
   useEffect(() => {
@@ -427,9 +429,17 @@ export default function SettingsTab({
             <Row
               icon={<AtIcon size={15} color="#f2c078" />}
               title="Contact the founder"
-              sub="PRIVATE LINE — QUESTIONS, IDEAS, BUGS"
-              right={<Chevron />}
-              onPress={() => setContactOpen(true)}
+              sub={unreadAcademy > 0 ? 'YOU HAVE A MESSAGE FROM THE ACADEMY' : 'PRIVATE LINE — QUESTIONS, IDEAS, BUGS'}
+              right={
+                unreadAcademy > 0 ? (
+                  <View style={styles.unreadDot}>
+                    <Text style={styles.unreadTxt}>{unreadAcademy}</Text>
+                  </View>
+                ) : (
+                  <Chevron />
+                )
+              }
+              onPress={() => { setContactOpen(true); void backend.markAcademyRead(); }}
               last
             />
           </View>
@@ -872,6 +882,11 @@ const styles = StyleSheet.create({
   sheetBtnGhost: { borderColor: 'rgba(143,184,155,0.25)', backgroundColor: 'transparent' },
   sheetBtnTxt: { fontFamily: monoFont, fontSize: 8.8, fontWeight: '900', letterSpacing: 2.4, color: colors.primary },
 
+  unreadDot: {
+    minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.loss,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
+  },
+  unreadTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', color: '#fff' },
   keyError: {
     marginTop: 7,
     fontFamily: monoFont,

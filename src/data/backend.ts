@@ -486,6 +486,8 @@ export interface ContactRow {
   read: boolean;
   replied: boolean;
   reply: string | null;
+  /** true when THE ACADEMY sent this (warning, reminder, welcome) */
+  fromAcademy: boolean;
 }
 
 /** send the founder a private note. Returns an error code, or null on success. */
@@ -507,13 +509,37 @@ export async function sendContact(kind: ContactKind, body: string): Promise<stri
   }
 }
 
+/** unread messages FROM the academy — drives the Settings badge */
+export async function unreadFromAcademy(): Promise<number> {
+  if (!supabase || !me) return 0;
+  try {
+    const { count, error } = await supabase
+      .from('contact_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('from_academy', true)
+      .eq('read', false);
+    return error ? 0 : (count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/** the member has now seen them */
+export async function markAcademyRead(): Promise<void> {
+  if (!supabase || !me) return;
+  try {
+    await supabase.from('contact_messages')
+      .update({ read: true }).eq('from_academy', true).eq('read', false);
+  } catch { /* best effort */ }
+}
+
 /** your own thread — including the founder's replies */
 export async function myContactThread(): Promise<ContactRow[] | null> {
   if (!supabase || !me) return null;
   try {
     const { data, error } = await supabase
       .from('contact_messages')
-      .select('id, kind, body, at, read, replied, reply')
+      .select('id, kind, body, at, read, replied, reply, from_academy')
       .order('at', { ascending: false })
       .limit(30);
     if (error) return null;
@@ -521,6 +547,7 @@ export async function myContactThread(): Promise<ContactRow[] | null> {
       id: Number(r.id), kind: r.kind, body: r.body,
       at: new Date(r.at).getTime(), read: !!r.read,
       replied: !!r.replied, reply: r.reply ?? null,
+      fromAcademy: r.from_academy === true,
     }));
   } catch {
     return null;
