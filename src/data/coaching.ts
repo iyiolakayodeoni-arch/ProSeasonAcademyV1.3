@@ -141,6 +141,7 @@ export function resolveStageLesson(stageN: number, refs: Record<number, string>)
 
 export interface CoachChat {
   greeting: string;
+  voiceCaption: string;
   mechanic: string;
   /** the single wink — one line of humour between the lesson and the closer.
    *  Seeded by the mechanic so it's stable for the day, and it always sits
@@ -208,6 +209,7 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
       greeting: calm
         ? 'Come in — quick one today. The lesson changed under our feet.'
         : 'You’re here. Good. Quick one today — the game moved under us.',
+      voiceCaption: 'VOICE NOTE · QUICK ROOM UPDATE — THE PATCH MOVED FIRST',
       mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Your stage objectives are untouched though, and the scan still grades them off the vault.`,
       quip: calm
         ? 'The patch emptied my Saturday too, little one. We both grieve quietly, then we adapt.'
@@ -221,6 +223,7 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
     greeting: calm
       ? 'Come in — sit down first. Today I’m setting up, so it’s just **me talking.**'
       : 'You’re here. Good. Pull up, little bro — today is just **me talking.**',
+    voiceCaption: 'VOICE NOTE · ROOM SETUP — THE SCAN STILL COUNTS',
     mechanic:
       'Today’s extra mechanic isn’t cleared for the room yet — the scouts are still checking the tape. That changes nothing about your job: **the stage objectives below are live**, and the scan reads them straight off your vault. Go and play.',
     quip: calm
