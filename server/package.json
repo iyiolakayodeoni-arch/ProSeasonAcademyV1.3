@@ -2,13 +2,16 @@
   "name": "proseasonacademy-server",
   "version": "1.0.0",
   "private": true,
-  "description": "ProSeasonAcademy backend — 100% custom, zero paid services. Guest auth, match-vault sync, Discord-style community (channels, messages, reactions, presence), admin summary. Node 20+, SQLite via better-sqlite3, realtime via ws.",
+  "description": "ProSeasonAcademy backend \u2014 100% custom, zero paid services. Guest auth, match-vault sync, Discord-style community (channels, messages, reactions, presence), admin summary. Node 20+, SQLite via better-sqlite3, realtime via ws.",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "node test/e2e.js"
+    "test": "node test/seat-gate.test.js && node test/e2e.js",
+    "test:seats": "node test/seat-gate.test.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "better-sqlite3": "^11.10.0",
     "ws": "^8.18.0"

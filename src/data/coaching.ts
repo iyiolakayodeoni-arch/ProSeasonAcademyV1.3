@@ -169,9 +169,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
   if (coach.id === 'obinna') {
     return {
       greeting:
-        'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end.',
+        'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end. And please, let the controller cool down first — it has done nothing wrong.',
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
-      mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you.`,
+      mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you. Even the button you always panic-press deserves a day off.`,
       closer: `That’s the whole lesson. You don’t have to report anything to me — **the scan will know.** It always knows. Go play, and let your ${mech} do the talking.`,
       scanIntro:
         'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
@@ -180,9 +180,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
   }
   return {
     greeting:
-      'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end.',
+      'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end. And no, shouting at the referee is not a mechanic.',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
-    mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you.`,
+    mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you. Your opponent is welcome to call it luck; that saves us explaining the homework.`,
     closer: `That’s the whole lesson. And before you even think about lying to me — **the scan will know.** It always knows. Go play, and let your ${mech} answer for you.`,
     scanIntro:
       'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
@@ -193,15 +193,17 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
 /** placeholder voice when there’s no approved mechanic yet (or it went stale) */
 export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
   const calm = coach.id === 'obinna';
+  // The scan grades this stage's OBJECTIVES against the vault, so it works
+  // with or without a fresh mechanic. Only the bonus tape is pending.
   const scanIntro =
-    'THE SCAN IS ARMED, BUT ITS TARGETS LOCK IN THE MOMENT TODAY’S MECHANIC LANDS — NOTHING TO PROVE UNTIL THE TAPE DROPS.';
+    'THE SCAN IS LIVE — IT GRADES THIS STAGE’S OBJECTIVES OFF YOUR VAULT. TODAY’S EXTRA MECHANIC IS STILL BEING CUT; THE WORK DOESN’T WAIT FOR IT.';
   if (staleName) {
     return {
       greeting: calm
         ? 'Come in — quick one today. The lesson changed under our feet.'
         : 'You’re here. Good. Quick one today — the game moved under us.',
       voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
-      mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Scroll down, you’ll see where it lands.`,
+      mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Your stage objectives are untouched though, and the scan still grades them off the vault.`,
       closer: `When the fresh tape lands, same rule — **the scan will know.** It always knows.`,
       scanIntro,
       footer: 'THE CHAT IS ONE WAY — THE UPDATED TAPE LANDS HERE FIRST.',
@@ -213,8 +215,8 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
       : 'You’re here. Good. Pull up, little bro — today is just **me talking.**',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
     mechanic:
-      'Today’s mechanic isn’t cleared for the room yet — the scouts are checking the tape. Scroll down, you’ll see exactly where it lands.',
-    closer: `When it lands, remember the house rule — **the scan will know.** It always knows.`,
+      'Today’s extra mechanic isn’t cleared for the room yet — the scouts are still checking the tape. That changes nothing about your job: **the stage objectives below are live**, and the scan reads them straight off your vault. Go and play.',
+    closer: `Do the work now, take the bonus tape when it lands. Either way — **the scan will know.** It always knows.`,
     scanIntro,
     footer: 'THE CHAT IS ONE WAY — THE MECHANIC LANDS HERE THE MOMENT IT’S APPROVED.',
   };

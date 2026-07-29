@@ -25,7 +25,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES } from '../data/coaches';
 import { colors, monoFont } from '../theme';
-import { GeoRegion, getSettings, setCountry } from '../data/settings';
+import { GeoRegion, getSettings, setCountry, setDisplayName } from '../data/settings';
 import * as backend from '../data/backend';
 
 // From app.json — never hardcode the version.
@@ -59,12 +59,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const { width } = useWindowDimensions();
   const cardWidth = Math.min((width - PAGE_PAD * 2 - CARD_GAP) / 2, 190);
 
-  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [invite, setInvite] = useState('');
+  const [doorError, setDoorError] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
-  const { loading, handleSignIn, handleCreateAccount, handleForgotPassword } = useAuth();
+  const [offline, setOffline] = useState(false);
+  const { loading, enterAcademy } = useAuth();
 
   // header crest trail (same loop as splash, chained through the shared hook)
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
@@ -77,7 +78,10 @@ export default function SignInScreen({ onSignedIn }: Props) {
     shadowRadius: 12 + press.value * 10,
   }));
 
-  const signingIn = loading === 'signin';
+  const signingIn = loading;
+  /** the name has to be worth putting on a seat */
+  const nameOk = username.trim().length >= 3;
+  const canEnter = nameOk && !!countryPick && !signingIn;
 
   const pickCountry = (label: string, geo: Exclude<GeoRegion, 'unset'>) => {
     setCountryPick(label);
@@ -86,14 +90,30 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
   /** one tap: identity + SEASON seat claimed in the same breath (in-app, nothing hosted) */
   const enter = async () => {
-    await handleSignIn({ email, username, password });
-    const s = getSettings();
-    await backend.ensureAuth(username.trim() || s.displayName, '', s.platform, s.geo);
+    if (!canEnter) return;
+    setOffline(false);
+    setDoorError(null);
+    const handle = username.trim();
+    setDisplayName(handle); // the name he chose IS his academy name
+    const me = await enterAcademy(handle, invite.trim());
+    // invite refused → say so plainly; this academy is invite-only
+    const door = backend.getDoorError();
+    if (door) {
+      setDoorError(
+        door === 'INVITE_REQUIRED'
+          ? 'THIS ACADEMY IS INVITE-ONLY. ENTER THE CODE YOU WERE GIVEN.'
+          : 'THAT CODE IS NOT VALID, ALREADY USED, OR EXPIRED.',
+      );
+      return;
+    }
     const gate = backend.getSeasonGate();
     if (gate) {
       setSeasonFull(gate); // season full → waitlist panel, solo training continues
       return;
     }
+    // no identity and no gate = the academy is unreachable. Say so, then
+    // let him train offline — the vault syncs the moment signal returns.
+    if (!me) setOffline(true);
     onSignedIn?.();
   };
 
@@ -183,40 +203,37 @@ export default function SignInScreen({ onSignedIn }: Props) {
             THE HALLS RIGHT NOW. THE SPLIT LOCKS ON JAN 1.
           </Text>
 
-          {/* form */}
+          {/* form — one field. No password exists to steal or forget. */}
           <View style={styles.form}>
             <NeonInput
-              placeholder="EMAIL"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <View style={styles.fieldGap} />
-            <NeonInput
-              placeholder="USERNAME"
+              placeholder="YOUR ACADEMY NAME"
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="characters"
+              maxLength={14}
             />
             <View style={styles.fieldGap} />
             <NeonInput
-              placeholder="PASSWORD"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
+              placeholder="INVITE CODE"
+              value={invite}
+              onChangeText={(t) => { setInvite(t); setDoorError(null); }}
+              autoCapitalize="characters"
+              maxLength={24}
             />
           </View>
+          <Text style={styles.geoNote}>
+            THIS IS THE NAME YOUR COACH CALLS YOU AND THE HALL SEES. 3–14 CHARACTERS.
+            THE ACADEMY IS INVITE-ONLY — USE THE CODE YOU WERE GIVEN.
+          </Text>
 
-          {/* footer links */}
-          <View style={styles.linksRow}>
-            <Pressable onPress={handleCreateAccount} hitSlop={8} disabled={loading !== null}>
-              <Text style={styles.linkDim}>
-                NEW PLAYER? <Text style={styles.linkHot}>CREATE ACCOUNT</Text>
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => handleForgotPassword(email)} hitSlop={8} disabled={loading !== null}>
-              <Text style={styles.linkDim}>FORGOT PASSWORD?</Text>
-            </Pressable>
-          </View>
+          {doorError && <Text style={styles.doorError}>{doorError}</Text>}
+
+          {offline && (
+            <Text style={styles.offlineNote}>
+              THE ACADEMY DIDN'T ANSWER — YOU'RE TRAINING OFFLINE. YOUR VAULT SAVES HERE AND SYNCS
+              THE MOMENT SIGNAL RETURNS.
+            </Text>
+          )}
 
           {/* CTA — one identity for sign-up AND sign-in, claimed in-app */}
           <Pressable
@@ -225,13 +242,17 @@ export default function SignInScreen({ onSignedIn }: Props) {
             }}
             onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
             onPressOut={() => (press.value = withSpring(0))}
-            disabled={loading !== null}
+            disabled={!canEnter}
           >
-            <Animated.View style={[styles.cta, btnStyle, signingIn && styles.ctaBusy]}>
-              <Text style={styles.ctaText}>{signingIn ? 'CLAIMING YOUR SEAT…' : 'SIGN IN'}</Text>
+            <Animated.View style={[styles.cta, btnStyle, signingIn && styles.ctaBusy, !canEnter && styles.ctaOff]}>
+              <Text style={styles.ctaText}>
+                {signingIn ? 'CLAIMING YOUR SEAT…' : !countryPick ? 'PICK YOUR COUNTRY FIRST' : !nameOk ? 'ENTER YOUR ACADEMY NAME' : 'CLAIM MY SEAT'}
+              </Text>
             </Animated.View>
           </Pressable>
-          <Text style={styles.seatNote}>FIRST ENTRY CREATES YOUR ACADEMY SEAT · NO PASSWORDS, NO WEB FORMS — EVERYTHING STAYS IN THE APP</Text>
+          <Text style={styles.seatNote}>
+            SEASON ONE IS CAPPED AT 1,000 SEATS · NO PASSWORDS, NO WEB FORMS — EVERYTHING STAYS IN THE APP
+          </Text>
 
           {/* footer */}
           <View style={styles.footerRow}>
@@ -342,6 +363,25 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   ctaBusy: { opacity: 0.75 },
+  ctaOff: { opacity: 0.4 },
+  doorError: {
+    marginTop: 10,
+    fontFamily: monoFont,
+    fontSize: 6.6,
+    lineHeight: 10.5,
+    letterSpacing: 1,
+    color: colors.loss,
+    textAlign: 'center',
+  },
+  offlineNote: {
+    marginTop: 10,
+    fontFamily: monoFont,
+    fontSize: 6.4,
+    lineHeight: 10,
+    letterSpacing: 1,
+    color: 'rgba(242,192,120,0.9)',
+    textAlign: 'center',
+  },
   ctaText: {
     fontFamily: monoFont,
     fontSize: 10.5,

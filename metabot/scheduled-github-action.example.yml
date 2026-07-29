@@ -1,24 +1,59 @@
-# copy to .github/workflows/metabot.yml — no secrets needed at all
+# ─────────────────────────────────────────────────────────────
+# INSTALL: copy this file to .github/workflows/metabot.yml and
+# commit it yourself.
+#   mkdir -p .github/workflows
+#   cp metabot/scheduled-github-action.example.yml .github/workflows/metabot.yml
+#   git add .github/workflows/metabot.yml && git commit && git push
+# (GitHub blocks apps from creating workflow files, so this one
+#  move has to come from your own account. One command, once.)
+# ─────────────────────────────────────────────────────────────
+# ProSeason MetaBot — the academy's own scout.
+# No API keys, no accounts, no AI services. Plain Node, GitHub's free runner.
+#
+# It only ever writes PENDING findings. Nothing reaches a player until you
+# approve it yourself:
+#     node metabot/src/approve.js pending
+#     node metabot/src/approve.js approve <id>
+#     node metabot/src/exportForApp.js   → rewrites src/data/liveFeed.json
+#
+# NOTE: scheduled runs only fire from the repository's DEFAULT branch.
 name: ProSeason MetaBot
+
 on:
   schedule:
-    - cron: '0 */6 * * *'   # every 6 hours; use '0 8 * * *' for daily 08:00
-  workflow_dispatch: {}      # manual "run now" button in the Actions tab
+    - cron: '0 8 * * *' # daily 08:00 UTC
+  workflow_dispatch: {} # manual "run now" button in the Actions tab
+
+# least privilege: the job may write code, nothing else
+permissions:
+  contents: write
+
+concurrency:
+  group: metabot
+  cancel-in-progress: false
 
 jobs:
   metabot:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Fetch → dedupe → classify/compose → store (pending review)
         run: node metabot/src/run.js
+
       - name: Commit new findings
         run: |
-          git config user.name "proseason-metabot"
+          git config user.name  "proseason-metabot"
           git config user.email "bot@proseason.academy"
           git add metabot/data src/data/liveFeed.json
-          git diff --cached --quiet || git commit -m "metabot: $(date -u +%F) findings"
-          git push
+          if git diff --cached --quiet; then
+            echo "no new findings today"
+          else
+            git commit -m "metabot: $(date -u +%F) findings"
+            git push
+          fi

@@ -44,11 +44,15 @@ import {
   setActiveThread,
   shareScanResult,
   startMockTraffic,
+  startLiveRooms,
+  getRemoteUsers,
   toggleMute,
   toggleReaction,
   useCommunityState,
 } from '../../data/community';
+import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
+import PricingTable from '../PricingTable';
 import { colors, monoFont } from '../../theme';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
@@ -173,14 +177,26 @@ function Dot({ delay }: { delay: number }) {
 
 export default function CommunityTab({ coach }: { coach: Coach }) {
   const st = useCommunityState();
+  const cloud = useCloud();
   const users: Record<string, UserWithAvatar> = useMemo(() => {
     const u = buildUsers(coach);
-    return { ...u, coach: { ...u.coach, avatar: coach.portrait } };
-  }, [coach]);
+    // real players from the live rooms join the same map the UI renders
+    return { ...u, ...getRemoteUsers(), coach: { ...u.coach, avatar: coach.portrait } };
+  }, [coach, st.messages, st.live]);
 
+  // LIVE first: if the academy cloud answers, the public channels mirror
+  // real Supabase rooms. Only a genuinely offline hall gets the scripted
+  // engine, so the room never looks abandoned on a dead network.
   useEffect(() => {
-    startMockTraffic(coach); // singleton — keeps the room alive across tab switches
-  }, [coach]);
+    let cancelled = false;
+    void (async () => {
+      const live = await startLiveRooms(backend.getMe());
+      if (!cancelled && !live) startMockTraffic(coach);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coach, cloud.status]);
 
   const inDm = isDm(st.activeThreadId, st.dms);
   const channel = CHANNELS.find((c) => c.id === st.activeThreadId);
@@ -194,6 +210,16 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const recTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── panels / sheets ──
+  const [founder, setFounder] = useState<backend.FounderWeek | null>(null);
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const [consultLeft, setConsultLeft] = useState<number | null>(null);
+  useEffect(() => {
+    void backend.myConsult().then((qs) => {
+      if (qs) setConsultLeft(qs.filter((q) => !q.answered).length);
+    });
+  }, [pricingOpen]);
+  useEffect(() => { void backend.founderWeek().then(setFounder); }, [cloud.status]);
+
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
   const [profileUser, setProfileUser] = useState<UserWithAvatar | null>(null);
   const [picker, setPicker] = useState(false);
@@ -361,6 +387,22 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
       <View style={styles.headerRule} />
 
       {/* ── season gate: sold-out season → you train solo until your seat opens ── */}
+      {consultLeft !== null && consultLeft > 0 && (
+        <Pressable onPress={() => setPricingOpen(true)}>
+          <View style={styles.consultBar}>
+            <Text style={styles.consultTag}>THE PRICING TABLE · {consultLeft} LEFT</Text>
+            <Text style={styles.consultTxt}>
+              YOU HELP SET THE PRICE — THE FOUNDER READS EVERY ANSWER ›
+            </Text>
+          </View>
+        </Pressable>
+      )}
+      {founder?.live && (
+        <View style={styles.founderWeek}>
+          <Text style={styles.founderWeekTag}>● THE FOUNDER IS IN THE HALLS</Text>
+          <Text style={styles.founderWeekTxt}>{founder.note}</Text>
+        </View>
+      )}
       {backend.getSeasonGate() ? (
         <View style={styles.gateBanner}>
           <Text style={styles.gateBannerTxt}>
@@ -757,6 +799,12 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Animated.View>
         </View>
       )}
+
+      {pricingOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <PricingTable onClose={() => setPricingOpen(false)} />
+        </View>
+      )}
     </View>
   );
 }
@@ -820,6 +868,26 @@ function VoiceNote({ secs, accent }: { secs: number; accent: string }) {
 }
 
 const styles = StyleSheet.create({
+  consultBar: {
+    marginHorizontal: 12, marginTop: 8, borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.5)', backgroundColor: 'rgba(10,26,15,0.85)',
+    borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11,
+  },
+  consultTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  consultTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+
+  founderWeek: {
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.5)',
+    backgroundColor: 'rgba(40,32,14,0.7)',
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 11,
+  },
+  founderWeekTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078' },
+  founderWeekTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
   flex: { flex: 1 },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 9 },

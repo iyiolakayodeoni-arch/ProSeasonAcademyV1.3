@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeIn, FadeInUp, SlideInUp, SlideOutDown, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -6,7 +7,14 @@ import GridBackground from '../../components/GridBackground';
 import { colors, monoFont } from '../../theme';
 import { Coach } from '../../data/coaches';
 import { journeySeasonFor } from '../../data/journey';
-import { useJourneyProgress } from '../../data/progress';
+import { useJourneyProgress, wipeProgress } from '../../data/progress';
+import * as backend from '../../data/backend';
+import { DEVICE_LABEL } from '../../data/backend';
+import { wipeSession } from '../../data/session';
+import FounderDesk from '../FounderDesk';
+import { isFounder, signInWithEmail } from '../../data/founderAuth';
+import StoreSheet from '../StoreSheet';
+import ContactSheet from '../ContactSheet';
 import {
   PLANS,
   PLATFORMS,
@@ -54,7 +62,11 @@ type SheetKind =
   | 'help'
   | 'logout'
   | 'delete'
+  | 'admin'
   | null;
+
+/** taps on the version line that open the founder's door */
+const FOUNDER_TAPS = 5;
 
 // ── the real toggle switch ────────────────────────────────────
 function Toggle({ on, onFlip, red }: { on: boolean; onFlip: () => void; red?: boolean }) {
@@ -135,9 +147,51 @@ export default function SettingsTab({
   const progress = useJourneyProgress();
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [nameDraft, setNameDraft] = useState('');
-  const [resetSent, setResetSent] = useState(false);
   const [ticketOpen, setTicketOpen] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
+
+  // ── THE FOUNDER'S DOOR — tap the version line 5× ──
+  const [taps, setTaps] = useState(0);
+  const [founderEmail, setFounderEmail] = useState('');
+  const [founderPassword, setFounderPassword] = useState('');
+  const [keyChecking, setKeyChecking] = useState(false);
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [founderKey, setFounderKey] = useState<string | null>(null);
+  const [founderAllowed, setFounderAllowed] = useState(false);
+  const [deskOpen, setDeskOpen] = useState(false);
+  const [tillOpen, setTillOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [unreadAcademy, setUnreadAcademy] = useState(0);
+  useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
+
+  useEffect(() => {
+    void isFounder().then((ok) => {
+      setFounderAllowed(ok);
+      if (ok) setFounderKey('authenticated-founder');
+    });
+  }, []);
+
+  const tapVersion = () => {
+    const n = taps + 1;
+    if (n >= FOUNDER_TAPS) {
+      setTaps(0);
+      if (founderAllowed) setDeskOpen(true);
+      else { setFounderEmail(''); setFounderPassword(''); setKeyError(null); setSheet('admin'); }
+      return;
+    }
+    setTaps(n);
+  };
+
+  const submitFounderLogin = async () => {
+    if (!founderEmail.trim() || !founderPassword || keyChecking) return;
+    setKeyChecking(true); setKeyError(null);
+    const profile = await signInWithEmail(founderEmail, founderPassword);
+    setKeyChecking(false);
+    if (!profile) { setKeyError('FOUNDER ACCOUNT NOT VERIFIED. CHECK YOUR EMAIL AND PASSWORD.'); return; }
+    setFounderAllowed(true); setFounderKey('authenticated-founder'); setFounderPassword(''); setSheet(null); setDeskOpen(true);
+  };
+
+  const forgetFounderKey = () => { setFounderAllowed(false); setFounderKey(null); setDeskOpen(false); };
 
   const SEASON = journeySeasonFor(coach.id);
   const coachShort = coach.name.split(' ')[0].toUpperCase();
@@ -148,7 +202,6 @@ export default function SettingsTab({
 
   const open = (k: Exclude<SheetKind, null>) => {
     if (k === 'edit') setNameDraft(s.displayName);
-    if (k === 'password') setResetSent(false);
     if (k === 'delete') setDeleteArmed(false);
     setSheet(k);
   };
@@ -337,6 +390,13 @@ export default function SettingsTab({
               onPress={() => open('plan')}
             />
             <Row
+              icon={<PlanIcon size={15} color="#f2c078" />}
+              title="THE TILL"
+              sub="CREDITS · PRO · YOUR ACADEMY WALLET"
+              right={<Chevron />}
+              onPress={() => setTillOpen(true)}
+            />
+            <Row
               icon={<LockIcon size={14} color="#57d07c" />}
               title="Password & security"
               right={<Chevron />}
@@ -348,6 +408,21 @@ export default function SettingsTab({
               sub="BUGS · BILLING · TALK TO A HUMAN"
               right={<Chevron />}
               onPress={() => open('help')}
+            />
+            <Row
+              icon={<AtIcon size={15} color="#f2c078" />}
+              title="Contact the founder"
+              sub={unreadAcademy > 0 ? 'YOU HAVE A MESSAGE FROM THE ACADEMY' : 'PRIVATE LINE — QUESTIONS, IDEAS, BUGS'}
+              right={
+                unreadAcademy > 0 ? (
+                  <View style={styles.unreadDot}>
+                    <Text style={styles.unreadTxt}>{unreadAcademy}</Text>
+                  </View>
+                ) : (
+                  <Chevron />
+                )
+              }
+              onPress={() => { setContactOpen(true); void backend.markAcademyRead(); }}
               last
             />
           </View>
@@ -377,7 +452,13 @@ export default function SettingsTab({
           </View>
         </Animated.View>
 
-        <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
+        {/* the founder's door hides in plain sight — 5 taps */}
+        <Pressable onPress={tapVersion} hitSlop={10}>
+          <Text style={styles.footVersion}>
+            PROSEASONACADEMY · VERSION {APP_VERSION}
+            {founderKey ? ' · ★' : ''}
+          </Text>
+        </Pressable>
         <Text style={styles.footNote}>BUILD 24.07 · MADE FOR THE PLAYERS WHO STAY AFTER FULL-TIME</Text>
       </ScrollView>
 
@@ -477,20 +558,22 @@ export default function SettingsTab({
 
             {sheet === 'password' && (
               <View>
-                <Text style={styles.sheetEyebrow}>PASSWORD & SECURITY</Text>
-                <Text style={styles.sheetTitle}>SIGNED IN ON THIS DEVICE</Text>
+                <Text style={styles.sheetEyebrow}>SECURITY</Text>
+                <Text style={styles.sheetTitle}>THERE IS NO PASSWORD</Text>
                 <Text style={styles.sheetBody}>
-                  Your session is local while the academy backend is being wired. If you ever need a reset, we send a link to your sign-in email.
+                  Your seat is held by this device, not by a password. Nothing to forget, nothing to
+                  reset, nothing anyone can phish out of you. Your academy name and your ledger travel
+                  with the seat.
                 </Text>
-                <SheetButton
-                  label={resetSent ? 'LINK SENT — CHECK YOUR INBOX' : 'SEND PASSWORD RESET LINK'}
-                  onPress={() => {
-                    // TODO(real-auth): supabase.auth.resetPasswordForEmail(...)
-                    console.log('[auth] reset link requested (seam)');
-                    setResetSent(true);
-                  }}
-                />
-                <SheetButton label="CLOSE" onPress={close} ghost />
+                <Text style={styles.sheetBody}>
+                  ACADEMY ID · {s.academyId}{'\n'}
+                  SEAT HELD ON · {DEVICE_LABEL}
+                </Text>
+                <Text style={[styles.sheetBody, { color: 'rgba(242,192,120,0.9)' }]}>
+                  Keep this device. Wiping the app or deleting your account releases the seat — and in
+                  a capped season, seats do not come back on their own.
+                </Text>
+                <SheetButton label="UNDERSTOOD" onPress={close} ghost />
               </View>
             )}
 
@@ -500,7 +583,7 @@ export default function SettingsTab({
                 <Text style={styles.sheetTitle}>BUGS · BILLING · A HUMAN</Text>
                 <FaqRow q="MY SCAN DIDN'T LAND" a="SCANS ARRIVE WITH YOUR NEXT RANKED MATCH. IF 24H PASS, PING US." />
                 <FaqRow q="CAN I SWITCH COACHES?" a="NO — THE PATH LOCK IS PERMANENT. THAT'S THE ACADEMY." />
-                <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE NOW, SYNCED TO YOUR PROFILE ONCE BACKEND LANDS." />
+                <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE, AND MIRRORED TO YOUR ACADEMY SEAT WHEN YOU HAVE SIGNAL." />
                 <SheetButton
                   label={ticketOpen ? 'TICKET OPENED — WE REPLY IN-APP' : 'TALK TO A HUMAN'}
                   onPress={() => {
@@ -538,13 +621,56 @@ export default function SettingsTab({
                       setDeleteArmed(true);
                       return;
                     }
+                    // burn ALL of it: settings, the ledger, the coach lock
                     await wipeLocalData();
+                    await wipeProgress();
+                    await wipeSession();
+                    backend.cloudReset();
                     onSignOut();
                   }}
                 />
               </View>
             )}
+
+            {sheet === 'admin' && (
+              <View>
+                <Text style={[styles.sheetEyebrow, { color: colors.accent }]}>FOUNDER ACCESS</Text>
+                <Text style={styles.sheetTitle}>SIGN IN AS FOUNDER</Text>
+                <Text style={styles.sheetBody}>Use your Supabase founder account. No founder key is stored on this device.</Text>
+                <TextInput value={founderEmail} onChangeText={setFounderEmail} placeholder="EMAIL" placeholderTextColor="rgba(143,184,155,0.35)" autoCapitalize="none" keyboardType="email-address" style={styles.nameInput} />
+                <TextInput value={founderPassword} onChangeText={setFounderPassword} placeholder="PASSWORD" placeholderTextColor="rgba(143,184,155,0.35)" secureTextEntry style={styles.nameInput} />
+                {keyError && <Text style={styles.keyError}>{keyError}</Text>}
+                <SheetButton label={keyChecking ? 'CHECKING…' : 'OPEN FOUNDER DESK'} onPress={submitFounderLogin} />
+                <SheetButton label="NOT NOW" onPress={close} ghost />
+              </View>
+            )}
+
           </Animated.View>
+        </View>
+      )}
+
+      {/* ── FOUNDER DESK — full-screen, key-gated ── */}
+      {deskOpen && founderKey && (
+        <View style={StyleSheet.absoluteFill}>
+          <FounderDesk
+            founderKey={founderKey}
+            onForgetKey={forgetFounderKey}
+            onClose={() => setDeskOpen(false)}
+          />
+        </View>
+      )}
+
+      {/* ── CONTACT — private line to the founder ── */}
+      {contactOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <ContactSheet onClose={() => setContactOpen(false)} />
+        </View>
+      )}
+
+      {/* ── THE TILL ── */}
+      {tillOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <StoreSheet onClose={() => setTillOpen(false)} />
         </View>
       )}
     </View>
@@ -723,6 +849,20 @@ const styles = StyleSheet.create({
   sheetBtnDanger: { borderColor: 'rgba(224,96,92,0.5)', backgroundColor: 'rgba(224,96,92,0.08)' },
   sheetBtnGhost: { borderColor: 'rgba(143,184,155,0.25)', backgroundColor: 'transparent' },
   sheetBtnTxt: { fontFamily: monoFont, fontSize: 8.8, fontWeight: '900', letterSpacing: 2.4, color: colors.primary },
+
+  unreadDot: {
+    minWidth: 18, height: 18, borderRadius: 9, backgroundColor: colors.loss,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
+  },
+  unreadTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', color: '#fff' },
+  keyError: {
+    marginTop: 7,
+    fontFamily: monoFont,
+    fontSize: 6.6,
+    lineHeight: 10,
+    letterSpacing: 1,
+    color: colors.loss,
+  },
 
   nameInput: {
     marginTop: 4,

@@ -19,6 +19,8 @@ export interface StoreProduct {
   price: string;
   /** https payment page once merchant links exist; anything else = not set */
   payLink?: string;
+  /** why the price is that number — shown under it, so nothing feels hidden */
+  priceNote?: string | null;
 }
 
 export interface StoreCatalog {

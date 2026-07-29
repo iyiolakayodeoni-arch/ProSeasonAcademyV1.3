@@ -38,8 +38,163 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [tillBusy, setTillBusy] = useState(false);
   const [tillNote, setTillNote] = useState<string | null>(null);
 
+  // ── the inbox ──
+  const [inbox, setInbox] = useState<backend.InboxRow[] | null>(null);
+  const [unread, setUnread] = useState(0);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
+  const [replyTxt, setReplyTxt] = useState('');
+  const [inboxBusy, setInboxBusy] = useState(false);
+
+  // ── invites ──
+  const [invites, setInvites] = useState<backend.InviteRow[] | null>(null);
+  const [invLabel, setInvLabel] = useState('');
+  const [invUses, setInvUses] = useState('1');
+  const [invDays, setInvDays] = useState('0');
+  const [invNew, setInvNew] = useState<string | null>(null);
+  const [inviteOnly, setInviteOnly] = useState<boolean | null>(null);
+  const [trialArmed, setTrialArmed] = useState(false);
+  const [trialNote, setTrialNote] = useState<string | null>(null);
+  const [lapsed, setLapsed] = useState<backend.LapsedRow[] | null>(null);
+
+  const loadLapsed = async () => setLapsed(await backend.founderLapsed(founderKey));
+
+  const [consult, setConsult] = useState<any[] | null>(null);
+  const [closeArmed, setCloseArmed] = useState(false);
+  const loadConsult = async () => setConsult(await backend.founderConsultResults(founderKey));
+
+  const [flags, setFlags] = useState<backend.FlagRow[] | null>(null);
+  const [sweepArmed, setSweepArmed] = useState(false);
+  const [sweepNote, setSweepNote] = useState<string | null>(null);
+  const loadFlags = async () => setFlags(await backend.founderFlags(founderKey));
+
+  const [claims, setClaims] = useState<backend.ClaimRow[] | null>(null);
+  const [claimBusy, setClaimBusy] = useState<number | null>(null);
+  const loadClaims = async () => setClaims(await backend.founderClaims(founderKey));
+
+  /** people whose card was refused — a sale you still have if you answer */
+  const [stuck, setStuck] = useState<backend.StuckRow[] | null>(null);
+  const loadStuck = async () => setStuck(await backend.founderStuck(founderKey));
+
+  const decide = async (id: number, approve: boolean) => {
+    setClaimBusy(id);
+    const r = await backend.founderDecideClaim(founderKey, id, approve);
+    setClaimBusy(null);
+    if (!r.ok) setErr(r.error ?? 'CLAIM FAILED');
+    void loadClaims();
+    void loadStuck();
+  };
+
+  const runSweep = async () => {
+    if (!sweepArmed) { setSweepArmed(true); return; }
+    setSweepArmed(false);
+    const r = await backend.founderSweep(founderKey);
+    setSweepNote(r == null ? 'SWEEP FAILED' : r.length === 0 ? 'NOBODY WAS DUE — NOTHING CHANGED' : `${r.length} SEAT(S) RELEASED`);
+    void loadLapsed();
+  };
+
+  const strike = async (academyId: string, reason: string, id: number) => {
+    const n = await backend.founderStrike(founderKey, academyId, reason, 'warning');
+    if (n != null) { await backend.founderReviewFlag(founderKey, id, `warned (${n})`); void loadFlags(); }
+  };
+  const dismissFlag = async (id: number) => {
+    await backend.founderReviewFlag(founderKey, id, 'dismissed');
+    void loadFlags();
+    void loadClaims();
+    void loadStuck();
+  };
+  const closeConsult = async () => {
+    if (!closeArmed) { setCloseArmed(true); return; }
+    setCloseArmed(false);
+    if (await backend.founderCloseConsult(founderKey)) void loadConsult();
+  };
+
+  /** open the free window to everyone holding a seat */
+  const openTrial = async () => {
+    if (!trialArmed) { setTrialArmed(true); return; }
+    setTrialArmed(false);
+    const n = await backend.founderGrantTrial(founderKey);
+    setTrialNote(n == null ? 'THAT DID NOT GO THROUGH' : `${n} MEMBER(S) NOW ON THE TRIAL PASS`);
+  };
+
+  // ── packs: credits + the tricks inside ──
+  const [packs, setPacks] = useState<backend.PackRow[] | null>(null);
+  const [packPick, setPackPick] = useState<string>('NG-MID-30');
+  const loadPacks = async () => setPacks(await backend.founderPacks(founderKey));
+
+  /** sell a timed pass — time stacks, upgrades carry days over */
+  const givePack = async () => {
+    const id = topId.trim().toUpperCase();
+    if (!id || tillBusy) return;
+    setTillBusy(true);
+    setTillNote(null);
+    const r = await backend.founderGrantTier(founderKey, id, packPick, topRef.trim() || undefined);
+    setTillBusy(false);
+    if (r.ok) {
+      const until = r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : '';
+      setTillNote(
+        `${id} IS NOW ${String(r.tier ?? '').toUpperCase() === 'MID' ? 'ACADEMY' : String(r.tier ?? '').toUpperCase()}` +
+        (until ? ` UNTIL ${until}` : ''),
+      );
+      setTopId('');
+      setTopRef('');
+      void loadPacks();
+    void loadLapsed();
+    void loadConsult();
+    void loadFlags();
+    } else {
+      setTillNote(
+        r.error?.includes('higher') ? 'THEY ALREADY HOLD A HIGHER LIVE PASS'
+        : r.error?.includes('unknown academy') ? 'NO SUCH ACADEMY ID'
+        : 'THAT DID NOT GO THROUGH',
+      );
+    }
+  };
+
+  const loadInbox = async () => {
+    const r = await backend.founderInbox(founderKey);
+    if (r) { setInbox(r.messages); setUnread(r.unread); }
+  };
+  const loadInvites = async () => setInvites(await backend.founderInvites(founderKey));
+  const loadDoor = async () => {
+    const c = await backend.founderConfig(founderKey);
+    if (c) setInviteOnly(String(c.invite_only ?? 'false') === 'true');
+  };
+
+  const sendReply = async (id: number) => {
+    const t = replyTxt.trim();
+    if (!t || inboxBusy) return;
+    setInboxBusy(true);
+    const ok = await backend.founderReply(founderKey, id, t);
+    setInboxBusy(false);
+    if (ok) { setReplyTo(null); setReplyTxt(''); void loadInbox(); }
+    else setErr('REPLY FAILED');
+  };
+
+  const makeInvite = async () => {
+    const code = await backend.founderCreateInvite(
+      founderKey, invLabel.trim(), Number(invUses) || 1, Number(invDays) || 0,
+    );
+    if (code) { setInvNew(code); setInvLabel(''); void loadInvites(); }
+    else setErr('COULD NOT CREATE THE CODE');
+  };
+
+  const toggleDoor = async () => {
+    if (inviteOnly == null) return;
+    const next = !inviteOnly;
+    const ok = await backend.founderSetConfig(founderKey, 'invite_only', String(next));
+    if (ok) setInviteOnly(next);
+  };
+
   const refresh = useCallback(async () => {
     setErr(null);
+    void loadInbox();
+    void loadInvites();
+    void loadDoor();
+    void loadPacks();
+    void loadLapsed();
+    void loadConsult();
+    void loadFlags();
+    void loadStuck();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
@@ -127,6 +282,309 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           ))}
         </Animated.View>
 
+        {/* ── THE INBOX — members writing to you privately ── */}
+        <Animated.View entering={FadeInDown.delay(80).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>THE INBOX</Text>
+            <Text style={[styles.cardTag, unread > 0 && { color: colors.accent }]}>
+              {unread > 0 ? `${unread} UNREAD` : 'ALL READ'}
+            </Text>
+          </View>
+
+          {!inbox || inbox.length === 0 ? (
+            <Text style={styles.emptyNote}>NOTHING YET — THE LINE IS OPEN.</Text>
+          ) : (
+            inbox.slice(0, 12).map((m) => (
+              <View key={m.id} style={[styles.inboxRow, !m.read && styles.inboxUnread]}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.inboxWho}>
+                    {m.handle ?? 'PLAYER'} · {String(m.kind).toUpperCase()}
+                  </Text>
+                  <Text style={styles.inboxAt}>{new Date(m.at).toLocaleDateString()}</Text>
+                </View>
+                <Text style={styles.inboxBody}>{m.body}</Text>
+
+                {m.reply ? (
+                  <Text style={styles.inboxReplied}>YOU: {m.reply}</Text>
+                ) : replyTo === m.id ? (
+                  <View>
+                    <TextInput
+                      value={replyTxt}
+                      onChangeText={setReplyTxt}
+                      placeholder="Your reply…"
+                      placeholderTextColor="rgba(143,184,155,0.35)"
+                      multiline
+                      style={styles.replyInput}
+                    />
+                    <View style={styles.rowBetween}>
+                      <Pressable onPress={() => { setReplyTo(null); setReplyTxt(''); }} hitSlop={6}>
+                        <Text style={styles.ghostBtn}>CANCEL</Text>
+                      </Pressable>
+                      <Pressable onPress={() => void sendReply(m.id)} hitSlop={6}>
+                        <Text style={styles.linkBtn}>{inboxBusy ? 'SENDING…' : 'SEND REPLY ›'}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <Pressable onPress={() => { setReplyTo(m.id); setReplyTxt(''); }} hitSlop={6}>
+                    <Text style={styles.linkBtn}>REPLY ›</Text>
+                  </Pressable>
+                )}
+              </View>
+            ))
+          )}
+        </Animated.View>
+
+        {/* ── WHAT THE MEMBERS SAID ── */}
+        {consult && consult.length > 0 && (
+          <Animated.View entering={FadeInDown.delay(82).duration(320)} style={styles.splitCard}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.cardTag}>THE PRICING TABLE</Text>
+              <Pressable onPress={() => void closeConsult()} hitSlop={6}>
+                <Text style={[styles.linkBtn, { marginTop: 0 }, closeArmed && { color: colors.loss }]}>
+                  {closeArmed ? 'TAP AGAIN TO CLOSE IT' : 'CLOSE THE TABLE'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {consult.map((r: any) => (
+              <View key={r.slug} style={styles.inboxRow}>
+                <Text style={styles.inboxWho}>{r.prompt}</Text>
+                <Text style={styles.invMeta}>
+                  {r.answers} ANSWER(S)
+                  {r.region ? ` · ${String(r.region).toUpperCase()}` : ''}
+                  {!r.open ? ' · CLOSED' : ''}
+                </Text>
+
+                {r.median != null && (
+                  <Text style={styles.consultBig}>
+                    MEDIAN {Number(r.median).toLocaleString()}
+                    {r.low != null ? `  (${Number(r.low).toLocaleString()}–${Number(r.high).toLocaleString()})` : ''}
+                  </Text>
+                )}
+
+                {r.choices && Object.keys(r.choices).length > 0 && (
+                  <View style={{ marginTop: 4 }}>
+                    {Object.entries(r.choices as Record<string, number>)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([k, n]) => (
+                        <Text key={k} style={styles.consultRow}>
+                          {n}× {k}
+                        </Text>
+                      ))}
+                  </View>
+                )}
+
+                {Array.isArray(r.notes) && r.notes.length > 0 && (
+                  <View style={{ marginTop: 5 }}>
+                    {r.notes.slice(0, 4).map((n: any, i: number) => (
+                      <Text key={i} style={styles.consultNote}>
+                        “{n.note}” — {n.handle}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))}
+            <Text style={styles.emptyNote}>
+              MEDIAN, NOT AVERAGE — TWO SILLY NUMBERS CANNOT DRAG THE ANSWER.
+            </Text>
+          </Animated.View>
+        )}
+
+        {/* ── COULDN'T PAY — answer these first ── */}
+        {(stuck?.length ?? 0) > 0 && (
+          <Animated.View entering={FadeInDown.delay(60).duration(320)} style={styles.stuckCard}>
+            <View style={styles.rowBetween}>
+              <Text style={[styles.cardTag, { color: 'rgb(240,180,60)' }]}>CARD REFUSED — THEY WANT TO PAY</Text>
+              <Text style={[styles.cardTag, { color: 'rgb(240,180,60)' }]}>{stuck!.length}</Text>
+            </View>
+            <Text style={styles.emptyNote}>
+              THESE PEOPLE TRIED TO GIVE YOU MONEY AND THEIR BANK REFUSED IT. EACH ONE IS A SALE
+              YOU STILL HAVE IF YOU ANSWER TODAY. REPLY IN THE INBOX ABOVE — THEY GET IT IN-APP.
+            </Text>
+            {stuck!.map((s) => (
+              <View key={s.id} style={styles.stuckRow}>
+                <View style={styles.rowBetween}>
+                  <Text style={styles.stuckId}>{s.academy_id}</Text>
+                  <Text style={styles.stuckWhen}>
+                    {s.paid_since ? '✓ SORTED SINCE' : s.has_claim ? '● SENT IT MANUALLY' : 'WAITING ON YOU'}
+                  </Text>
+                </View>
+                <Text style={styles.stuckBody}>{s.body}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        )}
+
+        {/* ── MONEY WAITING ON YOU ── */}
+        <Animated.View entering={FadeInDown.delay(70).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>PAYMENT CLAIMS</Text>
+            <Text style={[styles.cardTag, (claims?.length ?? 0) > 0 && { color: colors.accent }]}>
+              {claims?.length ? `${claims.length} WAITING` : 'NONE WAITING'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            CHECK THE REFERENCE AGAINST YOUR PAYPAL / OPAY, THEN CONFIRM. CONFIRMING GRANTS THE
+            PASS AUTOMATICALLY — YOU CANNOT APPROVE A PAYMENT WITHOUT THEM GETTING WHAT THEY PAID FOR.
+          </Text>
+
+          {claims?.map((c) => (
+            <View key={c.id} style={styles.inboxRow}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.inboxWho}>{c.handle ?? c.academy_id}</Text>
+                <Text style={styles.inboxAt}>{new Date(c.at).toLocaleDateString()}</Text>
+              </View>
+              <Text style={styles.claimRef}>{c.reference}</Text>
+              <Text style={styles.invMeta}>
+                {c.product} · {c.amount ?? '—'} · via {String(c.method).toUpperCase()}
+              </Text>
+              {c.sender_note ? <Text style={styles.inboxBody}>{c.sender_note}</Text> : null}
+              <View style={styles.rowBetween}>
+                <Pressable onPress={() => void decide(c.id, false)} hitSlop={6} disabled={claimBusy === c.id}>
+                  <Text style={styles.ghostBtn}>CANNOT FIND IT</Text>
+                </Pressable>
+                <Pressable onPress={() => void decide(c.id, true)} hitSlop={6} disabled={claimBusy === c.id}>
+                  <Text style={styles.linkBtn}>
+                    {claimBusy === c.id ? 'GRANTING…' : 'CONFIRM & GRANT ›'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
+
+        {/* ── FLAGGED FOR YOUR EYES ── */}
+        <Animated.View entering={FadeInDown.delay(84).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>FLAGGED CONTENT</Text>
+            <Text style={[styles.cardTag, (flags?.length ?? 0) > 0 && { color: colors.loss }]}>
+              {flags?.length ? `${flags.length} TO READ` : 'NOTHING PENDING'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            THE FILTER ONLY CATCHES EXTREME THINGS — SEXUAL CONTENT AND HATE. SWEARING AND BANTER
+            NEVER APPEAR HERE. NOBODY IS REMOVED AUTOMATICALLY FOR THIS; YOU READ IT AND DECIDE.
+          </Text>
+
+          {flags?.slice(0, 8).map((f) => (
+            <View key={f.id} style={styles.inboxRow}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.inboxWho}>{f.handle ?? '—'} · #{f.channel}</Text>
+                <Text style={styles.inboxAt}>MATCHED "{f.matched}"</Text>
+              </View>
+              <Text style={styles.inboxBody}>{f.text}</Text>
+              <View style={styles.rowBetween}>
+                <Pressable onPress={() => void dismissFlag(f.id)} hitSlop={6}>
+                  <Text style={styles.ghostBtn}>FALSE ALARM</Text>
+                </Pressable>
+                <Pressable onPress={() => void strike(f.academy_id ?? '', 'INAPPROPRIATE CONTENT', f.id)} hitSlop={6}>
+                  <Text style={[styles.linkBtn, { color: colors.loss }]}>WARN THEM ›</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
+
+        {/* ── THE SWEEPER ── */}
+        <Animated.View entering={FadeInDown.delay(86).duration(320)} style={styles.splitCard}>
+          <Text style={styles.cardTag}>UNPAID SEATS</Text>
+          <Text style={styles.emptyNote}>
+            REMOVES ONLY MEMBERS PAST THEIR DEADLINE WHO NEVER PAID. ANYONE HOLDING A LIVE PASS,
+            INSIDE GRACE, OR WHO HAS EVER PAID IS LEFT ALONE. RUNS NIGHTLY BY ITSELF.
+          </Text>
+          <Pressable onPress={() => void runSweep()} hitSlop={6}>
+            <Text style={[styles.linkBtn, sweepArmed && { color: colors.loss }]}>
+              {sweepArmed ? 'TAP AGAIN — RELEASE THOSE SEATS' : 'RUN THE SWEEP NOW ›'}
+            </Text>
+          </Pressable>
+          {sweepNote && <Text style={styles.invNew}>{sweepNote}</Text>}
+        </Animated.View>
+
+        {/* ── THE FREE WEEK ── */}
+        <Animated.View entering={FadeInDown.delay(85).duration(320)} style={styles.splitCard}>
+          <Text style={styles.cardTag}>THE FREE WEEK</Text>
+          <Text style={styles.emptyNote}>
+            GIVES EVERY SEATED MEMBER THE TRIAL PASS. ANYONE ALREADY HOLDING A LONGER PASS KEEPS IT —
+            NOBODY IS DOWNGRADED. PEOPLE WHO JOIN DURING THE WINDOW GET IT AUTOMATICALLY.
+          </Text>
+          <Pressable onPress={() => void openTrial()} hitSlop={6}>
+            <Text style={[styles.linkBtn, trialArmed && { color: colors.accent }]}>
+              {trialArmed ? 'TAP AGAIN TO CONFIRM — GRANT TO EVERYONE' : 'OPEN THE FREE WEEK ›'}
+            </Text>
+          </Pressable>
+          {trialNote && <Text style={styles.invNew}>{trialNote}</Text>}
+
+          {lapsed && lapsed.length > 0 && (
+            <View style={{ marginTop: 10 }}>
+              <Text style={styles.cardTag}>SEATS THAT COULD BE RECLAIMED</Text>
+              {lapsed.slice(0, 8).map((m) => (
+                <Text key={m.academy_id} style={styles.invMeta}>
+                  {m.handle} · {m.academy_id} · LAPSED {m.days_lapsed}D
+                </Text>
+              ))}
+              <Text style={styles.emptyNote}>
+                NOTHING IS AUTOMATIC — REMOVING SOMEONE IS ALWAYS YOUR CALL.
+              </Text>
+            </View>
+          )}
+        </Animated.View>
+
+        {/* ── THE DOOR — invite codes ── */}
+        <Animated.View entering={FadeInDown.delay(90).duration(320)} style={styles.splitCard}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>THE DOOR</Text>
+            <Pressable onPress={() => void toggleDoor()} hitSlop={6}>
+              <Text style={[styles.doorPill, inviteOnly ? styles.doorShut : styles.doorOpen]}>
+                {inviteOnly == null ? '…' : inviteOnly ? 'INVITE-ONLY · TAP TO OPEN' : 'OPEN TO ALL · TAP TO CLOSE'}
+              </Text>
+            </Pressable>
+          </View>
+          <Text style={styles.emptyNote}>
+            OPEN IT FOR THE FREE WEEK, THEN CLOSE IT AGAIN. WHILE OPEN, ANYONE WITH THE APP CAN TAKE A SEAT.
+          </Text>
+
+          <View style={styles.invRow}>
+            <TextInput
+              value={invLabel} onChangeText={setInvLabel}
+              placeholder="WHO / WHERE (e.g. LAGOS DEC)"
+              placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 2 }]}
+            />
+            <TextInput
+              value={invUses} onChangeText={setInvUses} keyboardType="number-pad"
+              placeholder="USES" placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 1 }]}
+            />
+            <TextInput
+              value={invDays} onChangeText={setInvDays} keyboardType="number-pad"
+              placeholder="DAYS" placeholderTextColor="rgba(143,184,155,0.35)"
+              style={[styles.tillInput, { flex: 1 }]}
+            />
+          </View>
+          <Pressable onPress={() => void makeInvite()} hitSlop={6}>
+            <Text style={styles.linkBtn}>CREATE INVITE CODE ›</Text>
+          </Pressable>
+
+          {invNew && <Text style={styles.invNew}>NEW CODE — {invNew}</Text>}
+
+          {invites && invites.length > 0 && invites.slice(0, 8).map((iv) => (
+            <View key={iv.code} style={styles.invItem}>
+              <Text style={[styles.invCode, iv.revoked && styles.invDead]}>{iv.code}</Text>
+              <Text style={styles.invMeta}>
+                {iv.uses}/{iv.max_uses}{iv.label ? ` · ${iv.label}` : ''}
+                {iv.revoked ? ' · REVOKED' : ''}
+              </Text>
+              {!iv.revoked && (
+                <Pressable onPress={() => void backend.founderRevokeInvite(founderKey, iv.code).then(loadInvites)} hitSlop={6}>
+                  <Text style={styles.revoke}>REVOKE</Text>
+                </Pressable>
+              )}
+            </View>
+          ))}
+        </Animated.View>
+
         {/* the jan 1 split */}
         <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.splitCard}>
           <Text style={styles.cardTag}>JAN 1 PRICING SPLIT — LIVE</Text>
@@ -147,7 +605,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {data?.seats ? (
             <Text style={styles.seatsLine}>
               {data.seats.season} · {data.seats.taken}/{data.seats.cap} SEATS CLAIMED
-              {data.seats.taken >= data.seats.cap ? ' · FULL — WAITLIST RUNNING' : ''}
+              {data.seats.taken >= data.seats.cap
+                ? ` · FULL — ${data.seats.waiting ?? 0} WAITING`
+                : ` · ${data.seats.cap - data.seats.taken} LEFT${data.seats.waiting ? ` · ${data.seats.waiting} WAITING` : ''}`}
             </Text>
           ) : null}
           <View style={styles.coachRow}>
@@ -179,8 +639,32 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </View>
           </View>
           <Text style={styles.tillHelp}>
-            BANK ALERT LANDS → TYPE THE PLAYER'S ACADEMY ID (THEY SEE IT IN THE TILL) → CREDIT THEM. THE REF IS YOUR RECEIPT.
+            BANK ALERT LANDS → TYPE THE PLAYER'S ACADEMY ID (THEY SEE IT IN THE TILL) → GIVE THEM THE PACK.
+            PASSES ARE TIMED. BUYING THE SAME TIER AGAIN ADDS DAYS; UPGRADING CARRIES THE
+            REMAINING DAYS OVER. THE REF IS YOUR RECEIPT.
           </Text>
+
+          {/* pick the pack they paid for */}
+          {packs && packs.length > 0 && (
+            <View style={styles.packWrap}>
+              {packs.map((p) => {
+                const on = packPick === p.code;
+                return (
+                  <Pressable key={p.code} onPress={() => setPackPick(p.code)} hitSlop={4}>
+                    <View style={[styles.packChip, on && styles.packChipOn]}>
+                      <Text style={[styles.packChipTxt, on && styles.packChipTxtOn]}>
+                        {p.title} · {p.price}
+                      </Text>
+                      <Text style={[styles.packChipSub, on && { color: '#05130a' }]}>
+                        {String(p.region).toUpperCase()}
+                        {p.items.length ? ` · +${p.items.length} EXTRA` : ''}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
           <TextInput
             value={topId}
             onChangeText={(t) => setTopId(t.toUpperCase().slice(0, 12))}
@@ -207,6 +691,15 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
               autoCapitalize="characters"
             />
           </View>
+          <Pressable onPress={() => void givePack()} disabled={!topId.trim() || tillBusy}>
+            <View style={[styles.packCta, (!topId.trim() || tillBusy) && { opacity: 0.4 }]}>
+              <Text style={styles.packCtaTxt}>
+                {tillBusy ? 'DELIVERING…' : `GIVE ${packPick} ›`}
+              </Text>
+            </View>
+          </Pressable>
+
+          <Text style={styles.tillHelp}>OR MOVE CREDITS BY HAND:</Text>
           <View style={styles.tillBtnRow}>
             <Pressable onPress={topUp} disabled={!topId.trim() || !topCredits || tillBusy} style={{ flex: 1 }}>
               <View style={[styles.sendBtn, { marginTop: 0 }, (!topId.trim() || !topCredits || tillBusy) && styles.sendBtnOff]}>
@@ -301,6 +794,46 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 }
 
 const styles = StyleSheet.create({
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  packWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 9 },
+  packChip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 9, paddingHorizontal: 9, paddingVertical: 6 },
+  packChipOn: { borderColor: colors.accent, backgroundColor: colors.accent },
+  packChipTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1, color: 'rgba(238,242,236,0.9)' },
+  packChipTxtOn: { color: '#05130a' },
+  packChipSub: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 0.9, color: 'rgba(143,184,155,0.7)' },
+  packCta: { marginTop: 10, backgroundColor: colors.accent, borderRadius: 11, paddingVertical: 12, alignItems: 'center' },
+  packCtaTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: '#2a1410' },
+  emptyNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, lineHeight: 9.5, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+
+  inboxRow: { marginTop: 9, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.14)', paddingTop: 8 },
+  inboxUnread: { borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: 7 },
+  inboxWho: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: colors.accent },
+  inboxAt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
+  inboxBody: { marginTop: 3, fontFamily: monoFont, fontSize: 7.6, lineHeight: 11.5, color: 'rgba(238,242,236,0.92)' },
+  inboxReplied: { marginTop: 5, fontFamily: monoFont, fontSize: 7, lineHeight: 11, color: colors.primary },
+  replyInput: {
+    marginTop: 6, minHeight: 54, textAlignVertical: 'top',
+    borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 8, padding: 8,
+    color: colors.fg, fontFamily: monoFont, fontSize: 8, backgroundColor: 'rgba(10,15,10,0.6)',
+  },
+  ghostBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)' },
+  linkBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
+
+  doorPill: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, overflow: 'hidden' },
+  doorShut: { color: '#05130a', backgroundColor: colors.primary },
+  doorOpen: { color: '#2a1410', backgroundColor: colors.accent },
+
+  invRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
+  invNew: { marginTop: 8, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: colors.accent },
+  invItem: { marginTop: 7, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 6 },
+  invCode: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
+  invDead: { color: 'rgba(143,184,155,0.4)', textDecorationLine: 'line-through' },
+  invMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  claimRef: { marginTop: 3, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: colors.fg },
+  consultBig: { marginTop: 4, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
+  consultRow: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
+  consultNote: { marginTop: 2, fontFamily: monoFont, fontSize: 6.2, lineHeight: 9.6, color: 'rgba(143,184,155,0.85)' },
+  revoke: { marginTop: 2, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.2, color: colors.loss },
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
   headerWrap: { alignItems: 'center' },
   eyebrow: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 2.2, color: colors.muted },
@@ -316,6 +849,19 @@ const styles = StyleSheet.create({
   statLbl: { marginTop: 2, fontFamily: monoFont, fontSize: 4.8, fontWeight: '800', letterSpacing: 1.1, color: colors.muted },
 
   splitCard: { marginTop: 12, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 14, backgroundColor: 'rgba(242,192,120,0.05)', padding: 13 },
+
+  // card refused — brighter than a claim, because these expire as
+  // people give up, whereas a claim is money already sent
+  stuckCard: {
+    marginTop: 12, borderWidth: 1.2, borderColor: 'rgb(240,180,60)',
+    borderRadius: 14, backgroundColor: 'rgba(240,180,60,0.09)', padding: 13,
+  },
+  stuckRow: {
+    marginTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(240,180,60,0.25)', paddingTop: 9,
+  },
+  stuckId: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
+  stuckWhen: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgb(240,180,60)' },
+  stuckBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: 'rgba(238,242,236,0.82)' },
   splitRow: { marginTop: 11, flexDirection: 'row' },
   splitHalf: { flex: 1, alignItems: 'center' },
   splitVal: { fontSize: 18, fontWeight: '900', color: colors.fg },

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import Constants from 'expo-constants';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -27,6 +27,13 @@ import {
 } from '../../data/journey';
 import { useJourneyProgress } from '../../data/progress';
 import { isContentStale } from '../../data/coaching';
+import { objectiveCount, useMatches } from '../../data/matches';
+import { useJournal } from '../../data/journal';
+import { useSettings } from '../../data/settings';
+import * as backend from '../../data/backend';
+import MatchVault from '../MatchVault';
+import LossJournal from '../LossJournal';
+import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
@@ -70,6 +77,34 @@ export default function JourneyTab({
   const CUR = progress.currentStage;
   const SEASON = journeySeasonFor(coach.id);
   const [selected, setSelected] = useState<JourneyStage>(SEASON.stages[0]);
+  // the vault + journal are what objectives are actually graded against
+  const vault = useMatches();
+  const journal = useJournal();
+  const settings = useSettings();
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | null>(null);
+
+  // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
+  // Identical rungs in every country; only the currency differs.
+  const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [rules, setRules] = useState<backend.AccessRules | null>(null);
+  const [unlocks, setUnlocks] = useState<string[]>([]);
+
+  const refreshAccess = () => {
+    void backend.myAccess().then((a) => a && setAccess(a));
+    void backend.accessRules().then((r) => r && setRules(r));
+    void backend.myUnlocks().then((u) => u && setUnlocks(u));
+  };
+  useEffect(refreshAccess, []);
+
+  const freeStages = rules?.freeStages ?? 2;
+  const midStages = rules?.midStages ?? 6;
+  const level = access?.level ?? 0;
+
+  /** the tier a stage needs: 0 free · 1 academy · 2 pro */
+  const tierFor = (n: number) => (n <= freeStages ? 0 : n <= midStages ? 1 : 2);
+  const owned = (n: number) => unlocks.includes(`stage:${n}`);
+  const needsUnlock = (n: number) => !owned(n) && level < tierFor(n);
+  const tierName = (lvl: number) => (lvl >= 2 ? 'PRO' : 'ACADEMY');
   const scrollRef = useRef<ScrollView>(null);
   const canvasRef = useRef<View>(null);
   const heroRef = useRef<View>(null);
@@ -257,10 +292,14 @@ export default function JourneyTab({
             </View>
           ) : (
             <>
-              {/* objectives */}
+              {/* objectives — GRADED LIVE against the vault + the journal */}
               <View style={styles.objectives}>
                 {(selected.objectives ?? []).map((o, i) => {
-                  const done = o.done >= o.target;
+                  const count = o.check
+                    ? objectiveCount(o.check, vault.matches, journal.entries.length)
+                    : o.done;
+                  const shown = Math.min(count, o.target);
+                  const done = count >= o.target;
                   return (
                     <View key={i} style={styles.objRow}>
                       <View style={[styles.objBox, done && styles.objBoxDone]}>
@@ -270,7 +309,7 @@ export default function JourneyTab({
                         {o.label}
                       </Text>
                       <Text style={[styles.objStatus, done && { color: colors.primary }]}>
-                        {done ? 'DONE' : `${o.done}/${o.target}`}
+                        {done ? 'DONE' : `${shown}/${o.target}`}
                       </Text>
                     </View>
                   );
@@ -302,8 +341,29 @@ export default function JourneyTab({
                 </View>
               )}
 
-              {/* CTA — zooms into the Coaching Screen from the node */}
-              <ContinueButton label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'} onPress={() => zoomIntoStage(selected)} />
+              {/* CTA — free stages open; paid ones ask once, then open forever */}
+              {needsUnlock(selected.n) ? (
+                <View style={styles.payWall}>
+                  <Text style={styles.payTag}>
+                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.n))}
+                  </Text>
+                  <Text style={styles.payBody}>
+                    {tierFor(selected.n) >= 2
+                      ? 'The summit stages are PRO. One pass opens every stage, every trick and the film room — for the whole period, not per item.'
+                      : 'ACADEMY opens the full journey for the period you pick. Same tier, same access, wherever you are — only the currency changes.'}
+                  </Text>
+                  <Text style={styles.payNote}>
+                    YOU ARE ON {(access?.tier ?? 'free').toUpperCase()}
+                    {access?.daysLeft != null ? ` · ${access.daysLeft} DAYS LEFT` : ''}
+                  </Text>
+                  <ContinueButton label="SEE THE PASSES ›" onPress={() => setSheet('till')} />
+                </View>
+              ) : (
+                <ContinueButton
+                  label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'}
+                  onPress={() => zoomIntoStage(selected)}
+                />
+              )}
             </>
           )}
 
@@ -312,8 +372,40 @@ export default function JourneyTab({
           </Pressable>
         </Animated.View>
 
+        {/* ── THE RECORD — the two ledgers every objective is graded from ── */}
+        <View style={styles.ledgerRow}>
+          <Pressable style={styles.ledgerCard} onPress={() => setSheet('vault')}>
+            <Text style={styles.ledgerTag}>MATCH VAULT</Text>
+            <Text style={styles.ledgerBig}>{vault.played}</Text>
+            <Text style={styles.ledgerSub}>
+              {vault.w}W · {vault.d}D · {vault.l}L
+            </Text>
+            <Text style={styles.ledgerCta}>OPEN THE VAULT ›</Text>
+          </Pressable>
+
+          <Pressable style={styles.ledgerCard} onPress={() => setSheet('journal')}>
+            <Text style={styles.ledgerTag}>LOSS JOURNAL</Text>
+            <Text style={styles.ledgerBig}>{journal.total}</Text>
+            <Text style={styles.ledgerSub}>
+              {settings.toggles.lossJournal
+                ? journal.streakDays > 0
+                  ? `${journal.streakDays} DAY STREAK`
+                  : 'LINES LOGGED'
+                : 'PAUSED'}
+            </Text>
+            <Text style={styles.ledgerCta}>
+              {settings.toggles.lossJournal ? 'WRITE A LINE ›' : 'TURN IT BACK ON ›'}
+            </Text>
+          </Pressable>
+        </View>
+
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
       </ScrollView>
+
+      {/* full-screen ledgers */}
+      {sheet === 'vault' && <MatchVault coach={coach} onClose={() => setSheet(null)} />}
+      {sheet === 'journal' && <LossJournal coach={coach} onClose={() => setSheet(null)} />}
+      {sheet === 'till' && <StoreSheet onClose={() => { setSheet(null); refreshAccess(); }} />}
     </View>
   );
 }
@@ -581,4 +673,32 @@ const styles = StyleSheet.create({
 
   fullMap: { marginTop: 11, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
   footVersion: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2.6, color: 'rgba(143,184,155,0.4)' },
+
+  // ── THE RECORD — vault + journal entry cards ──
+  payWall: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(38,30,12,0.6)',
+    borderRadius: 11,
+    padding: 11,
+  },
+  payTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
+  payBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.5, letterSpacing: 0.6, color: 'rgba(238,242,236,0.85)' },
+  payNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(143,184,155,0.7)' },
+
+  ledgerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  ledgerCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    backgroundColor: 'rgba(10,20,13,0.72)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  ledgerTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.9, color: 'rgba(143,184,155,0.85)' },
+  ledgerBig: { marginTop: 6, fontFamily: monoFont, fontSize: 26, fontWeight: '900', color: colors.primary, letterSpacing: 1 },
+  ledgerSub: { marginTop: 1, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.72)' },
+  ledgerCta: { marginTop: 9, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
 });

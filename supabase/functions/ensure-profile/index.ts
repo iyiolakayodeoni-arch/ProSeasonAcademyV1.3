@@ -3,8 +3,35 @@
 // (fresh flags patched), new players claim a SEASON ONE seat — while
 // seats last. Full season → they land on the waitlist instead.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { json } from '../_shared/cors.ts';
-import { service, cleanHandle } from '../_shared/admin.ts';
+
+// ── helpers, inlined on purpose ──────────────────────────────
+// The Supabase DASHBOARD deploys one file and cannot resolve
+// '../_shared/...'. Keeping these here means this file deploys
+// by copy-paste as well as by CLI. Do not re-extract them.
+export const cors = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'authorization, content-type, x-founder-key',
+  'access-control-allow-methods': 'POST, OPTIONS',
+};
+export const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json', ...cors },
+  });
+
+/** service-role client — bypasses RLS, lives only inside functions */
+export const service = () =>
+  createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+/** every founder move proves the key — same single-secret model as before */
+export const founderOk = (req: Request) =>
+  !!Deno.env.get('FOUNDER_KEY') && req.headers.get('x-founder-key') === Deno.env.get('FOUNDER_KEY');
+
+export const cleanHandle = (raw: unknown): string => {
+  const base = String(raw || '').toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 14);
+  return base || `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
+};
+// ── end helpers ──────────────────────────────────────────────
 
 const REGION = (r: unknown) => (r === 'africa' || r === 'world' ? r : 'unset');
 
@@ -41,18 +68,44 @@ Deno.serve(async (req) => {
     return json({ ok: true, profile: { ...existing, ...patch }, seats: seats ?? null });
   }
 
-  // new player → SEASON GATE: count first, never over-sell a seat
+  // ── NEW PLAYER → THE DOOR ──────────────────────────────────
+  // Two gates, in order:
+  //   1. INVITE  — is this person one of ours? (private ecosystem)
+  //   2. SEAT    — is there room left? (the season cap)
+  // The seat cap alone was never enough: the anon key ships inside
+  // every APK, so without an invite anyone who got the file could
+  // spend one of the 1,000 seats.
+  const { data: inviteOnlyRow } = await sb
+    .from('config').select('value').eq('key', 'invite_only').maybeSingle();
+  const inviteOnly = String(inviteOnlyRow?.value ?? 'false') === 'true';
+
+  const code = String(body.inviteCode ?? '').toUpperCase().trim();
+
+  if (inviteOnly) {
+    if (!code) {
+      return json({ ok: false, error: 'INVITE_REQUIRED' }, 403);
+    }
+    const { data: claimed, error: cerr0 } = await sb.rpc('claim_invite', { p_code: code });
+    if (cerr0 || claimed !== true) {
+      return json({ ok: false, error: 'INVITE_INVALID' }, 403);
+    }
+  }
+
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
   const cap = seats0?.cap ?? 1000;
-  const taken = seats0?.taken ?? 0;
-  if (taken >= cap) {
+
+  const joinWaitlist = async () => {
     await sb.from('waitlist').upsert({
       auth_user_id: user.id,
       handle: cleanHandle(body.handle),
       region: REGION(body.region),
     });
-    return json({ ok: false, error: 'SEASON_FULL', season, cap, taken }, 409);
+  };
+
+  if ((seats0?.taken ?? 0) >= cap) {
+    await joinWaitlist();
+    return json({ ok: false, error: 'SEASON_FULL', season, cap, taken: seats0?.taken ?? cap }, 409);
   }
 
   // unique Academy ID (PSA-XXXXXX), then the seat is theirs forever
@@ -70,9 +123,38 @@ Deno.serve(async (req) => {
     platform: body.platform ? String(body.platform).slice(0, 24) : null,
     region: REGION(body.region),
     academy_id: academy,
+    invite_code: code || null,
   };
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
-  if (cerr) return json({ ok: false, error: String(cerr.message) }, 500);
+
+  if (cerr) {
+    // The trigger fired between our check and this insert — someone
+    // else took the last seat first. This is the race path, and it
+    // now ends honestly instead of over-selling.
+    if (String(cerr.message).includes('SEASON_FULL')) {
+      await joinWaitlist();
+      const { data: sNow } = await sb.rpc('season_seats').single();
+      return json(
+        { ok: false, error: 'SEASON_FULL', season, cap, taken: sNow?.taken ?? cap },
+        409,
+      );
+    }
+    return json({ ok: false, error: String(cerr.message) }, 500);
+  }
+
+  // joined during the announced free window → they get the trial too,
+  // so nobody who took a seat that week is left out.
+  await sb.rpc('grant_trial_one', { p_academy: academy });
+
+  // start their clock and send the welcome + terms to their inbox
+  const { data: trialCfg } = await sb
+    .from('config').select('value').eq('key', 'trial_days').maybeSingle();
+  await sb.rpc('set_deadline', {
+    p_academy: academy,
+    p_days: Number(trialCfg?.value ?? 14),
+  });
+  await sb.rpc('welcome_member', { p_academy: academy });
+
   const { data: seats1 } = await sb.rpc('season_seats').single();
   return json({ ok: true, profile: created, seats: seats1 ?? null });
 });

@@ -1,12 +1,25 @@
 // ─────────────────────────────────────────────────────────────
-// ACADEMY CLOUD address — YOUR server, your rules, ₦0.
-// Dev default is localhost; production value comes from the
-// EXPO_PUBLIC_PSA_SERVER env at build time (see server/DEPLOYMENT.md
-// for the zero-naira hosting guide).
+// ACADEMY CLOUD — the engine room is SUPABASE. Full stop.
+//
+// Auth (anonymous), the seat gate, the vault, the live rooms,
+// the till and the founder desk all run on the Supabase project
+// below. Nothing else is contacted at runtime.
+//
+// Both values are read at BUILD time from .env (see .env.example).
+// Blank = the client is null and every backend call fails soft,
+// so the app still runs fully offline-first.
+//
+// The anon key is public by design — every table is guarded by
+// Row Level Security in Postgres. The service_role key must NEVER
+// appear in this app.
+//
+// FALLBACK ONLY: `server/` holds the self-hosted Node/SQLite
+// backend. It is kept as a proven ₦0 escape hatch and as the
+// behavioural map for what the database must do — it is NOT wired
+// into the app and nothing here talks to it. To ever revive it,
+// re-point `src/data/backend.ts` (the single seam) at it; no
+// screen would need to change.
 // ─────────────────────────────────────────────────────────────
-export const PSA_SERVER_URL =
-  process.env.EXPO_PUBLIC_PSA_SERVER ?? 'http://127.0.0.1:8788';
 
-// ── Supabase engine room (set at build time; blank = offline-first) ──
 export const PSA_SUPABASE_URL = process.env.EXPO_PUBLIC_PSA_SUPABASE_URL ?? '';
 export const PSA_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY ?? '';

@@ -16,6 +16,8 @@ import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
+import * as backend from '../../data/backend';
+import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -54,6 +56,23 @@ function LiveDot() {
 export default function HomeTab({ coach }: { coach: Coach }) {
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
+  // ── ACCESS — tricks ride on the tier, not on per-item credits ──
+  const [access, setAccess] = useState<backend.MyAccess | null>(null);
+  const [unlocks, setUnlocks] = useState<string[]>([]);
+
+  const refreshAccess = () => {
+    void backend.myAccess().then((a) => a && setAccess(a));
+    void backend.myUnlocks().then((u) => u && setUnlocks(u));
+  };
+  useEffect(refreshAccess, []);
+
+  const [tillOpen, setTillOpen] = useState(false);
+
+  /** the teachable kinds are the gated ones; news + community stay free */
+  const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
+  /** ACADEMY (level 1) and above see the tricks; a bundled unlock also counts */
+  const trickOpen = (id: string) => (access?.level ?? 0) >= 1 || unlocks.includes(`trick:${id}`);
+
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
   const feed = useMemo(() => buildFeed(coach), [coach]);
@@ -152,9 +171,18 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           />
         </View>
 
-        {/* the feed */}
+        {/* the feed — tricks are part of the packs; news stays free */}
         {shown.map((card, i) => (
-          <FeedCard key={card.id + chip} card={card} coach={coach} delay={i * 40} liked={!!liked[card.id]} onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))} />
+          <FeedCard
+            key={card.id + chip}
+            card={card}
+            coach={coach}
+            delay={i * 40}
+            liked={!!liked[card.id]}
+            onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))}
+            locked={isTrick(card.kind) && !trickOpen(card.id)}
+            onUnlock={() => setTillOpen(true)}
+          />
         ))}
 
         {/* load more */}
@@ -168,6 +196,12 @@ export default function HomeTab({ coach }: { coach: Coach }) {
 
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
       </ScrollView>
+
+      {tillOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <StoreSheet onClose={() => { setTillOpen(false); refreshAccess(); }} />
+        </View>
+      )}
     </View>
   );
 }
@@ -178,12 +212,17 @@ function FeedCard({
   delay,
   liked,
   onLike,
+  locked = false,
+  onUnlock,
 }: {
   card: FeedCardData;
   coach: Coach;
   delay: number;
   liked: boolean;
   onLike: () => void;
+  /** a gated trick this member's tier does not open yet */
+  locked?: boolean;
+  onUnlock?: () => void;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
@@ -216,12 +255,27 @@ function FeedCard({
         <View style={styles.cardBody}>
           {card.authorHandle && <Text style={styles.cardHandle}>{card.authorHandle}</Text>}
           <Text style={styles.cardHeadline}>{card.headline}</Text>
-          {card.body && (
+          {card.body && !locked && (
             <Text style={styles.cardText} numberOfLines={3}>
               {card.body}
             </Text>
           )}
-          {(card.cta || card.reactions) && (
+
+          {/* locked trick — the headline teases, the method is in the pack */}
+          {locked && (
+            <View style={styles.lockBox}>
+              <Text style={styles.lockTag}>ACADEMY & PRO</Text>
+              <Text style={styles.lockBody}>
+                The how-to comes with an ACADEMY or PRO pass — every trick, for the whole
+                period, not one at a time. Same tier wherever you are; only the currency changes.
+              </Text>
+              <Pressable onPress={onUnlock} hitSlop={6}>
+                <Text style={styles.lockCta}>SEE THE PASSES ›</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {(card.cta || card.reactions) && !locked && (
             <View style={styles.cardFoot}>
               {card.cta && (
                 <Pressable onPress={open} hitSlop={6}>
@@ -391,6 +445,19 @@ const styles = StyleSheet.create({
   cardHandle: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
   cardHeadline: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, color: colors.fg },
   cardText: { marginTop: 5, fontSize: 9.5, lineHeight: 13.5, color: '#a9bbae' },
+  lockBox: {
+    marginTop: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.4)',
+    backgroundColor: 'rgba(38,30,12,0.55)',
+    borderRadius: 9,
+    padding: 9,
+  },
+  lockTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
+  lockBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
+  lockCta: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
+  unlockErr: { marginTop: 8, marginHorizontal: 14, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.8, color: colors.loss },
+
   cardFoot: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardCta: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 1.5 },
   cardMetaRight: { fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },

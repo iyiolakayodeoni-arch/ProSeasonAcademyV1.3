@@ -77,8 +77,25 @@ const server = http.createServer(async (req, res) => {
     // ── auth ──
     if (path === '/auth/guest' && req.method === 'POST') {
       const body = await readBody(req);
-      const { token, user } = db.createGuest(body);
-      return json(res, 200, { token, user: publicUser(user) });
+      try {
+        const { token, user } = db.createGuest(body);
+        return json(res, 200, { token, user: publicUser(user), seats: db.seasonSeats() });
+      } catch (e) {
+        // SEASON gate — same 409 contract as the Supabase edge function,
+        // so the app's SEASON FULL panel works on either backend.
+        if (e && e.code === 'SEASON_FULL') {
+          const s = e.seats || db.seasonSeats();
+          return json(res, 409, {
+            ok: false, error: 'SEASON_FULL',
+            season: s.season, cap: s.cap, taken: s.taken,
+          });
+        }
+        throw e;
+      }
+    }
+    // seat report — public, so the app can show "N seats left"
+    if (path === '/season/seats' && req.method === 'GET') {
+      return json(res, 200, db.seasonSeats());
     }
     if (path === '/me' && req.method === 'GET') {
       const user = auth(req);
