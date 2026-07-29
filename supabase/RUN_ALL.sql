@@ -2865,8 +2865,8 @@ declare
   v_marg  numeric;
   v_gbp   numeric;
 begin
-  select amount_minor, base_currency into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+  select p.amount_minor, p.base_currency into v_amt, v_cur
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::numeric into v_marg from config where key = 'fx_margin_pct';
@@ -3042,9 +3042,9 @@ declare
   v_amt bigint; v_cur text; v_rate numeric; v_age numeric; v_max int;
   v_val numeric; v_disp text; v_cmp text; v_stale boolean := false;
 begin
-  select amount_minor, coalesce(charge_currency, base_currency)
+  select p.amount_minor, coalesce(p.charge_currency, p.base_currency)
     into v_amt, v_cur
-    from products where code = upper(trim(p_product));
+    from products p where p.code = upper(trim(p_product));
   if v_amt is null then return; end if;
 
   select value::int into v_max from config where key = 'fx_max_age_hours';

@@ -51,10 +51,18 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const [info, setInfo] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
+  const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
   const [academyToken, setAcademyToken] = useState<string | null>(null);
   const [tokenRevealed, setTokenRevealed] = useState(false);
 
   const { loading, register, login, requestReset } = useAuth();
+
+  useEffect(() => {
+    void backend.liveSeatCount().then((seats) => {
+      if (seats) setLiveSeats(seats);
+    });
+  }, []);
+
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
 
   const press = useSharedValue(0);
@@ -412,6 +420,15 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </Animated.View>
           </Pressable>
 
+          {liveSeats && (
+            <View style={styles.seatLiveRow}>
+              <View style={styles.seatLiveDot} />
+              <Text style={styles.seatLiveTxt}>
+                {liveSeats.taken.toLocaleString('en-US')} / {liveSeats.cap.toLocaleString('en-US')} SEATS CLAIMED
+              </Text>
+            </View>
+          )}
+
           <Text style={styles.seatNote}>
             SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · AUTO ACADEMY TOKEN · NO MANUAL INVITE CODE
           </Text>
@@ -495,6 +512,9 @@ const styles = StyleSheet.create({
     lineHeight: 11,
     marginBottom: 16,
   },
+  seatLiveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 },
+  seatLiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 5 },
+  seatLiveTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 2, color: colors.primary },
   seatNote: {
     marginTop: 9,
     fontFamily: monoFont,

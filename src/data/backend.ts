@@ -34,6 +34,30 @@ export function getSeasonGate(): SeasonGate | null {
   return seasonGate;
 }
 
+/**
+ * Live seat count — visible on the sign-in door. season_seats()
+ * counts profiles rows, which only exist AFTER someone completes
+ * sign-in via ensure-profile. So the number you see on the door IS
+ * actual claimed seats, not visitors browsing. No auth required to
+ * read it — it is a public number by design.
+ */
+export async function liveSeatCount(): Promise<SeasonGate | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('season_seats');
+    if (error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return {
+      season: row.season ?? 'SEASON ONE',
+      cap: Number(row.cap) || 1000,
+      taken: Number(row.taken) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** the signed-in academy identity, or null when offline/unclaimed */
 export function getMe(): CloudUser | null {
   return me;

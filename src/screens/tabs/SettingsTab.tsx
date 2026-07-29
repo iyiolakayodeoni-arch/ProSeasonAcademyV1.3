@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeIn, FadeInUp, SlideInUp, SlideOutDown, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
@@ -15,6 +15,7 @@ import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
 import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush } from '../../data/notifications';
+import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
 import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
 import {
@@ -168,11 +169,13 @@ export default function SettingsTab({
   const [resetNote, setResetNote] = useState<string | null>(null);
   const [quiet, setQuiet] = useState<QuietHours>({ enabled: false, start: 22, end: 7 });
   const [pushNote, setPushNote] = useState<string | null>(null);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
   useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
 
   useEffect(() => {
     void readCachedAcademyToken().then(setAcademyToken);
     void getQuietHours().then(setQuiet);
+    void checkForUpdate().then(setUpdate);
   }, []);
 
   useEffect(() => {
@@ -252,6 +255,29 @@ export default function SettingsTab({
           <Text style={styles.title}>SETTINGS</Text>
           <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
         </Animated.View>
+
+        {/* ── update checker — Supabase config.latest_version/latest_apk_url ── */}
+        {update?.available && (
+          <Animated.View entering={FadeInUp.delay(40).duration(300)}>
+            <Pressable
+              style={({ pressed }) => [styles.updateBanner, pressed && { opacity: 0.75 }]}
+              onPress={() => {
+                if (update.apkUrl) Linking.openURL(update.apkUrl).catch(() => {});
+              }}
+            >
+              <View style={styles.updateBadge}>
+                <Text style={styles.updateBadgeTxt}>NEW</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.updateTitle}>VERSION {update.latest} AVAILABLE</Text>
+                <Text style={styles.updateSub}>
+                  YOU'RE ON {update.current}.{update.note ? ` ${update.note}` : ' TAP TO DOWNLOAD THE UPDATE.'}
+                </Text>
+              </View>
+              <ChevronRightIcon size={14} color={colors.accent} />
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* ── player card ── */}
         <Animated.View entering={FadeInUp.delay(60).duration(340)} style={styles.card}>
@@ -885,6 +911,27 @@ const styles = StyleSheet.create({
   toggleKnobGlow: { shadowColor: '#39FF6A', shadowOpacity: 0.7, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
 
   dangerCard: { borderColor: 'rgba(224,96,92,0.3)', backgroundColor: 'rgba(224,96,92,0.045)' },
+
+  updateBanner: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(242,192,120,0.08)',
+  },
+  updateBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(242,192,120,0.22)',
+  },
+  updateBadgeTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  updateTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
+  updateSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1, color: 'rgba(242,192,120,0.65)' },
 
   footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
   footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },
