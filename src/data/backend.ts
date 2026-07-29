@@ -140,7 +140,7 @@ export async function pushMatches(matches: { clientId: string }[]): Promise<bool
       decisive: m.decisive ?? null,
       source: m.source === 'watcher' ? 'watcher' : 'manual',
       composure: m.composure == null ? null : Math.round(Number(m.composure)),
-      note: m.note ? String(m.note).slice(0, 140) : null,
+      note: m.note ? String(m.note).slice(0, 600) : null,
     }));
     const { error } = await supabase
       .from('matches')
