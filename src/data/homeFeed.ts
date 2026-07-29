@@ -1,4 +1,5 @@
 import { Coach } from './coaches';
+import { tickerWit } from './humor';
 
 // ─────────────────────────────────────────────────────────────
 // HOME FEED DATA LAYER
@@ -128,6 +129,19 @@ export function handAuthored(coach: Coach): FeedCardData[] {
       accent: 'green',
       origin: 'academy',
     },
+    {
+      id: 'hand-win-tunde',
+      kind: 'COMMUNITY_WIN',
+      tag: 'COMMUNITY · WIN',
+      time: '8H AGO',
+      headline: 'Man celebrated a 0–0 draw like a cup final',
+      body: 'Fourth clean sheet in a row. He plays centre-back. The team voted 11–0 to let him have this one. Defence is a personality now.',
+      cta: 'RESPECT THE GRIND ›',
+      accent: 'gold',
+      authorHandle: 'TUNDE_CB  CONSOLE · DIV RIVALS',
+      reactions: { icon: 'heart', count: 214 },
+      origin: 'community',
+    },
   ];
 }
 
@@ -194,14 +208,19 @@ export function buildFeed(coach: Coach): FeedCardData[] {
   return ordered.filter(Boolean) as FeedCardData[];
 }
 
-// ticker line = coach notes first, then the freshest meta headlines
+// ticker line = coach notes first, then the freshest meta headlines,
+// with one line of house wit threaded through the middle
 export function buildTicker(coach: Coach): string[] {
   const first = coach.name.split(' ')[0];
   const manual = [`COACH ${first} DROPPED A NEW DRILL`, 'NEW META: BACK-POST FAR TAP-IN'];
   const botHeads = metabotPosts()
     .slice(0, 4)
     .map((p) => p.headline.replace(/[!?]+$/, ''));
-  return [...manual, ...botHeads];
+  const out = [...manual];
+  if (botHeads.length) out.push(botHeads[0]);
+  out.push(tickerWit());
+  out.push(...botHeads.slice(1));
+  return out;
 }
 
 export const FEED_UPDATED_AT = LIVE_FEED.updatedAt;

@@ -28,6 +28,7 @@ import {
 import { useJourneyProgress } from '../../data/progress';
 import { isContentStale } from '../../data/coaching';
 import { objectiveCount, useMatches } from '../../data/matches';
+import { sfx } from '../../audio/sound';
 import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
 import * as backend from '../../data/backend';
@@ -212,7 +213,17 @@ export default function JourneyTab({
               return (
                 <React.Fragment key={s.n}>
                   {isCurrent && <PulseRing x={s.at.x} y={s.at.y} />}
-                  <Pressable onPress={() => (locked ? setSelected(s) : zoomIntoStage(s))} hitSlop={12}>
+                  <Pressable
+                    onPress={() => {
+                      if (locked) {
+                        setSelected(s);
+                        sfx('fail'); // a soft no — the map says not yet
+                      } else {
+                        zoomIntoStage(s);
+                      }
+                    }}
+                    hitSlop={12}
+                  >
                     <View
                       style={[
                         styles.node,

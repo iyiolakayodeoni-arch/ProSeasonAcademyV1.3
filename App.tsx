@@ -19,6 +19,7 @@ import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
 import { initCloudSync } from './src/data/cloudSync';
+import { initAudio } from './src/audio/sound';
 import {
   endSession,
   getSession,
@@ -47,6 +48,11 @@ export default function App() {
   const appOpacity = useSharedValue(0);
 
   const markGone = useCallback(() => setSplashGone(true), []);
+
+  // wake the academy's ear (audio session policy) — once per launch
+  useEffect(() => {
+    initAudio();
+  }, []);
 
   // ── RESTORE: pick up exactly where this player left off ──
   // Runs while the splash is still on screen, so a returning

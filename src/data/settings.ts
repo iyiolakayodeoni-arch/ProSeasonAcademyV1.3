@@ -40,6 +40,10 @@ export interface SettingsState {
     matchScanResults: boolean;
     filmRoomAlerts: boolean;
     communityMentions: boolean;
+    /** the ambient pad under the home tab */
+    music: boolean;
+    /** taps, whistles and the academy till */
+    soundFx: boolean;
   };
 }
 
@@ -63,6 +67,8 @@ const DEFAULTS: SettingsState = {
     matchScanResults: true,
     filmRoomAlerts: true,
     communityMentions: false,
+    music: true,
+    soundFx: true,
   },
 };
 

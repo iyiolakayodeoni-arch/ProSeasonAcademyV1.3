@@ -8,6 +8,7 @@ import * as backend from '../data/backend';
 import PaySheet from './PaySheet';
 import { getCloud } from '../data/cloudSync';
 import { useSettings } from '../data/settings';
+import { sfx } from '../audio/sound';
 import { FALLBACK_PRODUCTS, OFFLINE_GO_LIVE, TILL_COPY, goLiveLabel, isHttpPayLink, StoreProduct } from '../data/store';
 
 // ─────────────────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   /** every purchase goes through the claim flow, so the member gets a
    *  reference and a status instead of paying into silence */
   const buy = (p: StoreProduct) => {
+    sfx('coin'); // the till bell — someone's at the counter
     setPaying({ code: p.code, price: fx[p.code]?.display || p.price, title: p.title, payLink: p.payLink });
   };
 

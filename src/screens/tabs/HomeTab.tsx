@@ -16,7 +16,10 @@ import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
+import { brandMutter, caughtUpLine, greetingLine } from '../../data/humor';
+import { useSettings } from '../../data/settings';
 import * as backend from '../../data/backend';
+import { sfx } from '../../audio/sound';
 import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
@@ -59,6 +62,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   // ── ACCESS — tricks ride on the tier, not on per-item credits ──
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
   const [unlocks, setUnlocks] = useState<string[]>([]);
+  const settings = useSettings();
 
   const refreshAccess = () => {
     void backend.myAccess().then((a) => a && setAccess(a));
@@ -67,6 +71,19 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   useEffect(refreshAccess, []);
 
   const [tillOpen, setTillOpen] = useState(false);
+
+  // ── the founder mutters when you poke the wordmark enough ──
+  const [brandTaps, setBrandTaps] = useState(0);
+  const [mutter, setMutter] = useState<string | null>(null);
+  const brandTap = () => {
+    const n = brandTaps + 1;
+    setBrandTaps(n);
+    const line = brandMutter(n);
+    if (line) {
+      setMutter(line);
+      sfx('pop');
+    }
+  };
 
   /** the teachable kinds are the gated ones; news + community stay free */
   const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
@@ -90,7 +107,9 @@ export default function HomeTab({ coach }: { coach: Coach }) {
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         {/* header row */}
         <View style={styles.headerRow}>
-          <Text style={styles.brand}>PROSEASONACADEMY</Text>
+          <Pressable onPress={brandTap} hitSlop={8}>
+            <Text style={styles.brand}>PROSEASONACADEMY</Text>
+          </Pressable>
           <View style={styles.headerIcons}>
             <Pressable hitSlop={10} onPress={() => console.log('[home] notifications tapped (next build)')}>
               <BellIcon size={17} color="rgba(143,184,155,0.75)" />
@@ -102,10 +121,15 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             </Pressable>
           </View>
         </View>
+        {mutter && (
+          <Text style={styles.mutter} numberOfLines={1} onPress={() => setMutter(null)}>
+            {mutter}
+          </Text>
+        )}
 
         {/* greeting + live badge */}
         <View style={styles.greetRow}>
-          <Text style={styles.greet}>WELCOME BACK, PLAYER — {nowStamp()} GMT+1</Text>
+          <Text style={styles.greet}>{greetingLine(settings.displayName, nowStamp())}</Text>
           <View style={styles.livePill}>
             <LiveDot />
             <Text style={styles.liveTxt}>LIVE FEED</Text>
@@ -153,7 +177,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
               {CHIPS.map((c) => {
                 const on = chip === c;
                 return (
-                  <Pressable key={c} onPress={() => { setChip(c); setVisible(6); }}>
+                  <Pressable key={c} onPress={() => { setChip(c); setVisible(6); sfx('tap'); }}>
                     <View style={[styles.chip, on && styles.chipOn]}>
                       <Text style={[styles.chipTxt, on && styles.chipTxtOn]}>{c}</Text>
                     </View>
@@ -179,22 +203,23 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             coach={coach}
             delay={i * 40}
             liked={!!liked[card.id]}
-            onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))}
+            onLike={() => { setLiked((s) => ({ ...s, [card.id]: true })); sfx('like'); }}
             locked={isTrick(card.kind) && !trickOpen(card.id)}
-            onUnlock={() => setTillOpen(true)}
+            onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
           />
         ))}
 
         {/* load more */}
         {!exhausted ? (
-          <Pressable style={styles.loadMore} onPress={() => setVisible((v) => v + 4)}>
+          <Pressable style={styles.loadMore} onPress={() => { setVisible((v) => v + 4); sfx('tap'); }}>
             <Text style={styles.loadMoreTxt}>{'>'} LOAD MORE UPDATES ▮</Text>
           </Pressable>
         ) : (
-          <Text style={styles.caughtUp}>— YOU'RE ALL CAUGHT UP ▮</Text>
+          <Text style={styles.caughtUp}>{caughtUpLine()}</Text>
         )}
 
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
+        <Text style={styles.footTag}>BUILT BY PLAYERS · NO FULLBACKS WERE HARMED</Text>
       </ScrollView>
 
       {tillOpen && (
@@ -329,7 +354,7 @@ const styles = StyleSheet.create({
   },
 
   greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  greet: { fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.75)' },
+  greet: { flexShrink: 1, marginRight: 8, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.75)' },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,5 +516,23 @@ const styles = StyleSheet.create({
     fontSize: 6.3,
     letterSpacing: 2.6,
     color: 'rgba(143,184,155,0.4)',
+  },
+  footTag: {
+    marginTop: 5,
+    marginBottom: 4,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 2.2,
+    color: 'rgba(143,184,155,0.28)',
+  },
+  mutter: {
+    marginTop: 6,
+    fontFamily: monoFont,
+    fontSize: 6.2,
+    letterSpacing: 1.6,
+    color: colors.warm,
+    textShadowColor: 'rgba(242,192,120,0.4)',
+    textShadowRadius: 5,
   },
 });

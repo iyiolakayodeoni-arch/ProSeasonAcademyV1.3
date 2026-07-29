@@ -25,6 +25,7 @@ import { FlameIcon, LaughIcon } from '../components/Icons';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES, Coach } from '../data/coaches';
 import { BANTER, BanterMsg, CoachId } from '../data/coachBanter';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 // From app.json — never hardcode the version.
@@ -102,7 +103,11 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
     const typeMs = Math.min(450 + chars * 14, 1500);
     setTyping(run.coach);
     const t1 = setTimeout(() => setTyping(null), typeMs);
-    const t2 = setTimeout(() => setShown((s) => s + 1), typeMs + 620);
+    // the bubble lands with the same pop it has in the briefing room
+    const t2 = setTimeout(() => {
+      setShown((s) => s + 1);
+      sfx('pop');
+    }, typeMs + 620);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -128,6 +133,7 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
         flush();
         return;
       }
+      sfx('tap');
       setScoutOpen(null);
       setConfirming(id);
     },
@@ -136,6 +142,7 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
 
   const lockIn = useCallback(
     (id: string) => {
+      sfx('whistle');
       setConfirming(null);
       setLocked(id);
       // brief "PATH LOCKED" beat, then hand off to the app shell

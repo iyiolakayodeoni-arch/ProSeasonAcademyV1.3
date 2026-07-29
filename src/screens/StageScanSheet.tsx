@@ -19,6 +19,7 @@ import {
   resultOf,
 } from '../data/matches';
 import { useMatchWatcher } from '../data/matchWatcher';
+import { sfx } from '../audio/sound';
 import { CheckIcon, ChevronLeftIcon, EyeIcon, GamepadIcon, ScanGlyphIcon } from '../components/Icons';
 
 // ─────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
   const logScan = () => {
     if (!mindReady) return;
+    sfx('whoosh'); // sealed — off to the vault it goes
     const draft: MatchDraft = {
       gf: clampGoals(gf),
       ga: clampGoals(ga),

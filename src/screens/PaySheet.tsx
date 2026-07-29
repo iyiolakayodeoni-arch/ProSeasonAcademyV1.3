@@ -6,6 +6,7 @@ import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
 import { colors, monoFont } from '../theme';
 import * as backend from '../data/backend';
 import { getSettings } from '../data/settings';
+import { sfx } from '../audio/sound';
 
 // ─────────────────────────────────────────────────────────────
 // PAYING — the trust screen.
@@ -90,6 +91,7 @@ export default function PaySheet({
       return;
     }
     void Linking.openURL(r.approveUrl).catch(() => {});
+    sfx('tap');
     watchForGrant();
   };
 
@@ -128,6 +130,8 @@ export default function PaySheet({
       const a = await backend.myAccess();
       if (a && a.state === 'active' && a.level > 0) {
         clearInterval(tick);
+        sfx('success');
+        sfx('coin');
         setGranted(true);
       }
       if (tries >= 20) clearInterval(tick);   // ~100s, then stop
@@ -141,9 +145,11 @@ export default function PaySheet({
     const r = await backend.claimPayment(product, pick, price, note.trim() || undefined);
     setBusy(false);
     if (r.ok) {
+      sfx('coin');
       setNote('');
       load();
     } else {
+      sfx('fail');
       setError(
         r.error === 'CLAIM_PENDING'
           ? 'YOU ALREADY HAVE A CLAIM WAITING. THE FOUNDER IS CHECKING IT.'

@@ -1,6 +1,7 @@
 import { Coach } from './coaches';
 import { BASELINE_SCRIPTS, beatKey } from './baselineScan';
 import { MatchResult } from './matches';
+import { coachQuip } from './humor';
 
 // ─────────────────────────────────────────────────────────────
 // COACHING ROOM DATA LAYER
@@ -142,6 +143,10 @@ export interface CoachChat {
   greeting: string;
   voiceCaption: string;
   mechanic: string;
+  /** the single wink — one line of humour between the lesson and the closer.
+   *  Seeded by the mechanic so it's stable for the day, and it always sits
+   *  AFTER the structured lesson: the work is serious, the man is not a robot. */
+  quip: string;
   closer: string;
   scanIntro: string;
   footer: string;
@@ -172,6 +177,7 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
         'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end.',
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
       mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you.`,
+      quip: coachQuip('obinna', plan.contentId),
       closer: `That’s the whole lesson. You don’t have to report anything to me — **the scan will know.** It always knows. Go play, and let your ${mech} do the talking.`,
       scanIntro:
         'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
@@ -183,6 +189,7 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end.',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you.`,
+    quip: coachQuip('chinedu', plan.contentId),
     closer: `That’s the whole lesson. And before you even think about lying to me — **the scan will know.** It always knows. Go play, and let your ${mech} answer for you.`,
     scanIntro:
       'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
@@ -204,6 +211,9 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
         : 'You’re here. Good. Quick one today — the game moved under us.',
       voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
       mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Your stage objectives are untouched though, and the scan still grades them off the vault.`,
+      quip: calm
+        ? 'The patch emptied my Saturday too, little one. We both grieve quietly, then we adapt.'
+        : 'Yes, the patch ruined my weekend as well. No, I don’t want to talk about it. The scan already knows.',
       closer: `When the fresh tape lands, same rule — **the scan will know.** It always knows.`,
       scanIntro,
       footer: 'THE CHAT IS ONE WAY — THE UPDATED TAPE LANDS HERE FIRST.',
@@ -216,6 +226,9 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END',
     mechanic:
       'Today’s extra mechanic isn’t cleared for the room yet — the scouts are still checking the tape. That changes nothing about your job: **the stage objectives below are live**, and the scan reads them straight off your vault. Go and play.',
+    quip: calm
+      ? 'Even the tape needs time to warm up, little one. It will land — nobody warns the rain either.'
+      : "The scouts are arguing about the tape right now. I've seen friendlier derbies. It lands soon.",
     closer: `Do the work now, take the bonus tape when it lands. Either way — **the scan will know.** It always knows.`,
     scanIntro,
     footer: 'THE CHAT IS ONE WAY — THE MECHANIC LANDS HERE THE MOMENT IT’S APPROVED.',

@@ -19,9 +19,11 @@ import CoachingScreen from './CoachingScreen';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
+import { useSettings } from '../data/settings';
 import * as backend from '../data/backend';
 import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
+import { setMusicEnabled, sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 type Props = {
@@ -46,8 +48,20 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   }, []);
   useEffect(checkAccess, [checkAccess]);
 
-  const [tab, setTab] = useState<MainTab>('home');
+  const [tab, setTabState] = useState<MainTab>('home');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
+
+  // the academy's ear: a room-switch tick + the home ambience that
+  // only breathes while the feed is actually on screen — and that
+  // follows the MUSIC toggle the moment it hydrates or flips
+  const settings = useSettings();
+  const setTab = useCallback((t: MainTab) => {
+    sfx('tab');
+    setTabState(t);
+  }, []);
+  useEffect(() => {
+    setMusicEnabled(tab === 'home');
+  }, [tab, settings.toggles.music]);
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -58,6 +72,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
   const openStage = useCallback(
     (stage: JourneyStage, origin: StageOrigin) => {
+      sfx('whoosh');
       setRoom({ stage, origin });
       zoom.value = 0;
       zoom.value = withTiming(1, { duration: 470, easing: Easing.out(Easing.cubic) });
