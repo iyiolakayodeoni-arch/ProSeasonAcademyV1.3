@@ -49,6 +49,10 @@ export interface SettingsState {
     founderAnnouncements: boolean;
     fcMobileNews: boolean;
     groupSessions: boolean;
+    /** the ambient pad under the home tab */
+    music: boolean;
+    /** taps, whistles and the academy till */
+    soundFx: boolean;
   };
 }
 
@@ -79,6 +83,8 @@ const DEFAULTS: SettingsState = {
     founderAnnouncements: true,
     fcMobileNews: true,
     groupSessions: true,
+    music: true,
+    soundFx: true,
   },
 };
 

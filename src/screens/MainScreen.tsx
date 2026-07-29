@@ -27,6 +27,7 @@ import { usePushRegistration } from '../data/notifications';
 import { fetchAnnouncements } from '../data/announcements';
 import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 type Props = {
@@ -51,12 +52,18 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   }, []);
   useEffect(checkAccess, [checkAccess]);
 
-  const [tab, setTab] = useState<MainTab>('home');
+  const [tab, setTabState] = useState<MainTab>('home');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
   const onboard = useOnboardingGate();
   usePushRegistration(true);
   useEffect(() => {
     void fetchAnnouncements();
+  }, []);
+
+  // SFX only here; ambient beds stay owned by AudioManager so we do not run two music loops.
+  const setTab = useCallback((t: MainTab) => {
+    sfx('tab');
+    setTabState(t);
   }, []);
 
   // ── stage-zoom transition state ──
@@ -69,6 +76,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
   const openStage = useCallback(
     (stage: JourneyStage, origin: StageOrigin) => {
+      sfx('whoosh');
       setRoom({ stage, origin });
       zoom.value = 0;
       zoom.value = withTiming(1, { duration: 470, easing: Easing.out(Easing.cubic) });

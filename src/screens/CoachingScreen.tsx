@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking } from 'react-native';
 import Constants from 'expo-constants';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
@@ -41,9 +42,11 @@ import { objectiveCount, useMatches } from '../data/matches';
 import { useJournal } from '../data/journal';
 import StageScanSheet from './StageScanSheet';
 import { useTrailLoop } from '../hooks/useTrailLoop';
+import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const VOICE_LEN = 42; // fallback seconds — the real clip reports its own length
 
 function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -60,6 +63,21 @@ function OnlineDot({ size = 5 }: { size?: number }) {
   }, [v]);
   const s = useAnimatedStyle(() => ({ opacity: v.value }));
   return <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.9, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } }, s]} />;
+}
+
+// ── voice-note waveform (bars dance while playing) ────────────
+function WaveBar({ h, i, playing }: { h: number; i: number; playing: boolean }) {
+  const v = useSharedValue(0.4);
+  useEffect(() => {
+    if (playing) {
+      v.value = 0.15;
+      v.value = withDelay(i * 45, withRepeat(withTiming(1, { duration: 210 + (i % 5) * 55 }), -1, true));
+    } else {
+      v.value = withTiming(0.4, { duration: 200 });
+    }
+  }, [playing, i, v]);
+  const st = useAnimatedStyle(() => ({ transform: [{ scaleY: 0.3 + v.value * 0.7 }] }));
+  return <Animated.View style={[{ width: 2.6, height: h, borderRadius: 2, backgroundColor: colors.primary }, st]} />;
 }
 
 // ── spinning read ring for the MATCH SCAN row ─────────────────
@@ -154,6 +172,47 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const sessionStart = useMemo(() => Date.now(), []);
   const t = (addMin: number) => hhmm(new Date(sessionStart + addMin * 60000));
 
+  // ── voice note: REAL audio — the coach actually talks. The player
+  // drives the countdown, the waveform and the music duck; when the
+  // clip finishes it rewinds itself, ready for a replay. ──
+  const voicePlayer = useAudioPlayer(voiceNoteSource(coach.id));
+  const voiceStatus = useAudioPlayerStatus(voicePlayer);
+  const voiceTotal = voiceStatus.duration > 0 ? voiceStatus.duration : VOICE_LEN;
+  const voiceLeft = voiceStatus.didJustFinish
+    ? voiceTotal
+    : Math.max(0, Math.ceil(voiceTotal - voiceStatus.currentTime));
+  const voicePlaying = voiceStatus.playing;
+  const toggleVoice = () => {
+    if (voicePlaying) {
+      voicePlayer.pause();
+      duckMusic(false);
+      return;
+    }
+    if (voiceStatus.didJustFinish || voiceLeft <= 0) void voicePlayer.seekTo(0);
+    duckMusic(true);
+    sfx('pop');
+    voicePlayer.play();
+  };
+  // end of the note: rewind + lift the music back up
+  useEffect(() => {
+    if (voiceStatus.didJustFinish) {
+      void voicePlayer.seekTo(0);
+      duckMusic(false);
+    }
+  }, [voicePlayer, voiceStatus.didJustFinish]);
+  // leaving the room mid-sentence: stop him politely, restore the bed
+  useEffect(() => () => duckMusic(false), []);
+  const waveHeights = useMemo(
+    () => Array.from({ length: 22 }, (_, i) => 5 + ((i * i * 7 + i * 13 + 9) % 21)),
+    [],
+  );
+  // the caption's "lands at 0:38" promise, recomputed against the real clip
+  // (kept as authored until the player has actually measured the file)
+  const voiceCaption =
+    voiceStatus.duration > 0
+      ? chat.voiceCaption.replace('0:38', mmss(Math.max(5, Math.round(voiceTotal) - 6)))
+      : chat.voiceCaption;
+
   // ── clip block: real play/pause + countdown state ──
   const clipTotal = useMemo(() => {
     if (!plan) return 0;
@@ -205,15 +264,35 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           ? 'RUN IT BACK — SCAN A MATCH ›'
           : 'SCAN A MATCH ›';
 
+  // the room talks as it renders — one pop per beat of the briefing
+  useEffect(() => {
+    const beats = [250, 380, 540, 660, 780];
+    const timers = beats.map((ms) => setTimeout(() => sfx('pop'), ms));
+    return () => timers.forEach(clearTimeout);
+  }, [stage.n]);
+
+  // the verdict has a sound: a pass gets the full referee treatment
+  useEffect(() => {
+    if (status === 'passed') {
+      sfx('success');
+      const w = setTimeout(() => sfx('whistle'), 320);
+      return () => clearTimeout(w);
+    }
+    if (status === 'failed') sfx('fail');
+    return undefined;
+  }, [status]);
+
   const handleCta = () => {
     if (scanDisabled) return;
     if (status === 'passed' || (cleared && status === 'armed')) return onClose();
+    sfx('whoosh');
     setScanSheet(true); // the full ritual: log the match, then it grades
   };
 
   /** the in-room scan closed — if a match was logged, grade immediately */
   const handleScanSheetClose = (didLog: boolean) => {
     setScanSheet(false);
+    sfx('tap');
     if (didLog) gradeNow();
   };
 
@@ -276,6 +355,28 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             <RichText text={chat.greeting} style={styles.bubbleText} hotStyle={styles.hot} />
           </CoachBubble>
           <MessageMeta time={t(0)} />
+
+          <CoachBubble coach={coach} label={coach.name}>
+            <View style={styles.voiceRow}>
+              <Pressable onPress={toggleVoice} hitSlop={6}>
+                <View style={[styles.voicePlay, voicePlaying && styles.voicePlayOn]}>
+                  {voicePlaying ? (
+                    <PauseGlyphIcon size={11} color="#05130a" />
+                  ) : (
+                    <View style={styles.voiceTri} />
+                  )}
+                </View>
+              </Pressable>
+              <View style={styles.waveRow}>
+                {waveHeights.map((h, i) => (
+                  <WaveBar key={i} h={h} i={i} playing={voicePlaying} />
+                ))}
+              </View>
+              <Text style={styles.voiceDur}>{mmss(voiceLeft)}</Text>
+            </View>
+            <Text style={styles.voiceCaption}>{voiceCaption}</Text>
+          </CoachBubble>
+          <MessageMeta time={t(1)} />
 
           <CoachBubble coach={coach} label={coach.name}>
             <RichText text={chat.mechanic} style={styles.bubbleText} hotStyle={styles.hot} />
@@ -385,12 +486,20 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           )}
         </Animated.View>
 
+        {/* ── the wink — one line of him being human, then the closer ── */}
+        <Animated.View entering={FadeInDown.delay(320).duration(360)}>
+          <CoachBubble coach={coach} label={coach.name}>
+            <Text style={styles.quipText}>{chat.quip}</Text>
+          </CoachBubble>
+          <MessageMeta time={t(3)} />
+        </Animated.View>
+
         {/* ── closer message ── */}
-        <Animated.View entering={FadeInDown.delay(340).duration(360)}>
+        <Animated.View entering={FadeInDown.delay(360).duration(360)}>
           <CoachBubble coach={coach} label={coach.name}>
             <RichText text={chat.closer} style={styles.bubbleText} hotStyle={styles.hot} />
           </CoachBubble>
-          <MessageMeta time={t(3)} />
+          <MessageMeta time={t(4)} />
         </Animated.View>
 
         {/* ── MATCH SCAN — the graded part; passing unlocks the next node ── */}
@@ -646,6 +755,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   bubbleText: { fontSize: 11.5, lineHeight: 17.5, color: '#c9d8cd', fontWeight: '600' },
+  quipText: { fontSize: 10.5, lineHeight: 16, color: '#a9bbae', fontWeight: '600', fontStyle: 'italic' },
   hot: { color: colors.primary, fontWeight: '900' },
   msgTime: {
     marginLeft: 32,
@@ -654,6 +764,41 @@ const styles = StyleSheet.create({
     fontSize: 5.6,
     letterSpacing: 1.4,
     color: 'rgba(143,184,155,0.45)',
+  },
+
+  voiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  voicePlay: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  voicePlayOn: { backgroundColor: colors.primary },
+  voiceTri: {
+    width: 0,
+    height: 0,
+    marginLeft: 2,
+    borderLeftWidth: 9,
+    borderTopWidth: 6,
+    borderBottomWidth: 6,
+    borderLeftColor: '#05130a',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  waveRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2.6, height: 26 },
+  voiceDur: { fontFamily: monoFont, fontSize: 8, fontWeight: '700', color: 'rgba(143,184,155,0.8)' },
+  voiceCaption: {
+    marginTop: 8,
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 1.4,
+    color: 'rgba(143,184,155,0.6)',
   },
 
   staleBanner: {

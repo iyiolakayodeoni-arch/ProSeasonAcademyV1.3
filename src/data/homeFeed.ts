@@ -1,4 +1,5 @@
 import { Coach } from './coaches';
+import { tickerWit } from './humor';
 
 // ─────────────────────────────────────────────────────────────
 // HOME FEED DATA LAYER
@@ -164,6 +165,8 @@ export function buildFeed(coach: Coach): FeedCardData[] {
   return ordered.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 }
 
+// ticker line = coach notes first, then the freshest meta headlines,
+// with one line of house wit threaded through the middle
 export function buildTicker(coach: Coach): string[] {
   const first = coach.name.split(' ')[0];
   const manual = [
@@ -173,7 +176,11 @@ export function buildTicker(coach: Coach): string[] {
   const botHeads = metabotPosts()
     .slice(0, 4)
     .map((p) => p.headline.replace(/[!?]+$/, ''));
-  return [...manual, ...botHeads];
+  const out = [...manual];
+  if (botHeads.length) out.push(botHeads[0]);
+  out.push(tickerWit());
+  out.push(...botHeads.slice(1));
+  return out;
 }
 
 export const FEED_UPDATED_AT = LIVE_FEED.updatedAt;

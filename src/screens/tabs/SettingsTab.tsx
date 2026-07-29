@@ -11,6 +11,7 @@ import { useJourneyProgress, wipeProgress } from '../../data/progress';
 import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
+import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
@@ -35,6 +36,7 @@ import {
 import {
   AtIcon,
   BellIcon,
+  BroadcastIcon,
   CheckBadgeIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -51,6 +53,7 @@ import {
   RouteIcon,
   ScanGlyphIcon,
   TrashIcon,
+  WavesGlyphIcon,
 } from '../../components/Icons';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -223,7 +226,8 @@ export default function SettingsTab({
 
   const flip = (key: ToggleKey) => {
     const next = !s.toggles[key];
-    // notification prefs sync upstream; journey toggles stay local
+    sfx('toggle');
+    // notification prefs sync upstream; journey/audio toggles stay local
     if (
       key === 'coachMessages' ||
       key === 'matchScanResults' ||
@@ -237,6 +241,7 @@ export default function SettingsTab({
     } else {
       setToggle(key, next);
     }
+    if (key === 'music') syncMusicToSettings();
   };
 
   return (
@@ -437,6 +442,26 @@ export default function SettingsTab({
                   void syncPushRegistration();
                 });
               }}
+              last
+            />
+          </View>
+        </Animated.View>
+
+        {/* ── sound — the academy's ear ── */}
+        <Animated.View entering={FadeInUp.delay(210).duration(340)}>
+          <Text style={styles.sectionLabel}>SOUND — HOW LOUD THE ACADEMY BREATHES</Text>
+          <View style={styles.card}>
+            <Row
+              icon={<WavesGlyphIcon size={15} color="#57d07c" />}
+              title="Academy ambience"
+              sub="THE QUIET NIGHT-STADIUM PAD UNDER THE HOME FEED"
+              right={<Toggle on={s.toggles.music} onFlip={() => flip('music')} />}
+            />
+            <Row
+              icon={<BroadcastIcon size={15} color="#57d07c" />}
+              title="Sound effects"
+              sub="TAPS, BUBBLE POPS, THE WHISTLE, THE TILL — THE BANTER"
+              right={<Toggle on={s.toggles.soundFx} onFlip={() => flip('soundFx')} />}
               last
             />
           </View>
