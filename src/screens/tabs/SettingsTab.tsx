@@ -13,6 +13,8 @@ import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
+import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
+import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush } from '../../data/notifications';
 import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
 import {
@@ -162,7 +164,16 @@ export default function SettingsTab({
   const [tillOpen, setTillOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [unreadAcademy, setUnreadAcademy] = useState(0);
+  const [academyToken, setAcademyToken] = useState<string | null>(null);
+  const [resetNote, setResetNote] = useState<string | null>(null);
+  const [quiet, setQuiet] = useState<QuietHours>({ enabled: false, start: 22, end: 7 });
+  const [pushNote, setPushNote] = useState<string | null>(null);
   useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
+
+  useEffect(() => {
+    void readCachedAcademyToken().then(setAcademyToken);
+    void getQuietHours().then(setQuiet);
+  }, []);
 
   useEffect(() => {
     void isFounder().then((ok) => {
@@ -207,7 +218,23 @@ export default function SettingsTab({
   };
   const close = () => setSheet(null);
 
-  const flip = (key: ToggleKey) => setToggle(key, !s.toggles[key]);
+  const flip = (key: ToggleKey) => {
+    const next = !s.toggles[key];
+    // notification prefs sync upstream; journey toggles stay local
+    if (
+      key === 'coachMessages' ||
+      key === 'matchScanResults' ||
+      key === 'filmRoomAlerts' ||
+      key === 'communityMentions' ||
+      key === 'founderAnnouncements' ||
+      key === 'fcMobileNews' ||
+      key === 'groupSessions'
+    ) {
+      setNotifPref(key, next);
+    } else {
+      setToggle(key, next);
+    }
+  };
 
   return (
     <View style={styles.flex}>
@@ -324,7 +351,7 @@ export default function SettingsTab({
             <Row
               icon={<BellIcon size={15} color="#57d07c" />}
               title="Coach messages"
-              sub={`WHEN ${coachShort} SENDS A SESSION OR VOICE NOTE`}
+              sub={`WHEN ${coachShort} SENDS A SESSION OR LESSON`}
               right={<Toggle on={s.toggles.coachMessages} onFlip={() => flip('coachMessages')} />}
             />
             <Row
@@ -344,6 +371,46 @@ export default function SettingsTab({
               title="Community mentions"
               sub="@PINGS IN #GENERAL AND SQUAD CHANNELS"
               right={<Toggle on={s.toggles.communityMentions} onFlip={() => flip('communityMentions')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#f2c078" />}
+              title="Founder announcements"
+              sub="OFFICIAL HOME POSTS FROM POCOLASTONES"
+              right={<Toggle on={s.toggles.founderAnnouncements !== false} onFlip={() => flip('founderAnnouncements')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="FC Mobile news"
+              sub="FOUNDER-APPROVED META ALERTS"
+              right={<Toggle on={s.toggles.fcMobileNews !== false} onFlip={() => flip('fcMobileNews')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Group session reminders"
+              sub="FOUR-DAY COACH GROUP PINGS"
+              right={<Toggle on={s.toggles.groupSessions !== false} onFlip={() => flip('groupSessions')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Quiet hours"
+              sub={quiet.enabled ? `${quiet.start}:00–${quiet.end}:00 LOCAL · TAP TO TOGGLE` : 'OFF · TAP TO ENABLE 22:00–07:00'}
+              right={<Toggle on={quiet.enabled} onFlip={() => {
+                const next = { ...quiet, enabled: !quiet.enabled };
+                setQuiet(next);
+                void setQuietHours(next);
+              }} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Enable push delivery"
+              sub={pushNote ?? 'REQUEST PERMISSION + REGISTER THIS DEVICE'}
+              right={<Chevron />}
+              onPress={() => {
+                void registerForPush().then((r) => {
+                  setPushNote(r.ok ? 'PUSH ARMED ON THIS DEVICE' : `PUSH: ${r.reason ?? 'FAILED'}`);
+                  void syncPushRegistration();
+                });
+              }}
               last
             />
           </View>
@@ -559,21 +626,31 @@ export default function SettingsTab({
             {sheet === 'password' && (
               <View>
                 <Text style={styles.sheetEyebrow}>SECURITY</Text>
-                <Text style={styles.sheetTitle}>THERE IS NO PASSWORD</Text>
+                <Text style={styles.sheetTitle}>PASSWORD & SEAT</Text>
                 <Text style={styles.sheetBody}>
-                  Your seat is held by this device, not by a password. Nothing to forget, nothing to
-                  reset, nothing anyone can phish out of you. Your academy name and your ledger travel
-                  with the seat.
+                  You sign in with email + password. Your academy reference token is generated once
+                  and stored on this device.
                 </Text>
                 <Text style={styles.sheetBody}>
-                  ACADEMY ID · {s.academyId}{'\n'}
-                  SEAT HELD ON · {DEVICE_LABEL}
+                  ACADEMY TOKEN · {academyToken ?? s.academyId}{'\n'}
+                  EMAIL · {s.email ?? '—'}{'\n'}
+                  SEAT HELD ON · {DEVICE_LABEL}{'\n'}
+                  COUNTRY · {s.country ?? '—'} {s.countryCode ? `(${s.countryCode})` : ''}
+                  {s.geoUncertain ? ' · LOCATION UNCERTAIN' : s.geoVerified ? ' · VERIFIED' : ''}
                 </Text>
-                <Text style={[styles.sheetBody, { color: 'rgba(242,192,120,0.9)' }]}>
-                  Keep this device. Wiping the app or deleting your account releases the seat — and in
-                  a capped season, seats do not come back on their own.
-                </Text>
-                <SheetButton label="UNDERSTOOD" onPress={close} ghost />
+                {resetNote && <Text style={[styles.sheetBody, { color: colors.primary }]}>{resetNote}</Text>}
+                <SheetButton
+                  label="SEND PASSWORD RESET EMAIL"
+                  onPress={async () => {
+                    if (!s.email) {
+                      setResetNote('NO EMAIL ON THIS SEAT — SIGN IN AGAIN.');
+                      return;
+                    }
+                    const r = await requestPasswordReset(s.email);
+                    setResetNote(r.ok ? r.message : r.message);
+                  }}
+                />
+                <SheetButton label="DONE" onPress={close} ghost />
               </View>
             )}
 
@@ -621,7 +698,7 @@ export default function SettingsTab({
                       setDeleteArmed(true);
                       return;
                     }
-                    // burn ALL of it: settings, the ledger, the coach lock
+                    await deleteAccountRemote();
                     await wipeLocalData();
                     await wipeProgress();
                     await wipeSession();

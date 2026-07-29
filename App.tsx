@@ -29,6 +29,9 @@ import {
   markSignedIn,
   setReferral as persistReferral,
 } from './src/data/session';
+import { restoreSession, signOutRemote } from './src/data/authApi';
+import * as backend from './src/data/backend';
+import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 
@@ -68,6 +71,15 @@ export default function App() {
     let alive = true;
     void (async () => {
       await hydrateSession();
+      // restore Supabase email/password session if the token is still valid
+      const cloud = await restoreSession();
+      if (cloud && alive) {
+        backend.setMeFromProfile(cloud);
+        setDisplayName(cloud.handle);
+        setAcademyId(cloud.academyId);
+        if (cloud.email) setEmail(cloud.email);
+        markSignedIn();
+      }
       if (!alive) return;
       const s = getSession();
       if (s.coachId) {
@@ -76,7 +88,8 @@ export default function App() {
         if (!alive) return;
         setCoachId(s.coachId);
       }
-      if (!s.signedIn) setRoute('signin');
+      const signedIn = s.signedIn || !!cloud;
+      if (!signedIn) setRoute('signin');
       else if (!s.coachId) setRoute('coach');
       else if (!s.introDone) setRoute('intro');
       else if (!s.baselineDone) setRoute('scan');
@@ -147,6 +160,7 @@ export default function App() {
 
   const handleSignOut = useCallback(() => {
     // the ledger and the coach lock survive — only the floor is left
+    void signOutRemote();
     endSession();
     setRoute('signin');
   }, []);

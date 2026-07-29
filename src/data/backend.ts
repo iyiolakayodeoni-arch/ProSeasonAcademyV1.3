@@ -39,6 +39,22 @@ export function getMe(): CloudUser | null {
   return me;
 }
 
+/** hydrate identity after email/password auth (authApi owns the session) */
+export function setMeFromProfile(profile: {
+  id: string;
+  handle: string;
+  academyId: string;
+}): CloudUser {
+  me = {
+    id: String(profile.id),
+    handle: String(profile.handle),
+    academyId: String(profile.academyId),
+  };
+  seasonGate = null;
+  doorError = null;
+  return me;
+}
+
 // ── health + auth ────────────────────────────────────────────
 export async function probeHealth(timeoutMs = 2500): Promise<boolean> {
   if (!supabase) return false;
@@ -636,18 +652,9 @@ export interface InviteRow {
   revoked: boolean;
 }
 
-async function deskFn(key: string, body: Record<string, unknown>): Promise<any | null> {
-  if (!supabase) return null;
-  try {
-    const resp = await supabase.functions.invoke('founder-desk', {
-      body,
-      headers: { 'x-founder-key': key },
-    });
-    if (resp.error) return null;
-    return resp.data;
-  } catch {
-    return null;
-  }
+async function deskFn(_key: string, body: Record<string, unknown>): Promise<any | null> {
+  // Founder authorization is the Supabase session (is_founder), not a client key.
+  return founderFn('founder-desk', _key, body);
 }
 
 export async function founderInbox(key: string, unread = false):

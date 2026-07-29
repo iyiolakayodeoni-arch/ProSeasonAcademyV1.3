@@ -23,8 +23,8 @@ export const service = () =>
 
 /** every founder move proves the key — same single-secret model as before */
 export const founderOk = async (req: Request) => {
-  // The secret stays server-side; authorization is the Supabase identity.
-  if (!Deno.env.get('FOUNDER_KEY')) return false;
+  // Authorization is the Supabase identity + profiles.is_founder.
+  // FOUNDER_KEY is never required on the client and is not checked here.
   const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
   if (!token) return false;
   const sb = service();
