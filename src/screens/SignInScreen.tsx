@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -64,8 +64,17 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const [doorError, setDoorError] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
+  const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
   const [offline, setOffline] = useState(false);
   const { loading, enterAcademy } = useAuth();
+
+  // ── LIVE SEAT COUNTER — polls season_seats() on mount so the
+  //    door always shows "782 / 1,000 SEATS CLAIMED" ──────────
+  useEffect(() => {
+    backend.liveSeatCount().then((s) => {
+      if (s) setLiveSeats(s);
+    });
+  }, []);
 
   // header crest trail (same loop as splash, chained through the shared hook)
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
@@ -129,9 +138,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
         </View>
         <View style={styles.fullCard}>
           <Text style={styles.fullTag}>{seasonFull.season} — FULL</Text>
-          <Text style={styles.fullCount}>
-            {seasonFull.taken}/{seasonFull.cap} SEATS CLAIMED
-          </Text>
+          <View style={styles.seatLiveRow}>
+            <View style={[styles.seatLiveDot, { backgroundColor: colors.accent, shadowColor: colors.accent }]} />
+            <Text style={[styles.seatLiveTxt, { color: colors.accent }]}>
+              {seasonFull.taken.toLocaleString('en-US')} / {seasonFull.cap.toLocaleString('en-US')} SEATS CLAIMED
+            </Text>
+          </View>
           <Text style={styles.fullBody}>
             YOU DID NOTHING WRONG — THE SEASON SOLD OUT BEFORE YOUR TAP. YOUR NAME IS ON THE
             WAITLIST, AND THE FOUNDER OPENS THE NEXT SEASON BIGGER. UNTIL THEN THE ACADEMY
@@ -235,6 +247,16 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </Text>
           )}
 
+          {/* ── LIVE SEAT COUNTER — pulled from the database every visit ── */}
+          {liveSeats && (
+            <View style={styles.seatLiveRow}>
+              <View style={styles.seatLiveDot} />
+              <Text style={styles.seatLiveTxt}>
+                {liveSeats.taken.toLocaleString('en-US')} / {liveSeats.cap.toLocaleString('en-US')} SEATS CLAIMED
+              </Text>
+            </View>
+          )}
+
           {/* CTA — one identity for sign-up AND sign-in, claimed in-app */}
           <Pressable
             onPress={() => {
@@ -324,6 +346,11 @@ const styles = StyleSheet.create({
   geoChipTxtOn: { color: colors.accent },
   geoNote: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.1, color: colors.muted, textAlign: 'center', lineHeight: 11, marginBottom: 16 },
   seatNote: { marginTop: 9, fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)', textAlign: 'center', lineHeight: 11 },
+
+  // live seat counter on the door
+  seatLiveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 },
+  seatLiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 5 },
+  seatLiveTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 2, color: colors.primary },
 
   // ── season full ──
   fullCard: { marginHorizontal: PAGE_PAD, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 15, backgroundColor: 'rgba(15,26,19,0.92)', padding: 18 },

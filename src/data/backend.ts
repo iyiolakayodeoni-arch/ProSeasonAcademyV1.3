@@ -34,6 +34,28 @@ export function getSeasonGate(): SeasonGate | null {
   return seasonGate;
 }
 
+/**
+ * Live seat count — callable by anyone, even before sign-in.
+ * Drives the live counter on the door so nobody arrives to a
+ * surprise. Calls season_seats() via RPC (public, no auth needed).
+ */
+export async function liveSeatCount(): Promise<SeasonGate | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('season_seats');
+    if (error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return {
+      season: row.season ?? 'SEASON ONE',
+      cap: Number(row.cap) || 1000,
+      taken: Number(row.taken) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** the signed-in academy identity, or null when offline/unclaimed */
 export function getMe(): CloudUser | null {
   return me;
