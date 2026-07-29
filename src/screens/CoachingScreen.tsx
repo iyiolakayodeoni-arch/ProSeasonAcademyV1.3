@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import MiniPitch from '../components/MiniPitch';
+import LessonAnimation from '../components/LessonAnimation';
 import {
   ArrowOutIcon,
   CheckIcon,
@@ -337,7 +337,14 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
                 style={[styles.clipWrap, clipPlaying && styles.clipWrapPlaying]}
                 onLayout={(e) => setClipW(e.nativeEvent.layout.width)}
               >
-                {clipW > 0 && <MiniPitch width={clipW - 2} height={126} variant={plan.clip.variant} />}
+                {clipW > 0 && (
+                  <LessonAnimation
+                    width={clipW - 2}
+                    height={126}
+                    variant={plan.clip.variant}
+                    playing={clipPlaying}
+                  />
+                )}
                 <Pressable onPress={() => setClipPlaying((p) => !p)} hitSlop={8} style={styles.clipHit}>
                   <View style={[styles.clipPlay, clipPlaying && styles.clipPlayOn]}>
                     {clipPlaying ? <PauseGlyphIcon size={11} color="#05130a" /> : <View style={styles.clipTri} />}

@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
-import MiniPitch from '../../components/MiniPitch';
+import LessonAnimation from '../../components/LessonAnimation';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
@@ -130,7 +130,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             <Text style={styles.heroTag}>TRICK OF THE WEEK</Text>
           </View>
           <View style={styles.heroThumb}>
-            <MiniPitch width={318} height={150} variant="pitchRun" showPlay />
+            <LessonAnimation width={318} height={150} variant="pitchRun" playing />
             <View style={styles.heroDuration}>
               <Text style={styles.heroDurationTxt}>{HERO_FALLBACK.duration}</Text>
             </View>
@@ -247,7 +247,7 @@ function FeedCard({
       <View style={styles.cardMain}>
         {card.thumbnail && (
           <View style={styles.thumb}>
-            <MiniPitch width={84} height={62} variant={card.thumbnail} showPlay />
+            <LessonAnimation width={84} height={62} variant={card.thumbnail} playing showLabel={false} />
           </View>
         )}
         {card.avatar === 'coach' && <Image source={coach.portrait} style={styles.cardAvatar} />}

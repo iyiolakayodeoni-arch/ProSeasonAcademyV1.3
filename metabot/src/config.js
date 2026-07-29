@@ -36,7 +36,8 @@ export const BUCKETS = [
     id: 'official-patch',
     makeQueries: ({ currentPatch }) => [
       `EA SPORTS FC Mobile official patch notes update ${currentPatch}`,
-      `site:ea.com FC Mobile update patch notes`,
+      `site:ea.com FC Mobile update patch notes gameplay ${currentPatch}`,
+      `FC Mobile official gameplay update passing shooting defending ${currentPatch}`,
     ],
   },
   {
@@ -44,7 +45,8 @@ export const BUCKETS = [
     makeQueries: () => [
       `reddit FUTMobile exploit tactic this week`,
       `FC Mobile community discovered trick H2H reddit`,
-      `FC Mobile YouTube "what works" meta this season`,
+      `FC Mobile YouTube what works now H2H meta`,
+      `FC Mobile ranked H2H new skill move tutorial this week`,
     ],
   },
   {
@@ -52,6 +54,8 @@ export const BUCKETS = [
     makeQueries: ({ currentPatch }) => [
       `FC Mobile best meta formation tactic right now ${currentPatch}`,
       `FC Mobile broken tactic new trick after update ${currentPatch}`,
+      `FC Mobile H2H gameplay meta after update ${currentPatch}`,
+      `FC Mobile best skill move after update ${currentPatch}`,
     ],
   },
   {
@@ -59,6 +63,9 @@ export const BUCKETS = [
     makeQueries: () => [
       `FC Mobile kick off routine defending AI behavior after patch`,
       `FC Mobile finishing technique skill move combo meta`,
+      `FC Mobile lane change tutorial H2H`,
+      `FC Mobile elastico step over tutorial ranked`,
+      `FC Mobile cross header timing tutorial`,
     ],
   },
 ];
