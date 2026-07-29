@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NativeSplash from 'expo-splash-screen';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,6 +31,11 @@ import {
   setReferral as persistReferral,
 } from './src/data/session';
 import { colors } from './src/theme';
+
+// Keep the native OS splash as a plain academy background until
+// the real React loading screen is ready. This prevents the old
+// pre-loader logo flash before the structured loading screen.
+void NativeSplash.preventAutoHideAsync().catch(() => {});
 
 // SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → BASELINE SCAN
 //        → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
