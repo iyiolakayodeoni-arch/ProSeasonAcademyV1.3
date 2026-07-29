@@ -35,13 +35,18 @@ export function getSeasonGate(): SeasonGate | null {
 }
 
 /**
- * Live seat count — callable by anyone, even before sign-in.
- * Drives the live counter on the door so nobody arrives to a
- * surprise. Calls season_seats() via RPC (public, no auth needed).
+ * Live seat count — only for signed-in members. Reads
+ * season_seats() from Postgres (counts profiles rows, which only
+ * exist for people who have actually claimed a seat). Requires an
+ * active anonymous session — no session, no count.
  */
 export async function liveSeatCount(): Promise<SeasonGate | null> {
   if (!supabase) return null;
   try {
+    // must be signed in to read the count — no drive-by queries
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) return null;
+
     const { data, error } = await supabase.rpc('season_seats');
     if (error) return null;
     const row = Array.isArray(data) ? data[0] : data;
