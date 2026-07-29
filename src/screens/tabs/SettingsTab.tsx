@@ -167,9 +167,7 @@ export default function SettingsTab({
   const [unreadAcademy, setUnreadAcademy] = useState(0);
   useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
 
-  // ── LIVE SEAT COUNTER — only signed-in members see it ──
-  const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
-  useEffect(() => { void backend.liveSeatCount().then((s) => { if (s) setLiveSeats(s); }); }, []);
+
 
   // a key verified on a previous run unlocks the desk straight away
   useEffect(() => {
@@ -502,16 +500,7 @@ export default function SettingsTab({
         </Animated.View>
 
         {/* the founder's door hides in plain sight — 5 taps */}
-        <Pressable onPress={tapVersion} hitSlop={10} style={styles.footWrap}>
-          {/* ── LIVE SEAT COUNTER — only members see this ── */}
-          {liveSeats && (
-            <View style={styles.seatLiveRow}>
-              <View style={styles.seatLiveDot} />
-              <Text style={styles.seatLiveTxt}>
-                {liveSeats.taken.toLocaleString('en-US')} / {liveSeats.cap.toLocaleString('en-US')} SEATS CLAIMED
-              </Text>
-            </View>
-          )}
+        <Pressable onPress={tapVersion} hitSlop={10}>
           <Text style={styles.footVersion}>
             PROSEASONACADEMY · VERSION {APP_VERSION}
             {founderKey ? ' · ★' : ''}
@@ -882,12 +871,7 @@ const styles = StyleSheet.create({
 
   dangerCard: { borderColor: 'rgba(224,96,92,0.3)', backgroundColor: 'rgba(224,96,92,0.045)' },
 
-  footWrap: { marginTop: 18, alignItems: 'center' },
-  // live seat counter (members only)
-  seatLiveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, marginBottom: 4 },
-  seatLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.7, shadowRadius: 4 },
-  seatLiveTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
-  footVersion: { marginTop: 6, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
+  footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
   footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },
 
   // update banner

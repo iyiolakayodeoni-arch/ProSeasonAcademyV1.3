@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -64,8 +64,14 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const [doorError, setDoorError] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
+  const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
   const [offline, setOffline] = useState(false);
   const { loading, enterAcademy } = useAuth();
+
+  // ── LIVE SEAT COUNTER — counts profiles rows (actual members, not visitors) ──
+  useEffect(() => {
+    backend.liveSeatCount().then((s) => { if (s) setLiveSeats(s); });
+  }, []);
 
   // header crest trail (same loop as splash, chained through the shared hook)
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
@@ -129,9 +135,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
         </View>
         <View style={styles.fullCard}>
           <Text style={styles.fullTag}>{seasonFull.season} — FULL</Text>
-          <Text style={styles.fullCount}>
-            {seasonFull.taken}/{seasonFull.cap} SEATS CLAIMED
-          </Text>
+          <View style={[styles.seatLiveRow, { marginTop: 14 }]}>
+            <View style={[styles.seatLiveDot, { backgroundColor: colors.accent, shadowColor: colors.accent }]} />
+            <Text style={[styles.seatLiveTxt, { color: colors.accent }]}>
+              {seasonFull.taken.toLocaleString('en-US')} / {seasonFull.cap.toLocaleString('en-US')} SEATS CLAIMED
+            </Text>
+          </View>
           <Text style={styles.fullBody}>
             YOU DID NOTHING WRONG — THE SEASON SOLD OUT BEFORE YOUR TAP. YOUR NAME IS ON THE
             WAITLIST, AND THE FOUNDER OPENS THE NEXT SEASON BIGGER. UNTIL THEN THE ACADEMY
@@ -235,6 +244,16 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </Text>
           )}
 
+          {/* ── LIVE SEAT COUNTER — pulled from the database, counts actual members ── */}
+          {liveSeats && (
+            <View style={styles.seatLiveRow}>
+              <View style={styles.seatLiveDot} />
+              <Text style={styles.seatLiveTxt}>
+                {liveSeats.taken.toLocaleString('en-US')} / {liveSeats.cap.toLocaleString('en-US')} SEATS CLAIMED
+              </Text>
+            </View>
+          )}
+
           {/* CTA — one identity for sign-up AND sign-in, claimed in-app */}
           <Pressable
             onPress={() => {
@@ -323,12 +342,16 @@ const styles = StyleSheet.create({
   geoChipTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: colors.muted },
   geoChipTxtOn: { color: colors.accent },
   geoNote: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.1, color: colors.muted, textAlign: 'center', lineHeight: 11, marginBottom: 16 },
+  // live seat counter on the door
+  seatLiveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 },
+  seatLiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 5 },
+  seatLiveTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 2, color: colors.primary },
+
   seatNote: { marginTop: 9, fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)', textAlign: 'center', lineHeight: 11 },
 
   // ── season full ──
   fullCard: { marginHorizontal: PAGE_PAD, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 15, backgroundColor: 'rgba(15,26,19,0.92)', padding: 18 },
   fullTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 2.4, color: colors.accent, textAlign: 'center' },
-  fullCount: { marginTop: 7, fontSize: 17, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
   fullBody: { marginTop: 12, fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 1.1, color: colors.muted, textAlign: 'center', lineHeight: 13.5 },
   fullFine: { marginTop: 9, marginBottom: 14, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.3, color: colors.warm, textAlign: 'center', lineHeight: 11.5 },
   linksRow: {
