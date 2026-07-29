@@ -65,6 +65,7 @@ export async function ensureAuth(
   inviteCode?: string,
 ): Promise<CloudUser | null> {
   if (!supabase) return null;
+  doorError = null;
   try {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {

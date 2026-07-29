@@ -341,7 +341,7 @@ export default function SettingsTab({
             <Row
               icon={<BellIcon size={15} color="#57d07c" />}
               title="Coach messages"
-              sub={`WHEN ${coachShort} SENDS A SESSION OR VOICE NOTE`}
+              sub={`WHEN ${coachShort} POSTS A SESSION OR COURSE NOTE`}
               right={<Toggle on={s.toggles.coachMessages} onFlip={() => flip('coachMessages')} />}
             />
             <Row

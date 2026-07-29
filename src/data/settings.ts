@@ -24,8 +24,9 @@ export type GeoRegion = 'africa' | 'world' | 'unset';
 
 export interface SettingsState {
   displayName: string;
-  country: string | null; // picked at sign-up — drives the JAN 1 pricing split
-  geo: GeoRegion;         // 'africa' → credits · 'world' → subscription · unset until picked
+  email: string | null;
+  country: string | null; // picked at sign-up — drives the regional pricing shelf
+  geo: GeoRegion;         // 'africa' → Africa pricing · 'world' → world pricing · unset until picked
   academyId: string; // generated once, never changes
   joinedAt: number; // first launch — drives "IN ACADEMY" days
   div: string;
@@ -47,6 +48,7 @@ const STORAGE_KEY = 'psa.settings.v1';
 
 const DEFAULTS: SettingsState = {
   displayName: 'PLAYER',
+  email: null,
   country: null,
   geo: 'unset',
   academyId: `#PSA-${String(1000 + Math.floor(Math.random() * 9000))}`,
@@ -122,6 +124,11 @@ export function setDisplayName(raw: string) {
   if (clean) set({ displayName: clean });
 }
 
+export function setEmail(raw: string) {
+  const clean = raw.trim().toLowerCase().slice(0, 80);
+  if (clean) set({ email: clean });
+}
+
 export function setPlatform(p: SettingsState['platform']) {
   // TODO(real-scan-ingest): route match scanning by platform
   console.log('[settings] platform →', p);
@@ -133,7 +140,7 @@ export function setRegion(r: SettingsState['region']) {
   set({ region: r });
 }
 
-/** sign-up capture: their country + which JAN 1 pricing track it maps to */
+/** sign-up capture: their country + which regional pricing track it maps to */
 export function setCountry(country: string, geo: Exclude<GeoRegion, 'unset'>) {
   set({ country, geo });
 }

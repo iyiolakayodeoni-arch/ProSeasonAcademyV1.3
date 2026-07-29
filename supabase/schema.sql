@@ -126,7 +126,7 @@ insert into products (code, region, title, plan, price, sort) values
 on conflict (code) do nothing;
 
 insert into config (key, value) values
-  ('go_live', '2027-01-01T00:00:00Z'),            -- the till's opening day
+  ('go_live', 'TBA'),                             -- till opens after testing, no fixed public date
   ('seat_cap', '1000'),                           -- SEASON ONE seats
   ('season_name', 'SEASON ONE')
 on conflict (key) do nothing;

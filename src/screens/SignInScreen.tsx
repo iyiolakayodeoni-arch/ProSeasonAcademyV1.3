@@ -25,14 +25,14 @@ import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES } from '../data/coaches';
 import { colors, monoFont } from '../theme';
-import { GeoRegion, getSettings, setCountry, setDisplayName } from '../data/settings';
+import { GeoRegion, getSettings, setCountry, setDisplayName, setEmail as persistEmail } from '../data/settings';
 import * as backend from '../data/backend';
 
 // From app.json — never hardcode the version.
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const HEADER_TRAIL_LENGTH = 260;
 
-// ── country → the JAN 1 pricing track (one tap, stored forever) ──
+// ── country → the regional pricing track (one tap, stored forever) ──
 const GEO_OPTIONS: { label: string; geo: Exclude<GeoRegion, 'unset'> }[] = [
   { label: 'NIGERIA', geo: 'africa' },
   { label: 'GHANA', geo: 'africa' },
@@ -60,7 +60,8 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const cardWidth = Math.min((width - PAGE_PAD * 2 - CARD_GAP) / 2, 190);
 
   const [username, setUsername] = useState('');
-  const [invite, setInvite] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [doorError, setDoorError] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
@@ -79,13 +80,15 @@ export default function SignInScreen({ onSignedIn }: Props) {
   }));
 
   const signingIn = loading;
-  /** the name has to be worth putting on a seat */
+  /** the account has to look real before it claims a seat */
   const nameOk = username.trim().length >= 3;
-  const canEnter = nameOk && !!countryPick && !signingIn;
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordOk = password.length >= 6;
+  const canEnter = nameOk && emailOk && passwordOk && !!countryPick && !signingIn;
 
   const pickCountry = (label: string, geo: Exclude<GeoRegion, 'unset'>) => {
     setCountryPick(label);
-    setCountry(label, geo); // persists — drives the JAN 1 pricing split + the till's shelf
+    setCountry(label, geo); // persists — drives the regional pricing shelf
   };
 
   /** one tap: identity + SEASON seat claimed in the same breath (in-app, nothing hosted) */
@@ -95,17 +98,10 @@ export default function SignInScreen({ onSignedIn }: Props) {
     setDoorError(null);
     const handle = username.trim();
     setDisplayName(handle); // the name he chose IS his academy name
-    const me = await enterAcademy(handle, invite.trim());
-    // invite refused → say so plainly; this academy is invite-only
-    const door = backend.getDoorError();
-    if (door) {
-      setDoorError(
-        door === 'INVITE_REQUIRED'
-          ? 'THIS ACADEMY IS INVITE-ONLY. ENTER THE CODE YOU WERE GIVEN.'
-          : 'THAT CODE IS NOT VALID, ALREADY USED, OR EXPIRED.',
-      );
-      return;
-    }
+    persistEmail(email.trim());
+    // No player types an invite token. The backend creates the member's
+    // academy token automatically when the seat is claimed.
+    const me = await enterAcademy(handle);
     const gate = backend.getSeasonGate();
     if (gate) {
       setSeasonFull(gate); // season full → waitlist panel, solo training continues
@@ -184,8 +180,8 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <View style={styles.sectionLine} />
           </View>
 
-          {/* country → the JAN 1 pricing track (asked once, kept forever) */}
-          <Text style={styles.geoTitle}>YOUR COUNTRY — SETS YOUR JAN 1 PLAN</Text>
+          {/* country → the regional pricing track (asked once, kept forever) */}
+          <Text style={styles.geoTitle}>YOUR COUNTRY — SETS YOUR PRICE TRACK</Text>
           <View style={styles.geoGrid}>
             {GEO_OPTIONS.map((o) => {
               const on = countryPick === o.label;
@@ -199,14 +195,14 @@ export default function SignInScreen({ onSignedIn }: Props) {
             })}
           </View>
           <Text style={styles.geoNote}>
-            AFRICA → CREDIT PACKS · EVERYWHERE ELSE → SUBSCRIPTION — THE PRICES ARE BEING VOTED IN
-            THE HALLS RIGHT NOW. THE SPLIT LOCKS ON JAN 1.
+            YOUR COUNTRY DECIDES WHICH PRICE SHELF YOU SEE. NIGERIA/AFRICA PRICES ARE ONLY FOR
+            PLAYERS IN THAT REGION; WORLD MEMBERS SEE THE WORLD SHELF.
           </Text>
 
-          {/* form — one field. No password exists to steal or forget. */}
+          {/* form — real account fields; the member token is created automatically */}
           <View style={styles.form}>
             <NeonInput
-              placeholder="YOUR ACADEMY NAME"
+              placeholder="USERNAME"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="characters"
@@ -214,16 +210,22 @@ export default function SignInScreen({ onSignedIn }: Props) {
             />
             <View style={styles.fieldGap} />
             <NeonInput
-              placeholder="INVITE CODE"
-              value={invite}
-              onChangeText={(t) => { setInvite(t); setDoorError(null); }}
-              autoCapitalize="characters"
-              maxLength={24}
+              placeholder="EMAIL"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <View style={styles.fieldGap} />
+            <NeonInput
+              placeholder="PASSWORD"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
             />
           </View>
           <Text style={styles.geoNote}>
-            THIS IS THE NAME YOUR COACH CALLS YOU AND THE HALL SEES. 3–14 CHARACTERS.
-            THE ACADEMY IS INVITE-ONLY — USE THE CODE YOU WERE GIVEN.
+            YOUR ACADEMY TOKEN IS GENERATED AFTER YOU JOIN. NOTHING TO TYPE, NOTHING TO HUNT FOR.
           </Text>
 
           {doorError && <Text style={styles.doorError}>{doorError}</Text>}
@@ -246,12 +248,22 @@ export default function SignInScreen({ onSignedIn }: Props) {
           >
             <Animated.View style={[styles.cta, btnStyle, signingIn && styles.ctaBusy, !canEnter && styles.ctaOff]}>
               <Text style={styles.ctaText}>
-                {signingIn ? 'CLAIMING YOUR SEAT…' : !countryPick ? 'PICK YOUR COUNTRY FIRST' : !nameOk ? 'ENTER YOUR ACADEMY NAME' : 'CLAIM MY SEAT'}
+                {signingIn
+                  ? 'CREATING YOUR ACCOUNT…'
+                  : !countryPick
+                    ? 'PICK YOUR COUNTRY FIRST'
+                    : !nameOk
+                      ? 'ENTER USERNAME'
+                      : !emailOk
+                        ? 'ENTER EMAIL'
+                        : !passwordOk
+                          ? 'PASSWORD 6+ CHARS'
+                          : 'ENTER THE ACADEMY'}
               </Text>
             </Animated.View>
           </Pressable>
           <Text style={styles.seatNote}>
-            SEASON ONE IS CAPPED AT 1,000 SEATS · NO PASSWORDS, NO WEB FORMS — EVERYTHING STAYS IN THE APP
+            SEASON ONE IS CAPPED AT 1,000 SEATS · YOUR MEMBER TOKEN IS CREATED AUTOMATICALLY
           </Text>
 
           {/* footer */}

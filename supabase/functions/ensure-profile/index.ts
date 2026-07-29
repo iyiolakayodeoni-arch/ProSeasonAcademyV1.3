@@ -69,27 +69,11 @@ Deno.serve(async (req) => {
   }
 
   // ── NEW PLAYER → THE DOOR ──────────────────────────────────
-  // Two gates, in order:
-  //   1. INVITE  — is this person one of ours? (private ecosystem)
-  //   2. SEAT    — is there room left? (the season cap)
-  // The seat cap alone was never enough: the anon key ships inside
-  // every APK, so without an invite anyone who got the file could
-  // spend one of the 1,000 seats.
-  const { data: inviteOnlyRow } = await sb
-    .from('config').select('value').eq('key', 'invite_only').maybeSingle();
-  const inviteOnly = String(inviteOnlyRow?.value ?? 'false') === 'true';
-
-  const code = String(body.inviteCode ?? '').toUpperCase().trim();
-
-  if (inviteOnly) {
-    if (!code) {
-      return json({ ok: false, error: 'INVITE_REQUIRED' }, 403);
-    }
-    const { data: claimed, error: cerr0 } = await sb.rpc('claim_invite', { p_code: code });
-    if (cerr0 || claimed !== true) {
-      return json({ ok: false, error: 'INVITE_INVALID' }, 403);
-    }
-  }
+  // The player does NOT type an invite/token. The app is private by
+  // distribution, and the backend creates a random member token after
+  // the seat is claimed. The only hard gate here is the season cap.
+  const memberToken = 'AUTO-' + Array.from(crypto.getRandomValues(new Uint8Array(4)))
+    .map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
@@ -123,7 +107,7 @@ Deno.serve(async (req) => {
     platform: body.platform ? String(body.platform).slice(0, 24) : null,
     region: REGION(body.region),
     academy_id: academy,
-    invite_code: code || null,
+    invite_code: memberToken,
   };
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
 

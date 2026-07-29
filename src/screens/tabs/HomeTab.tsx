@@ -22,15 +22,14 @@ import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
-const CHIPS = ['ALL', 'TRICKS & EXPLOITS', 'WINS', 'LOSSES', 'COACH UPDATES'] as const;
+const CHIPS = ['ALL', 'FOUNDER', 'META WATCH', 'COACH & GROUP'] as const;
 type Chip = (typeof CHIPS)[number];
 
 const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null> = {
   ALL: null,
-  'TRICKS & EXPLOITS': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
-  WINS: ['COMMUNITY_WIN'],
-  LOSSES: ['COMMUNITY_LOSS'],
-  'COACH UPDATES': ['COACH_UPDATE'],
+  FOUNDER: ['ACADEMY_NEWS'],
+  'META WATCH': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
+  'COACH & GROUP': ['COACH_UPDATE'],
 };
 
 const ACCENT = {
