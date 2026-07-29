@@ -81,6 +81,7 @@ export async function ensureAuth(
   inviteCode?: string,
 ): Promise<CloudUser | null> {
   if (!supabase) return null;
+  doorError = null;
   try {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
@@ -155,7 +156,7 @@ export async function pushMatches(matches: { clientId: string }[]): Promise<bool
       decisive: m.decisive ?? null,
       source: m.source === 'watcher' ? 'watcher' : 'manual',
       composure: m.composure == null ? null : Math.round(Number(m.composure)),
-      note: m.note ? String(m.note).slice(0, 140) : null,
+      note: m.note ? String(m.note).slice(0, 600) : null,
     }));
     const { error } = await supabase
       .from('matches')

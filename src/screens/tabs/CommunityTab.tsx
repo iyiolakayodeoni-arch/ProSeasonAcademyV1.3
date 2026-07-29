@@ -17,7 +17,6 @@ import {
   FlameIcon,
   FriendsIcon,
   LaughIcon,
-  MicIcon,
   PlusIcon,
   SearchIcon,
   SendIcon,
@@ -40,7 +39,6 @@ import {
   previewOf,
   ReactionIcon,
   sendText,
-  sendVoice,
   setActiveThread,
   shareScanResult,
   startMockTraffic,
@@ -205,9 +203,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   // ── composer state ──
   const [draft, setDraft] = useState('');
   const [plusOpen, setPlusOpen] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [recSecs, setRecSecs] = useState(0);
-  const recTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── panels / sheets ──
   const [founder, setFounder] = useState<backend.FounderWeek | null>(null);
@@ -268,19 +263,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
     if (!draft.trim()) return;
     sendText(st.activeThreadId, draft);
     setDraft('');
-  };
-
-  const toggleRecording = () => {
-    if (recording) {
-      if (recTimer.current) clearInterval(recTimer.current);
-      setRecording(false);
-      sendVoice(st.activeThreadId, recSecs);
-      setRecSecs(0);
-    } else {
-      setRecording(true);
-      setRecSecs(0);
-      recTimer.current = setInterval(() => setRecSecs((s) => s + 1), 1000);
-    }
   };
 
   const findSquad = () => {
@@ -559,27 +541,15 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
             <Pressable onPress={() => setPlusOpen((o) => !o)} hitSlop={8} style={styles.composeBtn}>
               <PlusIcon size={16} color={plusOpen ? colors.primary : 'rgba(143,184,155,0.85)'} />
             </Pressable>
-            {recording ? (
-              <View style={styles.recWrap}>
-                <View style={styles.recDot} />
-                <Text style={styles.recTxt}>
-                  RECORDING… 0:{String(Math.min(recSecs, 99)).padStart(2, '0')} — TAP MIC TO SEND
-                </Text>
-              </View>
-            ) : (
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                onSubmitEditing={submit}
-                returnKeyType="send"
-                placeholder={inDm ? `> message @${otherUser?.handle}…` : `> message #${channel?.name}…`}
-                placeholderTextColor="rgba(143,184,155,0.5)"
-                style={styles.input}
-              />
-            )}
-            <Pressable onPress={toggleRecording} hitSlop={8} style={styles.composeBtn}>
-              <MicIcon size={14} color={recording ? colors.loss : 'rgba(143,184,155,0.85)'} />
-            </Pressable>
+            <TextInput
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={submit}
+              returnKeyType="send"
+              placeholder={inDm ? `> message @${otherUser?.handle}…` : `> message #${channel?.name}…`}
+              placeholderTextColor="rgba(143,184,155,0.5)"
+              style={styles.input}
+            />
             {draft.trim().length > 0 && (
               <Pressable onPress={submit} hitSlop={8}>
                 <View style={styles.sendBtn}>

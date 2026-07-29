@@ -20,6 +20,8 @@ const live = store.posts
     headline: p.headline,
     body: p.body,
     cta: p.cta,
+    blog: p.blog,
+    animationVariant: p.animationVariant ?? p.lesson?.clip?.variant,
     patchVersion: p.patchVersion,
     discoveredAt: p.discoveredAt,
     sourceName: p.sourceName,

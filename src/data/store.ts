@@ -44,19 +44,19 @@ export const FALLBACK_PRODUCTS: { africa: StoreProduct[]; world: StoreProduct[] 
 };
 
 // app-side assumption for the offline banner; the server always
-// overrides with its own GO_LIVE whenever it answers
-export const OFFLINE_GO_LIVE = '2027-01-01T00:00:00Z';
+// overrides with its own GO_LIVE whenever it answers. Keep this
+// undated while testing — no January launch promise in the app.
+export const OFFLINE_GO_LIVE = 'TBA';
 
 /** a pay link only counts when it is a real secure page */
 export function isHttpPayLink(link?: string): link is string {
   return !!link && /^https:\/\//i.test(link);
 }
 
-/** ribbon label — "JAN 1" when the switch is a new year, else the date */
+/** ribbon label for the till opening date, or SOON while testing */
 export function goLiveLabel(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso.slice(0, 10).toUpperCase();
-  if (d.getUTCMonth() === 0 && d.getUTCDate() === 1) return 'JAN 1';
+  if (Number.isNaN(d.getTime())) return 'SOON';
   return d.toUTCString().slice(5, 16).toUpperCase();
 }
 
@@ -64,7 +64,7 @@ export const TILL_COPY = {
   eyebrow: 'THE ACADEMY TILL · YOUR OWN SERVER, NOT AN APP STORE',
   title: 'THE TILL',
   closedRibbon:
-    'THE SHELVES ARE STOCKED AND THE PRICES ARE PUBLIC. THE TILL ITSELF OPENS {DAY} — THE FOUNDER IS TAKING PRICING VOTES IN THE HALLS UNTIL THEN.',
+    'THE SHELVES ARE BEING TESTED. THE TILL OPENS AFTER UX, BACKEND AND PAYMENT TESTING ARE DONE — NO RUSH, NO JANUARY PROMISE, NO BROKEN MONEY FLOW.',
   howHeader: 'HOW A TOP-UP REACHES YOU — THE HONEST LOOP',
   howLines: [
     '1 · YOU PAY ON THE FOUNDER’S SECURE LINK, WITH YOUR ACADEMY ID IN THE REMARK.',
@@ -75,7 +75,7 @@ export const TILL_COPY = {
     'EARLY ACADEMY, HUMAN PIPELINE — THE MACHINES COME LATER. ANY TOP-UP THAT GOES WRONG IS FIXED BY THE SAME PAIR OF HANDS.',
   africaHead: 'AFRICA TRACK · CREDIT PACKS',
   worldHead: 'WORLD TRACK · PRO SUBSCRIPTION',
-  unsetNote: 'YOU SKIPPED THE COUNTRY QUESTION AT SIGN-UP, SO BOTH TRACKS ARE SHOWN. THE JAN 1 SPLIT DECIDES WHICH ONE IS YOURS.',
+  unsetNote: 'PICK YOUR COUNTRY BEFORE PAYING. NIGERIA/AFRICA PRICES ARE ONLY FOR PLAYERS IN THAT REGION; WORLD MEMBERS SEE THE WORLD SHELF.',
   remarkNote: 'PAY WITH YOUR ACADEMY ID ({ID}) IN THE REMARK — THAT IS HOW THE FOUNDER FINDS YOUR WALLET.',
   offline: 'OFFLINE — SERVER UNREACHABLE. SHOWING THE POSTED PRICE LIST; WALLETS SYNC WHEN IT IS BACK.',
 } as const;

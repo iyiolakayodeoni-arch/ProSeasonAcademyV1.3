@@ -80,16 +80,41 @@ function bodyFrom(finding, kind) {
   return body;
 }
 
+function blogFrom(finding, headline, body, lesson) {
+  const source = finding.sourceName || finding.via || 'source';
+  const title = headline.replace(/[.!?]+$/, '');
+  const why = lesson?.why || body;
+  const steps = lesson?.tiles?.map((t, i) => `${i + 1}. ${t.title}: ${t.desc}`).join('\n') ||
+    '1. Watch the source.\n2. Drill it in an unranked match.\n3. Only take it into ranked when the input is clean.';
+  const scan = lesson?.scan?.map((s) => `- ${s.label}: ${s.target}`).join('\n') || '- Bring one honest match receipt.';
+  return [
+    `# ${title}`,
+    '',
+    `**Why it matters:** ${why}`,
+    '',
+    '## Train it',
+    steps,
+    '',
+    '## What the academy will check',
+    scan,
+    '',
+    `Source: ${source}`,
+  ].join('\n');
+}
+
 export function composeDraft(finding) {
   const headline = headlineFrom(finding.title || finding.topicKey, finding.kind);
   const body = bodyFrom(finding, finding.kind);
+  const lesson = buildLesson({ kind: finding.kind, headline, body }) ?? undefined;
   return {
     topicKey: finding.topicKey,
     headline,
     body,
     cta: CTAS[finding.kind] ?? 'READ MORE ›',
+    blog: blogFrom(finding, headline, body, lesson),
+    animationVariant: lesson?.clip?.variant,
     // structured coaching payload for lesson-eligible kinds — the Coaching
     // Screen teaches straight from this block (tiles, rule, scan targets).
-    lesson: buildLesson({ kind: finding.kind, headline, body }) ?? undefined,
+    lesson,
   };
 }

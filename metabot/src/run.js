@@ -61,6 +61,8 @@ for (const { finding, fingerprint } of fresh) {
     headline: rewrite.headline,
     body: rewrite.body,
     cta: rewrite.cta ?? 'READ MORE ›',
+    blog: rewrite.blog,
+    animationVariant: rewrite.animationVariant,
     patchVersion: finding.patchVersion ?? currentPatch,
     discoveredAt: today,
     sourceUrl: finding.sourceUrl,

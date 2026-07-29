@@ -48,7 +48,7 @@ export interface MatchEntry {
   // ── THE MIND (semi-automatic by design: the machine counts goals,
   //    only the player can report the psychology) ──
   composure: number | null; // 1..5 self-rated head state (null = skipped)
-  note: string | null; // one-line debrief: what actually happened / what you were thinking
+  note: string | null; // match-scan debrief: key moments + psychology + review line
 }
 
 export type MatchDraft = Omit<MatchEntry, 'id' | 'at' | 'source'>;
@@ -125,7 +125,7 @@ export function addMatch(draft: MatchDraft, source: MatchEntry['source'] = 'manu
     gf: clampGoals(draft.gf),
     ga: clampGoals(draft.ga),
     composure: draft.composure == null ? null : Math.max(1, Math.min(5, Math.round(draft.composure))),
-    note: draft.note?.trim() ? draft.note.trim().slice(0, 140) : null,
+    note: draft.note?.trim() ? draft.note.trim().slice(0, 600) : null,
     id: `M${Date.now().toString(36)}${(seq++).toString(36)}`,
     at: Date.now(),
     source,

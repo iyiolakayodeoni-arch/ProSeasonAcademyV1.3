@@ -71,7 +71,7 @@ revoke execute on function claim_invite(text) from public, anon, authenticated;
 grant execute on function claim_invite(text) to service_role;
 
 -- Is the academy invite-only right now? One row, flip any time.
-insert into config (key, value) values ('invite_only', 'true')
+insert into config (key, value) values ('invite_only', 'false')
 on conflict (key) do nothing;
 
 -- ── 2 · RATE LIMITS — the halls cannot be flooded ────────────

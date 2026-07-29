@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import MiniPitch from '../components/MiniPitch';
+import LessonAnimation from '../components/LessonAnimation';
 import {
   ArrowOutIcon,
   CheckIcon,
@@ -44,7 +44,6 @@ import { useTrailLoop } from '../hooks/useTrailLoop';
 import { colors, monoFont } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-const VOICE_LEN = 42; // seconds
 
 function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -61,21 +60,6 @@ function OnlineDot({ size = 5 }: { size?: number }) {
   }, [v]);
   const s = useAnimatedStyle(() => ({ opacity: v.value }));
   return <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.9, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } }, s]} />;
-}
-
-// ── voice-note waveform (bars dance while playing) ────────────
-function WaveBar({ h, i, playing }: { h: number; i: number; playing: boolean }) {
-  const v = useSharedValue(0.4);
-  useEffect(() => {
-    if (playing) {
-      v.value = 0.15;
-      v.value = withDelay(i * 45, withRepeat(withTiming(1, { duration: 210 + (i % 5) * 55 }), -1, true));
-    } else {
-      v.value = withTiming(0.4, { duration: 200 });
-    }
-  }, [playing, i, v]);
-  const s = useAnimatedStyle(() => ({ transform: [{ scaleY: 0.3 + v.value * 0.7 }] }));
-  return <Animated.View style={[{ width: 2.6, height: h, borderRadius: 2, backgroundColor: colors.primary }, s]} />;
 }
 
 // ── spinning read ring for the MATCH SCAN row ─────────────────
@@ -169,28 +153,6 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   // ── session clock (timestamps track when the room opened) ──
   const sessionStart = useMemo(() => Date.now(), []);
   const t = (addMin: number) => hhmm(new Date(sessionStart + addMin * 60000));
-
-  // ── voice note: real play/pause + countdown state ──
-  const [voicePlaying, setVoicePlaying] = useState(false);
-  const [voiceLeft, setVoiceLeft] = useState(VOICE_LEN);
-  useEffect(() => {
-    if (!voicePlaying) return;
-    const id = setInterval(() => {
-      setVoiceLeft((s) => {
-        if (s <= 1) {
-          setVoicePlaying(false);
-          return VOICE_LEN;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-  }, [voicePlaying]);
-  const waveHeights = useMemo(
-    () => Array.from({ length: 22 }, (_, i) => 5 + ((i * i * 7 + i * 13 + 9) % 21)),
-    [],
-  );
-  // TODO(real-audio): hook the toggle to the recorded voice note asset.
 
   // ── clip block: real play/pause + countdown state ──
   const clipTotal = useMemo(() => {
@@ -316,31 +278,9 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           <MessageMeta time={t(0)} />
 
           <CoachBubble coach={coach} label={coach.name}>
-            <View style={styles.voiceRow}>
-              <Pressable onPress={() => setVoicePlaying((p) => !p)} hitSlop={6}>
-                <View style={[styles.voicePlay, voicePlaying && styles.voicePlayOn]}>
-                  {voicePlaying ? (
-                    <PauseGlyphIcon size={11} color="#05130a" />
-                  ) : (
-                    <View style={styles.voiceTri} />
-                  )}
-                </View>
-              </Pressable>
-              <View style={styles.waveRow}>
-                {waveHeights.map((h, i) => (
-                  <WaveBar key={i} h={h} i={i} playing={voicePlaying} />
-                ))}
-              </View>
-              <Text style={styles.voiceDur}>{mmss(voiceLeft)}</Text>
-            </View>
-            <Text style={styles.voiceCaption}>{chat.voiceCaption}</Text>
-          </CoachBubble>
-          <MessageMeta time={t(1)} />
-
-          <CoachBubble coach={coach} label={coach.name}>
             <RichText text={chat.mechanic} style={styles.bubbleText} hotStyle={styles.hot} />
           </CoachBubble>
-          <MessageMeta time={t(2)} />
+          <MessageMeta time={t(1)} />
         </Animated.View>
 
         {/* ── TODAY'S MECHANIC — lesson pulled from the live bot feed ── */}
@@ -397,7 +337,14 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
                 style={[styles.clipWrap, clipPlaying && styles.clipWrapPlaying]}
                 onLayout={(e) => setClipW(e.nativeEvent.layout.width)}
               >
-                {clipW > 0 && <MiniPitch width={clipW - 2} height={126} variant={plan.clip.variant} />}
+                {clipW > 0 && (
+                  <LessonAnimation
+                    width={clipW - 2}
+                    height={126}
+                    variant={plan.clip.variant}
+                    playing={clipPlaying}
+                  />
+                )}
                 <Pressable onPress={() => setClipPlaying((p) => !p)} hitSlop={8} style={styles.clipHit}>
                   <View style={[styles.clipPlay, clipPlaying && styles.clipPlayOn]}>
                     {clipPlaying ? <PauseGlyphIcon size={11} color="#05130a" /> : <View style={styles.clipTri} />}
@@ -707,41 +654,6 @@ const styles = StyleSheet.create({
     fontSize: 5.6,
     letterSpacing: 1.4,
     color: 'rgba(143,184,155,0.45)',
-  },
-
-  voiceRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  voicePlay: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.7,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  voicePlayOn: { backgroundColor: colors.primary },
-  voiceTri: {
-    width: 0,
-    height: 0,
-    marginLeft: 2,
-    borderLeftWidth: 9,
-    borderTopWidth: 6,
-    borderBottomWidth: 6,
-    borderLeftColor: '#05130a',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-  },
-  waveRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2.6, height: 26 },
-  voiceDur: { fontFamily: monoFont, fontSize: 8, fontWeight: '700', color: 'rgba(143,184,155,0.8)' },
-  voiceCaption: {
-    marginTop: 8,
-    fontFamily: monoFont,
-    fontSize: 5.6,
-    letterSpacing: 1.4,
-    color: 'rgba(143,184,155,0.6)',
   },
 
   staleBanner: {

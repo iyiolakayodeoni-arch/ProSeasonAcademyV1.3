@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, TillIcon, RefreshGlyphIcon } from '../components/Icons';
@@ -8,7 +8,7 @@ import * as backend from '../data/backend';
 import PaySheet from './PaySheet';
 import { getCloud } from '../data/cloudSync';
 import { useSettings } from '../data/settings';
-import { FALLBACK_PRODUCTS, OFFLINE_GO_LIVE, TILL_COPY, goLiveLabel, isHttpPayLink, StoreProduct } from '../data/store';
+import { FALLBACK_PRODUCTS, TILL_COPY, StoreProduct } from '../data/store';
 
 // ─────────────────────────────────────────────────────────────
 // THE TILL — the player-facing store of the charge engine.
@@ -58,8 +58,6 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   }, [refresh]);
 
   const live = catalog?.live ?? false;
-  const goLive = catalog?.goLive ?? OFFLINE_GO_LIVE;
-  const day = goLiveLabel(goLive);
   const products = catalog?.products ?? FALLBACK_PRODUCTS;
   const academyId = balance?.academyId ?? getCloud().academyId ?? 'SIGN IN FIRST';
   const showAfrica = settings.geo !== 'world';
@@ -73,7 +71,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
 
   const renderPack = (p: StoreProduct) => {
     const canBuy = live;
-    const btnLabel = !live ? `OPENS ${day}` : 'GET IT ›';
+    const btnLabel = !live ? 'TESTING' : 'GET IT ›';
     return (
       <View key={p.code} style={styles.packRow}>
         <View style={{ flex: 1 }}>
@@ -114,7 +112,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
         <Text style={styles.eyebrow}>{TILL_COPY.eyebrow}</Text>
         <Text style={styles.title}>{TILL_COPY.title}</Text>
         <Text style={styles.subtitle}>
-          {live ? 'YOUR WALLET, YOUR RISE — SPEND IT WELL' : `PRICES POSTED · THE TILL OPENS ${day}`}
+          {live ? 'YOUR WALLET, YOUR RISE — SPEND IT WELL' : 'PRICES POSTED · TILL IN TESTING'}
         </Text>
       </View>
 
@@ -157,7 +155,7 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
 
         {!live && (
           <Animated.View entering={FadeInDown.delay(80).duration(320)} style={styles.ribbon}>
-            <Text style={styles.ribbonTxt}>{TILL_COPY.closedRibbon.replace('{DAY}', day)}</Text>
+            <Text style={styles.ribbonTxt}>{TILL_COPY.closedRibbon}</Text>
           </Animated.View>
         )}
 

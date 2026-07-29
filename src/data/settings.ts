@@ -24,8 +24,9 @@ export type GeoRegion = 'africa' | 'world' | 'unset';
 
 export interface SettingsState {
   displayName: string;
-  country: string | null; // picked at sign-up — drives the JAN 1 pricing split
-  geo: GeoRegion;         // 'africa' → credits · 'world' → subscription · unset until picked
+  email: string | null;
+  country: string | null; // picked at sign-up — drives the regional pricing shelf
+  geo: GeoRegion;         // 'africa' → Africa pricing · 'world' → world pricing · unset until picked
   academyId: string; // generated once, never changes
   joinedAt: number; // first launch — drives "IN ACADEMY" days
   div: string;
@@ -33,7 +34,6 @@ export interface SettingsState {
   platform: (typeof PLATFORMS)[number];
   region: (typeof REGIONS)[number];
   plan: (typeof PLANS)[number];
-  email: string | null;
   /** ISO-2 country code captured at sign-up */
   countryCode: string | null;
   /** soft IP verify result */
@@ -56,12 +56,12 @@ const STORAGE_KEY = 'psa.settings.v1';
 
 const DEFAULTS: SettingsState = {
   displayName: 'PLAYER',
+  email: null,
   country: null,
   countryCode: null,
   geo: 'unset',
   geoVerified: false,
   geoUncertain: false,
-  email: null,
   academyId: `#PSA-${String(1000 + Math.floor(Math.random() * 9000))}`,
   joinedAt: Date.now(),
   div: 'DIV 4',
@@ -138,6 +138,11 @@ export function setDisplayName(raw: string) {
   if (clean) set({ displayName: clean });
 }
 
+export function setEmail(raw: string | null) {
+  const clean = raw ? raw.trim().toLowerCase().slice(0, 80) : null;
+  set({ email: clean || null });
+}
+
 export function setPlatform(p: SettingsState['platform']) {
   // TODO(real-scan-ingest): route match scanning by platform
   console.log('[settings] platform →', p);
@@ -163,10 +168,6 @@ export function setGeoFlags(flags: { verified?: boolean; uncertain?: boolean }) 
     geoVerified: flags.verified ?? state.geoVerified,
     geoUncertain: flags.uncertain ?? state.geoUncertain,
   });
-}
-
-export function setEmail(email: string | null) {
-  set({ email });
 }
 
 export function setAcademyId(id: string) {

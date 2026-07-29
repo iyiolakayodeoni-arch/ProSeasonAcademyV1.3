@@ -11,7 +11,7 @@ import { fetchPendingNews, reviewNews, NewsItem } from '../data/newsFeed';
 // ─────────────────────────────────────────────────────────────
 // FOUNDER DESK — the owner's private admin GUI, inside the app.
 // One person (you) holds the founder key; this screen turns it
-// into real power: live academy numbers, the JAN 1 region split,
+// into real power: live academy numbers, the regional price split,
 // and FOUNDER broadcasts into any room (they wear the FOUNDER
 // badge and fan out live to every phone in the room).
 // The key never leaves the device except as a request header.
@@ -629,9 +629,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           ))}
         </Animated.View>
 
-        {/* the jan 1 split */}
+        {/* regional price split */}
         <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.splitCard}>
-          <Text style={styles.cardTag}>JAN 1 PRICING SPLIT — LIVE</Text>
+          <Text style={styles.cardTag}>REGIONAL PRICING SPLIT — LIVE</Text>
           <View style={styles.splitRow}>
             <View style={styles.splitHalf}>
               <Text style={[styles.splitVal, { color: colors.accent }]}>{data?.regions.africa ?? '—'}</Text>
