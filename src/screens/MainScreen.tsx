@@ -16,10 +16,15 @@ import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
 import CoachingScreen from './CoachingScreen';
+import OnboardingScreen from './OnboardingScreen';
+import { useAmbientAudio } from '../audio/AudioManager';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
 import * as backend from '../data/backend';
+import { useOnboardingGate } from '../data/onboarding';
+import { usePushRegistration } from '../data/notifications';
+import { fetchAnnouncements } from '../data/announcements';
 import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
 import { colors, monoFont } from '../theme';
@@ -48,9 +53,15 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
   const [tab, setTab] = useState<MainTab>('home');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
+  const onboard = useOnboardingGate();
+  usePushRegistration(true);
+  useEffect(() => {
+    void fetchAnnouncements();
+  }, []);
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
+  useAmbientAudio(room ? 'film-room' : tab === 'community' ? 'community' : 'home');
   const zoom = useSharedValue(0);
   const { width: W, height: H } = useWindowDimensions();
   const ox = room?.origin.x ?? W / 2;
@@ -105,6 +116,11 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   // deleted — the gate explains that and keeps the contact line open.
   if (access && access.paidOnly && access.state === 'lapsed') {
     return <LapsedGate coach={coach} access={access} onRecheck={checkAccess} />;
+  }
+
+  // first-time walkthrough — short cards, skip anytime
+  if (onboard.ready && onboard.show) {
+    return <OnboardingScreen onDone={onboard.dismiss} />;
   }
 
   return (

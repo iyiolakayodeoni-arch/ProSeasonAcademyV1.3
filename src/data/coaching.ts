@@ -169,9 +169,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
   if (coach.id === 'obinna') {
     return {
       greeting:
-        'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end.',
+        'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end. And please, let the controller cool down first — it has done nothing wrong.',
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
-      mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you.`,
+      mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you. Even the button you always panic-press deserves a day off.`,
       closer: `That’s the whole lesson. You don’t have to report anything to me — **the scan will know.** It always knows. Go play, and let your ${mech} do the talking.`,
       scanIntro:
         'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
@@ -180,9 +180,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
   }
   return {
     greeting:
-      'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end.',
+      'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end. And no, shouting at the referee is not a mechanic.',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
-    mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you.`,
+    mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you. Your opponent is welcome to call it luck; that saves us explaining the homework.`,
     closer: `That’s the whole lesson. And before you even think about lying to me — **the scan will know.** It always knows. Go play, and let your ${mech} answer for you.`,
     scanIntro:
       'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
