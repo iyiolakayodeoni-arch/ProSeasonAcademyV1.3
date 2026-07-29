@@ -16,6 +16,7 @@ import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
 import CoachingScreen from './CoachingScreen';
+import { useAmbientAudio } from '../audio/AudioManager';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
@@ -51,6 +52,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
+  useAmbientAudio(room ? 'film-room' : tab === 'community' ? 'community' : 'home');
   const zoom = useSharedValue(0);
   const { width: W, height: H } = useWindowDimensions();
   const ox = room?.origin.x ?? W / 2;

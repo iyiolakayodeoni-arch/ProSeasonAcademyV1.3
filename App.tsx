@@ -30,6 +30,7 @@ import {
   setReferral as persistReferral,
 } from './src/data/session';
 import { colors } from './src/theme';
+import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 
 // SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → BASELINE SCAN
 //        → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
@@ -45,6 +46,18 @@ export default function App() {
 
   const splashOpacity = useSharedValue(1);
   const appOpacity = useSharedValue(0);
+
+  const audioScene: AudioScene = !splashGone
+    ? 'splash'
+    : route === 'signin'
+      ? 'seat'
+      : route === 'coach'
+        ? 'coach-select'
+        : route === 'hub'
+          ? 'home'
+          : 'seat';
+  // MainScreen owns the home/film-room bed so only one loop is active.
+  useAmbientAudio(audioScene, route !== 'hub');
 
   const markGone = useCallback(() => setSplashGone(true), []);
 

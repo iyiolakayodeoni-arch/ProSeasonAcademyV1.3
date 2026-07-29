@@ -23,8 +23,17 @@ export const service = () =>
   createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 /** every founder move proves the key — same single-secret model as before */
-export const founderOk = (req: Request) =>
-  !!Deno.env.get('FOUNDER_KEY') && req.headers.get('x-founder-key') === Deno.env.get('FOUNDER_KEY');
+export const founderOk = async (req: Request) => {
+  // The secret stays server-side; authorization is the Supabase identity.
+  if (!Deno.env.get('FOUNDER_KEY')) return false;
+  const token = (req.headers.get('authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (!token) return false;
+  const sb = service();
+  const { data: { user } } = await sb.auth.getUser(token);
+  if (!user) return false;
+  const { data: profile } = await sb.from('profiles').select('is_founder').eq('auth_user_id', user.id).maybeSingle();
+  return profile?.is_founder === true;
+}
 
 export const cleanHandle = (raw: unknown): string => {
   const base = String(raw || '').toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 14);
@@ -35,7 +44,7 @@ export const cleanHandle = (raw: unknown): string => {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return json({}, 204);
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
-  if (!founderOk(req)) return json({ ok: false, error: 'founder key required' }, 403);
+  if (!(await founderOk(req))) return json({ ok: false, error: 'founder key required' }, 403);
 
   const { slug, text } = await req.json().catch(() => ({}));
   const clean = String(text ?? '').trim().slice(0, 500);

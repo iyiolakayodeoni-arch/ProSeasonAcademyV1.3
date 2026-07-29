@@ -289,12 +289,15 @@ export interface AdminSummary {
   generatedAt: number;
 }
 
-async function founderFn(name: string, key: string, body?: unknown): Promise<any | null> {
+async function founderFn(name: string, _key: string, body?: unknown): Promise<any | null> {
   if (!supabase) return null;
   try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) return null;
     const resp = await supabase.functions.invoke(name, {
       body: body ?? {},
-      headers: { 'x-founder-key': key },
+      // Supabase attaches the current bearer session to the request.
+      // FOUNDER_KEY is deliberately never shipped to the app.
     });
     if (resp.error) return null;
     return resp.data;

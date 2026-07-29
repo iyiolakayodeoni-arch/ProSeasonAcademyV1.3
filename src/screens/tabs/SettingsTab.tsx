@@ -12,6 +12,7 @@ import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import FounderDesk from '../FounderDesk';
+import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
 import {
@@ -66,7 +67,6 @@ type SheetKind =
 
 /** taps on the version line that open the founder's door */
 const FOUNDER_TAPS = 5;
-const FOUNDER_KEY_STORE = 'psa.founder.key.v1';
 
 // ── the real toggle switch ────────────────────────────────────
 function Toggle({ on, onFlip, red }: { on: boolean; onFlip: () => void; red?: boolean }) {
@@ -152,63 +152,46 @@ export default function SettingsTab({
 
   // ── THE FOUNDER'S DOOR — tap the version line 5× ──
   const [taps, setTaps] = useState(0);
-  const [keyDraft, setKeyDraft] = useState('');
+  const [founderEmail, setFounderEmail] = useState('');
+  const [founderPassword, setFounderPassword] = useState('');
   const [keyChecking, setKeyChecking] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
   const [founderKey, setFounderKey] = useState<string | null>(null);
+  const [founderAllowed, setFounderAllowed] = useState(false);
   const [deskOpen, setDeskOpen] = useState(false);
   const [tillOpen, setTillOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [unreadAcademy, setUnreadAcademy] = useState(0);
   useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
 
-  // a key verified on a previous run unlocks the desk straight away
   useEffect(() => {
-    AsyncStorage.getItem(FOUNDER_KEY_STORE)
-      .then((k) => {
-        if (k) setFounderKey(k);
-      })
-      .catch(() => {});
+    void isFounder().then((ok) => {
+      setFounderAllowed(ok);
+      if (ok) setFounderKey('authenticated-founder');
+    });
   }, []);
 
   const tapVersion = () => {
     const n = taps + 1;
     if (n >= FOUNDER_TAPS) {
       setTaps(0);
-      if (founderKey) setDeskOpen(true);
-      else {
-        setKeyDraft('');
-        setKeyError(null);
-        setSheet('admin');
-      }
+      if (founderAllowed) setDeskOpen(true);
+      else { setFounderEmail(''); setFounderPassword(''); setKeyError(null); setSheet('admin'); }
       return;
     }
     setTaps(n);
   };
 
-  /** the key is proved SERVER-SIDE — a wrong key can never open the desk */
-  const submitFounderKey = async () => {
-    const k = keyDraft.trim();
-    if (!k || keyChecking) return;
-    setKeyChecking(true);
-    setKeyError(null);
-    const summary = await backend.adminSummary(k);
+  const submitFounderLogin = async () => {
+    if (!founderEmail.trim() || !founderPassword || keyChecking) return;
+    setKeyChecking(true); setKeyError(null);
+    const profile = await signInWithEmail(founderEmail, founderPassword);
     setKeyChecking(false);
-    if (!summary) {
-      setKeyError('THAT KEY DIDN’T OPEN ANYTHING — CHECK IT, OR CHECK YOUR SIGNAL.');
-      return;
-    }
-    await AsyncStorage.setItem(FOUNDER_KEY_STORE, k).catch(() => {});
-    setFounderKey(k);
-    setSheet(null);
-    setDeskOpen(true);
+    if (!profile) { setKeyError('FOUNDER ACCOUNT NOT VERIFIED. CHECK YOUR EMAIL AND PASSWORD.'); return; }
+    setFounderAllowed(true); setFounderKey('authenticated-founder'); setFounderPassword(''); setSheet(null); setDeskOpen(true);
   };
 
-  const forgetFounderKey = async () => {
-    await AsyncStorage.removeItem(FOUNDER_KEY_STORE).catch(() => {});
-    setFounderKey(null);
-    setDeskOpen(false);
-  };
+  const forgetFounderKey = () => { setFounderAllowed(false); setFounderKey(null); setDeskOpen(false); };
 
   const SEASON = journeySeasonFor(coach.id);
   const coachShort = coach.name.split(' ')[0].toUpperCase();
@@ -651,32 +634,17 @@ export default function SettingsTab({
 
             {sheet === 'admin' && (
               <View>
-                <Text style={[styles.sheetEyebrow, { color: colors.accent }]}>ADMIN ACCESS</Text>
-                <Text style={styles.sheetTitle}>THE FOUNDER'S DOOR</Text>
-                <Text style={styles.sheetBody}>
-                  Paste your founder key. It is checked by the academy server, never by this phone — a wrong key opens nothing. It is stored on this device only.
-                </Text>
-                <TextInput
-                  value={keyDraft}
-                  onChangeText={(t) => {
-                    setKeyDraft(t);
-                    setKeyError(null);
-                  }}
-                  placeholder="FOUNDER KEY"
-                  placeholderTextColor="rgba(143,184,155,0.35)"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                  style={styles.nameInput}
-                />
+                <Text style={[styles.sheetEyebrow, { color: colors.accent }]}>FOUNDER ACCESS</Text>
+                <Text style={styles.sheetTitle}>SIGN IN AS FOUNDER</Text>
+                <Text style={styles.sheetBody}>Use your Supabase founder account. No founder key is stored on this device.</Text>
+                <TextInput value={founderEmail} onChangeText={setFounderEmail} placeholder="EMAIL" placeholderTextColor="rgba(143,184,155,0.35)" autoCapitalize="none" keyboardType="email-address" style={styles.nameInput} />
+                <TextInput value={founderPassword} onChangeText={setFounderPassword} placeholder="PASSWORD" placeholderTextColor="rgba(143,184,155,0.35)" secureTextEntry style={styles.nameInput} />
                 {keyError && <Text style={styles.keyError}>{keyError}</Text>}
-                <SheetButton
-                  label={keyChecking ? 'CHECKING…' : 'UNLOCK THE DESK'}
-                  onPress={submitFounderKey}
-                />
+                <SheetButton label={keyChecking ? 'CHECKING…' : 'OPEN FOUNDER DESK'} onPress={submitFounderLogin} />
                 <SheetButton label="NOT NOW" onPress={close} ghost />
               </View>
             )}
+
           </Animated.View>
         </View>
       )}

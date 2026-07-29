@@ -30,7 +30,7 @@ export const BANTER: BanterRun[] = [
   {
     coach: 'chinedu',
     msgs: [
-      { segs: [{ t: "Don't let him fool you. I held world #1 — fact, not pitch." }] },
+      { segs: [{ t: "Don't let him fool you. I held world #1 — fact, not pitch. My thumbs still send me invoices." }], react: 'laugh' },
     ],
   },
   {
@@ -49,7 +49,7 @@ export const BANTER: BanterRun[] = [
   {
     coach: 'chinedu',
     msgs: [
-      { segs: [{ t: 'At least mine show up when it matters.' }] },
+      { segs: [{ t: 'At least mine show up when it matters. Unlike my first coffee of the day.' }], react: 'laugh' },
       { segs: [{ t: '…he says that to everyone. Same speech, every player.' }] },
     ],
   },
