@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeIn, FadeInUp, SlideInUp, SlideOutDown, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
@@ -9,6 +9,7 @@ import { Coach } from '../../data/coaches';
 import { journeySeasonFor } from '../../data/journey';
 import { useJourneyProgress, wipeProgress } from '../../data/progress';
 import * as backend from '../../data/backend';
+import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import FounderDesk from '../FounderDesk';
@@ -49,7 +50,11 @@ import {
   TrashIcon,
 } from '../../components/Icons';
 
-const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+  const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+
+  // ── UPDATE CHECK — polls Supabase on mount, shows a banner ──
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  useEffect(() => { void checkForUpdate().then(setUpdate); }, []);
 
 type SheetKind =
   | 'coach'
@@ -242,6 +247,29 @@ export default function SettingsTab({
           <Text style={styles.title}>SETTINGS</Text>
           <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
         </Animated.View>
+
+        {/* ── UPDATE AVAILABLE ── */}
+        {update?.available && (
+          <Animated.View entering={FadeInUp.delay(40).duration(300)}>
+            <Pressable
+              style={({ pressed }) => [styles.updateBanner, pressed && { opacity: 0.7 }]}
+              onPress={() => {
+                if (update.apkUrl) Linking.openURL(update.apkUrl).catch(() => {});
+              }}
+            >
+              <View style={styles.updateBadge}>
+                <Text style={styles.updateBadgeTxt}>NEW</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.updateTitle}>VERSION {update.latest} AVAILABLE</Text>
+                <Text style={styles.updateSub}>
+                  YOU'RE ON {update.current}.{update.note ? ` ${update.note}` : ' TAP TO DOWNLOAD THE UPDATE.'}
+                </Text>
+              </View>
+              <ChevronRightIcon size={14} color={colors.accent} />
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* ── player card ── */}
         <Animated.View entering={FadeInUp.delay(60).duration(340)} style={styles.card}>
@@ -843,6 +871,28 @@ const styles = StyleSheet.create({
 
   footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
   footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },
+
+  // update banner
+  updateBanner: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(242,192,120,0.08)',
+  },
+  updateBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(242,192,120,0.22)',
+  },
+  updateBadgeTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  updateTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
+  updateSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1, color: 'rgba(242,192,120,0.65)' },
 
   // sheet
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(4,8,5,0.72)' },
