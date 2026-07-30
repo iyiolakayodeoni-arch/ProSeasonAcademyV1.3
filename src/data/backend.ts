@@ -34,8 +34,48 @@ export function getSeasonGate(): SeasonGate | null {
   return seasonGate;
 }
 
+/**
+ * Live seat count — visible on the sign-in door. season_seats()
+ * counts profiles rows, which only exist AFTER someone completes
+ * sign-in via ensure-profile. So the number you see on the door IS
+ * actual claimed seats, not visitors browsing. No auth required to
+ * read it — it is a public number by design.
+ */
+export async function liveSeatCount(): Promise<SeasonGate | null> {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.rpc('season_seats');
+    if (error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return {
+      season: row.season ?? 'SEASON ONE',
+      cap: Number(row.cap) || 1000,
+      taken: Number(row.taken) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** the signed-in academy identity, or null when offline/unclaimed */
 export function getMe(): CloudUser | null {
+  return me;
+}
+
+/** hydrate identity after email/password auth (authApi owns the session) */
+export function setMeFromProfile(profile: {
+  id: string;
+  handle: string;
+  academyId: string;
+}): CloudUser {
+  me = {
+    id: String(profile.id),
+    handle: String(profile.handle),
+    academyId: String(profile.academyId),
+  };
+  seasonGate = null;
+  doorError = null;
   return me;
 }
 
@@ -65,6 +105,7 @@ export async function ensureAuth(
   inviteCode?: string,
 ): Promise<CloudUser | null> {
   if (!supabase) return null;
+  doorError = null;
   try {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
@@ -139,7 +180,7 @@ export async function pushMatches(matches: { clientId: string }[]): Promise<bool
       decisive: m.decisive ?? null,
       source: m.source === 'watcher' ? 'watcher' : 'manual',
       composure: m.composure == null ? null : Math.round(Number(m.composure)),
-      note: m.note ? String(m.note).slice(0, 140) : null,
+      note: m.note ? String(m.note).slice(0, 600) : null,
     }));
     const { error } = await supabase
       .from('matches')
@@ -636,18 +677,9 @@ export interface InviteRow {
   revoked: boolean;
 }
 
-async function deskFn(key: string, body: Record<string, unknown>): Promise<any | null> {
-  if (!supabase) return null;
-  try {
-    const resp = await supabase.functions.invoke('founder-desk', {
-      body,
-      headers: { 'x-founder-key': key },
-    });
-    if (resp.error) return null;
-    return resp.data;
-  } catch {
-    return null;
-  }
+async function deskFn(_key: string, body: Record<string, unknown>): Promise<any | null> {
+  // Founder authorization is the Supabase session (is_founder), not a client key.
+  return founderFn('founder-desk', _key, body);
 }
 
 export async function founderInbox(key: string, unread = false):

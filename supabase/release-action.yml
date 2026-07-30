@@ -1,0 +1,86 @@
+# ─────────────────────────────────────────────────────────────
+# GITHUB RELEASE — creates a Release when you push a version tag.
+#
+# HOW IT WORKS
+#   You push a tag like v1.4.0 → this workflow creates a draft
+#   Release with release notes. You then upload the APK from EAS
+#   Build (drag-and-drop in the Releases page), publish it, and
+#   update the two config rows in Supabase. Done.
+#
+#   The Release page gives you a permanent direct download link:
+#     https://github.com/YOUR-USER/ProSeasonAcademyV1.3/releases/download/v1.4.0/ProSeasonAcademy-v1.4.0.apk
+#
+#   That link IS the update URL. No Google Drive, no file host,
+#   no expiry — GitHub serves it directly, forever, for free.
+#
+#   This is the same kind of link modded APK sites use. It feels
+#   different from a Google Drive link because it IS different —
+#   it's your own domain, your own repo, your own release page.
+#
+# INSTALL
+#   Copy this file to .github/workflows/release.yml and push.
+#   GitHub blocks apps from creating workflow files, so this
+#   one move has to come from your account.
+#     mkdir -p .github/workflows
+#     cp supabase/release-action.yml .github/workflows/release.yml
+#     git add .github/workflows/release.yml
+#     git commit -m "ci: auto-release on version tags"
+#     git push
+#
+# TAG FORMAT:  v1.4.0  (v + semver — must match app.json version)
+# ─────────────────────────────────────────────────────────────
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g. 1.4.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: ver
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.tag }}
+          name: ProSeasonAcademy v${{ steps.ver.outputs.tag }}
+          draft: true
+          generate_release_notes: true
+          body: |
+            ## ProSeasonAcademy v${{ steps.ver.outputs.tag }}
+
+            ### How to install
+            1. Download the APK below
+            2. Open it on your Android phone
+            3. If asked, allow "Install from unknown sources"
+            4. The app installs over your existing version — nothing is lost
+
+            ### Download
+            [📦 ProSeasonAcademy-v${{ steps.ver.outputs.tag }}.apk](https://github.com/${{ github.repository }}/releases/download/v${{ steps.ver.outputs.tag }}/ProSeasonAcademy-v${{ steps.ver.outputs.tag }}.apk)
+
+            ### After uploading the APK
+            Update the config rows in Supabase so every installed app sees the update:
+            ```sql
+            update config set value = '${{ steps.ver.outputs.tag }}' where key = 'latest_version';
+            update config set value = 'https://github.com/${{ github.repository }}/releases/download/v${{ steps.ver.outputs.tag }}/ProSeasonAcademy-v${{ steps.ver.outputs.tag }}.apk' where key = 'latest_apk_url';
+            ```

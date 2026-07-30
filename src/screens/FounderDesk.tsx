@@ -1,15 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Linking } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import { ChevronLeftIcon, CheckIcon, RefreshGlyphIcon, ScanGlyphIcon } from '../components/Icons';
+import { ChevronLeftIcon, RefreshGlyphIcon, ScanGlyphIcon } from '../components/Icons';
 import { colors, monoFont } from '../theme';
 import * as backend from '../data/backend';
+import { publishAnnouncement } from '../data/announcements';
+import { fetchPendingNews, reviewNews, NewsItem } from '../data/newsFeed';
 
 // ─────────────────────────────────────────────────────────────
 // FOUNDER DESK — the owner's private admin GUI, inside the app.
 // One person (you) holds the founder key; this screen turns it
-// into real power: live academy numbers, the JAN 1 region split,
+// into real power: live academy numbers, the regional price split,
 // and FOUNDER broadcasts into any room (they wear the FOUNDER
 // badge and fan out live to every phone in the room).
 // The key never leaves the device except as a request header.
@@ -37,6 +39,19 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [topRef, setTopRef] = useState('');
   const [tillBusy, setTillBusy] = useState(false);
   const [tillNote, setTillNote] = useState<string | null>(null);
+
+  // ── Home founder announcements ──
+  const [annTitle, setAnnTitle] = useState('');
+  const [annBody, setAnnBody] = useState('');
+  const [annLink, setAnnLink] = useState('');
+  const [annType, setAnnType] = useState<'update' | 'alert' | 'patch' | 'welcome'>('update');
+  const [annDays, setAnnDays] = useState('');
+  const [annBusy, setAnnBusy] = useState(false);
+  const [annNote, setAnnNote] = useState<string | null>(null);
+
+  // ── MetaBot news review ──
+  const [pendingNews, setPendingNews] = useState<NewsItem[]>([]);
+  const loadNews = async () => setPendingNews(await fetchPendingNews());
 
   // ── the inbox ──
   const [inbox, setInbox] = useState<backend.InboxRow[] | null>(null);
@@ -185,6 +200,34 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     if (ok) setInviteOnly(next);
   };
 
+  const postHomeAnnouncement = async () => {
+    if (!annTitle.trim() || !annBody.trim() || annBusy) return;
+    setAnnBusy(true);
+    setAnnNote(null);
+    const r = await publishAnnouncement({
+      title: annTitle.trim(),
+      body: annBody.trim(),
+      linkUrl: annLink.trim() || undefined,
+      updateType: annType,
+      expiresDays: annDays ? Number(annDays) : undefined,
+      author: 'POCOLASTONES',
+    });
+    setAnnBusy(false);
+    if (r.ok) {
+      setAnnNote(`POSTED TO HOME · ID ${r.id} · PUSH QUEUED`);
+      setAnnTitle('');
+      setAnnBody('');
+      setAnnLink('');
+      setAnnDays('');
+    } else {
+      setAnnNote(
+        r.error === 'FOUNDER_ONLY'
+          ? 'FOUNDER SESSION REQUIRED — SIGN IN AS FOUNDER AGAIN'
+          : 'COULD NOT PUBLISH — CHECK SIGNAL / SQL v14',
+      );
+    }
+  };
+
   const refresh = useCallback(async () => {
     setErr(null);
     void loadInbox();
@@ -195,9 +238,10 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadConsult();
     void loadFlags();
     void loadStuck();
+    void loadNews();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
-    else setErr('SERVER UNREACHABLE OR KEY REJECTED — CHECK ADMIN_KEY ON THE SERVER');
+    else setErr('SERVER UNREACHABLE OR FOUNDER SESSION REJECTED — SIGN IN AS FOUNDER AGAIN');
   }, [founderKey]);
 
   useEffect(() => {
@@ -258,9 +302,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     <Animated.View entering={FadeIn.duration(180)} style={styles.root}>
       <GridBackground />
       <View style={styles.headerWrap}>
-        <Text style={styles.eyebrow}>PSA-FOUNDER · KEY HELD ON THIS DEVICE ONLY</Text>
+        <Text style={styles.eyebrow}>PSA-FOUNDER · AUTHENTICATED SESSION · NO CLIENT KEY</Text>
         <Text style={styles.title}>FOUNDER DESK</Text>
-        <Text style={styles.subtitle}>YOUR PRIVATE ADMIN CONSOLE — STATS, THE JAN 1 SPLIT, LIVE BROADCASTS</Text>
+        <Text style={styles.subtitle}>HOME ANNOUNCEMENTS · NEWS REVIEW · STATS · BROADCASTS · THE TILL</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
@@ -585,9 +629,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           ))}
         </Animated.View>
 
-        {/* the jan 1 split */}
+        {/* regional price split */}
         <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.splitCard}>
-          <Text style={styles.cardTag}>JAN 1 PRICING SPLIT — LIVE</Text>
+          <Text style={styles.cardTag}>REGIONAL PRICING SPLIT — LIVE</Text>
           <View style={styles.splitRow}>
             <View style={styles.splitHalf}>
               <Text style={[styles.splitVal, { color: colors.accent }]}>{data?.regions.africa ?? '—'}</Text>
@@ -715,6 +759,105 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {tillNote ? <Text style={styles.sentNote}>{tillNote}</Text> : null}
         </Animated.View>
 
+        {/* HOME FOUNDER ANNOUNCEMENT — official, not community chat */}
+        <Animated.View entering={FadeInDown.delay(130).duration(320)} style={styles.splitCard}>
+          <Text style={styles.cardTag}>FOUNDER ANNOUNCEMENT → HOME</Text>
+          <Text style={styles.emptyNote}>
+            POSTS TO THE OFFICIAL HOME BLOCK AS POCOLASTONES. QUEUES A PUSH TO EVERY SEATED MEMBER.
+            NOT COMMUNITY CHAT — MEMBERS SEE IT ABOVE THE FEED.
+          </Text>
+          <View style={styles.hallRow}>
+            {(['update', 'alert', 'patch', 'welcome'] as const).map((t) => (
+              <Pressable key={t} onPress={() => setAnnType(t)} style={[styles.chip, annType === t && styles.chipOn]} hitSlop={4}>
+                <Text style={[styles.chipTxt, annType === t && styles.chipTxtOn]}>{t.toUpperCase()}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            value={annTitle}
+            onChangeText={(t) => setAnnTitle(t.slice(0, 120))}
+            placeholder="TITLE"
+            placeholderTextColor={colors.muted}
+            style={styles.tillInput}
+          />
+          <TextInput
+            value={annBody}
+            onChangeText={(t) => setAnnBody(t.slice(0, 4000))}
+            placeholder="MESSAGE"
+            placeholderTextColor={colors.muted}
+            style={styles.input}
+            multiline
+          />
+          <TextInput
+            value={annLink}
+            onChangeText={setAnnLink}
+            placeholder="OPTIONAL LINK URL"
+            placeholderTextColor={colors.muted}
+            style={styles.tillInput}
+            autoCapitalize="none"
+          />
+          <TextInput
+            value={annDays}
+            onChangeText={(t) => setAnnDays(t.replace(/[^0-9]/g, '').slice(0, 3))}
+            placeholder="EXPIRES IN DAYS (BLANK = NEVER)"
+            placeholderTextColor={colors.muted}
+            style={styles.tillInput}
+            keyboardType="number-pad"
+          />
+          <Pressable onPress={() => void postHomeAnnouncement()} disabled={!annTitle.trim() || !annBody.trim() || annBusy}>
+            <View style={[styles.sendBtn, (!annTitle.trim() || !annBody.trim() || annBusy) && styles.sendBtnOff]}>
+              <Text style={styles.sendTxt}>{annBusy ? 'PUBLISHING…' : 'PUBLISH TO HOME + QUEUE PUSH ›'}</Text>
+            </View>
+          </Pressable>
+          {annNote ? <Text style={styles.sentNote}>{annNote}</Text> : null}
+        </Animated.View>
+
+        {/* MetaBot news review — drafts never auto-publish */}
+        <Animated.View entering={FadeInDown.delay(135).duration(320)} style={styles.card}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>FC MOBILE NEWS · PENDING REVIEW</Text>
+            <Text style={[styles.cardTag, pendingNews.length > 0 && { color: colors.accent }]}>
+              {pendingNews.length} DRAFT{pendingNews.length === 1 ? '' : 'S'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            METABOT CREATES DRAFTS ONLY. NOTHING REACHES HOME UNTIL YOU APPROVE. EACH ROW KEEPS SOURCE URL + DATE.
+          </Text>
+          {pendingNews.length === 0 && <Text style={styles.dim}>No drafts waiting — run the bot, then refresh.</Text>}
+          {pendingNews.map((n) => (
+            <View key={n.id} style={styles.inboxRow}>
+              <Text style={styles.inboxWho}>{n.kind} · {n.id}</Text>
+              <Text style={styles.inboxBody}>{n.headline}</Text>
+              <Text style={styles.invMeta}>{n.sourceName} · {n.discoveredAt} · conf {n.confidence}</Text>
+              {!!n.sourceUrl && (
+                <Pressable onPress={() => void Linking.openURL(n.sourceUrl).catch(() => {})} hitSlop={6}>
+                  <Text style={styles.linkBtn}>OPEN SOURCE ›</Text>
+                </Pressable>
+              )}
+              <View style={styles.rowBetween}>
+                <Pressable
+                  onPress={async () => {
+                    await reviewNews(n.id, false);
+                    void loadNews();
+                  }}
+                  hitSlop={6}
+                >
+                  <Text style={styles.ghostBtn}>REJECT</Text>
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    await reviewNews(n.id, true);
+                    void loadNews();
+                  }}
+                  hitSlop={6}
+                >
+                  <Text style={styles.linkBtn}>APPROVE → HOME ›</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </Animated.View>
+
         {/* founder broadcast */}
         <Animated.View entering={FadeInDown.delay(140).duration(320)} style={styles.card}>
           <Text style={styles.cardTag}>BROADCAST AS FOUNDER — LANDS LIVE IN THE ROOM</Text>
@@ -780,7 +923,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             <Text style={styles.toolBtnTxt}>REFRESH</Text>
           </Pressable>
           <Pressable onPress={onForgetKey} style={[styles.toolBtn, styles.toolBtnDanger]} hitSlop={6}>
-            <Text style={[styles.toolBtnTxt, { color: colors.loss }]}>FORGET THE KEY ON THIS DEVICE</Text>
+            <Text style={[styles.toolBtnTxt, { color: colors.loss }]}>CLOSE FOUNDER SESSION</Text>
           </Pressable>
         </View>
         {!data && !err && <Text style={styles.dim}>Reading the academy…</Text>}

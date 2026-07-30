@@ -15,6 +15,7 @@ import {
 import { getSettings } from '../data/settings';
 import { resultOf } from '../data/matches';
 import { CheckIcon } from '../components/Icons';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
@@ -83,6 +84,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   const submitMatch = () => {
     if (!canContinue || !session) return;
+    sfx('whoosh'); // the debrief is sealed and filed
     recordBaselineMatch({ gf, ga, result, composure: composure as number, question, answer: answer.trim() });
     setGf(0);
     setGa(0);
@@ -101,6 +103,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     if (ambition.trim().length < MIN_ANSWER || sealing) return;
     setSealing(true);
     const card = await sealBaseline(getSettings().displayName, coach.id, ambition.trim());
+    sfx('success'); // the tier lands — the academy knows who you are now
     const s = await loadBaseline(coach.id);
     setSession({ ...s, card });
     setPhase('card');

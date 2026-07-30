@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import * as NativeSplash from 'expo-splash-screen';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,6 +20,7 @@ import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
 import { initCloudSync } from './src/data/cloudSync';
+import { initAudio } from './src/audio/sound';
 import {
   endSession,
   getSession,
@@ -29,8 +31,16 @@ import {
   markSignedIn,
   setReferral as persistReferral,
 } from './src/data/session';
+import { restoreSession, signOutRemote } from './src/data/authApi';
+import * as backend from './src/data/backend';
+import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
+
+// Keep the native OS splash as a plain academy background until
+// the real React loading screen is ready. This prevents the old
+// pre-loader logo flash before the structured loading screen.
+void NativeSplash.preventAutoHideAsync().catch(() => {});
 
 // SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → BASELINE SCAN
 //        → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
@@ -61,6 +71,11 @@ export default function App() {
 
   const markGone = useCallback(() => setSplashGone(true), []);
 
+  // wake the academy's ear (audio session policy) — once per launch
+  useEffect(() => {
+    initAudio();
+  }, []);
+
   // ── RESTORE: pick up exactly where this player left off ──
   // Runs while the splash is still on screen, so a returning
   // player never sees the sign-in door or re-sits the baseline.
@@ -68,6 +83,15 @@ export default function App() {
     let alive = true;
     void (async () => {
       await hydrateSession();
+      // restore Supabase email/password session if the token is still valid
+      const cloud = await restoreSession();
+      if (cloud && alive) {
+        backend.setMeFromProfile(cloud);
+        setDisplayName(cloud.handle);
+        setAcademyId(cloud.academyId);
+        if (cloud.email) setEmail(cloud.email);
+        markSignedIn();
+      }
       if (!alive) return;
       const s = getSession();
       if (s.coachId) {
@@ -76,7 +100,8 @@ export default function App() {
         if (!alive) return;
         setCoachId(s.coachId);
       }
-      if (!s.signedIn) setRoute('signin');
+      const signedIn = s.signedIn || !!cloud;
+      if (!signedIn) setRoute('signin');
       else if (!s.coachId) setRoute('coach');
       else if (!s.introDone) setRoute('intro');
       else if (!s.baselineDone) setRoute('scan');
@@ -147,6 +172,7 @@ export default function App() {
 
   const handleSignOut = useCallback(() => {
     // the ledger and the coach lock survive — only the floor is left
+    void signOutRemote();
     endSession();
     setRoute('signin');
   }, []);

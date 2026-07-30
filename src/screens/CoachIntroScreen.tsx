@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
@@ -6,6 +6,7 @@ import LogoMark from '../components/LogoMark';
 import { Coach } from '../data/coaches';
 import { BASELINE_SCRIPTS } from '../data/baselineScan';
 import { ChevronRightIcon } from '../components/Icons';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
@@ -17,6 +18,14 @@ import { colors, monoFont } from '../theme';
 export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
   const first = coach.name.split(' ')[0].toUpperCase();
+
+  // each line of his speech lands with a soft pop, on its animation beat
+  useEffect(() => {
+    const timers = script.intro.map((_, i) =>
+      setTimeout(() => sfx('pop'), 350 + i * 420),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [script]);
 
   return (
     <View style={styles.root}>

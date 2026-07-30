@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeIn, FadeInUp, SlideInUp, SlideOutDown, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
@@ -11,8 +11,12 @@ import { useJourneyProgress, wipeProgress } from '../../data/progress';
 import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
+import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
+import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
+import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush } from '../../data/notifications';
+import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
 import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
 import {
@@ -32,6 +36,7 @@ import {
 import {
   AtIcon,
   BellIcon,
+  BroadcastIcon,
   CheckBadgeIcon,
   CheckIcon,
   ChevronRightIcon,
@@ -48,6 +53,7 @@ import {
   RouteIcon,
   ScanGlyphIcon,
   TrashIcon,
+  WavesGlyphIcon,
 } from '../../components/Icons';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -162,7 +168,18 @@ export default function SettingsTab({
   const [tillOpen, setTillOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [unreadAcademy, setUnreadAcademy] = useState(0);
+  const [academyToken, setAcademyToken] = useState<string | null>(null);
+  const [resetNote, setResetNote] = useState<string | null>(null);
+  const [quiet, setQuiet] = useState<QuietHours>({ enabled: false, start: 22, end: 7 });
+  const [pushNote, setPushNote] = useState<string | null>(null);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
   useEffect(() => { void backend.unreadFromAcademy().then(setUnreadAcademy); }, [contactOpen]);
+
+  useEffect(() => {
+    void readCachedAcademyToken().then(setAcademyToken);
+    void getQuietHours().then(setQuiet);
+    void checkForUpdate().then(setUpdate);
+  }, []);
 
   useEffect(() => {
     void isFounder().then((ok) => {
@@ -207,7 +224,25 @@ export default function SettingsTab({
   };
   const close = () => setSheet(null);
 
-  const flip = (key: ToggleKey) => setToggle(key, !s.toggles[key]);
+  const flip = (key: ToggleKey) => {
+    const next = !s.toggles[key];
+    sfx('toggle');
+    // notification prefs sync upstream; journey/audio toggles stay local
+    if (
+      key === 'coachMessages' ||
+      key === 'matchScanResults' ||
+      key === 'filmRoomAlerts' ||
+      key === 'communityMentions' ||
+      key === 'founderAnnouncements' ||
+      key === 'fcMobileNews' ||
+      key === 'groupSessions'
+    ) {
+      setNotifPref(key, next);
+    } else {
+      setToggle(key, next);
+    }
+    if (key === 'music') syncMusicToSettings();
+  };
 
   return (
     <View style={styles.flex}>
@@ -225,6 +260,29 @@ export default function SettingsTab({
           <Text style={styles.title}>SETTINGS</Text>
           <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
         </Animated.View>
+
+        {/* ── update checker — Supabase config.latest_version/latest_apk_url ── */}
+        {update?.available && (
+          <Animated.View entering={FadeInUp.delay(40).duration(300)}>
+            <Pressable
+              style={({ pressed }) => [styles.updateBanner, pressed && { opacity: 0.75 }]}
+              onPress={() => {
+                if (update.apkUrl) Linking.openURL(update.apkUrl).catch(() => {});
+              }}
+            >
+              <View style={styles.updateBadge}>
+                <Text style={styles.updateBadgeTxt}>NEW</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.updateTitle}>VERSION {update.latest} AVAILABLE</Text>
+                <Text style={styles.updateSub}>
+                  YOU'RE ON {update.current}.{update.note ? ` ${update.note}` : ' TAP TO DOWNLOAD THE UPDATE.'}
+                </Text>
+              </View>
+              <ChevronRightIcon size={14} color={colors.accent} />
+            </Pressable>
+          </Animated.View>
+        )}
 
         {/* ── player card ── */}
         <Animated.View entering={FadeInUp.delay(60).duration(340)} style={styles.card}>
@@ -324,7 +382,7 @@ export default function SettingsTab({
             <Row
               icon={<BellIcon size={15} color="#57d07c" />}
               title="Coach messages"
-              sub={`WHEN ${coachShort} SENDS A SESSION OR VOICE NOTE`}
+              sub={`WHEN ${coachShort} SENDS A SESSION OR LESSON`}
               right={<Toggle on={s.toggles.coachMessages} onFlip={() => flip('coachMessages')} />}
             />
             <Row
@@ -344,6 +402,66 @@ export default function SettingsTab({
               title="Community mentions"
               sub="@PINGS IN #GENERAL AND SQUAD CHANNELS"
               right={<Toggle on={s.toggles.communityMentions} onFlip={() => flip('communityMentions')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#f2c078" />}
+              title="Founder announcements"
+              sub="OFFICIAL HOME POSTS FROM POCOLASTONES"
+              right={<Toggle on={s.toggles.founderAnnouncements !== false} onFlip={() => flip('founderAnnouncements')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="FC Mobile news"
+              sub="FOUNDER-APPROVED META ALERTS"
+              right={<Toggle on={s.toggles.fcMobileNews !== false} onFlip={() => flip('fcMobileNews')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Group session reminders"
+              sub="FOUR-DAY COACH GROUP PINGS"
+              right={<Toggle on={s.toggles.groupSessions !== false} onFlip={() => flip('groupSessions')} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Quiet hours"
+              sub={quiet.enabled ? `${quiet.start}:00–${quiet.end}:00 LOCAL · TAP TO TOGGLE` : 'OFF · TAP TO ENABLE 22:00–07:00'}
+              right={<Toggle on={quiet.enabled} onFlip={() => {
+                const next = { ...quiet, enabled: !quiet.enabled };
+                setQuiet(next);
+                void setQuietHours(next);
+              }} />}
+            />
+            <Row
+              icon={<BellIcon size={15} color="#57d07c" />}
+              title="Enable push delivery"
+              sub={pushNote ?? 'REQUEST PERMISSION + REGISTER THIS DEVICE'}
+              right={<Chevron />}
+              onPress={() => {
+                void registerForPush().then((r) => {
+                  setPushNote(r.ok ? 'PUSH ARMED ON THIS DEVICE' : `PUSH: ${r.reason ?? 'FAILED'}`);
+                  void syncPushRegistration();
+                });
+              }}
+              last
+            />
+          </View>
+        </Animated.View>
+
+        {/* ── sound — the academy's ear ── */}
+        <Animated.View entering={FadeInUp.delay(210).duration(340)}>
+          <Text style={styles.sectionLabel}>SOUND — HOW LOUD THE ACADEMY BREATHES</Text>
+          <View style={styles.card}>
+            <Row
+              icon={<WavesGlyphIcon size={15} color="#57d07c" />}
+              title="Academy ambience"
+              sub="THE QUIET NIGHT-STADIUM PAD UNDER THE HOME FEED"
+              right={<Toggle on={s.toggles.music} onFlip={() => flip('music')} />}
+            />
+            <Row
+              icon={<BroadcastIcon size={15} color="#57d07c" />}
+              title="Sound effects"
+              sub="TAPS, BUBBLE POPS, THE WHISTLE, THE TILL — THE BANTER"
+              right={<Toggle on={s.toggles.soundFx} onFlip={() => flip('soundFx')} />}
               last
             />
           </View>
@@ -559,21 +677,31 @@ export default function SettingsTab({
             {sheet === 'password' && (
               <View>
                 <Text style={styles.sheetEyebrow}>SECURITY</Text>
-                <Text style={styles.sheetTitle}>THERE IS NO PASSWORD</Text>
+                <Text style={styles.sheetTitle}>PASSWORD & SEAT</Text>
                 <Text style={styles.sheetBody}>
-                  Your seat is held by this device, not by a password. Nothing to forget, nothing to
-                  reset, nothing anyone can phish out of you. Your academy name and your ledger travel
-                  with the seat.
+                  You sign in with email + password. Your academy reference token is generated once
+                  and stored on this device.
                 </Text>
                 <Text style={styles.sheetBody}>
-                  ACADEMY ID · {s.academyId}{'\n'}
-                  SEAT HELD ON · {DEVICE_LABEL}
+                  ACADEMY TOKEN · {academyToken ?? s.academyId}{'\n'}
+                  EMAIL · {s.email ?? '—'}{'\n'}
+                  SEAT HELD ON · {DEVICE_LABEL}{'\n'}
+                  COUNTRY · {s.country ?? '—'} {s.countryCode ? `(${s.countryCode})` : ''}
+                  {s.geoUncertain ? ' · LOCATION UNCERTAIN' : s.geoVerified ? ' · VERIFIED' : ''}
                 </Text>
-                <Text style={[styles.sheetBody, { color: 'rgba(242,192,120,0.9)' }]}>
-                  Keep this device. Wiping the app or deleting your account releases the seat — and in
-                  a capped season, seats do not come back on their own.
-                </Text>
-                <SheetButton label="UNDERSTOOD" onPress={close} ghost />
+                {resetNote && <Text style={[styles.sheetBody, { color: colors.primary }]}>{resetNote}</Text>}
+                <SheetButton
+                  label="SEND PASSWORD RESET EMAIL"
+                  onPress={async () => {
+                    if (!s.email) {
+                      setResetNote('NO EMAIL ON THIS SEAT — SIGN IN AGAIN.');
+                      return;
+                    }
+                    const r = await requestPasswordReset(s.email);
+                    setResetNote(r.ok ? r.message : r.message);
+                  }}
+                />
+                <SheetButton label="DONE" onPress={close} ghost />
               </View>
             )}
 
@@ -621,7 +749,7 @@ export default function SettingsTab({
                       setDeleteArmed(true);
                       return;
                     }
-                    // burn ALL of it: settings, the ledger, the coach lock
+                    await deleteAccountRemote();
                     await wipeLocalData();
                     await wipeProgress();
                     await wipeSession();
@@ -808,6 +936,27 @@ const styles = StyleSheet.create({
   toggleKnobGlow: { shadowColor: '#39FF6A', shadowOpacity: 0.7, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } },
 
   dangerCard: { borderColor: 'rgba(224,96,92,0.3)', backgroundColor: 'rgba(224,96,92,0.045)' },
+
+  updateBanner: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(242,192,120,0.08)',
+  },
+  updateBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(242,192,120,0.22)',
+  },
+  updateBadgeTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  updateTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
+  updateSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1, color: 'rgba(242,192,120,0.65)' },
 
   footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
   footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },

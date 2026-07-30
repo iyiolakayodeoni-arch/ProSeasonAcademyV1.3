@@ -5,7 +5,6 @@ import Animated, {
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
@@ -16,21 +15,31 @@ import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
+import {
+  formatAnnouncementWhen,
+  markAnnouncementRead,
+  useAnnouncements,
+  FounderAnnouncement,
+} from '../../data/announcements';
+import { fetchPublishedNews, NewsItem } from '../../data/newsFeed';
+import { brandMutter, caughtUpLine, greetingLine } from '../../data/humor';
+import { useSettings } from '../../data/settings';
 import * as backend from '../../data/backend';
+import { sfx } from '../../audio/sound';
 import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
-const CHIPS = ['ALL', 'TRICKS & EXPLOITS', 'WINS', 'LOSSES', 'COACH UPDATES'] as const;
+const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'COACH & GROUP'] as const;
 type Chip = (typeof CHIPS)[number];
 
-const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null> = {
+const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null | 'FOUNDER' | 'NEWS'> = {
   ALL: null,
-  'TRICKS & EXPLOITS': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
-  WINS: ['COMMUNITY_WIN'],
-  LOSSES: ['COMMUNITY_LOSS'],
-  'COACH UPDATES': ['COACH_UPDATE'],
+  FOUNDER: 'FOUNDER',
+  NEWS: 'NEWS',
+  'META WATCH': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
+  'COACH & GROUP': ['COACH_UPDATE'],
 };
 
 const ACCENT = {
@@ -56,63 +65,99 @@ function LiveDot() {
 export default function HomeTab({ coach }: { coach: Coach }) {
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
-  // ── ACCESS — tricks ride on the tier, not on per-item credits ──
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
   const [unlocks, setUnlocks] = useState<string[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const { items: announcements, unread: unreadAnn, refresh: refreshAnn } = useAnnouncements();
+  const settings = useSettings();
 
   const refreshAccess = () => {
     void backend.myAccess().then((a) => a && setAccess(a));
     void backend.myUnlocks().then((u) => u && setUnlocks(u));
   };
   useEffect(refreshAccess, []);
+  useEffect(() => {
+    void fetchPublishedNews(20).then(setNews);
+  }, []);
 
   const [tillOpen, setTillOpen] = useState(false);
 
-  /** the teachable kinds are the gated ones; news + community stay free */
+  // ── the founder mutters when you poke the wordmark enough ──
+  const [brandTaps, setBrandTaps] = useState(0);
+  const [mutter, setMutter] = useState<string | null>(null);
+  const brandTap = () => {
+    const n = brandTaps + 1;
+    setBrandTaps(n);
+    const line = brandMutter(n);
+    if (line) {
+      setMutter(line);
+      sfx('pop');
+    }
+  };
+
   const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
-  /** ACADEMY (level 1) and above see the tricks; a bundled unlock also counts */
   const trickOpen = (id: string) => (access?.level ?? 0) >= 1 || unlocks.includes(`trick:${id}`);
 
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
   const feed = useMemo(() => buildFeed(coach), [coach]);
-  const ticker = useMemo(() => buildTicker(coach), [coach]);
+  const ticker = useMemo(() => {
+    const base = buildTicker(coach);
+    const annHeads = announcements.slice(0, 2).map((a) => `FOUNDER: ${a.title}`);
+    const newsHeads = news.slice(0, 2).map((n) => n.headline.replace(/[!?]+$/, ''));
+    return [...annHeads, ...newsHeads, ...base];
+  }, [coach, announcements, news]);
+
+  const kinds = CHIP_KINDS[chip];
+  const showFounder = chip === 'ALL' || chip === 'FOUNDER';
+  const showNews = chip === 'ALL' || chip === 'NEWS';
   const filtered = useMemo(() => {
-    const kinds = CHIP_KINDS[chip];
+    if (kinds === 'FOUNDER' || kinds === 'NEWS') return [];
     return kinds ? feed.filter((c) => kinds.includes(c.kind)) : feed;
-  }, [feed, chip]);
+  }, [feed, kinds]);
   const shown = filtered.slice(0, visible);
-  const exhausted = visible >= filtered.length;
+  const exhausted = visible >= filtered.length && (chip !== 'ALL' || true);
 
   return (
     <View style={styles.flex}>
       <GridBackground />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        {/* header row */}
         <View style={styles.headerRow}>
-          <Text style={styles.brand}>PROSEASONACADEMY</Text>
+          <Pressable onPress={brandTap} hitSlop={8}>
+            <Text style={styles.brand}>PROSEASONACADEMY</Text>
+          </Pressable>
           <View style={styles.headerIcons}>
-            <Pressable hitSlop={10} onPress={() => console.log('[home] notifications tapped (next build)')}>
-              <BellIcon size={17} color="rgba(143,184,155,0.75)" />
+            <Pressable hitSlop={10} onPress={() => { setChip('FOUNDER'); refreshAnn(); }}>
+              <View>
+                <BellIcon size={17} color="rgba(143,184,155,0.75)" />
+                {unreadAnn > 0 && (
+                  <View style={styles.bellDot}>
+                    <Text style={styles.bellDotTxt}>{unreadAnn > 9 ? '9+' : unreadAnn}</Text>
+                  </View>
+                )}
+              </View>
             </Pressable>
-            <Pressable hitSlop={10} onPress={() => console.log('[home] profile tapped (next build)')}>
+            <Pressable hitSlop={10}>
               <View style={styles.avatarBtn}>
                 <PersonIcon size={13} color={colors.muted} />
               </View>
             </Pressable>
           </View>
         </View>
+        {mutter && (
+          <Text style={styles.mutter} numberOfLines={1} onPress={() => setMutter(null)}>
+            {mutter}
+          </Text>
+        )}
 
-        {/* greeting + live badge */}
         <View style={styles.greetRow}>
-          <Text style={styles.greet}>WELCOME BACK, PLAYER — {nowStamp()} GMT+1</Text>
+          <Text style={styles.greet}>{greetingLine(settings.displayName, nowStamp())}</Text>
           <View style={styles.livePill}>
             <LiveDot />
             <Text style={styles.liveTxt}>LIVE FEED</Text>
           </View>
         </View>
 
-        {/* ticker */}
         <View style={styles.ticker}>
           <Marquee>
             {ticker.map((t, i) => (
@@ -125,35 +170,63 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           </Marquee>
         </View>
 
-        {/* TRICK OF THE WEEK hero */}
-        <Animated.View entering={FadeInUp.duration(350)} style={styles.hero}>
-          <View style={styles.heroTagRow}>
-            <Text style={styles.heroTag}>TRICK OF THE WEEK</Text>
+        {/* FOUNDER ANNOUNCEMENTS — official, never community-style placeholders */}
+        {showFounder && announcements.length > 0 && (
+          <View style={styles.annSection}>
+            <Text style={styles.annSectionLbl}>FOUNDER ANNOUNCEMENTS</Text>
+            {announcements.slice(0, chip === 'FOUNDER' ? 20 : 3).map((a, idx) => (
+              <AnnouncementCard
+                key={a.id}
+                item={a}
+                delay={idx * 40}
+                onOpen={() => void markAnnouncementRead(a.id)}
+              />
+            ))}
           </View>
-          <View style={styles.heroThumb}>
-            <MiniPitch width={318} height={150} variant="pitchRun" showPlay />
-            <View style={styles.heroDuration}>
-              <Text style={styles.heroDurationTxt}>{HERO_FALLBACK.duration}</Text>
-            </View>
-          </View>
-          <Text style={styles.heroHeadline}>{HERO_FALLBACK.headline}</Text>
-          <Text style={styles.heroBody}>{HERO_FALLBACK.body}</Text>
-          <View style={styles.heroFoot}>
-            <Text style={styles.heroCta}>
-              {HERO_FALLBACK.cta} <Text style={styles.heroMeta}>· {HERO_FALLBACK.meta}</Text>
-            </Text>
-            <BookmarkIcon size={14} color="rgba(143,184,155,0.7)" />
-          </View>
-        </Animated.View>
+        )}
+        {showFounder && announcements.length === 0 && chip === 'FOUNDER' && (
+          <Text style={styles.emptyFounder}>NO FOUNDER ANNOUNCEMENTS YET — WHEN POCOLASTONES POSTS, IT LANDS HERE.</Text>
+        )}
 
-        {/* filter chips */}
+        {/* Approved FC Mobile news (founder-reviewed drafts only) */}
+        {showNews && news.length > 0 && (
+          <View style={styles.annSection}>
+            <Text style={styles.annSectionLbl}>FC MOBILE NEWS · FOUNDER-APPROVED</Text>
+            {news.slice(0, chip === 'NEWS' ? 20 : 3).map((n, idx) => (
+              <NewsCard key={n.id} item={n} delay={idx * 40} />
+            ))}
+          </View>
+        )}
+
+        {chip !== 'FOUNDER' && chip !== 'NEWS' && (
+          <Animated.View entering={FadeInUp.duration(350)} style={styles.hero}>
+            <View style={styles.heroTagRow}>
+              <Text style={styles.heroTag}>TRICK OF THE WEEK</Text>
+            </View>
+            <View style={styles.heroThumb}>
+              <MiniPitch width={318} height={150} variant="pitchRun" showPlay />
+              <View style={styles.heroDuration}>
+                <Text style={styles.heroDurationTxt}>{HERO_FALLBACK.duration}</Text>
+              </View>
+            </View>
+            <Text style={styles.heroHeadline}>{HERO_FALLBACK.headline}</Text>
+            <Text style={styles.heroBody}>{HERO_FALLBACK.body}</Text>
+            <View style={styles.heroFoot}>
+              <Text style={styles.heroCta}>
+                {HERO_FALLBACK.cta} <Text style={styles.heroMeta}>· {HERO_FALLBACK.meta}</Text>
+              </Text>
+              <BookmarkIcon size={14} color="rgba(143,184,155,0.7)" />
+            </View>
+          </Animated.View>
+        )}
+
         <View style={styles.chipsWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false}>
             <View style={styles.chipsRow}>
               {CHIPS.map((c) => {
                 const on = chip === c;
                 return (
-                  <Pressable key={c} onPress={() => { setChip(c); setVisible(6); }}>
+                  <Pressable key={c} onPress={() => { setChip(c); setVisible(6); sfx('tap'); }}>
                     <View style={[styles.chip, on && styles.chipOn]}>
                       <Text style={[styles.chipTxt, on && styles.chipTxtOn]}>{c}</Text>
                     </View>
@@ -171,30 +244,31 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           />
         </View>
 
-        {/* the feed — tricks are part of the packs; news stays free */}
-        {shown.map((card, i) => (
+        {chip !== 'FOUNDER' && chip !== 'NEWS' && shown.map((card, i) => (
           <FeedCard
             key={card.id + chip}
             card={card}
             coach={coach}
             delay={i * 40}
             liked={!!liked[card.id]}
-            onLike={() => setLiked((s) => ({ ...s, [card.id]: true }))}
+            onLike={() => { setLiked((s) => ({ ...s, [card.id]: true })); sfx('like'); }}
             locked={isTrick(card.kind) && !trickOpen(card.id)}
-            onUnlock={() => setTillOpen(true)}
+            onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
           />
         ))}
 
-        {/* load more */}
-        {!exhausted ? (
-          <Pressable style={styles.loadMore} onPress={() => setVisible((v) => v + 4)}>
-            <Text style={styles.loadMoreTxt}>{'>'} LOAD MORE UPDATES ▮</Text>
-          </Pressable>
-        ) : (
-          <Text style={styles.caughtUp}>— YOU'RE ALL CAUGHT UP ▮</Text>
+        {chip !== 'FOUNDER' && chip !== 'NEWS' && (
+          !exhausted ? (
+            <Pressable style={styles.loadMore} onPress={() => { setVisible((v) => v + 4); sfx('tap'); }}>
+              <Text style={styles.loadMoreTxt}>{'>'} LOAD MORE UPDATES ▮</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.caughtUp}>{caughtUpLine()}</Text>
+          )
         )}
 
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
+        <Text style={styles.footTag}>BUILT BY PLAYERS · NO FULLBACKS WERE HARMED</Text>
       </ScrollView>
 
       {tillOpen && (
@@ -203,6 +277,56 @@ export default function HomeTab({ coach }: { coach: Coach }) {
         </View>
       )}
     </View>
+  );
+}
+
+function AnnouncementCard({
+  item,
+  delay,
+  onOpen,
+}: {
+  item: FounderAnnouncement;
+  delay: number;
+  onOpen: () => void;
+}) {
+  return (
+    <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={[styles.annCard, !item.isRead && styles.annCardUnread]}>
+      <Pressable
+        onPress={() => {
+          onOpen();
+          if (item.linkUrl) void Linking.openURL(item.linkUrl).catch(() => {});
+        }}
+      >
+        <View style={styles.annTop}>
+          <Text style={styles.annBadge}>FOUNDER ANNOUNCEMENT</Text>
+          {!item.isRead && <Text style={styles.annNew}>NEW</Text>}
+        </View>
+        <Text style={styles.annBy}>POSTED BY {item.authorHandle.toUpperCase()}</Text>
+        <Text style={styles.annWhen}>{formatAnnouncementWhen(item.publishedAt)}</Text>
+        <Text style={styles.annTitle}>{item.title}</Text>
+        <Text style={styles.annBody} numberOfLines={5}>{item.body}</Text>
+        {!!item.linkUrl && <Text style={styles.annLink}>OPEN LINK ›</Text>}
+        <Text style={styles.annType}>{item.updateType.toUpperCase()}</Text>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function NewsCard({ item, delay }: { item: NewsItem; delay: number }) {
+  return (
+    <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={styles.newsCard}>
+      <Text style={styles.newsTag}>{item.kind.replace(/_/g, ' ')}</Text>
+      <Text style={styles.newsHeadline}>{item.headline}</Text>
+      <Text style={styles.newsBody} numberOfLines={3}>{item.body}</Text>
+      <View style={styles.newsFoot}>
+        <Text style={styles.newsSource}>{item.sourceName} · {item.discoveredAt}</Text>
+        {!!item.sourceUrl && (
+          <Pressable onPress={() => void Linking.openURL(item.sourceUrl).catch(() => {})}>
+            <Text style={styles.newsCta}>{item.cta}</Text>
+          </Pressable>
+        )}
+      </View>
+    </Animated.View>
   );
 }
 
@@ -318,6 +442,19 @@ const styles = StyleSheet.create({
     textShadowRadius: 6,
   },
   headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  bellDot: {
+    position: 'absolute',
+    right: -8,
+    top: -6,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.loss,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellDotTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', color: '#fff' },
   avatarBtn: {
     width: 22,
     height: 22,
@@ -327,9 +464,151 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  annSection: { marginTop: 12 },
+  annSectionLbl: {
+    fontFamily: monoFont,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 2.2,
+    color: colors.accent,
+    marginBottom: 6,
+  },
+  emptyFounder: {
+    marginTop: 14,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 6.5,
+    lineHeight: 12,
+    letterSpacing: 1,
+    color: colors.muted,
+  },
+  annCard: {
+    marginTop: 8,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.55)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(38,30,12,0.55)',
+    padding: 13,
+  },
+  annCardUnread: {
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+  },
+  annTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  annBadge: {
+    fontFamily: monoFont,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    color: colors.accent,
+  },
+  annNew: {
+    fontFamily: monoFont,
+    fontSize: 6,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    color: '#0a0f0a',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  annBy: {
+    marginTop: 8,
+    fontFamily: monoFont,
+    fontSize: 6.5,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    color: 'rgba(242,192,120,0.85)',
+  },
+  annWhen: {
+    marginTop: 2,
+    fontFamily: monoFont,
+    fontSize: 6,
+    letterSpacing: 1.2,
+    color: 'rgba(143,184,155,0.65)',
+  },
+  annTitle: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    color: colors.fg,
+  },
+  annBody: {
+    marginTop: 6,
+    fontSize: 10.5,
+    lineHeight: 15,
+    color: '#c9d6cc',
+  },
+  annLink: {
+    marginTop: 8,
+    fontFamily: monoFont,
+    fontSize: 7,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: colors.accent,
+  },
+  annType: {
+    marginTop: 8,
+    fontFamily: monoFont,
+    fontSize: 5.8,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+    color: 'rgba(143,184,155,0.5)',
+  },
+  newsCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.35)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(15,26,19,0.8)',
+    padding: 12,
+  },
+  newsTag: {
+    fontFamily: monoFont,
+    fontSize: 6.5,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    color: colors.primary,
+  },
+  newsHeadline: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.fg,
+  },
+  newsBody: {
+    marginTop: 5,
+    fontSize: 9.5,
+    lineHeight: 13.5,
+    color: '#a9bbae',
+  },
+  newsFoot: {
+    marginTop: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  newsSource: {
+    fontFamily: monoFont,
+    fontSize: 5.8,
+    letterSpacing: 1,
+    color: 'rgba(143,184,155,0.6)',
+    flex: 1,
+  },
+  newsCta: {
+    fontFamily: monoFont,
+    fontSize: 6.5,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.primary,
+  },
 
   greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  greet: { fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.75)' },
+  greet: { flexShrink: 1, marginRight: 8, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.75)' },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,5 +770,23 @@ const styles = StyleSheet.create({
     fontSize: 6.3,
     letterSpacing: 2.6,
     color: 'rgba(143,184,155,0.4)',
+  },
+  footTag: {
+    marginTop: 5,
+    marginBottom: 4,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 2.2,
+    color: 'rgba(143,184,155,0.28)',
+  },
+  mutter: {
+    marginTop: 6,
+    fontFamily: monoFont,
+    fontSize: 6.2,
+    letterSpacing: 1.6,
+    color: colors.warm,
+    textShadowColor: 'rgba(242,192,120,0.4)',
+    textShadowRadius: 5,
   },
 });

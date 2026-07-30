@@ -9,10 +9,10 @@
     "backgroundColor": "#0a0f0a",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash-blank.png",
       "resizeMode": "contain",
       "backgroundColor": "#0a0f0a",
-      "imageWidth": 230
+      "imageWidth": 1
     },
     "ios": {
       "supportsTablet": false,
@@ -34,16 +34,17 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withMatchWatcher",
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#0a0f0a",
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 230,
+          "image": "./assets/splash-blank.png",
+          "imageWidth": 1,
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#0a0f0a",
-            "image": "./assets/splash-icon.png"
+            "image": "./assets/splash-blank.png"
           }
         }
       ]

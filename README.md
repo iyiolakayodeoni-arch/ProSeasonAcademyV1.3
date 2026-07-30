@@ -64,6 +64,13 @@ before ever switching to it.
 guide sites, composes lesson candidates, and waits for **your approval** before anything
 reaches a player. Its output is `src/data/liveFeed.json`.
 
+**`src/audio/`** is the academy's ear. `sound.ts` owns every noise the app makes: short UI
+sounds (bubble pops, the referee whistle at lock-in and stage pass, the till), the 24-second
+night-stadium pad that breathes under the home tab, and the two **real coach voice notes**
+that play in the briefing room. Every asset is generated in-repo, never licensed —
+`python3 scripts/make-sounds.py` re-synthesises the whole pack in `assets/sounds/`. Two
+toggles (MUSIC / SOUND FX) live in Settings → SOUND and persist with the other preferences.
+
 ---
 
 ## How a member's data is kept

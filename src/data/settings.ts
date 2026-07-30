@@ -24,8 +24,9 @@ export type GeoRegion = 'africa' | 'world' | 'unset';
 
 export interface SettingsState {
   displayName: string;
-  country: string | null; // picked at sign-up — drives the JAN 1 pricing split
-  geo: GeoRegion;         // 'africa' → credits · 'world' → subscription · unset until picked
+  email: string | null;
+  country: string | null; // picked at sign-up — drives the regional pricing shelf
+  geo: GeoRegion;         // 'africa' → Africa pricing · 'world' → world pricing · unset until picked
   academyId: string; // generated once, never changes
   joinedAt: number; // first launch — drives "IN ACADEMY" days
   div: string;
@@ -33,6 +34,11 @@ export interface SettingsState {
   platform: (typeof PLATFORMS)[number];
   region: (typeof REGIONS)[number];
   plan: (typeof PLANS)[number];
+  /** ISO-2 country code captured at sign-up */
+  countryCode: string | null;
+  /** soft IP verify result */
+  geoVerified: boolean;
+  geoUncertain: boolean;
   toggles: {
     matchScanAutoRead: boolean;
     lossJournal: boolean;
@@ -40,6 +46,13 @@ export interface SettingsState {
     matchScanResults: boolean;
     filmRoomAlerts: boolean;
     communityMentions: boolean;
+    founderAnnouncements: boolean;
+    fcMobileNews: boolean;
+    groupSessions: boolean;
+    /** the ambient pad under the home tab */
+    music: boolean;
+    /** taps, whistles and the academy till */
+    soundFx: boolean;
   };
 }
 
@@ -47,8 +60,12 @@ const STORAGE_KEY = 'psa.settings.v1';
 
 const DEFAULTS: SettingsState = {
   displayName: 'PLAYER',
+  email: null,
   country: null,
+  countryCode: null,
   geo: 'unset',
+  geoVerified: false,
+  geoUncertain: false,
   academyId: `#PSA-${String(1000 + Math.floor(Math.random() * 9000))}`,
   joinedAt: Date.now(),
   div: 'DIV 4',
@@ -63,6 +80,11 @@ const DEFAULTS: SettingsState = {
     matchScanResults: true,
     filmRoomAlerts: true,
     communityMentions: false,
+    founderAnnouncements: true,
+    fcMobileNews: true,
+    groupSessions: true,
+    music: true,
+    soundFx: true,
   },
 };
 
@@ -122,6 +144,11 @@ export function setDisplayName(raw: string) {
   if (clean) set({ displayName: clean });
 }
 
+export function setEmail(raw: string | null) {
+  const clean = raw ? raw.trim().toLowerCase().slice(0, 80) : null;
+  set({ email: clean || null });
+}
+
 export function setPlatform(p: SettingsState['platform']) {
   // TODO(real-scan-ingest): route match scanning by platform
   console.log('[settings] platform →', p);
@@ -133,9 +160,24 @@ export function setRegion(r: SettingsState['region']) {
   set({ region: r });
 }
 
-/** sign-up capture: their country + which JAN 1 pricing track it maps to */
-export function setCountry(country: string, geo: Exclude<GeoRegion, 'unset'>) {
-  set({ country, geo });
+/** sign-up capture: their country + which pricing track it maps to */
+export function setCountry(country: string, geo: Exclude<GeoRegion, 'unset'>, countryCode?: string) {
+  set({ country, geo, countryCode: countryCode ?? state.countryCode });
+}
+
+export function setCountryCode(code: string | null) {
+  set({ countryCode: code });
+}
+
+export function setGeoFlags(flags: { verified?: boolean; uncertain?: boolean }) {
+  set({
+    geoVerified: flags.verified ?? state.geoVerified,
+    geoUncertain: flags.uncertain ?? state.geoUncertain,
+  });
+}
+
+export function setAcademyId(id: string) {
+  if (id) set({ academyId: id.startsWith('#') ? id : id });
 }
 
 export function setPlan(p: SettingsState['plan']) {
@@ -146,13 +188,13 @@ export function setPlan(p: SettingsState['plan']) {
 
 /** full local wipe for "Delete account" — path, scans and XP go with it */
 export async function wipeLocalData() {
-  // TODO(real-backend): delete the server-side profile + auth row
-  console.log('[settings] DELETE ACCOUNT — local data wiped (backend seam)');
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);
   } catch {
     /* best effort */
   }
+  state = { ...DEFAULTS, toggles: { ...DEFAULTS.toggles }, academyId: `#PSA-${String(1000 + Math.floor(Math.random() * 9000))}`, joinedAt: Date.now() };
+  listeners.forEach((l) => l());
 }
 
 /** days spent in the academy (1 on day one — you count from your first session) */

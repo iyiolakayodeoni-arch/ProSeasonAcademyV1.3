@@ -16,13 +16,18 @@ import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
 import CoachingScreen from './CoachingScreen';
+import OnboardingScreen from './OnboardingScreen';
 import { useAmbientAudio } from '../audio/AudioManager';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
 import * as backend from '../data/backend';
+import { useOnboardingGate } from '../data/onboarding';
+import { usePushRegistration } from '../data/notifications';
+import { fetchAnnouncements } from '../data/announcements';
 import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 type Props = {
@@ -47,8 +52,19 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   }, []);
   useEffect(checkAccess, [checkAccess]);
 
-  const [tab, setTab] = useState<MainTab>('home');
+  const [tab, setTabState] = useState<MainTab>('home');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
+  const onboard = useOnboardingGate();
+  usePushRegistration(true);
+  useEffect(() => {
+    void fetchAnnouncements();
+  }, []);
+
+  // SFX only here; ambient beds stay owned by AudioManager so we do not run two music loops.
+  const setTab = useCallback((t: MainTab) => {
+    sfx('tab');
+    setTabState(t);
+  }, []);
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -60,6 +76,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
   const openStage = useCallback(
     (stage: JourneyStage, origin: StageOrigin) => {
+      sfx('whoosh');
       setRoom({ stage, origin });
       zoom.value = 0;
       zoom.value = withTiming(1, { duration: 470, easing: Easing.out(Easing.cubic) });
@@ -107,6 +124,11 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   // deleted — the gate explains that and keeps the contact line open.
   if (access && access.paidOnly && access.state === 'lapsed') {
     return <LapsedGate coach={coach} access={access} onRecheck={checkAccess} />;
+  }
+
+  // first-time walkthrough — short cards, skip anytime
+  if (onboard.ready && onboard.show) {
+    return <OnboardingScreen onDone={onboard.dismiss} />;
   }
 
   return (
