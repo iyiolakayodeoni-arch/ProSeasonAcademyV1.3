@@ -19,6 +19,7 @@ import SetupLoaderScreen from './src/screens/SetupLoaderScreen';
 import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
+import { hydrateThread } from './src/data/lessonThread';
 import { initCloudSync } from './src/data/cloudSync';
 import { initAudio } from './src/audio/sound';
 import {
@@ -95,8 +96,10 @@ export default function App() {
       if (!alive) return;
       const s = getSession();
       if (s.coachId) {
-        // the lock is permanent — his ledger loads before the map renders
+        // the lock is permanent — his ledger AND his lesson thread load
+        // before the map renders
         await hydrateProgress(s.coachId);
+        await hydrateThread(s.coachId);
         if (!alive) return;
         setCoachId(s.coachId);
       }
@@ -150,6 +153,7 @@ export default function App() {
     lockCoach(id); // persisted; a second call can never overwrite it
     setCoachId(id);
     void hydrateProgress(id);
+    void hydrateThread(id);
     setRoute('intro'); // coach speaks first, then the Baseline Scan gate
   }, []);
 

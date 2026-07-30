@@ -1,5 +1,6 @@
 import { Coach } from './coaches';
 import { tickerWit } from './humor';
+import { SideLesson, sideLessonFromPost } from './sideLesson';
 
 // ─────────────────────────────────────────────────────────────
 // HOME FEED DATA LAYER
@@ -11,24 +12,41 @@ import { tickerWit } from './humor';
 //      random members.
 //   2) METABOT posts — approved scouting finds from liveFeed.json.
 //      MetaBot can collect for free, but nothing reaches players
-//      until the founder approves/exports it.
+//      until the founder approves/exports it. Trick posts carry
+//      their SIDE NOTE payload so the card opens an in-app
+//      lesson + blog (SideLessonSheet) instead of sending the
+//      player out to a browser.
 // ─────────────────────────────────────────────────────────────
+
+interface LiveLessonBlock {
+  topic: string;
+  name: string;
+  headline: string;
+  why: string;
+  tiles: SideLesson['tiles'];
+  rule: string;
+  clip: SideLesson['clip'];
+  scan: { label: string; target: string }[];
+}
+
+interface LivePostRow {
+  id: string;
+  kind: string;
+  headline: string;
+  body: string;
+  cta: string;
+  patchVersion: string;
+  discoveredAt: string;
+  sourceName: string;
+  sourceUrl: string;
+  lesson?: LiveLessonBlock;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const LIVE_FEED: {
   updatedAt: string;
   currentPatch: string;
-  posts: {
-    id: string;
-    kind: string;
-    headline: string;
-    body: string;
-    cta: string;
-    patchVersion: string;
-    discoveredAt: string;
-    sourceName: string;
-    sourceUrl: string;
-  }[];
+  posts: LivePostRow[];
 } = require('./liveFeed.json');
 
 export type FeedKind =
@@ -59,6 +77,8 @@ export interface FeedCardData {
   reactions?: { icon: 'heart'; count: number };
   live?: boolean;
   origin: 'metabot' | 'coach' | 'academy';
+  /** the in-app SIDE NOTE — when present, the card opens the lesson + blog inside the app */
+  sideLesson?: SideLesson;
 }
 
 export function nextGroupSessionLabel(now = Date.now()): string {
@@ -141,11 +161,31 @@ export function metabotPosts(): FeedCardData[] {
     time: timeAgo(p.discoveredAt),
     headline: p.headline,
     body: p.body,
-    cta: p.cta,
+    // a post with a lesson is a SIDE NOTE — read it in the app, not the browser
+    cta: p.lesson ? 'READ THE SIDE NOTE — IN-APP BLOG ›' : p.cta,
     ctaUrl: p.sourceUrl,
     accent: 'green' as FeedAccent,
     thumbnail: p.kind === 'EXPLOIT' || p.kind === 'SKILL_MOVE' ? ('pitchRun' as const) : null,
     origin: 'metabot' as const,
+    sideLesson: p.lesson
+      ? sideLessonFromPost({
+          id: p.id,
+          kind: p.kind,
+          patchVersion: p.patchVersion,
+          discoveredAt: p.discoveredAt,
+          sourceName: p.sourceName,
+          sourceUrl: p.sourceUrl,
+          body: p.body,
+          lesson: {
+            name: p.lesson.name,
+            headline: p.lesson.headline,
+            why: p.lesson.why,
+            tiles: p.lesson.tiles,
+            rule: p.lesson.rule,
+            clip: p.lesson.clip,
+          },
+        })
+      : undefined,
   }));
 }
 

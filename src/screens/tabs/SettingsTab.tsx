@@ -8,6 +8,7 @@ import { colors, monoFont } from '../../theme';
 import { Coach } from '../../data/coaches';
 import { journeySeasonFor } from '../../data/journey';
 import { useJourneyProgress, wipeProgress } from '../../data/progress';
+import { wipeThread } from '../../data/lessonThread';
 import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
@@ -752,6 +753,7 @@ export default function SettingsTab({
                     await deleteAccountRemote();
                     await wipeLocalData();
                     await wipeProgress();
+                    await wipeThread();
                     await wipeSession();
                     backend.cloudReset();
                     onSignOut();

@@ -35,6 +35,7 @@ import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
 import StoreSheet from '../StoreSheet';
+import RoleModelSheet from '../RoleModelSheet';
 import { colors, monoFont } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
@@ -82,7 +83,7 @@ export default function JourneyTab({
   const vault = useMatches();
   const journal = useJournal();
   const settings = useSettings();
-  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | null>(null);
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
   // Identical rungs in every country; only the currency differs.
@@ -163,14 +164,22 @@ export default function JourneyTab({
         <Text style={styles.subline}>WALKING {coach.name}'S PATH</Text>
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
-          <Text style={styles.dividerTxt}>FINISH — WHERE THIS PATH ENDS</Text>
+          <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
           <View style={styles.divLine} />
         </View>
 
-        {/* ── the Role Model hero card — taps zoom into the current stage ── */}
+        {/* ── the Role Model hero card — stage 7 opens his story, not a shortcut ── */}
         <View style={styles.heroWrap} ref={heroRef} collapsable={false}>
-          <RoleModelCard coach={coach} onPress={zoomFromCard} />
-          <Text style={styles.heroHint}>TAP THE CARD — WALK THE NEXT STAGE WITH {coachFirst}</Text>
+          <RoleModelCard
+            coach={coach}
+            onPress={() => {
+              sfx('whoosh');
+              setSheet('rolemodel');
+            }}
+          />
+          <Text style={styles.heroHint}>
+            TAP THE CARD — WHY THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
+          </Text>
         </View>
 
         {/* ── the map ── */}
@@ -417,6 +426,16 @@ export default function JourneyTab({
       {sheet === 'vault' && <MatchVault coach={coach} onClose={() => setSheet(null)} />}
       {sheet === 'journal' && <LossJournal coach={coach} onClose={() => setSheet(null)} />}
       {sheet === 'till' && <StoreSheet onClose={() => { setSheet(null); refreshAccess(); }} />}
+      {sheet === 'rolemodel' && (
+        <RoleModelSheet
+          coach={coach}
+          onClose={() => setSheet(null)}
+          onWalkCurrent={() => {
+            setSheet(null);
+            zoomFromCard();
+          }}
+        />
+      )}
     </View>
   );
 }

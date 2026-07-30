@@ -40,7 +40,10 @@ import { assignLessonRef, recordStagePass, useJourneyProgress } from '../data/pr
 import { useMatchScan } from '../hooks/useMatchScan';
 import { objectiveCount, useMatches } from '../data/matches';
 import { useJournal } from '../data/journal';
+import { useLessonThread } from '../data/lessonThread';
+import { sideLessonFromPlan } from '../data/sideLesson';
 import StageScanSheet from './StageScanSheet';
+import SideLessonSheet from './SideLessonSheet';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
@@ -136,9 +139,19 @@ type Props = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// THE COACHING SCREEN — one-way film-room session for one stage.
-// Mechanic, tiles, rule and scan targets all come from the live
-// approved MetaBot feed (see src/data/coaching.ts).
+// THE COACHING SCREEN — the stage room, framed as TWO QUESTS.
+//
+//   MAIN QUEST — THE THREAD: the lesson you swore after your
+//   last match scan, carried into today's match. The scanner
+//   tags your key moments, you answer for them, you jot the
+//   next lesson. Psychology only your own matches can teach.
+//
+//   SIDE QUEST — TODAY'S MECHANIC: the bot's researched trick,
+//   animated board + blog read in-app. A side note to try —
+//   never the assignment. The main thing is done by you.
+//
+// Mechanic, tiles, rule and scan targets all come from the
+// live approved MetaBot feed (see src/data/coaching.ts).
 // ─────────────────────────────────────────────────────────────
 export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2200, eraseMs: 2200 });
@@ -147,7 +160,11 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   // the ledgers the scan is graded from
   const vault = useMatches();
   const journal = useJournal();
+  // THE THREAD — the lesson you're carrying (your main quest)
+  const thread = useLessonThread();
+  const carried = thread.current;
   const [scanSheet, setScanSheet] = useState(false);
+  const [sideOpen, setSideOpen] = useState(false);
 
   // ── resolve TODAY'S MECHANIC from the live bot feed ──
   const lessonResult = useMemo(
@@ -261,8 +278,8 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       : status === 'passed' || (cleared && status === 'armed')
         ? 'BACK TO THE MAP ›'
         : status === 'failed'
-          ? 'RUN IT BACK — SCAN A MATCH ›'
-          : 'SCAN A MATCH ›';
+          ? 'RUN IT BACK — PLAY + LOG THE SESSION ›'
+          : 'PLAY + RUN THE MATCH SCAN ›';
 
   // the room talks as it renders — one pop per beat of the briefing
   useEffect(() => {
@@ -399,12 +416,15 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             <View style={styles.lessonCard}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>TODAY’S MECHANIC · STAGE {stage.n}</Text>
+                  <Text style={styles.tagGreenTxt}>SIDE QUEST · STAGE {stage.n}</Text>
                 </View>
                 <View style={styles.tagGold}>
                   <Text style={styles.tagGoldTxt}>{plan.mechanicName}</Text>
                 </View>
               </View>
+              <Text style={styles.sideCue}>
+                A SIDE NOTE FROM THE LIVE FEED — SOMETHING EXTRA TO TRY. THE MAIN THING HAS TO BE DONE BY YOU.
+              </Text>
 
               <Text style={styles.lessonHeadline}>{plan.headline}</Text>
               <Text style={styles.lessonWhy}>{plan.why}</Text>
@@ -466,6 +486,17 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
                 </Pressable>
               </View>
 
+              <Pressable
+                onPress={() => {
+                  sfx('whoosh');
+                  setSideOpen(true);
+                }}
+              >
+                <View style={styles.blogBtn}>
+                  <Text style={styles.blogBtnTxt}>READ THE BLOG — THE FULL SIDE NOTE, IN-APP ›</Text>
+                </View>
+              </Pressable>
+
               <Text style={styles.trace}>
                 TRACKING FEED ITEM {plan.contentId} · {plan.patchVersion}
               </Text>
@@ -502,7 +533,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           <MessageMeta time={t(4)} />
         </Animated.View>
 
-        {/* ── MATCH SCAN — the graded part; passing unlocks the next node ── */}
+        {/* ── MATCH SCAN — the MAIN QUEST; passing unlocks the next node ── */}
         <Animated.View entering={FadeInDown.delay(400).duration(360)} style={styles.scanCard}>
           {cleared && status !== 'passed' && (
             <View style={styles.clearedBanner}>
@@ -512,12 +543,36 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           )}
           <View style={styles.tagRow}>
             <View style={styles.tagGreen}>
-              <Text style={styles.tagGreenTxt}>MATCH SCAN</Text>
+              <Text style={styles.tagGreenTxt}>MAIN QUEST · THE THREAD</Text>
             </View>
             <View style={styles.tagGold}>
               <Text style={styles.tagGoldTxt}>REQUIRED TO PASS STAGE {stage.n}</Text>
             </View>
           </View>
+
+          {/* THE THREAD — the lesson you swore last session, carried into today's match */}
+          {carried ? (
+            <View style={styles.threadBox}>
+              <Text style={styles.threadBoxTag}>YOUR MAIN QUEST — SWORN AFTER YOUR LAST SCAN</Text>
+              <Text style={styles.threadLesson}>“{carried.lesson}”</Text>
+              <Text style={styles.threadMeta}>
+                CARRY IT INTO THIS MATCH · THE SCAN OPENS BY ASKING HOW IT HELD
+                {thread.entries.length > 1
+                  ? ` · ${thread.heldCount} HELD · ${thread.brokeCount} BROKE SO FAR`
+                  : ''}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.threadBox, styles.threadBoxEmpty]}>
+              <Text style={styles.threadBoxTag}>YOUR MAIN QUEST — THE THREAD STARTS AT YOUR FIRST SCAN</Text>
+              <Text style={styles.threadEmpty}>
+                The baseline told us who you are. From this match on, every scan pulls one signed
+                lesson out of you — and that line becomes your next main quest. The psychology
+                can't be handed over; only your own matches teach it. That loop is the climb to
+                the Role Model.
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.scanHeadline}>Prove it in a real match.</Text>
           <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
@@ -631,6 +686,21 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       {scanSheet && (
         <View style={StyleSheet.absoluteFill}>
           <StageScanSheet coach={coach} stage={stage} plan={plan} onClose={handleScanSheetClose} />
+        </View>
+      )}
+
+      {/* ── THE SIDE NOTE — the side quest's animated lesson + blog, in-app ── */}
+      {sideOpen && plan && (
+        <View style={StyleSheet.absoluteFill}>
+          <SideLessonSheet
+            coach={coach}
+            lesson={sideLessonFromPlan(plan)}
+            origin="stage"
+            onClose={() => {
+              sfx('tap');
+              setSideOpen(false);
+            }}
+          />
         </View>
       )}
     </View>
@@ -846,6 +916,12 @@ const styles = StyleSheet.create({
   },
   tagGoldTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
 
+  sideCue: { marginTop: 10, fontFamily: monoFont, fontSize: 6.2, lineHeight: 11.5, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(242,192,120,0.85)' },
+  blogBtn: {
+    marginTop: 11, borderRadius: 10, borderWidth: 1.1, borderColor: 'rgba(242,192,120,0.55)',
+    backgroundColor: 'rgba(242,192,120,0.08)', paddingVertical: 10, alignItems: 'center',
+  },
+  blogBtnTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
   lessonHeadline: { marginTop: 12, fontSize: 20, lineHeight: 23, fontWeight: '900', letterSpacing: 0.2, color: colors.fg },
   lessonWhy: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
 
@@ -981,6 +1057,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.05)',
   },
   clearedTxt: { flex: 1, fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  threadBox: {
+    marginTop: 12, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.55)', borderRadius: 13,
+    backgroundColor: 'rgba(57,255,106,0.06)', padding: 12,
+    shadowColor: colors.primary, shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
+  },
+  threadBoxEmpty: { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(15,26,19,0.5)', shadowOpacity: 0 },
+  threadBoxTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.9, color: colors.primary },
+  threadLesson: { marginTop: 8, fontSize: 13.5, lineHeight: 19, fontStyle: 'italic', fontWeight: '700', color: colors.fg },
+  threadEmpty: { marginTop: 8, fontSize: 10.5, lineHeight: 16, fontWeight: '600', color: '#c9d8cd' },
+  threadMeta: { marginTop: 8, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.2, color: colors.muted },
   scanHeadline: { marginTop: 12, fontSize: 20, lineHeight: 23, fontWeight: '900', letterSpacing: 0.2, color: colors.primary, textShadowColor: 'rgba(57,255,106,0.4)', textShadowRadius: 12 },
   scanIntro: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
 
