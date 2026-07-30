@@ -113,6 +113,33 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
               <Text style={styles.contractTxt}>{story.contract}</Text>
             </Animated.View>
 
+            {/* THE LEGEND PATH PREVIEW — LOCKED */}
+            <Animated.View entering={FadeInUp.delay(360).duration(360)} style={styles.legendCard}>
+              <View style={styles.legendHeader}>
+                <LockIcon size={12} color="#f2c078" />
+                <Text style={styles.legendTag}>THE LEGEND PATH (LOCKED — PREVIEW)</Text>
+              </View>
+              <Text style={styles.legendTitle}>BECOME A LEGEND YOURSELF FIRST</Text>
+              <Text style={styles.legendBody}>
+                Clear all 6 stages of your coach's road to unlock the next level of your career:
+              </Text>
+              <View style={styles.legendBullet}>
+                <Text style={styles.legendBulletTitle}>1. THE ROAD TO PROSEASON FC</Text>
+                <Text style={styles.legendBulletBody}>
+                  Step-by-step guidance on how to actually get into ProSeason in FC.
+                </Text>
+              </View>
+              <View style={styles.legendBullet}>
+                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (PAID)</Text>
+                <Text style={styles.legendBulletBody}>
+                  Help coach the next generation with group session calls every 4 days per squad. This is paid: you take 80%, we take 20% of the money made from the calls.
+                </Text>
+              </View>
+              <Text style={styles.legendFooter}>
+                CONTRACT STATUS: LOCKED · PREPARING SQUAD ASSIGNMENTS
+              </Text>
+            </Animated.View>
+
             <Pressable
               onPress={() => {
                 sfx('whoosh');
@@ -179,7 +206,34 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
               </Text>
             </Animated.View>
 
-            <Animated.View entering={FadeInUp.delay(640).duration(360)} style={styles.proseCard}>
+            {/* THE LEGEND PATH — LOCKED */}
+            <Animated.View entering={FadeInUp.delay(600).duration(360)} style={styles.legendCard}>
+              <View style={styles.legendHeader}>
+                <LockIcon size={12} color="#f2c078" />
+                <Text style={styles.legendTag}>NEXT STAGE: THE LEGEND PATH (LOCKED)</Text>
+              </View>
+              <Text style={styles.legendTitle}>YOU ARE A LEGEND YOURSELF NOW</Text>
+              <Text style={styles.legendBody}>
+                You have finished your climb and ended your session! You are ready for the next stage of your journey:
+              </Text>
+              <View style={styles.legendBullet}>
+                <Text style={styles.legendBulletTitle}>1. THE ROAD TO PROSEASON FC</Text>
+                <Text style={styles.legendBulletBody}>
+                  We will guide you step-by-step on how to actually get into ProSeason in FC.
+                </Text>
+              </View>
+              <View style={styles.legendBullet}>
+                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (PAID)</Text>
+                <Text style={styles.legendBulletBody}>
+                  Help coach the next generation with group session calls every 4 days per squad. This is paid: you take 80%, we take 20% of the money made from the calls.
+                </Text>
+              </View>
+              <Text style={styles.legendFooter}>
+                CONTRACT STATUS: LOCKED · PREPARING SQUAD ASSIGNMENTS FOR SEASON 2
+              </Text>
+            </Animated.View>
+
+            <Animated.View entering={FadeInUp.delay(660).duration(360)} style={styles.proseCard}>
               <Text style={styles.prose}>{story.signoff}</Text>
             </Animated.View>
 
@@ -261,6 +315,19 @@ const styles = StyleSheet.create({
   },
   ctaTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1.8, color: '#0a0f0a' },
   footNote: { marginTop: 10, fontFamily: monoFont, fontSize: 5.4, lineHeight: 9.5, fontWeight: '700', letterSpacing: 1.1, textAlign: 'center', color: '#42584a' },
+
+  legendCard: {
+    marginTop: 12, borderWidth: 1.2, borderColor: '#f2c078', borderRadius: 14,
+    backgroundColor: 'rgba(242,192,120,0.04)', padding: 14,
+  },
+  legendHeader: { flexDirection: 'row', alignItems: 'center' },
+  legendTag: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078', marginLeft: 6 },
+  legendTitle: { marginTop: 10, fontSize: 13, fontWeight: '900', letterSpacing: 0.6, color: colors.fg },
+  legendBody: { marginTop: 6, fontSize: 11, lineHeight: 16.5, fontWeight: '600', color: '#ccd9cf' },
+  legendBullet: { marginTop: 10, paddingLeft: 8, borderLeftWidth: 1.5, borderLeftColor: 'rgba(242,192,120,0.3)' },
+  legendBulletTitle: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: '#f2c078' },
+  legendBulletBody: { marginTop: 3, fontSize: 10.5, lineHeight: 15, fontWeight: '600', color: '#b8c9bf' },
+  legendFooter: { marginTop: 12, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)', textAlign: 'center' },
 
   backBtn: {
     position: 'absolute', top: 58, left: 16, width: 34, height: 34, borderRadius: 17,

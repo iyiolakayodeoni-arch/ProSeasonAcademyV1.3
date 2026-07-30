@@ -338,7 +338,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         <View style={styles.headerWrap}>
           <LogoMark size={26} loopProps={loopProps} glowStyle={glowStyle} />
           <Text style={styles.eyebrow}>
-            STAGE {stage.n} — {stage.key}
+            STAGE {stage.n} — {stage.key}{stage.duration ? ` · ${stage.duration}` : ''}
           </Text>
           <View style={styles.nameRow}>
             <Text style={styles.coachBig}>{coachFirst}</Text>

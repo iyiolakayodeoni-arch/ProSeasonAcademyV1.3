@@ -46,6 +46,7 @@ export interface JourneyStage {
   rewardXp?: number;
   rewardBadge?: string;
   quote?: string;
+  duration?: string; // how long this stage takes to be completed
 }
 
 export interface SeasonDef {
@@ -99,6 +100,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'CINDER ROW BADGE',
       quote:
         'On Cinder Row you did not find space — you borrowed it and paid it back in sweat. Mama Ukae ran the evening games from her shopfront step; she never once blew a whistle, she just looked at you. Bring her two ranked wins. Clean ones.',
+      duration: '2-3 DAYS',
     },
     {
       n: 2,
@@ -115,6 +117,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'LEAN-TO BADGE',
       quote:
         'Drummer Ezra played for our shape, not our feet — he said a team standing right sounds like a tight drumskin, and a team chasing sounds like a burst one. Under the Lean-To you learn to stand where the rain is not. Concede nothing cheap. Nothing.',
+      duration: '3-4 DAYS',
     },
     {
       n: 3,
@@ -131,6 +134,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'SALTPITS BADGE',
       quote:
         'Foreman Baba Salt paid boys in cramps first and wages later — and they all came back the next morning. Ranked is the same contract. Win three. And write two honest lines about what the work cost, because a player who cannot read his own ledger goes broke.',
+      duration: '4-5 DAYS',
     },
     {
       n: 4,
@@ -147,6 +151,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'CORRIDOR BADGE',
       quote:
         'Locksmith Venn could open anything in the Row except a boy in a hurry. “A lock opens tooth by tooth,” he said, “never all at once.” Move their block the same way — pass, pass, wait, pass. Then lead at 75’ and shut the door with your own hand.',
+      duration: '4-5 DAYS',
     },
     {
       n: 5,
@@ -163,6 +168,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'RED LANTERN BADGE',
       quote:
         'Night-Watch Kettle lit the red lamps at the row’s end and knew everyone who only came out tired. Winners are made in the hour others sit down. Score late. Break a parked bus. Let the red light find you still standing.',
+      duration: '5-6 DAYS',
     },
     {
       n: 6,
@@ -180,6 +186,7 @@ const ASHFAULT: SeasonDef = {
       rewardBadge: 'THE IRON WHISTLE',
       quote:
         'Old Whistle Onye refereed the Row for forty years and swallowed his whistle in the biggest game ever played on Cinder Row — my game. He blew full time when the climb was finished, not a breath before. Become someone he would wait for. Four ranked wins. A silent sheet. Two doors shut at 75’.',
+      duration: '6-7 DAYS',
     },
   ],
 };
@@ -208,6 +215,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'TIDE FLATS BADGE',
       quote:
         'Fisher-boy Idri worked the flats barefoot and never once chased the water. “The tide gives minutes, not hours,” he laughed. Touch first. Look up. Let the game come back to you the way the water does. Two calm passing nights and your first ranked win.',
+      duration: '2-3 DAYS',
     },
     {
       n: 2,
@@ -224,6 +232,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'CANAL BADGE',
       quote:
         'Boatman Sola poled the canal at night by lantern and never hurried a bend. “The boat knows the water before you do. Let it finish its thought.” Seventy percent passing, twice — and one win where today’s mechanic does the steering.',
+      duration: '3-4 DAYS',
     },
     {
       n: 3,
@@ -240,6 +249,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'STILLWATER BADGE',
       quote:
         'Dockmaster Yew moved cargo on the stillest mornings and swore still water out-lifts any storm. A parked bus is a dock wall, little one — lean on it patiently and it opens where it was built to. Three against the block; nothing cheap the other way.',
+      duration: '4-5 DAYS',
     },
     {
       n: 4,
@@ -256,6 +266,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'FOG GATE BADGE',
       quote:
         'Fogwatcher Nne counted ships through the thickest nights by sound alone. There are match minutes like fog — a deflection, a referee, a tilt — where eyes lie. Write two honest lines about one. Then close a game out while your pulse stays low.',
+      duration: '4-5 DAYS',
     },
     {
       n: 5,
@@ -272,6 +283,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'HARBOUR LIGHTS BADGE',
       quote:
         'Light-keeper Ama stood above the bay and read weather an hour before sailors felt it. See the whole pitch like that — the run before it starts, the winner before the defending tiredness. Three ranked wins, and one decided after eighty, because you saw it first.',
+      duration: '5-6 DAYS',
     },
     {
       n: 6,
@@ -289,6 +301,7 @@ const MEREHAVEN: SeasonDef = {
       rewardBadge: 'CALM WATER BADGE',
       quote:
         'Elder Mere, oldest head on the water, once told a boy why champions look slow: “The opponent supplies the waves; you remain the temperature.” This is the road’s end, little one — seventy-five on the ball, silence at the back, and two games finished the Iceman way: calm.',
+      duration: '6-7 DAYS',
     },
   ],
 };
