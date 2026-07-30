@@ -15,6 +15,8 @@ import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
+import { SideLesson } from '../../data/sideLesson';
+import SideLessonSheet from '../SideLessonSheet';
 import {
   formatAnnouncementWhen,
   markAnnouncementRead,
@@ -81,6 +83,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   }, []);
 
   const [tillOpen, setTillOpen] = useState(false);
+  // the SIDE NOTE — a bot trick opened as an in-app lesson + blog
+  const [side, setSide] = useState<SideLesson | null>(null);
 
   // ── the founder mutters when you poke the wordmark enough ──
   const [brandTaps, setBrandTaps] = useState(0);
@@ -254,6 +258,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             onLike={() => { setLiked((s) => ({ ...s, [card.id]: true })); sfx('like'); }}
             locked={isTrick(card.kind) && !trickOpen(card.id)}
             onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
+            onOpenLesson={(l) => { setSide(l); sfx('whoosh'); }}
           />
         ))}
 
@@ -274,6 +279,13 @@ export default function HomeTab({ coach }: { coach: Coach }) {
       {tillOpen && (
         <View style={StyleSheet.absoluteFill}>
           <StoreSheet onClose={() => { setTillOpen(false); refreshAccess(); }} />
+        </View>
+      )}
+
+      {/* the SIDE NOTE — the bot's trick as an in-app lesson + blog */}
+      {side && (
+        <View style={StyleSheet.absoluteFill}>
+          <SideLessonSheet coach={coach} lesson={side} origin="home" onClose={() => { setSide(null); sfx('tap'); }} />
         </View>
       )}
     </View>
@@ -338,6 +350,7 @@ function FeedCard({
   onLike,
   locked = false,
   onUnlock,
+  onOpenLesson,
 }: {
   card: FeedCardData;
   coach: Coach;
@@ -347,9 +360,15 @@ function FeedCard({
   /** a gated trick this member's tier does not open yet */
   locked?: boolean;
   onUnlock?: () => void;
+  /** a trick carrying a SIDE NOTE — open the lesson + blog inside the app */
+  onOpenLesson?: (lesson: SideLesson) => void;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
+    if (card.sideLesson && onOpenLesson) {
+      onOpenLesson(card.sideLesson); // the side note reads INSIDE the academy
+      return;
+    }
     if (card.ctaUrl) {
       void Linking.openURL(card.ctaUrl).catch(() => {});
     } else {

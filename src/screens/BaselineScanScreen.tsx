@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image } from 
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
+import MomentReview from '../components/MomentReview';
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
@@ -12,16 +13,20 @@ import {
   recordBaselineMatch,
   sealBaseline,
 } from '../data/baselineScan';
+import { TaggedMoment, momentsComplete } from '../data/scanMoments';
 import { getSettings } from '../data/settings';
 import { resultOf } from '../data/matches';
-import { CheckIcon } from '../components/Icons';
+import { CheckIcon, EyeIcon } from '../components/Icons';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
-// BASELINE SCAN — the 5-match interview gate. Semi-automatic by
-// design: the score is the easy part; the debrief is the point.
-// No AI reads your head here — you grow by thinking, on purpose.
+// BASELINE SCAN — the 5-match trial gate. The full match-scan
+// exercise runs here too: you play, the scanner tags the key
+// moments, the coach asks his questions on each one — but NO
+// lesson is written yet. Five debriefs of psychology data become
+// your sealed profile (tendencies + composure + ambition); the
+// lesson-carrying MAIN QUEST only starts on the journey itself.
 // Phases: TALK → ×5 MATCH DEBRIEF → AMBITION → SEALED CARD.
 // ─────────────────────────────────────────────────────────────
 
@@ -58,6 +63,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   const [composure, setComposure] = useState<number | null>(null);
   const [answer, setAnswer] = useState('');
+  const [moments, setMoments] = useState<TaggedMoment[]>([]);
   const [ambition, setAmbition] = useState('');
   const [sealing, setSealing] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -79,18 +85,27 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     return bank[(matchNo - 1) % bank.length];
   }, [script, result, matchNo]);
   const beat = played ? script.beats[beatKey(gf, ga)] : null;
-  const canContinue = composure !== null && answer.trim().length >= MIN_ANSWER;
+  const canContinue = composure !== null && answer.trim().length >= MIN_ANSWER && momentsComplete(moments);
   const first = coach.name.split(' ')[0].toUpperCase();
 
   const submitMatch = () => {
     if (!canContinue || !session) return;
     sfx('whoosh'); // the debrief is sealed and filed
-    recordBaselineMatch({ gf, ga, result, composure: composure as number, question, answer: answer.trim() });
+    recordBaselineMatch({
+      gf,
+      ga,
+      result,
+      composure: composure as number,
+      question,
+      answer: answer.trim(),
+      moments: moments.map((m) => ({ kind: m.kind, when: m.when, answer: m.answer.trim() })),
+    });
     setGf(0);
     setGa(0);
     setTouched(false);
     setComposure(null);
     setAnswer('');
+    setMoments([]);
     const done = session.entries.length + 1 >= TOTAL;
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
@@ -194,6 +209,27 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
               {played && (
                 <>
+                  {/* ════ KEY MOMENTS — the scanner's tags + his questions (NO lesson yet) ════ */}
+                  <View style={styles.momentWrap}>
+                    <View style={styles.momentHead}>
+                      <EyeIcon size={12} color={colors.accent} />
+                      <Text style={styles.momentHeadTxt}>KEY MOMENTS — WHAT THE SCANNER SAW</Text>
+                    </View>
+                    <MomentReview
+                      coach={coach}
+                      moments={moments}
+                      onChange={setMoments}
+                      cue={
+                        coach.id === 'chinedu'
+                          ? 'Not the score — the moments the score was made of. Tag what made or broke this match, then answer my question on each one. No lesson writing yet: these five games are me reading YOU.'
+                          : 'Not the score, little one — the moments the score was made of. Tag what turned the match, then answer my question on each one. No lesson writing yet — these five games are me learning who you are.'
+                      }
+                    />
+                    <Text style={styles.noLessonNote}>
+                      NO LESSON IS WRITTEN IN THE TRIAL — THE PROFILE COMES FIRST. YOUR LESSONS START THE MOMENT THE JOURNEY OPENS.
+                    </Text>
+                  </View>
+
                   <Text style={styles.fieldLabel}>YOUR HEAD, FULL 90</Text>
                   <View style={styles.chipRow}>
                     {COMPOSURE_LABELS.map((label, i) => (
@@ -228,7 +264,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     </Text>
                   </Pressable>
                   {!canContinue && (
-                    <Text style={styles.requireTxt}>ANSWER ({MIN_ANSWER}+ CHARACTERS) + PICK YOUR HEAD STATE TO CONTINUE</Text>
+                    <Text style={styles.requireTxt}>
+                      TAG + ANSWER THE KEY MOMENTS, ANSWER THE QUESTION ({MIN_ANSWER}+ CHARACTERS), PICK YOUR HEAD STATE — THEN WE MOVE
+                    </Text>
                   )}
                 </>
               )}
@@ -277,6 +315,21 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
                 <Text style={styles.cardReadLabel}>{first}'S READ:</Text>
                 <Text style={styles.cardReadTxt}>“{session.card.coachRead}”</Text>
+                {(session.card.tendencies?.length ?? 0) > 0 && (
+                  <>
+                    <Text style={styles.cardAmbLabel}>WHAT THE SCANNER LEARNED ABOUT YOU:</Text>
+                    <View style={styles.tendencyRow}>
+                      {session.card.tendencies.map((t) => (
+                        <View key={t} style={styles.tendencyPill}>
+                          <Text style={styles.tendencyTxt}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={styles.tendencyNote}>
+                      YOUR TENDENCIES UNDER PRESSURE — THE FIRST THING YOUR MAIN QUESTS WILL WORK ON.
+                    </Text>
+                  </>
+                )}
                 <Text style={styles.cardAmbLabel}>YOUR AMBITION (HE REMEMBERS):</Text>
                 <Text style={styles.cardAmbTxt}>“{session.card.ambition}”</Text>
               </View>
@@ -341,6 +394,14 @@ const styles = StyleSheet.create({
   beatBubble: { flexDirection: 'row', gap: 10, marginTop: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
   beatFace: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border },
   beatBubbleTxt: { flex: 1, color: colors.warm, fontFamily: monoFont, fontSize: 11, lineHeight: 17, letterSpacing: 0.3 },
+  momentWrap: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 14, backgroundColor: 'rgba(22,18,8,0.4)', padding: 12 },
+  momentHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  momentHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2, fontWeight: '700' },
+  noLessonNote: { marginTop: 12, color: colors.muted, fontFamily: monoFont, fontSize: 7.5, lineHeight: 12.5, letterSpacing: 1, textAlign: 'center' },
+  tendencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, alignSelf: 'flex-start' },
+  tendencyPill: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(242,192,120,0.06)' },
+  tendencyTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, fontWeight: '700' },
+  tendencyNote: { marginTop: 7, color: colors.muted, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1, alignSelf: 'flex-start' },
   fieldLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, marginTop: 18, marginBottom: 8 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surface },

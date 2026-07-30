@@ -18,6 +18,13 @@ const KEY = 'psa.baseline.v1';
 
 export type MatchResult = 'W' | 'D' | 'L';
 
+/** one scanner tag + the player's reasoning, as filed by a baseline debrief */
+export interface BaselineMoment {
+  kind: string;
+  when: string | null;
+  answer: string;
+}
+
 export interface BaselineEntry {
   gf: number;
   ga: number;
@@ -25,6 +32,9 @@ export interface BaselineEntry {
   composure: number; // 1..5
   question: string; // the deep question that was asked
   answer: string;   // the soul-searching answer (their words, not ours)
+  /** the key moments the scanner saw + the answers — pure psychology data.
+   *  NO lesson is written during the trial: the lessons start at Stage 1. */
+  moments: BaselineMoment[];
   at: number;
 }
 
@@ -41,6 +51,8 @@ export interface BaselineCard {
   tier: string;         // sealed title — computed from THE MIND, not the score
   coachRead: string;    // his verdict line, in his voice
   ambition: string;     // their words — he will bring this up later
+  /** what the 20+ tags across 5 matches say you tend to do under pressure */
+  tendencies: string[];
   sealedAt: number;
 }
 
@@ -85,6 +97,9 @@ async function persist() {
 export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
   if (!session) return;
   session = { ...session, entries: [...session.entries, { ...entry, at: Date.now() }] };
+  const momentLine = entry.moments.length
+    ? entry.moments.map((m) => `${m.kind}@${m.when ?? '?'}`).join(' · ')
+    : 'NONE TAGGED';
   addMatch(
     {
       gf: entry.gf,
@@ -97,7 +112,7 @@ export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
       ledAt75: null,
       decisive: null,
       composure: entry.composure,
-      note: `BASELINE M${session.entries.length} — ${entry.answer}`.slice(0, 140),
+      note: `BASELINE M${session.entries.length} — ${entry.answer} | MOMENTS: ${momentLine}`.slice(0, 140),
     },
     'manual',
   );
@@ -121,11 +136,24 @@ export async function sealBaseline(handle: string, coachId: string, ambition: st
     tier: tierFor(avg),
     coachRead: coachReadFor(coachId, avg, w, l),
     ambition,
+    tendencies: tendenciesOf(e),
     sealedAt: Date.now(),
   };
   session = { ...(session as BaselineSession), ambition, card };
   await persist();
   return card;
+}
+
+/** the top scanners' reads across the trial — what pressure does to THIS player */
+export function tendenciesOf(entries: Pick<BaselineEntry, 'moments'>[]): string[] {
+  const counts = new Map<string, number>();
+  for (const e of entries) {
+    for (const m of e.moments ?? []) counts.set(m.kind, (counts.get(m.kind) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([kind, n]) => `${kind} ×${n}`);
 }
 
 export function tierFor(avgComposure: number): string {

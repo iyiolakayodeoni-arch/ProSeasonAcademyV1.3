@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import MomentReview, { makeMoment } from '../components/MomentReview';
 import { colors, monoFont } from '../theme';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
@@ -18,22 +19,33 @@ import {
   clampGoals,
   resultOf,
 } from '../data/matches';
+import { TaggedMoment, momentsComplete } from '../data/scanMoments';
+import { useLessonThread, settleCarried, swearLesson } from '../data/lessonThread';
 import { useMatchWatcher } from '../data/matchWatcher';
 import { sfx } from '../audio/sound';
 import { CheckIcon, ChevronLeftIcon, EyeIcon, GamepadIcon, ScanGlyphIcon } from '../components/Icons';
 
 // ─────────────────────────────────────────────────────────────
-// STAGE MATCH SCAN — the NEW scan system, inside the stage room.
+// STAGE MATCH SCAN v3 — the ritual, inside the stage room.
 //
-// Before this, the room's scan only GRADED the vault — logging
-// happened somewhere else. Now the full ritual lives here too:
-// the numbers (THE SCAN) → the player's head (THE MIND, semi-
-// automatic by design) → the coach's story beat + read → the
-// graded vault scan. Same system as the baseline, every stage,
-// every match — exactly as the coach frames it.
+// The player PLAYS the match while the coach watches through
+// the scanner. The scanner tags the KEY MOMENTS — the make or
+// break minutes, not the score — the coach asks a guiding
+// question on EVERY tag, and the player answers in their own
+// words. Then the part that makes it a training session: the
+// player jots THE LESSON they carry into the next match. That
+// line becomes the thread — their MAIN QUEST for the next
+// session — and the next scan opens by asking how it held.
+//
+// Same system every stage, every match, until the Role Model:
+// the psychology cannot be downloaded, only found in your own
+// games. (The 5-match baseline used the same exercise without
+// the lesson — it was building your profile, not your quest.)
 // ─────────────────────────────────────────────────────────────
 
-const MIN_ANSWER = 12; // same bar as the baseline debrief — soul answers, not one-worders
+const MIN_ANSWER = 12; // soul answers, not one-worders
+const MIN_LESSON = 20; // a signed line, not a shrug
+const MIN_VERDICT_NOTE = 8; // where the carried lesson held or snapped
 
 const DECISIVE_OPTIONS: { key: DecisiveWindow; label: string }[] = [
   { key: 'EARLY', label: 'BEFORE 60’' },
@@ -41,39 +53,9 @@ const DECISIVE_OPTIONS: { key: DecisiveWindow; label: string }[] = [
   { key: 'AFTER 80', label: '80’+' },
 ];
 
-const KEY_MOMENTS = [
-  'LOST BALL',
-  'COUNTER AGAINST',
-  'CONCEDED',
-  'BAD DEFENDING',
-  'MISSED CHANCE',
-  'PANIC PASS',
-  'CARD / FOUL',
-  'MECHANIC USED',
-  'GOOD DECISION',
-] as const;
-
-type KeyMoment = (typeof KEY_MOMENTS)[number];
-
-function coachMomentQuestions(coachId: string, moments: KeyMoment[], result: 'W' | 'D' | 'L'): string[] {
-  const stern = coachId === 'chinedu';
-  const base = stern
-    ? [
-        'What happened two actions before the mistake?',
-        'Was this pressure from them, or impatience from you?',
-        'Which input would you remove if you could replay five seconds?',
-      ]
-    : [
-        'What did the match ask you to do that you resisted?',
-        'Where did your breathing change before your decision changed?',
-        'What calmer option was already on the pitch?',
-      ];
-  if (moments.includes('CONCEDED')) base.push('Before the goal, were you defending the ball or defending the next pass?');
-  if (moments.includes('PANIC PASS')) base.push('Did you pass because it was open, or because you wanted the pressure to end?');
-  if (moments.includes('MISSED CHANCE')) base.push('Did you shoot because it was the best chance, or because the attack felt long?');
-  if (moments.includes('MECHANIC USED')) base.push('Did today’s mechanic fit the picture, or did you force it because it was the lesson?');
-  if (result === 'W') base.push('Even in the win, what habit would punish you against a better player?');
-  return base.slice(0, 5);
+function fmtClock(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
 function RichText({ text, style, hotStyle }: { text: string; style: object; hotStyle: object }) {
@@ -125,8 +107,11 @@ type Props = {
 export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const copy = STAGE_SCAN_COPY[coach.id] ?? STAGE_SCAN_COPY.obinna;
   const coachFirst = coach.name.split(' ')[0];
+  const stern = coach.id === 'chinedu';
   const mechShort = plan?.shortName ?? null;
   const watcher = useMatchWatcher();
+  const thread = useLessonThread();
+  const carried = thread.current; // the lesson sworn after your LAST scan
 
   // ── THE SCAN (numbers) ──
   const [gf, setGf] = useState(0);
@@ -141,11 +126,17 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const [watcherPrefill, setWatcherPrefill] = useState(false);
   const [swap, setSwap] = useState(false);
 
+  // ── KEY MOMENTS (the scanner's tags + yours) ──
+  const [moments, setMoments] = useState<TaggedMoment[]>([]);
+
   // ── THE MIND (yours, every scan) ──
   const [composure, setComposure] = useState<number | null>(null);
   const [answer, setAnswer] = useState('');
-  const [moments, setMoments] = useState<KeyMoment[]>([]);
-  const [reviewAnswer, setReviewAnswer] = useState('');
+
+  // ── THE LESSON (your next main quest) ──
+  const [verdict, setVerdict] = useState<'held' | 'broke' | null>(null);
+  const [verdictNote, setVerdictNote] = useState('');
+  const [lesson, setLesson] = useState('');
 
   // ── phase ──
   const [phase, setPhase] = useState<'brief' | 'scan' | 'read'>('brief');
@@ -155,12 +146,41 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const result = resultOf({ gf, ga });
   const isWin = result === 'W';
   const question = stageSoulQuestion(coach.id, result, stage.n, gf, ga);
-  const momentQuestions = coachMomentQuestions(coach.id, moments, result);
-  const mindReady =
-    composure != null &&
-    answer.trim().length >= MIN_ANSWER &&
-    moments.length > 0 &&
-    reviewAnswer.trim().length >= MIN_ANSWER;
+
+  const mindReady = composure != null && answer.trim().length >= MIN_ANSWER;
+  const momentsReady = momentsComplete(moments);
+  const verdictReady = !carried || (verdict != null && verdictNote.trim().length >= MIN_VERDICT_NOTE);
+  const lessonReady = lesson.trim().length >= MIN_LESSON;
+  const scanReady = mindReady && momentsReady && verdictReady && lessonReady;
+
+  // ── THE EYE's auto markers: when a finished watcher session has goal
+  // events, seed them as tagged moments the moment the review opens ──
+  const eyeSeeded = moments.some((m) => m.auto);
+  useEffect(() => {
+    if (phase !== 'scan' || eyeSeeded) return;
+    const s = watcher.session;
+    if (!s || !s.events.length) return;
+    const seeded: TaggedMoment[] = s.events.map((ev, i) => {
+      const mine = (ev.type === 'goal-left') !== swap; // left = YOU unless swapped
+      return makeMoment(mine ? 'GOAL FOR' : 'GOAL AGAINST', {
+        id: `eye-${ev.at}-${i}`,
+        auto: true,
+        eyeNote: `SPOTTED ${fmtClock(ev.at - s.startedAt)} INTO THE SESSION · THE EYE DOES NOT LIE — BUT IT ONLY SEES GOALS`,
+      });
+    });
+    if (seeded.length) setMoments((cur) => [...seeded, ...cur]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
+  // swapping sides flips the EYE's tags too
+  const flipSwap = () => {
+    setSwap((s) => !s);
+    setMoments((cur) =>
+      cur.map((m) =>
+        m.auto ? { ...m, kind: m.kind === 'GOAL FOR' ? 'GOAL AGAINST' : 'GOAL FOR' } : m,
+      ),
+    );
+  };
 
   const resetComposer = () => {
     setGf(0);
@@ -173,14 +193,19 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
     setComposure(null);
     setAnswer('');
     setMoments([]);
-    setReviewAnswer('');
+    setVerdict(null);
+    setVerdictNote('');
+    setLesson('');
     setWatcherPrefill(false);
     setSwap(false);
   };
 
   const logScan = () => {
-    if (!mindReady) return;
+    if (!scanReady) return;
     sfx('whoosh'); // sealed — off to the vault it goes
+    const momentLine = moments
+      .map((m) => `${m.kind}@${m.when}${m.answer.trim() ? `("${m.answer.trim()}")` : ''}`)
+      .join(' · ');
     const draft: MatchDraft = {
       gf: clampGoals(gf),
       ga: clampGoals(ga),
@@ -193,18 +218,25 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
       decisive: isWin ? decisive : null,
       composure,
       note: [
-        `MOMENTS: ${moments.join(', ')}`,
-        `REVIEW: ${reviewAnswer.trim()}`,
+        `MOMENTS: ${momentLine}`,
         `MIND: ${answer.trim()}`,
-      ].join(' | '),
+        `LESSON: ${lesson.trim()}`,
+        carried && verdict ? `THREAD: ${verdict.toUpperCase()} — ${verdictNote.trim()}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | '),
     };
-    addMatch(draft, watcherPrefill ? 'watcher' : 'manual');
+    const entry = addMatch(draft, watcherPrefill ? 'watcher' : 'manual');
+    // the loop closes and reopens in one motion: the old lesson gets its
+    // verdict, the new one takes the thread as your next main quest
+    if (carried && verdict) settleCarried(carried.id, verdict, verdictNote);
+    swearLesson({ stageN: stage.n, lesson: lesson.trim(), matchId: entry.id });
     setLoggedSummary({
       r: result,
       gf: clampGoals(gf),
       ga: clampGoals(ga),
       head: COMPOSURE_LABELS[(composure ?? 3) - 1],
-      note: `${reviewAnswer.trim()} — ${answer.trim()}`,
+      note: lesson.trim(),
     });
     setLoggedOnce(true);
     setPhase('read');
@@ -226,10 +258,10 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
       <View style={styles.headerWrap}>
         <Text style={styles.eyebrow}>
-          STAGE {stage.n} · {stage.key} — SESSION SCAN
+          STAGE {stage.n} · {stage.key} — MAIN QUEST SESSION
         </Text>
         <Text style={styles.title}>THE MATCH SCAN</Text>
-        <Text style={styles.subtitle}>THE SAME SYSTEM AS YOUR BASELINE — NOW INSIDE EVERY STAGE</Text>
+        <Text style={styles.subtitle}>YOU PLAY · THE SCANNER TAGS · HE ASKS · YOU WRITE THE LESSON</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -237,44 +269,89 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           <>
             <CoachBubble coach={coach} label={coach.name}>
               <Text style={styles.bubbleText}>
-                This scan is manual on purpose. Go play the match, then come back and watch yourself honestly. I am not here to hand you the lesson — I am here to ask the questions that make you find it.
+                {stern
+                  ? 'This is not a form, little bro — it is a watched training session. You play, the scanner and I watch. It tags the moments that make or break you — not the score, the MOMENTS — and I ask you about every one of them. Then you write the lesson. That lesson is your next main quest.'
+                  : 'This is a watched session now, little one. Go and play — the scanner and I will be watching for the moments that make or break you. Not the score — the moments the score was made of. I will ask you about each one, and then you will jot the lesson. That lesson becomes your next main quest.'}
               </Text>
             </CoachBubble>
+
+            {carried && (
+              <Animated.View entering={FadeInDown.delay(80).duration(340)} style={styles.carriedBanner}>
+                <Text style={styles.carriedTag}>YOUR THREAD WALKED IN WITH YOU</Text>
+                <Text style={styles.carriedLesson}>“{carried.lesson}”</Text>
+                <Text style={styles.carriedMeta}>
+                  SWORN AFTER YOUR LAST SCAN · PLAY WITH IT TODAY — THE REVIEW ASKS HOW IT HELD
+                </Text>
+              </Animated.View>
+            )}
 
             <Animated.View entering={FadeInDown.delay(120).duration(340)} style={styles.card}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>MATCH SESSION · SERIOUS PLAYERS ONLY</Text>
+                  <Text style={styles.tagGreenTxt}>WATCHED SESSION · HOW IT RUNS</Text>
                 </View>
                 <GamepadIcon size={13} color={colors.primary} />
               </View>
-              <Text style={styles.cue}>WHAT HAPPENS NOW</Text>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>1</Text>
-                <Text style={styles.briefTxt}>OPEN FC MOBILE AND PLAY THE MATCH. DO NOT PAUSE TO PLEASE THE APP — PLAY FOR REAL.</Text>
+                <Text style={styles.briefTxt}>
+                  {watcher.available
+                    ? 'ARM THE EYE BEFORE KICK-OFF (SCREEN-RECORD PERMISSION, ONCE) — IT WATCHES THE SCOREBUG AND DROPS GOAL MARKERS FOR YOU. NO ANDROID BUILD? YOUR OWN EYES DO THE SCANNING — SAME RITUAL.'
+                    : 'PLAY THE MATCH FOR REAL. ON THIS PHONE YOUR OWN EYES ARE THE SCANNER — TAG THE MOMENTS YOURSELF AFTER FULL TIME. SAME RITUAL, SAME STANDARD.'}
+                </Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>2</Text>
-                <Text style={styles.briefTxt}>IF YOUR PHONE CAN RECORD, KEEP THE CLIP LOCAL. THE VIDEO IS FOR YOUR REVIEW, NOT FOR OUR SERVER.</Text>
+                <Text style={styles.briefTxt}>THE SCANNER TAGS THE KEY MOMENTS — THE MAKE-OR-BREAK MINUTES. GOALS COME IN AS MARKERS; THE MISTAKES AND GOOD CALLS YOU TAG YOURSELF, HONESTLY.</Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>3</Text>
-                <Text style={styles.briefTxt}>COME BACK, LOG THE SCORE, TAG THE KEY MOMENTS, THEN ANSWER THE QUESTIONS LIKE YOU ACTUALLY WANT TO IMPROVE.</Text>
+                <Text style={styles.briefTxt}>{coachFirst.toUpperCase()} ASKS A QUESTION ON EVERY TAG. ANSWER EACH ONE LIKE YOU WANT TO KEEP IT — THE HEADSPACE IS THE POINT, NOT THE CONFESSION.</Text>
+              </View>
+              <View style={styles.briefStep}>
+                <Text style={styles.briefNo}>4</Text>
+                <Text style={styles.briefTxt}>JOT THE LESSON YOU CARRY INTO YOUR NEXT MATCH. ONE LINE YOU WOULD SIGN. IT MEETS YOU AT THE NEXT STAGE ROOM AS YOUR MAIN QUEST.</Text>
               </View>
               <View style={styles.privacyBox}>
                 <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: VIDEO STAYS ON YOUR PHONE AND IS DELETED AFTER THE SESSION. THE ACADEMY SAVES YOUR ANSWERS, TAGS AND MATCH RECEIPT — NOT YOUR RAW MATCH VIDEO.
+                  DEFAULT RULE: ANY VIDEO STAYS ON YOUR PHONE AND GOES WHEN THE SESSION SEALS. THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — NEVER YOUR RAW MATCH.
                 </Text>
               </View>
             </Animated.View>
 
-            <Pressable onPress={() => setPhase('scan')}>
+            {watcher.available && (watcher.status === 'idle' || watcher.status === 'unavailable') && (
+              <Pressable
+                onPress={() => {
+                  sfx('whoosh');
+                  void watcher.arm();
+                }}
+              >
+                <View style={[styles.logBtn, styles.armBtn]}>
+                  <EyeIcon size={11} color={colors.primary} />
+                  <Text style={[styles.logBtnTxt, { color: colors.primary }]}>ARM THE EYE — THEN GO PLAY ›</Text>
+                </View>
+              </Pressable>
+            )}
+            {watcher.available && (watcher.status === 'arming' || watcher.status === 'running') && (
+              <View style={styles.eyeLiveStrip}>
+                <EyeIcon size={11} color={colors.primary} />
+                <Text style={styles.eyeLiveTxt}>
+                  THE EYE IS LIVE — {watcher.session?.scoreL ?? 0}–{watcher.session?.scoreR ?? 0} SO FAR. GO PLAY. WHEN IT'S FULL TIME, COME BACK AND RUN THE REVIEW.
+                </Text>
+              </View>
+            )}
+
+            <Pressable onPress={() => { sfx('whoosh'); setPhase('scan'); }}>
               <View style={styles.logBtn}>
                 <ScanGlyphIcon size={11} color="#0a0f0a" />
-                <Text style={styles.logBtnTxt}>I PLAYED THE MATCH — START THE REVIEW ›</Text>
+                <Text style={styles.logBtnTxt}>
+                  {(watcher.session?.events.length ?? 0) > 0 ? 'FULL TIME — OPEN THE MOMENT REVIEW ›' : 'I PLAYED THE MATCH — START THE REVIEW ›'}
+                </Text>
               </View>
             </Pressable>
-            <Text style={styles.honor}>NO SHORTCUTS. IF YOU DO NOT WANT TO WRITE, THIS ACADEMY IS NOT FOR YOU.</Text>
+            <Text style={styles.honor}>
+              IF THE EYE IS STILL RUNNING, FINISH IT IN THE VAULT FIRST SO THE MARKERS LAND HERE. NO SHORTCUTS — THE ANSWERS ARE THE SESSION.
+            </Text>
           </>
         ) : phase === 'scan' ? (
           <>
@@ -283,11 +360,11 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <RichText text={copy.ask} style={styles.bubbleText} hotStyle={styles.hot} />
             </CoachBubble>
 
-            {/* ── THE SCAN — the numbers, a machine's half ── */}
+            {/* ── PART 1 · THE TAPE — the numbers, a machine's half ── */}
             <Animated.View entering={FadeInDown.delay(120).duration(340)} style={styles.card}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>PART 1 · THE SCAN — THE NUMBERS</Text>
+                  <Text style={styles.tagGreenTxt}>PART 1 · THE TAPE — THE NUMBERS</Text>
                 </View>
                 <ScanGlyphIcon size={13} color={colors.primary} />
               </View>
@@ -301,12 +378,13 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                     <View style={{ flex: 1, gap: 7 }}>
                       <Text style={styles.eyeTxt}>
                         THE EYE READ {swap ? watcher.session.scoreR : watcher.session.scoreL}–{swap ? watcher.session.scoreL : watcher.session.scoreR} (YOU–THEM) ACROSS {watcher.session.frames} FRAMES
+                        {watcher.session.events.length > 0 ? ` · ${watcher.session.events.length} GOAL MARKER${watcher.session.events.length === 1 ? '' : 'S'} ALREADY TAGGED BELOW` : ''}
                       </Text>
                       <View style={styles.eyeBtnRow}>
                         <Pressable onPress={takeEyeScore} style={styles.eyeBtn}>
                           <Text style={styles.eyeBtnTxt}>USE THE EYE'S SCORE</Text>
                         </Pressable>
-                        <Pressable onPress={() => setSwap((s) => !s)} style={[styles.eyeBtn, styles.eyeBtnGhost]}>
+                        <Pressable onPress={flipSwap} style={[styles.eyeBtn, styles.eyeBtnGhost]}>
                           <Text style={[styles.eyeBtnTxt, styles.eyeBtnGhostTxt]}>SWAP</Text>
                         </Pressable>
                       </View>
@@ -317,7 +395,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                     </Text>
                   ) : (
                     <Text style={[styles.eyeTxt, { flex: 1 }]}>
-                      THE EYE CAN COUNT GOALS FOR YOU — ARM IT IN THE VAULT BEFORE KICK-OFF AND THE SCORE FILLS ITSELF IN.
+                      THE EYE CAN COUNT GOALS FOR YOU — ARM IT BEFORE KICK-OFF AND THE SCORE + GOAL MARKERS FILL THEMSELVES IN.
                     </Text>
                   )}
                 </View>
@@ -392,7 +470,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               </View>
               <View style={styles.inlineRow}>
                 <Text style={styles.inlineLabel}>
-                  {mechShort ? `USED TODAY'S MECHANIC — THE ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
+                  {mechShort ? `USED THE SIDE QUEST — THE ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
                 </Text>
                 <View style={styles.inlineCtrl}>
                   {[0, 1, 2, 3].map((n) => (
@@ -425,56 +503,27 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <Text style={styles.stageFeed}>EVERY FIELD HERE FEEDS STAGE {stage.n}'S GRADED OBJECTIVES — THE VAULT COUNTS, THE COACH JUDGES</Text>
             </Animated.View>
 
-            {/* ── KEY MOMENT REVIEW — the clip only teaches when they pause it ── */}
-            <Animated.View entering={FadeInDown.delay(190).duration(340)} style={[styles.card, styles.reviewCard]}>
+            {/* ── PART 2 · KEY MOMENTS — the make-or-break minutes ── */}
+            <Animated.View entering={FadeInDown.delay(190).duration(340)} style={[styles.card, styles.momentCardWrap]}>
               <View style={styles.tagRow}>
                 <View style={[styles.tagGreen, styles.tagGold]}>
-                  <Text style={styles.tagGoldTxt}>PART 2 · KEY MOMENTS — PAUSE THE CLIP</Text>
+                  <Text style={styles.tagGoldTxt}>PART 2 · KEY MOMENTS — WHAT THE SCANNER SAW</Text>
                 </View>
                 <EyeIcon size={13} color={colors.accent} />
               </View>
-              <Text style={styles.mindCue}>
-                Watch your match yourself. Pause where the match turned. Tag what happened, then write what you see before I say anything.
-              </Text>
-
-              <Text style={styles.fieldLabel}>WHAT MOMENTS DID YOU FIND?</Text>
-              <View style={styles.chipRow}>
-                {KEY_MOMENTS.map((m) => {
-                  const on = moments.includes(m);
-                  return (
-                    <Pressable
-                      key={m}
-                      onPress={() => setMoments((cur) => (cur.includes(m) ? cur.filter((x) => x !== m) : [...cur, m]))}
-                      style={[styles.chip, on && styles.chipGold]}
-                    >
-                      <Text style={[styles.chipTxt, on && { color: colors.accent }]}>{on ? '✓ ' : ''}{m}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-
-              <Text style={styles.fieldLabel}>THE REVIEW — WHAT ACTUALLY BROKE?</Text>
-              <TextInput
-                value={reviewAnswer}
-                onChangeText={(t) => setReviewAnswer(t.slice(0, 220))}
-                placeholder="EXAMPLE: I LOST IT FROM A RUSHED PASS, THEN CHASED THE BALL INSTEAD OF BLOCKING THE NEXT PASS."
-                placeholderTextColor={colors.muted}
-                style={styles.input}
-                multiline
-                maxLength={220}
+              <MomentReview
+                coach={coach}
+                moments={moments}
+                onChange={setMoments}
+                cue={
+                  stern
+                    ? 'The score flatters everyone. THESE are the minutes the match was actually decided — tag them, then answer for each one. One-word answers are bluffs, and I read bluffs.'
+                    : 'Not the score, little one — the moments the score was made of. Tag what turned the match, then walk me through each one. Slow is fine. Honest is required.'
+                }
               />
-              <Text style={styles.count}>
-                {reviewAnswer.trim().length < MIN_ANSWER ? `${reviewAnswer.trim().length}/${MIN_ANSWER} TO REVIEW` : `${reviewAnswer.length}/220`}
-              </Text>
-
-              <View style={styles.questionBox}>
-                {momentQuestions.map((q) => (
-                  <Text key={q} style={styles.questionLine}>· {q}</Text>
-                ))}
-              </View>
             </Animated.View>
 
-            {/* ── THE MIND — half the machine refuses to do ── */}
+            {/* ── PART 3 · THE MIND — yours, every scan ── */}
             <Animated.View entering={FadeInDown.delay(240).duration(340)} style={[styles.card, styles.mindCard]}>
               <View style={styles.tagRow}>
                 <View style={[styles.tagGreen, styles.tagGold]}>
@@ -516,32 +565,106 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 <Text style={styles.bluffTxt}>“{copy.bluff}”</Text>
                 <Text style={styles.bluffBy}>— {coachFirst.toUpperCase()} · HOUSE RULE</Text>
               </View>
+            </Animated.View>
+
+            {/* ── PART 4 · THE LESSON — the training, not the paperwork ── */}
+            <Animated.View entering={FadeInDown.delay(290).duration(340)} style={[styles.card, styles.lessonCard]}>
+              <View style={styles.tagRow}>
+                <View style={[styles.tagGreen, styles.tagLesson]}>
+                  <Text style={styles.tagLessonTxt}>PART 4 · THE LESSON — YOUR MAIN QUEST</Text>
+                </View>
+                <CheckIcon size={12} color={colors.primary} />
+              </View>
+              <Text style={styles.lessonCue}>
+                EVERYTHING ABOVE WAS EVIDENCE. THIS LINE IS THE TRAINING. JOT THE LESSON YOU CARRY INTO YOUR NEXT MATCH — IT WAITS FOR YOU IN THE NEXT STAGE ROOM AS YOUR MAIN QUEST, AND THE NEXT SCAN OPENS BY ASKING HOW IT HELD.
+              </Text>
+
+              {carried && (
+                <View style={styles.threadCheck}>
+                  <Text style={styles.threadCheckTag}>THREAD CHECK — AFTER YOUR LAST SCAN YOU SWORE:</Text>
+                  <Text style={styles.threadCheckLesson}>“{carried.lesson}”</Text>
+                  <View style={styles.chipRow}>
+                    {(['held', 'broke'] as const).map((v) => (
+                      <Pressable
+                        key={v}
+                        onPress={() => setVerdict(verdict === v ? null : v)}
+                        style={[styles.chip, verdict === v && (v === 'held' ? styles.chipActive : styles.chipBroke)]}
+                      >
+                        <Text style={[styles.chipTxt, verdict === v && (v === 'held' ? styles.chipTxtActive : { color: colors.loss })]}>
+                          {verdict === v ? '✓ ' : ''}{v === 'held' ? 'IT HELD TODAY' : 'IT BROKE TODAY'}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <TextInput
+                    value={verdictNote}
+                    onChangeText={(t) => setVerdictNote(t.slice(0, 160))}
+                    placeholder="WHERE DID IT SHOW UP — OR WHERE DID IT SNAP?"
+                    placeholderTextColor={colors.muted}
+                    style={styles.input}
+                    multiline
+                    maxLength={160}
+                  />
+                  <Text style={styles.count}>
+                    {verdictNote.trim().length < MIN_VERDICT_NOTE
+                      ? `${verdictNote.trim().length}/${MIN_VERDICT_NOTE} · ONE HONEST LINE — THE THREAD KEEPS SCORE OF YOUR HEAD, NOT YOUR PRIDE`
+                      : 'VERDICT FILED'}
+                  </Text>
+                </View>
+              )}
+
+              <Text style={styles.fieldLabel}>THE LESSON — ONE LINE YOU WOULD SIGN</Text>
+              <TextInput
+                value={lesson}
+                onChangeText={(t) => setLesson(t.slice(0, 140))}
+                placeholder="EXAMPLE: WHEN I CONCEDE, MY NEXT THREE PASSES GO SAFE — I NEVER ANSWER A GOAL WITH A RUSH."
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                multiline
+                maxLength={140}
+              />
+              <Text style={styles.count}>
+                {lesson.trim().length < MIN_LESSON
+                  ? `${lesson.trim().length}/${MIN_LESSON} TO JOT THE LESSON · WRITE IT LIKE THE NEXT MATCH CAN HEAR YOU`
+                  : `${lesson.length}/140 · SEALED AS YOUR NEXT MAIN QUEST`}
+              </Text>
               <Text style={styles.demand}>{copy.demand}</Text>
             </Animated.View>
 
-            <Pressable onPress={logScan} disabled={!mindReady}>
-              <View style={[styles.logBtn, !mindReady && styles.logBtnOff]}>
+            <Pressable onPress={logScan} disabled={!scanReady}>
+              <View style={[styles.logBtn, !scanReady && styles.logBtnOff]}>
                 <CheckIcon size={10} color="#0a0f0a" />
                 <Text style={styles.logBtnTxt}>
-                  {mindReady ? `LOG THE SCAN — ${result} ${gf}–${ga}` : 'TAG MOMENTS + ANSWER FIRST'}
+                  {scanReady ? `SEAL THE SESSION — ${result} ${gf}–${ga}` : 'ANSWER THE MOMENTS + JOT THE LESSON FIRST'}
                 </Text>
               </View>
             </Pressable>
             <Text style={styles.honor}>
-              SEMI-AUTOMATIC BY DESIGN — THE MACHINE TAKES THE NUMBERS; YOUR HEAD AND YOUR WORDS STAY YOURS. THE GRADED SCAN RUNS AFTER THIS.
+              THE MACHINE TAKES THE NUMBERS; THE SCANNER TAKES THE MOMENTS; THE LESSON IS YOURS ALONE. THE GRADED SCAN RUNS RIGHT AFTER THIS.
             </Text>
           </>
         ) : (
-          /* ── THE BEAT + THE READ — then the grade ── */
+          /* ── THE SEALED THREAD + the beat + the read — then the grade ── */
           <>
             {loggedSummary && (
               <Animated.View entering={FadeInDown.duration(300)} style={styles.summary}>
-                <Text style={styles.summaryEyebrow}>SCAN LOGGED TO THE VAULT</Text>
+                <Text style={styles.summaryEyebrow}>SESSION SEALED TO THE VAULT</Text>
                 <Text style={styles.summaryScore}>
                   {loggedSummary.r} {loggedSummary.gf}–{loggedSummary.ga}
                   <Text style={styles.summaryHead}> · HEAD: {loggedSummary.head}</Text>
                 </Text>
-                <Text style={styles.summaryNote}>“{loggedSummary.note}”</Text>
+                <View style={styles.summaryLessonBox}>
+                  <Text style={styles.summaryLessonTag}>YOUR MAIN QUEST FOR THE NEXT SESSION</Text>
+                  <Text style={styles.summaryLesson}>“{loggedSummary.note}”</Text>
+                  {carried && verdict && (
+                    <Text style={styles.summaryVerdict}>
+                      LAST LESSON: {verdict === 'held' ? 'HELD ✓' : 'BROKE ✗'} — {thread.entries.length} ON THE THREAD NOW
+                    </Text>
+                  )}
+                </View>
+                <Text style={styles.summaryNote}>
+                  IT MEETS YOU IN THE NEXT STAGE ROOM. PLAY WITH IT. ANSWER FOR IT AT THE NEXT SCAN.
+                </Text>
               </Animated.View>
             )}
 
@@ -551,7 +674,9 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
             <Text style={styles.msgTime}>THE SCORELINE REMINDED HIM — IT ALWAYS DOES</Text>
 
             <CoachBubble coach={coach} label={`${coach.name} · THE READ`}>
-              <Text style={styles.bubbleText}>{stageReadLine(coach.id, resultOf({ gf: loggedSummary?.gf ?? gf, ga: loggedSummary?.ga ?? ga }), mechShort)}</Text>
+              <Text style={styles.bubbleText}>
+                {stageReadLine(coach.id, resultOf({ gf: loggedSummary?.gf ?? gf, ga: loggedSummary?.ga ?? ga }), mechShort)}
+              </Text>
             </CoachBubble>
 
             <Pressable onPress={() => onClose(true)} style={({ pressed }) => [styles.logBtn, { marginTop: 16 }, pressed && { opacity: 0.85 }]}>
@@ -560,7 +685,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
             </Pressable>
             <Pressable onPress={() => { resetComposer(); setPhase('scan'); }} hitSlop={6}>
               <View style={styles.againBtn}>
-                <Text style={styles.againTxt}>ANOTHER MATCH? LOG IT FIRST ›</Text>
+                <Text style={styles.againTxt}>ANOTHER MATCH? RUN THE SESSION AGAIN ›</Text>
               </View>
             </Pressable>
           </>
@@ -597,13 +722,23 @@ const styles = StyleSheet.create({
   hot: { color: colors.primary, fontWeight: '900' },
   msgTime: { marginLeft: 32, marginTop: 4, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.45)' },
 
+  carriedBanner: {
+    marginTop: 14, borderWidth: 1.2, borderColor: colors.primary, borderRadius: 14,
+    backgroundColor: 'rgba(57,255,106,0.06)', padding: 13,
+    shadowColor: colors.primary, shadowOpacity: 0.25, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
+  },
+  carriedTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2, color: colors.primary },
+  carriedLesson: { marginTop: 7, fontSize: 12.5, lineHeight: 18, fontStyle: 'italic', fontWeight: '700', color: colors.fg },
+  carriedMeta: { marginTop: 7, fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.2, color: colors.muted },
+
   card: {
     marginTop: 14, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 16,
     backgroundColor: 'rgba(12,20,14,0.94)', padding: 13,
     shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 16, shadowOffset: { width: 0, height: 0 },
   },
-  reviewCard: { borderColor: 'rgba(242,192,120,0.45)', shadowColor: colors.accent },
+  momentCardWrap: { borderColor: 'rgba(242,192,120,0.45)', shadowColor: colors.accent },
   mindCard: { borderColor: 'rgba(242,192,120,0.55)', shadowColor: colors.accent },
+  lessonCard: { borderColor: 'rgba(57,255,106,0.72)', shadowColor: colors.primary, shadowOpacity: 0.22 },
   briefStep: {
     marginTop: 10,
     flexDirection: 'row',
@@ -624,16 +759,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   privacyTxt: { fontFamily: monoFont, fontSize: 6.2, lineHeight: 11, fontWeight: '800', letterSpacing: 1, color: colors.warm },
-  questionBox: {
-    marginTop: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.22)',
-    borderRadius: 10,
-    backgroundColor: 'rgba(57,255,106,0.04)',
-    padding: 10,
-    gap: 5,
-  },
-  questionLine: { fontFamily: monoFont, fontSize: 6.5, lineHeight: 11, fontWeight: '800', letterSpacing: 1, color: 'rgba(238,242,236,0.84)' },
 
   tagRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   tagGreen: {
@@ -643,6 +768,16 @@ const styles = StyleSheet.create({
   tagGreenTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
   tagGold: { borderColor: 'rgba(242,192,120,0.55)', backgroundColor: 'rgba(242,192,120,0.06)' },
   tagGoldTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  tagLesson: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.12)' },
+  tagLessonTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  lessonCue: { marginTop: 10, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
+
+  threadCheck: {
+    marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)', borderRadius: 11,
+    backgroundColor: 'rgba(57,255,106,0.05)', padding: 11,
+  },
+  threadCheckTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.7, color: colors.primary },
+  threadCheckLesson: { marginTop: 7, fontSize: 11, lineHeight: 16, fontStyle: 'italic', fontWeight: '700', color: colors.fg },
 
   cue: { marginTop: 10, fontFamily: monoFont, fontSize: 6.6, lineHeight: 12, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
 
@@ -658,6 +793,12 @@ const styles = StyleSheet.create({
   eyeBtnGhost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
   eyeBtnGhostTxt: { color: colors.primary },
   eyePrefill: { marginTop: 8, fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
+  eyeLiveStrip: {
+    marginTop: 14, flexDirection: 'row', gap: 8, alignItems: 'flex-start',
+    borderWidth: 1, borderColor: colors.primary, borderRadius: 10,
+    backgroundColor: 'rgba(57,255,106,0.07)', paddingHorizontal: 10, paddingVertical: 10,
+  },
+  eyeLiveTxt: { flex: 1, fontFamily: monoFont, fontSize: 6.2, lineHeight: 11.5, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
 
   scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
   scoreSide: { alignItems: 'center', gap: 5, width: 118 },
@@ -686,6 +827,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(57,255,106,0.2)', backgroundColor: 'rgba(10,15,10,0.5)',
   },
   chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.12)' },
+  chipBroke: { borderColor: colors.loss, backgroundColor: 'rgba(224,96,92,0.1)' },
   chipGold: { borderColor: colors.accent, backgroundColor: 'rgba(242,192,120,0.09)' },
   chipTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.2, color: colors.muted },
   chipTxtActive: { color: colors.primary },
@@ -727,6 +869,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13,
     shadowColor: colors.primary, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 0 },
   },
+  armBtn: { backgroundColor: 'rgba(57,255,106,0.08)', borderWidth: 1.2, borderColor: colors.primary, shadowOpacity: 0.25 },
   logBtnOff: { backgroundColor: 'rgba(31,56,38,1)', shadowOpacity: 0 },
   logBtnTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1.8, color: '#0a0f0a' },
   honor: { marginTop: 9, fontFamily: monoFont, fontSize: 5.4, lineHeight: 9, fontWeight: '700', letterSpacing: 1, textAlign: 'center', color: '#42584a' },
@@ -739,7 +882,14 @@ const styles = StyleSheet.create({
   summaryEyebrow: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 2.2, color: colors.primary },
   summaryScore: { marginTop: 8, fontSize: 21, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
   summaryHead: { fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, color: colors.warm },
-  summaryNote: { marginTop: 9, fontSize: 10.5, lineHeight: 16, fontStyle: 'italic', textAlign: 'center', color: '#d8e6da', paddingHorizontal: 8 },
+  summaryLessonBox: {
+    marginTop: 12, width: '100%', borderWidth: 1, borderColor: 'rgba(57,255,106,0.45)',
+    borderRadius: 11, backgroundColor: 'rgba(8,13,9,0.6)', padding: 11,
+  },
+  summaryLessonTag: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.9, color: colors.primary },
+  summaryLesson: { marginTop: 7, fontSize: 12, lineHeight: 17.5, fontStyle: 'italic', fontWeight: '700', color: colors.fg },
+  summaryVerdict: { marginTop: 8, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.3, color: colors.muted },
+  summaryNote: { marginTop: 10, fontFamily: monoFont, fontSize: 6, lineHeight: 11, fontWeight: '800', letterSpacing: 1.2, textAlign: 'center', color: colors.warm },
 
   againBtn: {
     marginTop: 9, borderRadius: 11, borderWidth: 1, borderColor: 'rgba(143,184,155,0.35)',

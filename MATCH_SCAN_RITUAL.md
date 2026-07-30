@@ -1,5 +1,29 @@
 # Match Scan Ritual — manual-first, serious-player design
 
+> **SHIPPED (v3, 30 July 2026):** the loop below now runs in the app as described.
+> The stage match scan is a *watched training session*: the player plays, the
+> scanner tags the key moments (auto goal markers from THE EYE where the native
+> watcher exists + the player's own tags), the coach asks a guiding question on
+> **every** tag, and the player jots **THE LESSON** — one signed line that
+> becomes the **thread**, the player's MAIN QUEST for the next session. The next
+> scan opens by asking how the last lesson held (HELD / BROKE + one honest
+> line), then a new lesson takes the thread. The 5-match baseline runs the same
+> play → watch → questions exercise with **no lesson written** (its tags,
+> composure and answers build the sealed psychology profile: tendencies on the
+> baseline card). Stage rooms are framed as **MAIN QUEST · THE THREAD** (this
+> loop + the graded stage objectives) and **SIDE QUEST · TODAY'S MECHANIC**
+> (the MetaBot lesson — animated board + blog readable in-app via
+> `SideLessonSheet`, also from Home's trick cards). The finish is **STAGE 7 ·
+> THE ROLE MODEL** (`RoleModelSheet`): a person to look up to and a story to
+> hold — explicitly *not* a road to copy, because every road to the top of the
+> same game is different.
+>
+> Code: `src/data/scanMoments.ts` (vocabulary + question banks),
+> `src/data/lessonThread.ts` (the thread store), `src/components/MomentReview.tsx`
+> (shared review UI), `src/screens/StageScanSheet.tsx` (the ritual),
+> `src/screens/SideLessonSheet.tsx` (side-quest reader),
+> `src/screens/RoleModelSheet.tsx` (stage 7).
+
 This is the intended direction for ProSeasonAcademy’s match scan.
 
 The academy is **not** trying to become a fake automatic coach that pretends it understands a full FC Mobile match. The product should attract serious players who are willing to watch themselves, write honestly, and learn from their own decisions.

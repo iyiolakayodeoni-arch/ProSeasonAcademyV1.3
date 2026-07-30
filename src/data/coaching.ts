@@ -176,24 +176,24 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       greeting:
         'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end. And please, let the controller cool down first — it has done nothing wrong.',
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
-      mechanic: `Listen carefully now. Today’s mechanic is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you. Even the button you always panic-press deserves a day off.`,
+      mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
       quip: coachQuip('obinna', plan.contentId),
-      closer: `That’s the whole lesson. You don’t have to report anything to me — **the scan will know.** It always knows. Go play, and let your ${mech} do the talking.`,
+      closer: `That’s the whole side note. The real work is yours — play your match with your thread in hand, answer the moments, jot the lesson. **The scan will know.** It always knows.`,
       scanIntro:
-        'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
-      footer: 'THE CHAT IS ONE WAY — YOUR MATCH DOES THE REPLYING FOR YOU.',
+        'PLAY ONE RANKED MATCH WITH YOUR THREAD IN HAND. THE SCANNER TAGS THE MOMENTS THAT MADE OR BROKE YOU — I ASK ABOUT EACH ONE, THEN YOU JOT THE LESSON. THAT LESSON IS YOUR NEXT MAIN QUEST.',
+      footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
     };
   }
   return {
     greeting:
       'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end. And no, shouting at the referee is not a mechanic.',
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
-    mechanic: `Now listen properly. Today’s mechanic is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you. Your opponent is welcome to call it luck; that saves us explaining the homework.`,
+    mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
-    closer: `That’s the whole lesson. And before you even think about lying to me — **the scan will know.** It always knows. Go play, and let your ${mech} answer for you.`,
+    closer: `That’s the whole side note. Now the real work — play your match with your thread in hand, answer the moments, jot the lesson. **The scan will know.** It always knows.`,
     scanIntro:
-      'PLAY ONE RANKED MATCH. THE SCAN READS YOUR GAME AND CHECKS IF TODAY’S MECHANIC ACTUALLY SHOWED UP — WATCHING THE CLIP ISN’T THE LESSON. THIS IS.',
-    footer: 'THE CHAT IS ONE WAY, LITTLE BRO — YOUR MATCH IS THE REPLY.',
+      'PLAY ONE RANKED MATCH WITH YOUR THREAD IN HAND. THE SCANNER TAGS THE MOMENTS THAT MADE OR BROKE YOU — I ASK ABOUT EACH ONE, THEN YOU JOT THE LESSON. THAT LESSON IS YOUR NEXT MAIN QUEST.',
+    footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
   };
 }
 
@@ -203,7 +203,7 @@ export function buildPrepChat(coach: Coach, staleName?: string): CoachChat {
   // The scan grades this stage's OBJECTIVES against the vault, so it works
   // with or without a fresh mechanic. Only the bonus tape is pending.
   const scanIntro =
-    'THE SCAN IS LIVE — IT GRADES THIS STAGE’S OBJECTIVES OFF YOUR VAULT. TODAY’S EXTRA MECHANIC IS STILL BEING CUT; THE WORK DOESN’T WAIT FOR IT.';
+    'THE SCAN IS LIVE — IT GRADES THIS STAGE’S OBJECTIVES OFF YOUR VAULT AND STILL PULLS YOUR LESSON OUT OF THE MATCH. TODAY’S SIDE QUEST IS STILL BEING CUT; THE MAIN ONE DOESN’T WAIT FOR IT.';
   if (staleName) {
     return {
       greeting: calm
