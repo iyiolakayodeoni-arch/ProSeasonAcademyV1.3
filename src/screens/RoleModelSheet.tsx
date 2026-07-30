@@ -130,9 +130,9 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
                 </Text>
               </View>
               <View style={styles.legendBullet}>
-                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (PAID)</Text>
+                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (OPTIONAL & PAID)</Text>
                 <Text style={styles.legendBulletBody}>
-                  Help coach the next generation with group session calls every 4 days per squad. This is paid: you take 80%, we take 20% of the money made from the calls.
+                  Entirely optional: if you choose to share your expertise, you can earn by hosting voluntary group session calls every 4 days per squad. Zero pressure, no obligation, and absolutely no recruitment required. You take 80%, we take 20% of the call proceeds.
                 </Text>
               </View>
               <Text style={styles.legendFooter}>
@@ -223,9 +223,9 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
                 </Text>
               </View>
               <View style={styles.legendBullet}>
-                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (PAID)</Text>
+                <Text style={styles.legendBulletTitle}>2. COACH THE NEXT GENERATION (OPTIONAL & PAID)</Text>
                 <Text style={styles.legendBulletBody}>
-                  Help coach the next generation with group session calls every 4 days per squad. This is paid: you take 80%, we take 20% of the money made from the calls.
+                  Entirely optional: if you choose to give back, you can host voluntary group session calls every 4 days per squad. Zero pressure, no obligations, and absolutely no recruitment or pyramid structure—just direct, rewarded coaching. You take 80%, we take 20% of the call proceeds.
                 </Text>
               </View>
               <Text style={styles.legendFooter}>
