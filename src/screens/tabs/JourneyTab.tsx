@@ -303,6 +303,9 @@ export default function JourneyTab({
 
           <Text style={[styles.stageName, isLocked && { color: 'rgba(143,184,155,0.7)' }]}>{selected.name}</Text>
           <Text style={styles.stageTagline}>{selected.tagline.replace('YOUR COACH', coachFirst)}</Text>
+          {selected.duration && (
+            <Text style={styles.stageDuration}>ESTIMATED TIME TO CLEAR: {selected.duration}</Text>
+          )}
 
           {isLocked ? (
             <View style={styles.lockedNote}>
@@ -636,6 +639,7 @@ const styles = StyleSheet.create({
   statusLockedTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
   stageName: { marginTop: 10, fontSize: 19, fontWeight: '900', letterSpacing: 0.6, color: colors.fg },
   stageTagline: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
+  stageDuration: { marginTop: 5, fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 1.8, color: colors.accent },
 
   lockedNote: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(31,56,38,1)', borderRadius: 12, padding: 12, backgroundColor: 'rgba(15,26,19,0.5)' },
   lockedNoteTxt: { fontSize: 10, lineHeight: 15, color: '#9db4a3' },
