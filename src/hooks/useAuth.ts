@@ -20,12 +20,11 @@ export type AuthApi = {
     country: string;
     countryCode: string;
     region: string;
-    inviteCode?: string;
   }) => Promise<authApi.AuthResult | authApi.AuthFail>;
   login: (email: string, password: string) => Promise<authApi.AuthResult | authApi.AuthFail>;
   requestReset: (email: string) => Promise<{ ok: true; message: string } | authApi.AuthFail>;
   /** legacy anonymous path — kept for offline/dev */
-  enterAcademy: (handle: string, inviteCode?: string) => Promise<backend.CloudUser | null>;
+  enterAcademy: (handle: string) => Promise<backend.CloudUser | null>;
 };
 
 function applyProfile(profile: authApi.AuthProfile) {
@@ -46,7 +45,6 @@ export function useAuth(): AuthApi {
     country: string;
     countryCode: string;
     region: string;
-    inviteCode?: string;
   }) => {
     if (loading) {
       return { ok: false as const, error: 'RATE_LIMITED' as const, message: authApi.AUTH_ERROR_COPY.RATE_LIMITED };
@@ -89,13 +87,13 @@ export function useAuth(): AuthApi {
   }, []);
 
   const enterAcademy = useCallback(
-    async (handle: string, inviteCode?: string): Promise<backend.CloudUser | null> => {
+    async (handle: string): Promise<backend.CloudUser | null> => {
       if (loading) return null;
       setLoading(true);
       try {
         const s = getSettings();
         const name = handle.trim() || s.displayName;
-        const me = await backend.ensureAuth(name, '', s.platform, s.geo, inviteCode);
+        const me = await backend.ensureAuth(name, '', s.platform, s.geo);
         if (me) {
           setDisplayName(me.handle);
           setAcademyId(me.academyId);

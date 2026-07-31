@@ -17,7 +17,7 @@ This adds:
 - `news_drafts` (MetaBot → founder review → Home)
 - `push_tokens` + `notification_queue`
 - location → pricing helpers (Nigeria shelf = `NG` only)
-- open registration default (`invite_only = false`)
+- open registration default (up to the 1,000-seat cap)
 - till stays closed until you open it from the Desk
 
 ## 2. Edge functions
@@ -50,7 +50,7 @@ Set secrets:
 - Decide **Confirm email**:
   - Off → instant seats (current `auth-register` marks confirmed)
   - On → flip `email_confirm: true` off in `auth-register` and handle `EMAIL_NOT_CONFIRMED`
-- Review **invite_only** in `config` (Desk can toggle). Default after v14 SQL: **open registration**
+- Review **seat_cap** in `config`. Default after v14 SQL: **open registration up to the cap**
 - Redirect URL for reset: `proseasonacademy://reset-password` (or your scheme)
 
 ## 4. Founder account

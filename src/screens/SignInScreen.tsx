@@ -329,7 +329,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 />
               </View>
               <Text style={styles.geoNote}>
-                YOUR ACADEMY REFERENCE TOKEN IS GENERATED AUTOMATICALLY — NO INVITE CODE TO TYPE.
+                YOUR ACADEMY REFERENCE TOKEN IS GENERATED AUTOMATICALLY.
               </Text>
             </>
           )}
@@ -430,7 +430,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           )}
 
           <Text style={styles.seatNote}>
-            SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · AUTO ACADEMY TOKEN · NO MANUAL INVITE CODE
+            SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · AUTO ACADEMY TOKEN
           </Text>
 
           <View style={styles.footerRow}>

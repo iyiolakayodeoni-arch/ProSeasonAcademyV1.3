@@ -16,7 +16,7 @@ Supabase dashboard → **SQL Editor** → **New query** → paste the whole file
 |---|---|---|---|
 | 1 | `supabase/schema.sql` | tables, RLS, the till *(already run — skip if so)* | "Success. No rows returned" |
 | 2 | `supabase/seat-gate.sql` | the 1,000-seat cap, enforced in Postgres | `SEAT GATE ARMED · SEASON ONE · 0/1000` |
-| 3 | `supabase/security.sql` | invite-only door, rate limits, contact inbox, founder's week | `SECURITY ARMED · … invite_only=true` |
+| 3 | `supabase/security.sql` | rate limits, contact inbox, founder's week, membership state | `SECURITY ARMED · … seats taken` |
 | 4 | `supabase/packs.sql` | bundle extras onto a product | `PACK CONTENTS` + a line per pack |
 | 5 | `supabase/tiers.sql` | **ACADEMY / PRO — the same ladder in ₦ and $** | `THE LADDER` + 10 product lines |
 | 6 | `supabase/access.sql` | **the trial, then paid-only + the grace window** | `ACCESS ARMED · trial=MID for 14 days` |
@@ -28,8 +28,8 @@ Then **Edge Functions** — paste each file's contents into a function of the sa
 
 | Function | Source | Why |
 |---|---|---|
-| `ensure-profile` | `supabase/functions/ensure-profile/index.ts` | **redeploy** — now checks invites |
-| `founder-desk` | `supabase/functions/founder-desk/index.ts` | **new** — inbox, invites, packs, moderation |
+| `ensure-profile` | `supabase/functions/ensure-profile/index.ts` | **redeploy** — grants a seat up to the cap |
+| `founder-desk` | `supabase/functions/founder-desk/index.ts` | **new** — inbox, packs, moderation |
 | `pay-webhook` | `supabase/functions/pay-webhook/index.ts` | **new** — payments grant access automatically |
 
 Confirm `FOUNDER_KEY` is set under **Edge Functions → Secrets**.
@@ -43,8 +43,8 @@ select * from season_seats();
 -- SEASON ONE | 1000 | 0 | 0 | false
 
 select key, value from config
- where key in ('invite_only','free_stages','stage_unlock_cost','trick_unlock_cost');
--- invite_only=true · free_stages=2 · stage_unlock_cost=50 · trick_unlock_cost=20
+ where key in ('seat_cap','free_stages','stage_unlock_cost','trick_unlock_cost');
+-- seat_cap=1000 · free_stages=2 · stage_unlock_cost=50 · trick_unlock_cost=20
 
 select p.title, count(pi.item) as bundled
   from products p left join pack_items pi on pi.pack_code = p.code
@@ -62,17 +62,15 @@ data is untouched. Expect `ALL SEAT GATE TESTS PASS`.
 
 Everything below is in the app: **Settings → tap VERSION ×5 → Founder Desk.**
 
-**1. Make yourself some invite codes.** THE DOOR panel → label them (`LAGOS DEC`), set
-uses and expiry days → CREATE. Use `1` use for people you actually know.
+**1. Test sign-up yourself.** Anyone with the app can take a seat up to the 1,000-seat
+cap — there are no invite codes. Create an account, confirm your academy token, and
+you're in.
 
-**2. Hand them out.** A member types the code on the sign-in screen. No code, or a
-used/expired one, and no seat is spent.
-
-**3. When someone pays.** THE TILL panel → their Academy ID → pick the pass → **GIVE
+**2. When someone pays.** THE TILL panel → their Academy ID → pick the pass → **GIVE
 {PASS}**. Passes are timed: buying the same tier again *adds* days, and upgrading
 carries the remaining days over. A cheaper pass can never strip a live higher one.
 
-**4. Read your inbox.** THE INBOX panel shows every private message with an unread
+**3. Read your inbox.** THE INBOX panel shows every private message with an unread
 count. Reply inline; it appears in their thread.
 
 ---
@@ -85,8 +83,7 @@ Three moves:
    member gets a real ACADEMY pass for 14 days. Anyone already holding something longer
    keeps it — nobody is downgraded. People who claim a seat *during* the window get it
    automatically.
-2. **THE DOOR** → tap the pill to `OPEN TO ALL` if you want new people in without a code.
-3. Set the dates so the banner appears in Community:
+2. Set the dates so the banner appears in Community:
 
 ```sql
 update config set value = '2026-12-01T00:00:00Z' where key = 'founder_week_start';
@@ -94,7 +91,7 @@ update config set value = '2026-12-08T00:00:00Z' where key = 'founder_week_end';
 ```
 
 While it's live, `#founders-week` carries a gold banner and members know you're in the
-halls. When the week ends, tap the pill back to `INVITE-ONLY`.
+halls. The door stays open to anyone with the app up to the 1,000-seat cap.
 
 ---
 

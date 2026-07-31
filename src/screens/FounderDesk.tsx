@@ -60,13 +60,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [replyTxt, setReplyTxt] = useState('');
   const [inboxBusy, setInboxBusy] = useState(false);
 
-  // ── invites ──
-  const [invites, setInvites] = useState<backend.InviteRow[] | null>(null);
-  const [invLabel, setInvLabel] = useState('');
-  const [invUses, setInvUses] = useState('1');
-  const [invDays, setInvDays] = useState('0');
-  const [invNew, setInvNew] = useState<string | null>(null);
-  const [inviteOnly, setInviteOnly] = useState<boolean | null>(null);
+  // ── the free week ──
   const [trialArmed, setTrialArmed] = useState(false);
   const [trialNote, setTrialNote] = useState<string | null>(null);
   const [lapsed, setLapsed] = useState<backend.LapsedRow[] | null>(null);
@@ -169,11 +163,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     const r = await backend.founderInbox(founderKey);
     if (r) { setInbox(r.messages); setUnread(r.unread); }
   };
-  const loadInvites = async () => setInvites(await backend.founderInvites(founderKey));
-  const loadDoor = async () => {
-    const c = await backend.founderConfig(founderKey);
-    if (c) setInviteOnly(String(c.invite_only ?? 'false') === 'true');
-  };
 
   const sendReply = async (id: number) => {
     const t = replyTxt.trim();
@@ -183,21 +172,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     setInboxBusy(false);
     if (ok) { setReplyTo(null); setReplyTxt(''); void loadInbox(); }
     else setErr('REPLY FAILED');
-  };
-
-  const makeInvite = async () => {
-    const code = await backend.founderCreateInvite(
-      founderKey, invLabel.trim(), Number(invUses) || 1, Number(invDays) || 0,
-    );
-    if (code) { setInvNew(code); setInvLabel(''); void loadInvites(); }
-    else setErr('COULD NOT CREATE THE CODE');
-  };
-
-  const toggleDoor = async () => {
-    if (inviteOnly == null) return;
-    const next = !inviteOnly;
-    const ok = await backend.founderSetConfig(founderKey, 'invite_only', String(next));
-    if (ok) setInviteOnly(next);
   };
 
   const postHomeAnnouncement = async () => {
@@ -231,8 +205,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const refresh = useCallback(async () => {
     setErr(null);
     void loadInbox();
-    void loadInvites();
-    void loadDoor();
     void loadPacks();
     void loadLapsed();
     void loadConsult();
@@ -575,60 +547,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           )}
         </Animated.View>
 
-        {/* ── THE DOOR — invite codes ── */}
-        <Animated.View entering={FadeInDown.delay(90).duration(320)} style={styles.splitCard}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.cardTag}>THE DOOR</Text>
-            <Pressable onPress={() => void toggleDoor()} hitSlop={6}>
-              <Text style={[styles.doorPill, inviteOnly ? styles.doorShut : styles.doorOpen]}>
-                {inviteOnly == null ? '…' : inviteOnly ? 'INVITE-ONLY · TAP TO OPEN' : 'OPEN TO ALL · TAP TO CLOSE'}
-              </Text>
-            </Pressable>
-          </View>
-          <Text style={styles.emptyNote}>
-            OPEN IT FOR THE FREE WEEK, THEN CLOSE IT AGAIN. WHILE OPEN, ANYONE WITH THE APP CAN TAKE A SEAT.
-          </Text>
-
-          <View style={styles.invRow}>
-            <TextInput
-              value={invLabel} onChangeText={setInvLabel}
-              placeholder="WHO / WHERE (e.g. LAGOS DEC)"
-              placeholderTextColor="rgba(143,184,155,0.35)"
-              style={[styles.tillInput, { flex: 2 }]}
-            />
-            <TextInput
-              value={invUses} onChangeText={setInvUses} keyboardType="number-pad"
-              placeholder="USES" placeholderTextColor="rgba(143,184,155,0.35)"
-              style={[styles.tillInput, { flex: 1 }]}
-            />
-            <TextInput
-              value={invDays} onChangeText={setInvDays} keyboardType="number-pad"
-              placeholder="DAYS" placeholderTextColor="rgba(143,184,155,0.35)"
-              style={[styles.tillInput, { flex: 1 }]}
-            />
-          </View>
-          <Pressable onPress={() => void makeInvite()} hitSlop={6}>
-            <Text style={styles.linkBtn}>CREATE INVITE CODE ›</Text>
-          </Pressable>
-
-          {invNew && <Text style={styles.invNew}>NEW CODE — {invNew}</Text>}
-
-          {invites && invites.length > 0 && invites.slice(0, 8).map((iv) => (
-            <View key={iv.code} style={styles.invItem}>
-              <Text style={[styles.invCode, iv.revoked && styles.invDead]}>{iv.code}</Text>
-              <Text style={styles.invMeta}>
-                {iv.uses}/{iv.max_uses}{iv.label ? ` · ${iv.label}` : ''}
-                {iv.revoked ? ' · REVOKED' : ''}
-              </Text>
-              {!iv.revoked && (
-                <Pressable onPress={() => void backend.founderRevokeInvite(founderKey, iv.code).then(loadInvites)} hitSlop={6}>
-                  <Text style={styles.revoke}>REVOKE</Text>
-                </Pressable>
-              )}
-            </View>
-          ))}
-        </Animated.View>
-
         {/* regional price split */}
         <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.splitCard}>
           <Text style={styles.cardTag}>REGIONAL PRICING SPLIT — LIVE</Text>
@@ -962,21 +880,12 @@ const styles = StyleSheet.create({
   ghostBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)' },
   linkBtn: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
 
-  doorPill: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, overflow: 'hidden' },
-  doorShut: { color: '#05130a', backgroundColor: colors.primary },
-  doorOpen: { color: '#2a1410', backgroundColor: colors.accent },
-
-  invRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
   invNew: { marginTop: 8, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: colors.accent },
-  invItem: { marginTop: 7, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 6 },
-  invCode: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
-  invDead: { color: 'rgba(143,184,155,0.4)', textDecorationLine: 'line-through' },
   invMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
   claimRef: { marginTop: 3, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: colors.fg },
   consultBig: { marginTop: 4, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   consultRow: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
   consultNote: { marginTop: 2, fontFamily: monoFont, fontSize: 6.2, lineHeight: 9.6, color: 'rgba(143,184,155,0.85)' },
-  revoke: { marginTop: 2, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.2, color: colors.loss },
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
   headerWrap: { alignItems: 'center' },
   eyebrow: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 2.2, color: colors.muted },

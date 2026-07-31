@@ -216,74 +216,20 @@ end $$;
 -- seat-gate.sql. Safe to re-run.
 --
 -- This closes the gap between "capped at 1,000" and "MY 1,000".
--- Before this, the seat gate counted seats but did not care WHO
--- took them: anyone who obtained the APK could claim one, because
--- the anon key ships inside every build. A private ecosystem needs
--- the door to know your name.
+-- The seat gate counts seats; this hardens it so nobody can flood or
+-- abuse the academy. Sign-up is open to anyone with the app, up to
+-- the 1,000-seat cap — there are no invite codes.
 --
 -- What this adds:
---   1. INVITE CODES — a seat requires a code you issued
---   2. RATE LIMITS — nobody can flood the halls
---   3. ABUSE CONTROLS — mute/remove a member, revoke a seat
---   4. CONTACT INBOX — private line to the founder
---   5. FOUNDER HOURS — the December listening week, in data
+--   1. RATE LIMITS — nobody can flood the halls
+--   2. ABUSE CONTROLS — mute/remove a member, revoke a seat
+--   3. CONTACT INBOX — private line to the founder
+--   4. FOUNDER HOURS — the December listening week, in data
 -- ═════════════════════════════════════════════════════════════
 
--- ── 1 · INVITE CODES — the door knows your name ──────────────
-create table if not exists invites (
-  code text primary key,                            -- what you hand out
-  label text,                                       -- "IG giveaway", "Chinedu's list"
-  max_uses int not null default 1,
-  uses int not null default 0,
-  expires_at timestamptz,                           -- null = never
-  revoked boolean not null default false,
-  created_at timestamptz not null default now(),
-  note text
-);
-
--- which invite let a member in (audit trail, and lets you see who
--- your best inviters are)
-alter table profiles add column if not exists invite_code text;
+-- ── 1 · MEMBERSHIP STATE COLUMN — active | muted | removed ──
 alter table profiles add column if not exists status text not null default 'active';
   -- 'active' | 'muted' | 'removed'
-
-alter table invites enable row level security;
--- nobody reads the invite table from a phone; only edge functions touch it
-drop policy if exists invites_none on invites;
-
-/**
- * Claim an invite atomically. Locks the row so two people cannot
- * spend the last use of the same code at the same instant.
- * Returns true when the code was valid and has been consumed.
- */
-create or replace function claim_invite(p_code text)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare v_ok boolean := false;
-begin
-  if p_code is null or length(trim(p_code)) = 0 then
-    return false;
-  end if;
-
-  update invites
-     set uses = uses + 1
-   where code = upper(trim(p_code))
-     and not revoked
-     and (expires_at is null or expires_at > now())
-     and uses < max_uses
-  returning true into v_ok;
-
-  return coalesce(v_ok, false);
-end $$;
-revoke execute on function claim_invite(text) from public, anon, authenticated;
-grant execute on function claim_invite(text) to service_role;
-
--- Is the academy invite-only right now? One row, flip any time.
-insert into config (key, value) values ('invite_only', 'false')
-on conflict (key) do nothing;
 
 -- ── 2 · RATE LIMITS — the halls cannot be flooded ────────────
 -- A member could previously insert unlimited messages: one script,
@@ -489,13 +435,11 @@ grant execute on function audit(text, text, jsonb) to service_role;
 
 -- ── 7 · Proof ────────────────────────────────────────────────
 do $$
-declare r record; v_inv int; v_only text;
+declare r record;
 begin
   select * into r from season_seats();
-  select count(*) into v_inv from invites;
-  select value into v_only from config where key = 'invite_only';
-  raise notice 'SECURITY ARMED · % · %/% seats · invite_only=% · % invite code(s)',
-    r.season, r.taken, r.cap, v_only, v_inv;
+  raise notice 'SECURITY ARMED · % · %/% seats taken · % waiting',
+    r.season, r.taken, r.cap, r.waiting;
 end $$;
 
 -- ═════════════════════════════════════════════════════════════

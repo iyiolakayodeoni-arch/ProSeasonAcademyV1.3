@@ -19,9 +19,10 @@ the version pinned at the bottom. Sets the tone before a single word of
 coaching: this is a terminal, not a toy.
 
 ## 2 · Sign in — `02-signin.png`
-**The door.** Academy name, invite code, country. Invite-only is enforced
-server-side, so a wrong code never gets in. Country selection is not cosmetic —
-it decides whether you see ₦ or £ for the rest of your time here.
+**The door.** Academy name, country, then create your seat. Sign-up is open to
+anyone with the app up to the 1,000-seat cap — no invite code. Country selection
+is not cosmetic — it decides whether you see ₦ or £ for the rest of your time
+here.
 
 ## 3 · Coach selection — `03-coach-select.png`
 Three coaches, scout files to read first, and a permanent lock. The amber
