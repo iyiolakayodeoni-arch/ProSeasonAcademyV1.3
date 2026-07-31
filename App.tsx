@@ -37,6 +37,7 @@ import * as backend from './src/data/backend';
 import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 
 // Keep the native OS splash as a plain academy background until
 // the real React loading screen is ready. This prevents the old
@@ -215,37 +216,39 @@ export default function App() {
   }, []);
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
+    <ErrorBoundary>
+      <View style={styles.root}>
+        <StatusBar style="light" />
 
-      {/* active route stays mounted underneath the splash for a true crossfade */}
-      <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
-        {restored && (
-          <>
-            {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
-            {route === 'coach' && (
-              <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
-            )}
-            {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
-            {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
-            {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
-            {route === 'setup' && (
-              <SetupLoaderScreen
-                coachFirstName={lockedCoach.name.split(' ')[0]}
-                onDone={handleSetupDone}
-              />
-            )}
-            {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
-          </>
-        )}
-      </Animated.View>
-
-      {!splashGone && (
-        <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
-          <SplashScreen onFinish={handleSplashFinish} />
+        {/* active route stays mounted underneath the splash for a true crossfade */}
+        <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
+          {restored && (
+            <>
+              {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
+              {route === 'coach' && (
+                <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
+              )}
+              {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
+              {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
+              {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
+              {route === 'setup' && (
+                <SetupLoaderScreen
+                  coachFirstName={lockedCoach.name.split(' ')[0]}
+                  onDone={handleSetupDone}
+                />
+              )}
+              {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
+            </>
+          )}
         </Animated.View>
-      )}
-    </View>
+
+        {!splashGone && (
+          <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
+            <SplashScreen onFinish={handleSplashFinish} />
+          </Animated.View>
+        )}
+      </View>
+    </ErrorBoundary>
   );
 }
 
