@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NativeSplash from 'expo-splash-screen';
@@ -80,12 +80,15 @@ export default function App() {
   // ── RESTORE: pick up exactly where this player left off ──
   // Runs while the splash is still on screen, so a returning
   // player never sees the sign-in door or re-sits the baseline.
+  // EVERY step is fail-soft: a dead network, corrupt storage or a
+  // bad server reply must never strand or take down the whole app —
+  // boot always lands on a real screen.
   useEffect(() => {
     let alive = true;
     void (async () => {
-      await hydrateSession();
+      await hydrateSession().catch(() => {});
       // restore Supabase email/password session if the token is still valid
-      const cloud = await restoreSession();
+      const cloud = await restoreSession().catch(() => null);
       if (cloud && alive) {
         backend.setMeFromProfile(cloud);
         setDisplayName(cloud.handle);
@@ -97,9 +100,9 @@ export default function App() {
       const s = getSession();
       if (s.coachId) {
         // the lock is permanent — his ledger AND his lesson thread load
-        // before the map renders
-        await hydrateProgress(s.coachId);
-        await hydrateThread(s.coachId);
+        // before the map renders; a bad file must not block the boot
+        await hydrateProgress(s.coachId).catch(() => {});
+        await hydrateThread(s.coachId).catch(() => {});
         if (!alive) return;
         setCoachId(s.coachId);
       }
@@ -110,7 +113,11 @@ export default function App() {
       else if (!s.baselineDone) setRoute('scan');
       else setRoute('hub');
       setRestored(true);
-    })();
+    })().catch(() => {
+      // absolute last resort — land on the sign-in door, never a dead screen
+      setRoute('signin');
+      setRestored(true);
+    });
     return () => {
       alive = false;
     };
@@ -122,13 +129,39 @@ export default function App() {
     if (coachId) initCloudSync({ coachId });
   }, [coachId]);
 
-  // Splash finished its progress run → crossfade to whatever sits underneath.
-  const handleSplashFinish = useCallback(() => {
+  // ── splash hand-off ──
+  // The splash only leaves when two things are true: its own progress
+  // run has finished AND the route underneath has actually rendered
+  // (restored). No player ever stares into a dead-black void.
+  const splashDone = useRef(false);
+  const finishRequested = useRef(false);
+  const restoredRef = useRef(false);
+  restoredRef.current = restored;
+
+  const doFinish = useCallback(() => {
+    if (splashDone.current) return;
+    splashDone.current = true;
     splashOpacity.value = withTiming(0, { duration: 480, easing: Easing.inOut(Easing.quad) }, (f) => {
       if (f) runOnJS(markGone)();
     });
     appOpacity.value = withTiming(1, { duration: 480, easing: Easing.inOut(Easing.quad) });
   }, [splashOpacity, appOpacity, markGone]);
+
+  const handleSplashFinish = useCallback(() => {
+    finishRequested.current = true;
+    if (restoredRef.current) doFinish();
+  }, [doFinish]);
+
+  // boot work finished after the splash did → release it now
+  useEffect(() => {
+    if (restored && finishRequested.current) doFinish();
+  }, [restored, doFinish]);
+
+  // absolute failsafe: the splash can never trap the app
+  useEffect(() => {
+    const t = setTimeout(doFinish, 8000);
+    return () => clearTimeout(t);
+  }, [doFinish]);
 
   const splashStyle = useAnimatedStyle(() => ({ opacity: splashOpacity.value }));
   const appStyle = useAnimatedStyle(() => ({ opacity: appOpacity.value }));

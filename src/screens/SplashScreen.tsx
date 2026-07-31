@@ -4,7 +4,6 @@ import * as NativeSplash from 'expo-splash-screen';
 import Constants from 'expo-constants';
 import Animated from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import LogoMark from '../components/LogoMark';
 import { useSplashAnimation } from '../hooks/useSplashAnimation';
 import { colors, monoFont } from '../theme';
 
@@ -23,7 +22,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     }
   };
 
-  const { AnimatedTextInput, animatedFillStyle, pctProps, loopProps, glowStyle } = useSplashAnimation({
+  const { AnimatedTextInput, animatedFillStyle, pctProps } = useSplashAnimation({
     duration: MIN_SPLASH_MS,
     // plug real init later: waitFor={Promise.all([loadFonts(), checkAuthSession()])}
     onComplete: finish,
@@ -38,10 +37,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     <View style={styles.root}>
       <GridBackground />
 
-      {/* crest + looping journey trail */}
+      {/* no crest here — loading is progress + status only */}
       <View style={styles.center}>
-        <LogoMark size={132} loopProps={loopProps} glowStyle={glowStyle} />
-
         {/* thin HUD divider */}
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
@@ -84,7 +81,6 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 34,
     marginBottom: 26,
     gap: 8,
   },
