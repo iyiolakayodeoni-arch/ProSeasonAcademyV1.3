@@ -72,6 +72,17 @@ export default function App() {
 
   const markGone = useCallback(() => setSplashGone(true), []);
 
+  // Release the OS splash only after React has mounted the custom splash
+  // screen. SplashScreen.tsx owns the visible animation and must not hide
+  // the native splash during its own first effect, otherwise Android can
+  // reveal the launcher icon/background between the two splash layers.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      void NativeSplash.hideAsync().catch(() => {});
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   // wake the academy's ear (audio session policy) — once per launch
   useEffect(() => {
     initAudio();

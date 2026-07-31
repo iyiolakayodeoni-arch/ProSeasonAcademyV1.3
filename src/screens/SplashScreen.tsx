@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import * as NativeSplash from 'expo-splash-screen';
 import Constants from 'expo-constants';
 import Animated from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
@@ -27,11 +26,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     // plug real init later: waitFor={Promise.all([loadFonts(), checkAuthSession()])}
     onComplete: finish,
   });
-
-  useEffect(() => {
-    // JS is up and the first frame is rendered — release the native splash.
-    NativeSplash.hideAsync().catch(() => {});
-  }, []);
 
   return (
     <View style={styles.root}>
