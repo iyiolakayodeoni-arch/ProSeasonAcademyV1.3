@@ -51,7 +51,6 @@ Deno.serve(async (req) => {
   const countryCode = String(body.countryCode ?? '').trim().toUpperCase().slice(0, 2);
   const region = REGION(body.region);
   const platform = body.platform ? String(body.platform).slice(0, 24) : null;
-  const inviteCode = String(body.inviteCode ?? '').toUpperCase().trim();
 
   if (!email || !email.includes('@')) return json({ ok: false, error: 'INVALID_EMAIL' }, 400);
   if (password.length < 8) return json({ ok: false, error: 'WEAK_PASSWORD' }, 400);
@@ -64,15 +63,6 @@ Deno.serve(async (req) => {
     .or(`username.ilike.${username},handle.ilike.${username}`)
     .maybeSingle();
   if (nameClash) return json({ ok: false, error: 'USERNAME_TAKEN' }, 409);
-
-  // invite gate (optional — config driven)
-  const { data: inviteOnlyRow } = await sb.from('config').select('value').eq('key', 'invite_only').maybeSingle();
-  const inviteOnly = String(inviteOnlyRow?.value ?? 'false') === 'true';
-  if (inviteOnly) {
-    if (!inviteCode) return json({ ok: false, error: 'INVITE_REQUIRED' }, 403);
-    const { data: claimed, error: cerr0 } = await sb.rpc('claim_invite', { p_code: inviteCode });
-    if (cerr0 || claimed !== true) return json({ ok: false, error: 'INVITE_INVALID' }, 403);
-  }
 
   // seat gate
   const { data: seats0 } = await sb.rpc('season_seats').single();
@@ -125,7 +115,6 @@ Deno.serve(async (req) => {
     geo_verified: false,
     geo_uncertain: false,
     academy_id: academy,
-    invite_code: inviteCode || null,
     is_founder: false,
   };
 

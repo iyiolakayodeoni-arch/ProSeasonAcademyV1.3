@@ -1,7 +1,7 @@
 // FOUNDER-DESK — the running-the-academy actions, all behind one key.
-// Reading the private inbox, replying to a member, issuing and revoking
-// invite codes, and muting/removing someone. Every call is key-checked
-// and written to audit_log, so there is a trace of every founder move.
+// Reading the private inbox, replying to a member, granting packs/passes,
+// and muting/removing someone. Every call is key-checked and written to
+// audit_log, so there is a trace of every founder move.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 // ── helpers, inlined on purpose ──────────────────────────────
@@ -90,54 +90,6 @@ Deno.serve(async (req) => {
       const id = Number(body.id);
       if (!id) return json({ ok: false, error: 'id required' }, 400);
       await sb.from('contact_messages').update({ read: true }).eq('id', id);
-      return json({ ok: true });
-    }
-
-    // ── INVITES ──────────────────────────────────────────────
-    case 'invites': {
-      const { data, error } = await sb
-        .from('invites')
-        .select('code, label, uses, max_uses, expires_at, revoked, created_at')
-        .order('created_at', { ascending: false })
-        .limit(100);
-      if (error) return json({ ok: false, error: error.message }, 500);
-      return json({ ok: true, invites: data ?? [] });
-    }
-
-    case 'invite_create': {
-      const label = String(body.label ?? '').slice(0, 60) || null;
-      const maxUses = Math.max(1, Math.min(Number(body.maxUses) || 1, 500));
-      const days = Number(body.expiresDays) || 0;
-      const expires = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
-
-      // readable, unambiguous codes — no O/0/I/1 confusion when spoken aloud
-      const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const gen = () =>
-        'PSA-' +
-        Array.from(crypto.getRandomValues(new Uint8Array(6)))
-          .map((b) => ALPHABET[b % ALPHABET.length])
-          .join('');
-
-      let code = '';
-      for (let i = 0; i < 8; i++) {
-        code = gen();
-        const { data: clash } = await sb.from('invites').select('code').eq('code', code).maybeSingle();
-        if (!clash) break;
-      }
-      const { error } = await sb.from('invites').insert({
-        code, label, max_uses: maxUses, expires_at: expires,
-      });
-      if (error) return json({ ok: false, error: error.message }, 500);
-      await audit(code, { label, maxUses, expires });
-      return json({ ok: true, code, label, maxUses, expiresAt: expires });
-    }
-
-    case 'invite_revoke': {
-      const code = String(body.code ?? '').toUpperCase().trim();
-      if (!code) return json({ ok: false, error: 'code required' }, 400);
-      const { error } = await sb.from('invites').update({ revoked: true }).eq('code', code);
-      if (error) return json({ ok: false, error: error.message }, 500);
-      await audit(code, { revoked: true });
       return json({ ok: true });
     }
 
@@ -363,7 +315,7 @@ Deno.serve(async (req) => {
       const key = String(body.key ?? '');
       const value = String(body.value ?? '');
       const ALLOWED = [
-        'invite_only', 'seat_cap', 'season_name', 'go_live',
+        'seat_cap', 'season_name', 'go_live',
         'free_stages', 'mid_stages', 'stage_unlock_cost', 'trick_unlock_cost',
         'tricks_min_tier', 'filmroom_min_tier',
         'trial_tier', 'trial_days', 'grace_days', 'lapsed_seat_days', 'paid_only',

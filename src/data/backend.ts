@@ -75,7 +75,6 @@ export function setMeFromProfile(profile: {
     academyId: String(profile.academyId),
   };
   seasonGate = null;
-  doorError = null;
   return me;
 }
 
@@ -92,20 +91,13 @@ export async function probeHealth(timeoutMs = 2500): Promise<boolean> {
   }
 }
 
-/** why the door refused, when it did */
-export type DoorError = 'INVITE_REQUIRED' | 'INVITE_INVALID' | null;
-let doorError: DoorError = null;
-export function getDoorError(): DoorError { return doorError; }
-
 export async function ensureAuth(
   handle: string,
   coachId: string,
   platform: string,
   region: string,
-  inviteCode?: string,
 ): Promise<CloudUser | null> {
   if (!supabase) return null;
-  doorError = null;
   try {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
@@ -113,18 +105,13 @@ export async function ensureAuth(
       if (r.error || !r.data.session) return null;
     }
     const resp = await supabase.functions.invoke('ensure-profile', {
-      body: { handle, coachId, platform, region, inviteCode: inviteCode ?? '' },
+      body: { handle, coachId, platform, region },
     });
     if (resp.error) {
       // 409 SEASON_FULL arrives as a function error — read its body
       try {
         const ctx: any = (resp.error as any).context;
         const j = ctx?.json ? await ctx.json() : null;
-        if (j?.error === 'INVITE_REQUIRED' || j?.error === 'INVITE_INVALID') {
-          doorError = j.error;
-          me = null;
-          return null;
-        }
         if (j?.error === 'SEASON_FULL') {
           seasonGate = { season: j.season ?? 'SEASON ONE', cap: j.cap ?? 1000, taken: j.taken ?? j.cap ?? 1000 };
           me = null;
@@ -136,7 +123,6 @@ export async function ensureAuth(
     const p = resp.data?.profile;
     if (!p) return null;
     seasonGate = null;
-    doorError = null;
     me = { id: String(p.id), handle: String(p.handle), academyId: String(p.academy_id) };
     return me;
   } catch {
@@ -655,7 +641,7 @@ export async function founderWeek(): Promise<FounderWeek | null> {
   }
 }
 
-// ── FOUNDER DESK — inbox, invites, the door ──────────────────
+// ── FOUNDER DESK — inbox, broadcast, the till ────────────────
 export interface InboxRow {
   id: number;
   handle: string | null;
@@ -666,15 +652,6 @@ export interface InboxRow {
   read: boolean;
   replied: boolean;
   reply: string | null;
-}
-
-export interface InviteRow {
-  code: string;
-  label: string | null;
-  uses: number;
-  max_uses: number;
-  expires_at: string | null;
-  revoked: boolean;
 }
 
 async function deskFn(_key: string, body: Record<string, unknown>): Promise<any | null> {
@@ -690,33 +667,6 @@ export async function founderInbox(key: string, unread = false):
 
 export async function founderReply(key: string, id: number, reply: string): Promise<boolean> {
   const r = await deskFn(key, { action: 'reply', id, reply });
-  return r?.ok === true;
-}
-
-export async function founderInvites(key: string): Promise<InviteRow[] | null> {
-  const r = await deskFn(key, { action: 'invites' });
-  return r?.ok ? (r.invites ?? []) : null;
-}
-
-export async function founderCreateInvite(
-  key: string, label: string, maxUses: number, expiresDays: number,
-): Promise<string | null> {
-  const r = await deskFn(key, { action: 'invite_create', label, maxUses, expiresDays });
-  return r?.ok ? String(r.code) : null;
-}
-
-export async function founderRevokeInvite(key: string, code: string): Promise<boolean> {
-  const r = await deskFn(key, { action: 'invite_revoke', code });
-  return r?.ok === true;
-}
-
-export async function founderConfig(key: string): Promise<Record<string, string> | null> {
-  const r = await deskFn(key, { action: 'config' });
-  return r?.ok ? (r.config ?? {}) : null;
-}
-
-export async function founderSetConfig(key: string, k: string, v: string): Promise<boolean> {
-  const r = await deskFn(key, { action: 'set_config', key: k, value: v });
   return r?.ok === true;
 }
 

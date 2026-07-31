@@ -84,7 +84,7 @@ Open **Supabase Dashboard → SQL Editor → New Query**. Paste each file below
 |---|---|---|
 | 1 | `supabase/schema.sql` | Tables, RLS, till, seed data *(if not already run — check if `channels` has 5 rows)* |
 | 2 | `supabase/seat-gate.sql` | The 1,000-seat cap enforced in Postgres |
-| 3 | `supabase/security.sql` | Invite-only door, rate limits, contact inbox, audit log |
+| 3 | `supabase/security.sql` | Rate limits, contact inbox, audit log, membership state |
 | 4 | `supabase/fx.sql` + `fx2.sql` + `fx3.sql` | FX rate table + live pricing functions |
 | 5 | `supabase/stripe.sql` | Stripe payment methods and grant_tier |
 | 6 | `supabase/rescue.sql` | OPay fallback, "my card was refused" flow |

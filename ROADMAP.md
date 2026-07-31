@@ -9,8 +9,9 @@ build decisions, so nobody (including a future me) argues with settled calls.
 
 **Quality over quantity. Not on any store. Total control.**
 
-The academy is part of the Onliversity ecosystem — invited members, not downloads. The
-goal is not reach; it is making the people inside genuinely better. If they get good,
+The academy is part of the Onliversity ecosystem — distributed privately, not on any
+store, and capped at 1,000 seats. The goal is not reach; it is making the people inside
+genuinely better. If they get good,
 they stay, they tell people, and their subscriptions and credits fund the thing. Success
 of the members *is* the business model.
 
@@ -114,7 +115,7 @@ Shipped for it:
 - `#founders-week` channel
 - `config.founder_week_start` / `_end` / `_note` — dates movable without a deploy
 - A live banner in Community while the window is open
-- `invite_only = 'false'` for that week opens the doors, then back to `'true'`
+- The door stays open to anyone with the app, up to the 1,000-seat cap
 
 ## The private line
 
@@ -127,13 +128,13 @@ stays usable.
 
 ## What is built vs. what is next
 
-**Built and tested:** invite-only door · seat cap enforced in Postgres · rate limits ·
-mute/remove · contact inbox · founder's week · `unlock_item()` credit/subscription
-engine · per-coach progress persistence · live rooms.
+**Built and tested:** open registration up to the cap · seat cap enforced in Postgres ·
+rate limits · mute/remove · contact inbox · founder's week · `unlock_item()`
+credit/subscription engine · per-coach progress persistence · live rooms.
 
 **Next, in order:**
 1. Apply `security.sql` to the live project (nothing above is armed until then)
 2. Home tab: mark tricks locked/unlocked, wire `unlock_item()` to the tap
 3. Journey: gate stages 3+ behind `free_stages`, with an honest unlock prompt
-4. Founder Desk: contact inbox reader + reply box; invite-code issuer
-5. Decide the December dates and seed the invite codes
+4. Founder Desk: contact inbox reader + reply box
+5. Decide the December dates for the free trial week

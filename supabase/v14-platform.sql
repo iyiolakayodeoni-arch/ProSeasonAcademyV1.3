@@ -25,16 +25,16 @@ create unique index if not exists profiles_username_unique
 create unique index if not exists profiles_email_unique
   on profiles (lower(email)) where email is not null;
 
--- ── 2 · OPEN REGISTRATION DEFAULT (review invite_only) ───────
--- Open registration is the product decision for this rebuild.
--- Invite codes still work when invite_only is flipped true from the Desk.
+-- ── 2 · OPEN REGISTRATION DEFAULT ────────────────────────────
+-- Open registration is the product decision for this rebuild. Sign-up
+-- is open to anyone with the app, up to the 1,000-seat cap — no invite
+-- codes.
 insert into config (key, value) values
-  ('invite_only', 'false'),
   ('till_closed', 'true'),
   ('go_live', ''),
   ('location_enforce', 'true')
 on conflict (key) do update set value = excluded.value
-  where config.key in ('invite_only', 'till_closed', 'location_enforce');
+  where config.key in ('till_closed', 'location_enforce');
 
 -- keep till closed until the founder opens payments from the Desk
 update config set value = '' where key = 'go_live' and value is not null
@@ -504,5 +504,5 @@ do $$
 begin
   raise notice 'v14 PLATFORM ARMED';
   raise notice '  founder_announcements · news_drafts · push_tokens · location pricing';
-  raise notice '  invite_only default false · till stays closed until Desk opens it';
+  raise notice '  open registration up to the seat cap · till stays closed until Desk opens it';
 end $$;

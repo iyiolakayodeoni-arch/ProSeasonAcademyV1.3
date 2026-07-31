@@ -21,8 +21,6 @@ export type AuthErrorCode =
   | 'NO_ACCOUNT'
   | 'NO_PROFILE'
   | 'ACCOUNT_REMOVED'
-  | 'INVITE_REQUIRED'
-  | 'INVITE_INVALID'
   | 'SEASON_FULL'
   | 'RATE_LIMITED'
   | 'MISSING_FIELDS'
@@ -46,8 +44,6 @@ export const AUTH_ERROR_COPY: Record<AuthErrorCode, string> = {
   NO_ACCOUNT: 'NO SEAT FOUND FOR THAT EMAIL. CREATE ONE.',
   NO_PROFILE: 'YOUR SEAT COULD NOT BE FOUND. CONTACT THE FOUNDER.',
   ACCOUNT_REMOVED: 'THIS SEAT WAS RELEASED. CONTACT THE FOUNDER IF THAT IS WRONG.',
-  INVITE_REQUIRED: 'THIS ACADEMY IS INVITE-ONLY. ENTER THE CODE YOU WERE GIVEN.',
-  INVITE_INVALID: 'THAT CODE IS NOT VALID, ALREADY USED, OR EXPIRED.',
   SEASON_FULL: 'SEASON ONE IS FULL — YOU ARE ON THE WAITLIST.',
   RATE_LIMITED: 'TOO MANY TRIES. WAIT A MINUTE, THEN TRY AGAIN.',
   MISSING_FIELDS: 'EMAIL AND PASSWORD ARE BOTH REQUIRED.',
@@ -163,7 +159,6 @@ export async function registerAccount(input: {
   countryCode: string;
   region: string;
   platform?: string;
-  inviteCode?: string;
 }): Promise<AuthResult | AuthFail> {
   const j = await invokeFn('auth-register', {
     username: input.username,
@@ -173,7 +168,6 @@ export async function registerAccount(input: {
     countryCode: input.countryCode,
     region: input.region,
     platform: input.platform ?? '',
-    inviteCode: input.inviteCode ?? '',
   });
 
   if (!j?.ok) {

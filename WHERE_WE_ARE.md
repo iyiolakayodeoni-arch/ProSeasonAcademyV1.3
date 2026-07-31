@@ -6,8 +6,8 @@
 
 ## The headline
 
-**You have built a complete, private, invite-only coaching academy with a
-working paywall. ~29,000 lines. It is about 90% of the way to taking money.**
+**You have built a complete, private coaching academy capped at 1,000 seats
+with a working paywall. ~29,000 lines. It is about 90% of the way to taking money.**
 
 The gap is not code any more. It is four dashboard tasks that only you can do.
 
@@ -47,12 +47,12 @@ someone bypasses the app entirely.
 ### The rules, set
 
 ```
-invite_only        true      seat_cap             1000
-paid_only          true      trial_days           14
-grace_days         3         existing_grace_days  30
-strikes_to_remove  3         auto_remove          true
-lapsed_seat_days   30        tos_version          1
-fx_margin_pct      3         subsidy_target_pct   28
+seat_cap           1000      paid_only            true
+trial_days         14        grace_days           3
+existing_grace_days 30       strikes_to_remove    3
+auto_remove         true     lapsed_seat_days     30
+tos_version         1        fx_margin_pct        3
+subsidy_target_pct  28
 ```
 
 ### The rescue path, deployed
@@ -71,12 +71,12 @@ was the blocker for weeks and it is gone.
 
 ## What you have actually built
 
-### 1 · The door — invite-only, capped
+### 1 · The door — capped at 1,000
 
-Nobody walks in. An invite code is claimed at sign-up, checked server-side. The
+Anyone with the app can sign up and claim a seat, until the cap is full. The
 1,000-seat cap is a database trigger, so it cannot be argued with. Seat 1,001
 goes on a waitlist rather than getting an error. Season Two is one `UPDATE`
-away — no rebuild.
+away — no rebuild. There are no invite codes.
 
 **Why it matters:** you said you cannot personally coach more than a thousand
 people. The database now enforces that for you.
@@ -127,10 +127,10 @@ Every paid path fires "WELCOME BACK — LET'S GO WIN SOMETHING" automatically.
 
 ### 6 · The Founder Desk — running it without spreadsheets
 
-Inbox both directions · issue and revoke invites · grant packs and tiers by
-hand · review flags · strike, mute, remove · release lapsed seats · read the
-pricing consultation · **"CARD REFUSED — THEY WANT TO PAY" above everything
-else**, because those are sales you still have if you answer today.
+Inbox both directions · grant packs and tiers by hand · review flags ·
+strike, mute, remove · release lapsed seats · read the pricing consultation ·
+**"CARD REFUSED — THEY WANT TO PAY" above everything else**, because those are
+sales you still have if you answer today.
 
 ### 7 · The pricing consultation — your community sets the price
 
@@ -198,19 +198,19 @@ participants.
 ### What I would watch
 
 **1 · You are one person and there is a lot of surface here.** Contact inbox,
-flag reviews, strikes, claims, "card refused", the consultation, invites. At
+flag reviews, strikes, claims, "card refused", the consultation. At
 1,000 members even 2% needing attention is 20 conversations a week. The Desk
 helps, but consider a weekly rhythm — one hour, one pass, done — rather than
 reacting to everything as it lands.
 
 **2 · Sideloading is real friction.** No Play Store means "Settings → allow
 unknown sources" for every member. That is fine for 1,000 committed people, but
-your invite message needs to walk them through it or you will lose people at the
-door who genuinely wanted in.
+your onboarding message needs to walk them through it or you will lose people at
+the door who genuinely wanted in.
 
 **3 · You have not tested a real payment yet.** Everything is verified in
 simulation. Nothing beats buying one pass yourself with a real card and watching
-the welcome message arrive. Do that before you invite anyone.
+the welcome message arrive. Do that before you open the doors.
 
 **4 · Paystack later is the right call.** Get the BVN, but not yet. Stripe plus
 OPay covers you now, and Paystack is a genuine upgrade for Nigerian members

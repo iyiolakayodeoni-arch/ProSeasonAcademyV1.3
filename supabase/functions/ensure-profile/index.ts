@@ -70,11 +70,9 @@ Deno.serve(async (req) => {
 
   // ── NEW PLAYER → THE DOOR ──────────────────────────────────
   // The player does NOT type an invite/token. The app is private by
-  // distribution, and the backend creates a random member token after
-  // the seat is claimed. The only hard gate here is the season cap.
-  const memberToken = 'AUTO-' + Array.from(crypto.getRandomValues(new Uint8Array(4)))
-    .map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-
+  // distribution. The only hard gate here is the season cap — not
+  // invite codes. Sign-up is open to anyone with the app, up to the
+  // 1,000-seat cap.
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
   const cap = seats0?.cap ?? 1000;
@@ -107,7 +105,6 @@ Deno.serve(async (req) => {
     platform: body.platform ? String(body.platform).slice(0, 24) : null,
     region: REGION(body.region),
     academy_id: academy,
-    invite_code: memberToken,
   };
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
 
