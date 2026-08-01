@@ -169,7 +169,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
 
     override fun getName() = "MatchWatcher"
 
-    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+      override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) { {
         if (requestCode != CONSENT_REQUEST) return
         val promise = pendingStart
         pendingStart = null
@@ -245,9 +245,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
             .emit(name, map)
     }
 
-    override fun onNewIntent(intent: Intent?) {
-        // required by ActivityEventListener — unused
-    }
+
 
     @ReactMethod
     fun addListener(eventName: String?) { /* required for NativeEventEmitter */ }
