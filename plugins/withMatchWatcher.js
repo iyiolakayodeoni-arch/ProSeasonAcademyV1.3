@@ -44,21 +44,28 @@ function withMatchWatcher(config) {
     fs.writeFileSync(path.join(srcDir, 'MatchWatcherPackage.kt'), MATCH_WATCHER_PACKAGE_KT);
 
     // Register the package in MainApplication.kt. The modern Expo
-    // template uses `PackageList(this).packages.apply { ... }`; the
-    // legacy one uses addPackage(...). Handle both + a raw fallback.
+    // template uses `PackageList(this).packages.apply { ... }`; RN
+    // classic uses `val packages = PackageList(this).packages` +
+    // `return packages`; the legacy template uses addPackage(...).
+    // Handle all three + warn loudly instead of injecting Kotlin
+    // that would not compile.
     const mainAppPath = path.join(projectRoot, 'android', 'app', 'src', 'main', 'java', 'com', 'onliversity', 'proseasonacademy', 'MainApplication.kt');
     let content = cfg.modResults.contents;
     if (!content.includes('MatchWatcherPackage')) {
       const packagesApply = /(PackageList\(this\)\.packages\.apply\s*\{)/;
+      const packagesVal = /(val\s+packages\s*=\s*PackageList\(this\)\.packages)/;
       const addPackage = /(addPackage\s*\(\s*[^)]*\))/;
       if (packagesApply.test(content)) {
         content = content.replace(packagesApply, '$1\n                add(MatchWatcherPackage())');
+      } else if (packagesVal.test(content)) {
+        content = content.replace(packagesVal, '$1\n          packages.add(MatchWatcherPackage())');
       } else if (addPackage.test(content)) {
         content = content.replace(addPackage, 'addPackage(MatchWatcherPackage())\n          $1');
       } else {
-        content = content.replace(
-          /(getPackages\(\)[\s\S]*?\{)/,
-          '$1\n            add(MatchWatcherPackage())'
+        console.warn(
+          '[withMatchWatcher] Could not find a ReactPackage registration point in ' +
+            'MainApplication.kt — MatchWatcherPackage was NOT registered. ' +
+            'THE EYE will stay in manual mode.'
         );
       }
       cfg.modResults.contents = content;
@@ -169,7 +176,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
 
     override fun getName() = "MatchWatcher"
 
-    override fun onActivityResult(activity: Activity?, requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode != CONSENT_REQUEST) return
         val promise = pendingStart
         pendingStart = null
@@ -197,7 +204,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun start(promise: Promise) {
-        val activity = currentActivity
+        val activity = reactApplicationContext.currentActivity
         if (activity == null) {
             promise.resolve(false)
             return
@@ -245,7 +252,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
             .emit(name, map)
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         // required by ActivityEventListener — unused
     }
 
