@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import { ONBOARD_CARDS } from '../data/onboarding';
+import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 type Props = { onDone: () => void };
@@ -17,10 +18,10 @@ export default function OnboardingScreen({ onDone }: Props) {
       <GridBackground />
       <View style={styles.inner}>
         <Text style={styles.brand}>PROSEASONACADEMY</Text>
-        <Text style={styles.kicker}>QUICK TOUR · {i + 1} / {ONBOARD_CARDS.length}</Text>
+        <Text style={styles.kicker}>ACADEMY TOUR · {i + 1} / {ONBOARD_CARDS.length}</Text>
 
-        <Animated.View key={card.id} entering={FadeInRight.duration(280)} style={styles.card}>
-          <Text style={styles.eyebrow}>{card.eyebrow}</Text>
+        <Animated.View key={card.id} entering={FadeInRight.duration(280)} style={[styles.card, card.tone === 'gold' && styles.cardGold]}>
+          <Text style={[styles.eyebrow, card.tone === 'gold' && { color: colors.warm }]}>{card.eyebrow}</Text>
           <Text style={styles.title}>{card.title}</Text>
           <Text style={styles.body}>{card.body}</Text>
         </Animated.View>
@@ -33,6 +34,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
         <Pressable
           onPress={() => {
+            sfx('tap');
             if (last) onDone();
             else setI((n) => n + 1);
           }}
@@ -43,7 +45,7 @@ export default function OnboardingScreen({ onDone }: Props) {
 
         <Pressable onPress={onDone} hitSlop={10}>
           <Animated.View entering={FadeIn.delay(200)}>
-            <Text style={styles.skip}>SKIP TOUR</Text>
+            <Text style={styles.skip}>SKIP TOUR — I'LL FIND MY WAY</Text>
           </Animated.View>
         </Pressable>
       </View>
@@ -79,6 +81,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.9)',
     padding: 22,
     minHeight: 200,
+  },
+  cardGold: {
+    borderColor: 'rgba(242,192,120,0.5)',
+    backgroundColor: 'rgba(20,16,8,0.92)',
   },
   eyebrow: {
     fontFamily: monoFont,

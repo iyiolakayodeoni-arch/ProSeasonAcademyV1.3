@@ -9,14 +9,17 @@ import { Coach } from '../../data/coaches';
 import { journeySeasonFor } from '../../data/journey';
 import { useJourneyProgress, wipeProgress } from '../../data/progress';
 import { wipeThread } from '../../data/lessonThread';
+import { wipeMirror } from '../../data/mirrorSession';
 import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
+import { resetOnboarding } from '../../data/onboarding';
+import OnboardingScreen from '../OnboardingScreen';
 import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
-import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush } from '../../data/notifications';
+import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush, cancelBaselineUnlocks } from '../../data/notifications';
 import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
 import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
@@ -155,6 +158,7 @@ export default function SettingsTab({
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [nameDraft, setNameDraft] = useState('');
   const [ticketOpen, setTicketOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
 
   // ── THE FOUNDER'S DOOR — tap the version line 5× ──
@@ -710,9 +714,17 @@ export default function SettingsTab({
               <View>
                 <Text style={styles.sheetEyebrow}>HELP & SUPPORT</Text>
                 <Text style={styles.sheetTitle}>BUGS · BILLING · A HUMAN</Text>
+                <FaqRow q="HOW DO I CLEAR A STAGE?" a="OPEN THE STAGE AND START A MIRROR SESSION — INTENTION, MATCH, CHECKPOINTS, REVIEW, ONE LESSON. THE STAGE GRADES YOUR EVIDENCE." />
                 <FaqRow q="MY SCAN DIDN'T LAND" a="SCANS ARRIVE WITH YOUR NEXT RANKED MATCH. IF 24H PASS, PING US." />
                 <FaqRow q="CAN I SWITCH COACHES?" a="NO — THE PATH LOCK IS PERMANENT. THAT'S THE ACADEMY." />
                 <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE, AND MIRRORED TO YOUR ACADEMY SEAT WHEN YOU HAVE SIGNAL." />
+                <SheetButton
+                  label="TOUR THE ACADEMY"
+                  onPress={() => {
+                    close();
+                    setTourOpen(true);
+                  }}
+                />
                 <SheetButton
                   label={ticketOpen ? 'TICKET OPENED — WE REPLY IN-APP' : 'TALK TO A HUMAN'}
                   onPress={() => {
@@ -754,6 +766,9 @@ export default function SettingsTab({
                     await wipeLocalData();
                     await wipeProgress();
                     await wipeThread();
+                    await wipeMirror();
+                    await resetOnboarding(); // a brand-new account gets the tour again
+                    await cancelBaselineUnlocks(); // no unlock nags for a dead account
                     await wipeSession();
                     backend.cloudReset();
                     onSignOut();
@@ -801,6 +816,13 @@ export default function SettingsTab({
       {tillOpen && (
         <View style={StyleSheet.absoluteFill}>
           <StoreSheet onClose={() => setTillOpen(false)} />
+        </View>
+      )}
+
+      {/* ── ACADEMY TOUR — replayable from Help & support ── */}
+      {tourOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <OnboardingScreen onDone={() => setTourOpen(false)} />
         </View>
       )}
     </View>

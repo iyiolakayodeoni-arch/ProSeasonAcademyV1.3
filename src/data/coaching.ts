@@ -178,9 +178,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
       mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
       quip: coachQuip('obinna', plan.contentId),
-      closer: `That’s the whole side note. The real work is yours — play your match with your thread in hand, answer the moments, jot the lesson. **The scan will know.** It always knows.`,
+      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, divide the moments yourself, and swear the next lesson. **The mirror preserves every version of what you thought.** It never writes it for you.`,
       scanIntro:
-        'PLAY ONE RANKED MATCH WITH YOUR THREAD IN HAND. THE SCANNER TAGS THE MOMENTS THAT MADE OR BROKE YOU — I ASK ABOUT EACH ONE, THEN YOU JOT THE LESSON. THAT LESSON IS YOUR NEXT MAIN QUEST.',
+        'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION CAPTURES WHAT YOU THOUGHT BEFORE THE MATCH, AT HALF-TIME, AT FULL-TIME, AND AFTER YOU REVIEW YOUR OWN MOMENTS. THEN YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
       footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
     };
   }
@@ -190,9 +190,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
-    closer: `That’s the whole side note. Now the real work — play your match with your thread in hand, answer the moments, jot the lesson. **The scan will know.** It always knows.`,
+    closer: `That’s the whole side note. Now the real work — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, mark your own moments, swear the next lesson. **The mirror does not think for you.** It just makes sure you cannot forget what you believed.`,
     scanIntro:
-      'PLAY ONE RANKED MATCH WITH YOUR THREAD IN HAND. THE SCANNER TAGS THE MOMENTS THAT MADE OR BROKE YOU — I ASK ABOUT EACH ONE, THEN YOU JOT THE LESSON. THAT LESSON IS YOUR NEXT MAIN QUEST.',
+      'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION KEEPS YOUR PRE-MATCH THINKING, YOUR HALF-TIME HEAD, YOUR FULL-TIME MEMORY AND YOUR REVIEWED EVIDENCE SIDE BY SIDE. YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
     footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
   };
 }

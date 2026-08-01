@@ -1,7 +1,7 @@
 # ⚽ ProSeasonAcademy — Full Build Ledger
 
-**Version:** 1.0.0 · **Package:** `com.onliversity.proseasonacademy` · **Android release:** APK + AAB (Gradle-built, signed)
-**Last updated:** 25 July 2026
+**Version:** 1.3.0 · **Package:** `com.onliversity.proseasonacademy` · **Android release:** APK + AAB (Gradle-built, signed)
+**Last updated:** 01 August 2026
 
 This document is the single place to check **what the app already does**, **what is real vs. simulated**, and **what is left**. Every feature below has been built and verified in the actual running app (screenshots drove every screen before it shipped).
 
@@ -289,3 +289,152 @@ recovery rule now double-anchors the zip.
 Pending: founder's 6 console steps (console-steps.md); live project URL+anon key;
 live E2E battery vs real project (incl. forced SEASON_FULL); v1.3 APK/AAB cut
 (keystore + secrets intact, cert 832cbd…).
+
+## 2.24 — 2026-08-01 · MIRROR DIRECTION APPLIED (One Journey · The Standard · The Mirror Session)
+
+The product direction (see `MIRROR_DIRECTION.md`) is implemented with the names
+preserved — **Onliversity · ProSeasonAcademy** stay; "Mirror" is the method, "Pro
+Season" the programme, "FC Mobile Pro" the first specialist path.
+
+- **ONE universal Journey** (`src/data/journey.ts`): the two coach-specific
+  fictional roads (Ashfault Ascent / Merehaven Way) are retired as *curriculum*.
+  Every member now walks the same six development chapters — SEE YOURSELF,
+  CONTROL YOURSELF, READ THE GAME, BUILD DISCIPLINE, PERFORM UNDER PRESSURE,
+  PROVE IT — with their own evidence inside each. Coaches remain the voice,
+  guide and accountability presence (lock-in, film room, banter intact), but no
+  longer decide which curriculum a player receives. Fictional geography survives
+  only inside coach backstory, never as a path decision.
+- **THE STANDARD** (`src/data/standard.ts`, NEW): the parallel benchmark journey
+  — a fictional composite elite Role Model with the professional pillars
+  (deliberate practice, honest review, emotional control, preparation,
+  consistency, decisions under pressure, recovery, disciplined repetition,
+  professional conduct). Six chapters mirror the Journey and reveal as the
+  player advances. **Not a second progression track** — no objectives/XP/badges.
+  JourneyTab renders the dual panel: `YOUR JOURNEY — <stage>` ‖ `THE STANDARD —
+  <stage>` with what elite players learn here + behaviour to study + benchmark.
+- **THE MIRROR SESSION** (`src/data/mirrorSession.ts` + `MirrorSessionScreen.tsx`,
+  both NEW): the full session replaces the scan as the MAIN QUEST ritual.
+  Sequence: THREAD CHECK (carried lesson answered HELD/BROKE first) → INTENTION
+  (5 answers + starting composure, before the score) → ARM (official
+  MediaProjection consent via the watcher; manual mode fallback) → LIVE →
+  HALF-TIME (7 answers + composure) → SECOND HALF → SCORE (logged to the real
+  Match Vault as the receipt) → FULL-TIME reflection (7 answers + final
+  composure, captured BEFORE the recording) → DIVISION (the player divides the
+  match into key moments themselves) → REVIEW (8 questions per moment, their
+  words) → COMPARE (BEFORE / HALF-TIME / FULL-TIME / AFTER REVIEW side by side
+  — "which version is closest to the evidence?") → LESSON (sworn into THE
+  THREAD; next session opens by asking how it held) → RECEIPT. Automation
+  boundaries honoured: the app never writes the psychology, never chooses the
+  moments first, never generates the lesson, never uploads raw video.
+- **Objective engine** (`src/data/matches.ts`): +3 machine-checkable kinds —
+  `matches_played`, `composure`, `thread` (settled lessons); `objectiveCount`
+  gains the thread total; `setMatchComposure` attaches the final head-state to
+  the vault receipt.
+- **Copy** (`src/data/coaching.ts`, `CoachingScreen.tsx`): film room framed as
+  the Mirror Session; CTA = **START A MIRROR SESSION ›**; completed sessions
+  grade the stage immediately. Legacy StageScanSheet kept as the quick path.
+- Boot hydrates the mirror store (`App.tsx`); DANGER ZONE wipes it
+  (`SettingsTab.tsx`).
+- Verified: `npm run typecheck` clean · `npm test` 12/12 · existing ledgers,
+  payments, seats and community untouched.
+
+## 2.25 — 2026-08-01 · NATIVE RECORDING MODULE (THE EYE + THE RECORDING)
+
+The last Mirror-direction seam is closed: `plugins/withMatchWatcher.js` (the Expo
+config plugin) was rewritten from a stub into a **real native implementation**
+injected at `expo prebuild` into the generated `android/` project:
+
+- **Official MediaProjection consent** launched from the Activity via
+  `startActivityForResult` (`ActivityEventListener`) — recording never starts
+  silently; declined consent → clean manual-mode fallback.
+- **Foreground service** (`MatchWatcherService`, `foregroundServiceType="mediaProjection"`,
+  notification channel, `POST_NOTIFICATIONS` permission requested on Android 13+).
+- **Two virtual displays off one projection:** 96×54 grayscale `mw-frame` events
+  (~1fps) for the pure ScoreTracker (goal detection unchanged) + a full-resolution
+  **MediaRecorder (H.264 MP4)** that starts ONLY when the match is detected — first
+  goal event auto-calls `beginRecording()`, or the player's MATCH STARTED tap.
+- **Time-based checkpoints** (`mw-checkpoint {half|full}` at ~5.5/11.5 min) auto-pause
+  the Mirror Session; the manual buttons always override.
+- **Stop → local MP4 path** in app-private storage (`files/Movies/match-watcher/`),
+  never uploaded by default; `finishWatcher()` awaits the native `mw-state stopped`
+  event and returns the path; the session stores it on the receipt.
+- **In-app playback** (`expo-video`): the DIVISION and REVIEW phases render the
+  recording with MARK START / MARK END from the timeline and per-moment seek
+  (≈8 recording-seconds per match-minute mapping).
+- TS (`src/data/matchWatcher.ts`) extended: recording state, checkpoints, auto-record
+  on goal, path-returning stop — the hook API is unchanged for callers.
+- Verified: `npm run typecheck` clean · `npm test` 12/12 · plugin prebuild injection
+  verified with a `compileModsAsync` harness (files written, package registered,
+  permissions + service in manifest, TS↔native contract match).
+- ⚠️ Requires a development build (`npx expo run:android` / EAS) — not in Expo Go.
+  First `expo run:android` compiles the Kotlin (JDK 21 / SDK 36); the consent flow
+  still needs one real-phone check (MediaProjection dialog + first recording).
+
+## 2.26 — 2026-08-01 · THE BASELINE WEEK (the honest 7-day gate)
+
+The 5-match Baseline Scan is now **BASELINE WEEK** — one match a day over seven
+days, paced on purpose so honesty has time to breathe and nothing is bombarded:
+
+- **DAYS 1–5 — one ranked match + review per day.** After each match the player
+  WATCHES the local recording (shared `RecordingPlayer` component, MARK START /
+  MARK END from the timeline, per-moment seek), **names the moments where they
+  failed** (their words + optional coarse tag), then **analyses EACH moment** with
+  nine questions in their own words — what happened / what they were thinking /
+  what they were feeling / what made them fail / why the moment turned / what they
+  noticed / what they missed / what they could have done differently / the
+  evidence. Then the rotated day question + head state, and the day seals.
+- **DAY 6 — THE WEEK SO FAR.** No match. The app puts every named moment back in
+  front of the player, shows the tendencies that keep appearing, and asks two
+  reflections: "What do you keep repeating?" and "What has actually changed since
+  day 1?"
+- **DAY 7 — AMBITION + THE SEAL.** The ambition question, then the sealed profile
+  card (tier from head state, tendencies from the named moments, the coach's read).
+- **THE 24-HOUR GAP IS THE HONESTY MECHANISM.** The next day unlocks exactly 24h
+  after the previous day is sealed (`sealBaselineDay`), with a REST screen showing
+  a live countdown and yesterday's review. Lateness is never punished — the gap is
+  always 24h from the actual seal, so a player who comes back three days later just
+  continues where they are. Nothing is forced: one task a day is the contract.
+- **Recording in the trial:** the day flow arms the same native watcher (consent,
+  goal-triggered auto-record, local MP4); in manual mode the timeline fallback
+  works. The recording path is stored on the day/entry and the vault receipt keeps
+  `BASELINE Mn` notes.
+- Old pre-week sessions **migrate** to the schedule from their existing entries —
+  nobody is reset mid-baseline.
+- Verified: `npm run typecheck` clean · `npm test` 18/18 (7 watcher + 5 mirror +
+  6 baseline-week: day-1 open, 24h gap, lateness, moment completeness, migration,
+  full-week flow).
+
+## 2.27 — 2026-08-01 · ACADEMY TOUR + USABILITY POLISH
+
+- **The tutorial is now the current product.** The old first-run tour still taught
+  "MATCH SCAN", "THE GRADE" and a dressing-room community. Rewritten
+  (`src/data/onboarding.ts`) to one idea per card: START HERE (your next move),
+  YOUR ROAD (the universal journey), THE STANDARD (the benchmark — not a second
+  track), MIRROR SESSION (the main ritual), THE THREAD (the held/broke loop),
+  VAULT + LOSS JOURNAL (the receipts), COMMUNITY, and THE TILL (your seat, the
+  cap). Gold/green card accents match the product's visual language.
+- **Replayable.** Settings → Help & support → **TOUR THE ACADEMY** reopens the full
+  tour anytime (`OnboardingScreen` as an in-tab overlay), so a user who skipped or
+  forgot can always be walked through it. The Help sheet also gained a
+  "HOW DO I CLEAR A STAGE?" FAQ that points at the Mirror Session.
+- **Delete Account now resets the tour flag** (`resetOnboarding`) — a brand-new
+  account gets the tutorial again instead of a silent skip.
+- Verified: typecheck clean · 18/18 tests · web export bundles.
+
+## 2.28 — 2026-08-01 · WEEK ORIENTATION + BASELINE DAY-UNLOCK NOTIFICATIONS
+
+- **Week Orientation** (`src/screens/WeekOrientationScreen.tsx`): the 30-second
+  handshake between the coach's story and the Baseline Week. Three short cards —
+  THE NEXT 7 DAYS (one match a day, watch → name → analyse, day 6 reflection,
+  day 7 seal) · THE MIRROR (the app records, you see; 24h gap on purpose) ·
+  WHAT FOLLOWS (Journey + The Standard + the Till). Shown exactly once per
+  account: new `session.orientationDone` flag, routed after `intro` and before
+  `scan` in App.tsx (both restore + fresh-signin paths), skip anytime.
+- **Baseline day-unlock notifications** (`notifications.ts` → `scheduleBaselineUnlock`):
+  when a day seals, the next day's unlock (+24h) is scheduled as a local
+  notification — fired by the OS even if the app is closed. Per-day copy
+  (days 1–5 "DAY N IS UNLOCKED — MATCH N", day 6 "THE WEEK SO FAR", day 7
+  "THE LAST QUESTION"), own Android channel, permission requested on first seal,
+  fails soft when denied/unavailable (the REST countdown is the fallback).
+  `cancelBaselineUnlocks()` runs on Delete Account so a dead account gets no nags.
+- Verified: typecheck clean · 18/18 tests · web export bundles.

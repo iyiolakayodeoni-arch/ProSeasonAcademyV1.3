@@ -38,19 +38,20 @@ const READ_WINDOW_MS = 1800;
 /**
  * Grade a stage against the vault. Every objective on the stage
  * carries a machine-readable `check`; `objectiveCount` resolves it
- * against real matches + real journal lines. A stage passes only
- * when EVERY objective is met.
+ * against real matches + real journal lines + settled Thread
+ * lessons. A stage passes only when EVERY objective is met.
  */
 export function gradeStage(
   stage: JourneyStage,
   matches: MatchEntry[],
   journalTotal: number,
+  threadTotal = 0,
 ): ScanResult {
   const objectives = stage.objectives ?? [];
   if (!objectives.length) return { values: [], passed: false };
 
   const values: ScanValue[] = objectives.map((o) => {
-    const count = o.check ? objectiveCount(o.check, matches, journalTotal) : o.done;
+    const count = o.check ? objectiveCount(o.check, matches, journalTotal, threadTotal) : o.done;
     return {
       label: o.label,
       target: String(o.target),
@@ -67,13 +68,14 @@ export function useMatchScan(
   matches: MatchEntry[],
   journalTotal: number,
   onPassed?: (r: ScanResult) => void,
+  threadTotal = 0,
 ) {
   const [status, setStatus] = useState<ScanStatus>('armed');
   const [result, setResult] = useState<ScanResult | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // keep the freshest ledger without restarting an in-flight read
-  const latest = useRef({ stage, matches, journalTotal });
-  latest.current = { stage, matches, journalTotal };
+  const latest = useRef({ stage, matches, journalTotal, threadTotal });
+  latest.current = { stage, matches, journalTotal, threadTotal };
 
   const applyResult = useCallback(
     (r: ScanResult) => {
@@ -91,8 +93,8 @@ export function useMatchScan(
     setResult(null);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      const { stage: s, matches: m, journalTotal: j } = latest.current;
-      applyResult(gradeStage(s, m, j));
+      const { stage: s, matches: m, journalTotal: j, threadTotal: t } = latest.current;
+      applyResult(gradeStage(s, m, j, t));
     }, READ_WINDOW_MS);
   }, [status, applyResult]);
 
@@ -102,8 +104,8 @@ export function useMatchScan(
     setStatus('scanning');
     setResult(null);
     timer.current = setTimeout(() => {
-      const { stage: s, matches: m, journalTotal: j } = latest.current;
-      applyResult(gradeStage(s, m, j));
+      const { stage: s, matches: m, journalTotal: j, threadTotal: t } = latest.current;
+      applyResult(gradeStage(s, m, j, t));
     }, 900);
   }, [applyResult]);
 

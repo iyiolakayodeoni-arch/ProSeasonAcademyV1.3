@@ -1,10 +1,43 @@
 # ProSeason Academy — The Journey
 ## Current application documentation
 
-**Document status:** Current implementation reference  
+**Document status:** Updated for the MIRROR DIRECTION (01 Aug 2026). The sections below that describe the two coach-specific journeys (**The Ashfault Ascent** / **The Merehaven Way**) are now **historical** — see §0 for the applied direction and `../MIRROR_DIRECTION.md` for the full record.
 **Repository:** `iyiolakayodeoni-arch/ProSeasonAcademyV1.3`  
-**Prepared:** 31 July 2026 (UTC)  
-**Scope:** The Journey as it is currently implemented in the application, including the map, stages, objectives, Match Scan, coach room, progression, Role Model finish, storage, access rules, and known implementation notes.
+**Prepared:** 31 July 2026 (UTC) · updated 01 Aug 2026  
+**Scope:** The Journey as it is currently implemented in the application, including the map, stages, objectives, Match Scan / Mirror Session, coach room, progression, Role Model finish, storage, access rules, and known implementation notes.
+
+---
+
+## 0. The MIRROR DIRECTION — applied 01 Aug 2026
+
+The product direction (see `../MIRROR_DIRECTION.md`) replaced the two coach-specific
+fictional journeys with **ONE universal player Journey** — the same six development
+chapters for every member:
+
+1. **SEE YOURSELF** — truthful baseline, repeated behaviour
+2. **CONTROL YOURSELF** — what pressure does to your decisions
+3. **READ THE GAME** — patterns, danger, space, tempo, context
+4. **BUILD DISCIPLINE** — awareness becomes repeatable behaviour
+5. **PERFORM UNDER PRESSURE** — the work tested in competition
+6. **PROVE IT** — review the accumulated evidence, set the next standard
+
+The coach remains the voice, guide and accountability presence — the lock-in, film room,
+banter and Role Model card are unchanged — but **no player receives a different
+curriculum based on the coach they pick.** In parallel runs **THE STANDARD** (`src/data/standard.ts`),
+the benchmark journey of a fictional composite elite Role Model, revealed chapter by
+chapter as the player advances ("Your Journey is the evidence. The Standard is the
+benchmark.").
+
+The stage-room **Match Scan** is superseded as the MAIN QUEST by **THE MIRROR SESSION**
+(`src/data/mirrorSession.ts` + `src/screens/MirrorSessionScreen.tsx`): intention before
+the match → half-time checkpoint → full-time reflection before the recording → player-led
+moment division → per-moment review → the versions compared ("which version is closest to
+the evidence?") → one lesson sworn into THE THREAD. The grading engine is unchanged — a
+completed session logs a real match to the vault and the stage is graded from the evidence.
+The legacy scan remains as the "QUICK MATCH SCAN" secondary path.
+
+The historical sections below (§1 onward) describe the retired two-coach journey system
+and are kept for the record.
 
 ---
 

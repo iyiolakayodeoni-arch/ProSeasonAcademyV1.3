@@ -1,24 +1,19 @@
 import { ObjectiveCheck } from './matches';
 
 // ─────────────────────────────────────────────────────────────
-// JOURNEY MAP DATA — Season 1 curriculum + map coordinates.
-// THE CANON: each coach's path is a FICTIONAL place from his own
-// legend — never a real club, city, stadium or footballer.
+// JOURNEY MAP DATA — Pro Season curriculum.
 //
-//   CHINEDU walks THE ASHFAULT ASCENT — a climb out of Cinder Row,
-//   byline voices from a hard town: Mama Ukae, Drummer Ezra,
-//   Foreman Baba Salt, Locksmith Venn, Night-Watch Kettle,
-//   Old Whistle Onye.
+// MIRROR DIRECTION: there is ONE universal player Journey, not
+// two coach-specific fictional roads. Both coaches walk the same
+// six development chapters (SEE YOURSELF → PROVE IT) — the coach
+// stays a voice, guide and accountability presence, but the
+// curriculum is no longer a game-world choice. "Your Journey is
+// the evidence. The Standard is the benchmark."
 //
-//   OBINNA walks THE MEREHAVEN WAY — a harbour road to Calm
-//   Water, byline voices from the water: Fisher-boy Idri,
-//   Boatman Sola, Dockmaster Yew, Fogwatcher Nne,
-//   Light-keeper Ama, Elder Mere.
-//
-// 26 objectives across both journeys, every one machine-checkable
-// against the Match Vault vocabulary (matches.ts ObjectiveCheck).
-// Map geometry is shared (same canvas coords per stage number);
-// the fiction, objectives and badges are per-coach.
+// Every objective is machine-checkable against the Match Vault,
+// the Loss Journal and the Thread (matches.ts ObjectiveCheck).
+// Map geometry is shared: the same S-curve for every player,
+// because the climb itself is universal.
 // ─────────────────────────────────────────────────────────────
 
 export interface MapPoint {
@@ -40,7 +35,8 @@ export interface JourneyStage {
   name: string;
   tagline: string;
   at: MapPoint; // node position on the map canvas
-  mentor?: string; // the byline voice of this stop on the road
+  /** the development chapter this stage stands for (universal) */
+  chapter?: string;
   objectives?: JourneyObjective[];
   progressPct?: number;
   rewardXp?: number;
@@ -52,7 +48,7 @@ export interface JourneyStage {
 export interface SeasonDef {
   seasonNo: number;
   totalStages: number;
-  title: string; // the name of THIS coach's road
+  title: string; // the name of the programme road
   arc: string;   // one-line legend of the road
   playerCard: { at: MapPoint; rating: number; label: string };
   coachAnchor: MapPoint; // the path necks up to the Role Model hero card above the map
@@ -64,7 +60,7 @@ export const MAP_W = 360;
 export const MAP_H = 560;
 
 // shared map geometry — a single S-curve, player card at the foot,
-// coach at the neck. Fiction differs, the climb is the same shape.
+// coach at the neck. One climb, the same shape for every player.
 const PLAYER_CARD = { at: { x: 150, y: 505 }, rating: 61, label: 'YOU — STAGE 0' };
 const COACH_ANCHOR: MapPoint = { x: 180, y: 10 };
 const AT: MapPoint[] = [
@@ -76,249 +72,140 @@ const AT: MapPoint[] = [
   { x: 108, y: 44 },
 ];
 
-// ── CHINEDU — THE ASHFAULT ASCENT ────────────────────────────
-const ASHFAULT: SeasonDef = {
+// ── THE UNIVERSAL JOURNEY — PRO SEASON ───────────────────────
+// One stage framework for every member. The evidence inside each
+// stage is the player's own; the chapters are universal.
+const UNIVERSAL: SeasonDef = {
   seasonNo: 1,
   totalStages: 6,
-  title: 'THE ASHFAULT ASCENT',
-  arc: 'CINDER ROW TO THE IRON WHISTLE — THE CLIMB THAT FORGED THE DISCIPLINARIAN',
+  title: 'PRO SEASON — YOUR JOURNEY',
+  arc: 'SEE YOURSELF · CONTROL YOURSELF · READ THE GAME · BUILD DISCIPLINE · PERFORM UNDER PRESSURE · PROVE IT',
   playerCard: PLAYER_CARD,
   coachAnchor: COACH_ANCHOR,
   stages: [
     {
       n: 1,
-      key: 'CINDER ROW',
-      name: 'Cinder Row',
-      tagline: 'WHERE HE LEARNED THAT SPACE IS BORROWED AND PAID BACK IN SWEAT',
+      key: 'SEE YOURSELF',
+      name: 'See Yourself',
+      tagline: 'ESTABLISH A TRUTHFUL BASELINE — NOTICE YOUR REPEATED BEHAVIOUR BEFORE YOU TRY TO CHANGE IT',
+      chapter: 'SEE YOURSELF',
       at: AT[0],
-      mentor: 'MAMA UKAE',
       objectives: [
-        { label: 'Win 2 ranked matches', target: 2, done: 0, check: { kind: 'win', count: 2, rankedOnly: true } },
-        { label: 'Win once using 1+ mechanics', target: 1, done: 0, check: { kind: 'win_with_mechanics', mechanics: 1, count: 1 } },
+        { label: 'Log 3 real matches in the Match Vault', target: 3, done: 0, check: { kind: 'matches_played', count: 3 } },
+        { label: 'Write 1 honest line in the Loss Journal', target: 1, done: 0, check: { kind: 'journal', count: 1 } },
       ],
       rewardXp: 120,
-      rewardBadge: 'CINDER ROW BADGE',
+      rewardBadge: 'SEE YOURSELF BADGE',
       quote:
-        'On Cinder Row you did not find space — you borrowed it and paid it back in sweat. Mama Ukae ran the evening games from her shopfront step; she never once blew a whistle, she just looked at you. Bring her two ranked wins. Clean ones.',
+        'Before one tactic, before one mechanic — the truth about what you actually do. Nobody else can see into your matches the way you can, and nobody else can walk this road for you. Log the matches. Write the line. Look first.',
       duration: '2-3 DAYS',
     },
     {
       n: 2,
-      key: 'THE LEAN-TO',
-      name: 'The Lean-To',
-      tagline: 'A BROKEN ROOF TEACHES SHAPE: STAND WHERE THE RAIN IS NOT',
+      key: 'CONTROL YOURSELF',
+      name: 'Control Yourself',
+      tagline: 'IDENTIFY WHAT PRESSURE DOES TO YOUR DECISIONS — THE HEAD IS THE FIRST GAME',
+      chapter: 'CONTROL YOURSELF',
       at: AT[1],
-      mentor: 'DRUMMER EZRA',
       objectives: [
-        { label: 'Concede 1 or fewer in 3 matches', target: 3, done: 0, check: { kind: 'concede_max', max: 1, count: 3 } },
-        { label: 'Keep 1 clean sheet', target: 1, done: 0, check: { kind: 'clean_sheet', count: 1 } },
+        { label: 'Rate your head state on 2 matches', target: 2, done: 0, check: { kind: 'composure', count: 2 } },
+        { label: 'Concede 1 or fewer in 2 ranked matches', target: 2, done: 0, check: { kind: 'concede_max', max: 1, count: 2, rankedOnly: true } },
       ],
       rewardXp: 150,
-      rewardBadge: 'LEAN-TO BADGE',
+      rewardBadge: 'CONTROL YOURSELF BADGE',
       quote:
-        'Drummer Ezra played for our shape, not our feet — he said a team standing right sounds like a tight drumskin, and a team chasing sounds like a burst one. Under the Lean-To you learn to stand where the rain is not. Concede nothing cheap. Nothing.',
+        'The first goal is never the problem. The second is the problem — the one you concede to your own head. Rate how you felt in the match. Then defend like the pressure is the opponent, because it is.',
       duration: '3-4 DAYS',
     },
     {
       n: 3,
-      key: 'THE SALTPITS',
-      name: 'The Saltpits',
-      tagline: 'THE GRIND — CRAMPS FIRST, WAGES LATER',
+      key: 'READ THE GAME',
+      name: 'Read the Game',
+      tagline: 'NOTICE PATTERNS, DANGER, SPACE, TEMPO AND DECISION CONTEXT — THEN ACT BEFORE THE PICTURE CHANGES',
+      chapter: 'READ THE GAME',
       at: AT[2],
-      mentor: 'FOREMAN BABA SALT',
-      objectives: [
-        { label: 'Win 3 ranked matches', target: 3, done: 0, check: { kind: 'win', count: 3, rankedOnly: true } },
-        { label: 'Write 2 honest lines in the Loss Journal', target: 2, done: 0, check: { kind: 'journal', count: 2 } },
-      ],
-      rewardXp: 180,
-      rewardBadge: 'SALTPITS BADGE',
-      quote:
-        'Foreman Baba Salt paid boys in cramps first and wages later — and they all came back the next morning. Ranked is the same contract. Win three. And write two honest lines about what the work cost, because a player who cannot read his own ledger goes broke.',
-      duration: '4-5 DAYS',
-    },
-    {
-      n: 4,
-      key: 'LONG CORRIDOR',
-      name: 'Long Corridor',
-      tagline: 'PATIENCE — A LOCK OPENS TOOTH BY TOOTH, NEVER ALL AT ONCE',
-      at: AT[3],
-      mentor: 'LOCKSMITH VENN',
       objectives: [
         { label: 'Hit 65%+ pass accuracy in 2 matches', target: 2, done: 0, check: { kind: 'pass_acc', min: 65, count: 2 } },
-        { label: 'Bank a win you led at 75’', target: 1, done: 0, check: { kind: 'close_out', count: 1 } },
-      ],
-      rewardXp: 200,
-      rewardBadge: 'CORRIDOR BADGE',
-      quote:
-        'Locksmith Venn could open anything in the Row except a boy in a hurry. “A lock opens tooth by tooth,” he said, “never all at once.” Move their block the same way — pass, pass, wait, pass. Then lead at 75’ and shut the door with your own hand.',
-      duration: '4-5 DAYS',
-    },
-    {
-      n: 5,
-      key: 'RED LANTERN END',
-      name: 'Red Lantern End',
-      tagline: 'LATE DRAMA — WHEN THEIR LEGS START NEGOTIATING, YOURS VOTE',
-      at: AT[4],
-      mentor: 'NIGHT-WATCH KETTLE',
-      objectives: [
-        { label: 'Win with the decider after the hour', target: 1, done: 0, check: { kind: 'win_decisive_after', minute: 60, count: 1 } },
-        { label: 'Score 4 total vs low blocks', target: 4, done: 0, check: { kind: 'goals_vs_style', style: 'LOW BLOCK', count: 4 } },
-      ],
-      rewardXp: 240,
-      rewardBadge: 'RED LANTERN BADGE',
-      quote:
-        'Night-Watch Kettle lit the red lamps at the row’s end and knew everyone who only came out tired. Winners are made in the hour others sit down. Score late. Break a parked bus. Let the red light find you still standing.',
-      duration: '5-6 DAYS',
-    },
-    {
-      n: 6,
-      key: 'THE IRON WHISTLE',
-      name: 'The Iron Whistle',
-      tagline: 'FINALS MENTALITY — FULL TIME WHEN THE CLIMB IS DONE, NOT BEFORE',
-      at: AT[5],
-      mentor: 'OLD WHISTLE ONYE',
-      objectives: [
-        { label: 'Win 4 ranked matches', target: 4, done: 0, check: { kind: 'win', count: 4, rankedOnly: true } },
-        { label: 'Keep a no-sprint clean sheet', target: 1, done: 0, check: { kind: 'clean_sheet', count: 1, noSprint: true } },
-        { label: 'Bank 2 wins you led at 75’', target: 2, done: 0, check: { kind: 'close_out', count: 2 } },
-      ],
-      rewardXp: 300,
-      rewardBadge: 'THE IRON WHISTLE',
-      quote:
-        'Old Whistle Onye refereed the Row for forty years and swallowed his whistle in the biggest game ever played on Cinder Row — my game. He blew full time when the climb was finished, not a breath before. Become someone he would wait for. Four ranked wins. A silent sheet. Two doors shut at 75’.',
-      duration: '6-7 DAYS',
-    },
-  ],
-};
-
-// ── OBINNA — THE MEREHAVEN WAY ───────────────────────────────
-const MEREHAVEN: SeasonDef = {
-  seasonNo: 1,
-  totalStages: 6,
-  title: 'THE MEREHAVEN WAY',
-  arc: 'THE HARBOUR ROAD TO CALM WATER — HOW THE ICEMAN LEARNED HIS TEMPERATURE',
-  playerCard: PLAYER_CARD,
-  coachAnchor: COACH_ANCHOR,
-  stages: [
-    {
-      n: 1,
-      key: 'TIDE FLATS',
-      name: 'Tide Flats',
-      tagline: 'FIRST TOUCH — THE TIDE GIVES MINUTES, NOT HOURS',
-      at: AT[0],
-      mentor: 'FISHER-BOY IDRI',
-      objectives: [
-        { label: 'Hit 60%+ pass accuracy in 2 matches', target: 2, done: 0, check: { kind: 'pass_acc', min: 60, count: 2 } },
-        { label: 'Win 1 ranked match', target: 1, done: 0, check: { kind: 'win', count: 1, rankedOnly: true } },
-      ],
-      rewardXp: 120,
-      rewardBadge: 'TIDE FLATS BADGE',
-      quote:
-        'Fisher-boy Idri worked the flats barefoot and never once chased the water. “The tide gives minutes, not hours,” he laughed. Touch first. Look up. Let the game come back to you the way the water does. Two calm passing nights and your first ranked win.',
-      duration: '2-3 DAYS',
-    },
-    {
-      n: 2,
-      key: 'LANTERN CANAL',
-      name: 'Lantern Canal',
-      tagline: 'RHYTHM — PASSING THAT STOPS FEELING LIKE A PATTERN',
-      at: AT[1],
-      mentor: 'BOATMAN SOLA',
-      objectives: [
-        { label: 'Hit 70%+ pass accuracy in 2 matches', target: 2, done: 0, check: { kind: 'pass_acc', min: 70, count: 2 } },
-        { label: 'Win once using 1+ mechanics', target: 1, done: 0, check: { kind: 'win_with_mechanics', mechanics: 1, count: 1 } },
-      ],
-      rewardXp: 150,
-      rewardBadge: 'CANAL BADGE',
-      quote:
-        'Boatman Sola poled the canal at night by lantern and never hurried a bend. “The boat knows the water before you do. Let it finish its thought.” Seventy percent passing, twice — and one win where today’s mechanic does the steering.',
-      duration: '3-4 DAYS',
-    },
-    {
-      n: 3,
-      key: 'STILLWATER DOCKS',
-      name: 'Stillwater Docks',
-      tagline: 'PATIENCE VS THE BLOCK — STILL WATER MOVES WHAT STORMS CANNOT',
-      at: AT[2],
-      mentor: 'DOCKMASTER YEW',
-      objectives: [
-        { label: 'Score 3 total vs low blocks', target: 3, done: 0, check: { kind: 'goals_vs_style', style: 'LOW BLOCK', count: 3 } },
-        { label: 'Concede 1 or fewer in 2 matches', target: 2, done: 0, check: { kind: 'concede_max', max: 1, count: 2 } },
+        { label: 'Score 3 goals against a low block', target: 3, done: 0, check: { kind: 'goals_vs_style', style: 'LOW BLOCK', count: 3 } },
       ],
       rewardXp: 180,
-      rewardBadge: 'STILLWATER BADGE',
+      rewardBadge: 'READ THE GAME BADGE',
       quote:
-        'Dockmaster Yew moved cargo on the stillest mornings and swore still water out-lifts any storm. A parked bus is a dock wall, little one — lean on it patiently and it opens where it was built to. Three against the block; nothing cheap the other way.',
+        'Stop playing the ball. Play the picture. The best read the game three seconds before everyone else sees it — and they got there by counting what repeated. Pass the pattern open. Break the parked bus with patience, not panic.',
       duration: '4-5 DAYS',
     },
     {
       n: 4,
-      key: 'THE FOG GATE',
-      name: 'The Fog Gate',
-      tagline: 'COMPOSURE IN CHAOS — WHEN YOU CANNOT SEE, STEER BY FEEL',
+      key: 'BUILD DISCIPLINE',
+      name: 'Build Discipline',
+      tagline: 'TURN AWARENESS INTO REPEATABLE BEHAVIOUR — THE ROUTINE IS THE TALENT',
+      chapter: 'BUILD DISCIPLINE',
       at: AT[3],
-      mentor: 'FOGWATCHER NNE',
       objectives: [
+        { label: 'Win 2 ranked matches', target: 2, done: 0, check: { kind: 'win', count: 2, rankedOnly: true } },
+        { label: 'Win once using 1+ taught mechanics', target: 1, done: 0, check: { kind: 'win_with_mechanics', mechanics: 1, count: 1 } },
         { label: 'Write 2 honest lines in the Loss Journal', target: 2, done: 0, check: { kind: 'journal', count: 2 } },
-        { label: 'Bank a win you led at 75’', target: 1, done: 0, check: { kind: 'close_out', count: 1 } },
       ],
       rewardXp: 200,
-      rewardBadge: 'FOG GATE BADGE',
+      rewardBadge: 'BUILD DISCIPLINE BADGE',
       quote:
-        'Fogwatcher Nne counted ships through the thickest nights by sound alone. There are match minutes like fog — a deflection, a referee, a tilt — where eyes lie. Write two honest lines about one. Then close a game out while your pulse stays low.',
+        'Awareness without repetition is a mood. Discipline is what you do on the night you do not feel like it — the same routine, the same standards, the same honest ledger. Win with the work. Log the losses. Repeat.',
       duration: '4-5 DAYS',
     },
     {
       n: 5,
-      key: 'HARBOUR LIGHTS',
-      name: 'Harbour Lights',
-      tagline: 'VISION — SEE THE WHOLE PITCH THE WAY A LIGHTHOUSE SEES THE BAY',
+      key: 'PERFORM UNDER PRESSURE',
+      name: 'Perform Under Pressure',
+      tagline: 'TEST THE WORK IN REAL COMPETITIVE SITUATIONS — PRESSURE IS WHERE HABITS PROVE THEMSELVES',
+      chapter: 'PERFORM UNDER PRESSURE',
       at: AT[4],
-      mentor: 'LIGHT-KEEPER AMA',
       objectives: [
         { label: 'Win 3 ranked matches', target: 3, done: 0, check: { kind: 'win', count: 3, rankedOnly: true } },
-        { label: 'Win with the decider after 80’', target: 1, done: 0, check: { kind: 'win_decisive_after', minute: 80, count: 1 } },
+        { label: 'Bank a win you led at 75’', target: 1, done: 0, check: { kind: 'close_out', count: 1 } },
+        { label: 'Win with the decider after 60’', target: 1, done: 0, check: { kind: 'win_decisive_after', minute: 60, count: 1 } },
       ],
       rewardXp: 240,
-      rewardBadge: 'HARBOUR LIGHTS BADGE',
+      rewardBadge: 'PERFORM UNDER PRESSURE BADGE',
       quote:
-        'Light-keeper Ama stood above the bay and read weather an hour before sailors felt it. See the whole pitch like that — the run before it starts, the winner before the defending tiredness. Three ranked wins, and one decided after eighty, because you saw it first.',
+        'This is the chapter where training becomes a result. Under pressure, you do not rise to the occasion — you sink to your highest level of preparation. Win ranked. Close it out. Decide it late. Show the work under fire.',
       duration: '5-6 DAYS',
     },
     {
       n: 6,
-      key: 'CALM WATER',
-      name: 'Calm Water',
-      tagline: 'MASTERY — THE OPPONENT SUPPLIES THE WAVES; YOU REMAIN THE TEMPERATURE',
+      key: 'PROVE IT',
+      name: 'Prove It',
+      tagline: 'REVIEW THE EVIDENCE ACCUMULATED ACROSS THE PROGRAMME — THEN SET YOUR NEXT PROFESSIONAL STANDARD',
+      chapter: 'PROVE IT',
       at: AT[5],
-      mentor: 'ELDER MERE',
       objectives: [
-        { label: 'Hit 75%+ pass accuracy once', target: 1, done: 0, check: { kind: 'pass_acc', min: 75, count: 1 } },
         { label: 'Keep 1 clean sheet', target: 1, done: 0, check: { kind: 'clean_sheet', count: 1 } },
         { label: 'Bank 2 wins you led at 75’', target: 2, done: 0, check: { kind: 'close_out', count: 2 } },
+        { label: 'Hold or break your Thread 3 times', target: 3, done: 0, check: { kind: 'thread', count: 3 } },
       ],
       rewardXp: 300,
-      rewardBadge: 'CALM WATER BADGE',
+      rewardBadge: 'PROVE IT BADGE',
       quote:
-        'Elder Mere, oldest head on the water, once told a boy why champions look slow: “The opponent supplies the waves; you remain the temperature.” This is the road’s end, little one — seventy-five on the ball, silence at the back, and two games finished the Iceman way: calm.',
+        'The programme ends the way it began — with the evidence. Not what you hoped you did. What you did. Look at the receipts: the matches, the lines, the lessons that held and the ones that broke. Then set the next standard. This road never really ends; you just get to choose the next one.',
       duration: '6-7 DAYS',
     },
   ],
 };
 
 export const JOURNEYS: Record<string, SeasonDef> = {
-  chinedu: ASHFAULT,
-  obinna: MEREHAVEN,
+  // the same universal road for every coach — the coach is the
+  // voice on it, never a different curriculum
+  chinedu: UNIVERSAL,
+  obinna: UNIVERSAL,
 };
 
-/** this coach's road — the fiction the whole journey UI renders */
-export function journeySeasonFor(coachId: string): SeasonDef {
-  return JOURNEYS[coachId] ?? MEREHAVEN;
+/** this player's road — one universal journey, whoever the guide is */
+export function journeySeasonFor(_coachId: string): SeasonDef {
+  return UNIVERSAL;
 }
 
 // legacy default — consumers that only need shape/counts (progress
 // arithmetic, settings badges) share the same 6-stage structure
-export const JOURNEY_SEASON = ASHFAULT;
+export const JOURNEY_SEASON = UNIVERSAL;
 
 export const CURRENT_STAGE = 1; // stage the player is on (1-based)
 

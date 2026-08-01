@@ -31,6 +31,8 @@ import { objectiveCount, useMatches } from '../../data/matches';
 import { sfx } from '../../audio/sound';
 import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
+import { useLessonThread } from '../../data/lessonThread';
+import { useStandard, StandardChapter } from '../../data/standard';
 import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
@@ -83,6 +85,11 @@ export default function JourneyTab({
   const vault = useMatches();
   const journal = useJournal();
   const settings = useSettings();
+  // THE THREAD — settled lessons count toward PROVE IT (the objective engine)
+  const thread = useLessonThread();
+  const threadSettled = thread.heldCount + thread.brokeCount;
+  // THE STANDARD — the parallel benchmark journey, revealed by progress
+  const standard = useStandard();
   const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
@@ -161,7 +168,7 @@ export default function JourneyTab({
         </View>
 
         <Text style={styles.headline}>YOUR JOURNEY</Text>
-        <Text style={styles.subline}>WALKING {coach.name}'S PATH</Text>
+        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
           <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
@@ -279,6 +286,13 @@ export default function JourneyTab({
           </View>
         </View>
 
+        {/* ── THE STANDARD — the parallel benchmark journey ── */}
+        <StandardPanel
+          chapter={standard.current}
+          clearedCount={standard.clearedCount}
+          stageN={CUR}
+        />
+
         {/* ── stage detail card ── */}
         <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, isLocked && styles.stageCardLocked]}>
           <View style={styles.stageTop}>
@@ -319,7 +333,7 @@ export default function JourneyTab({
               <View style={styles.objectives}>
                 {(selected.objectives ?? []).map((o, i) => {
                   const count = o.check
-                    ? objectiveCount(o.check, vault.matches, journal.entries.length)
+                    ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled)
                     : o.done;
                   const shown = Math.min(count, o.target);
                   const done = count >= o.target;
@@ -440,6 +454,62 @@ export default function JourneyTab({
         />
       )}
     </View>
+  );
+}
+
+// ── THE STANDARD — the parallel benchmark journey. Not a second
+// progression track: it moves beside YOUR JOURNEY and reveals the
+// chapter that matches your current stage. Read it. Walk your own road.
+function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
+  return (
+    <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
+      <View style={styles.standardHead}>
+        <View style={styles.standardTitleBlock}>
+          <Text style={styles.standardName}>THE STANDARD</Text>
+          <Text style={styles.standardSub}>A COMPOSITE OF THE BEST IN THE PATH</Text>
+        </View>
+        <View style={styles.standardStagePill}>
+          <Text style={styles.standardStageTxt}>STAGE {stageN}</Text>
+        </View>
+      </View>
+
+      {/* the dual line — YOUR JOURNEY vs THE STANDARD at the same point */}
+      <View style={styles.standardDual}>
+        <View style={styles.standardDualCol}>
+          <Text style={styles.standardDualTag}>YOUR JOURNEY</Text>
+          <Text style={styles.standardDualName}>{chapter.stageKey}</Text>
+        </View>
+        <View style={styles.standardDualArrow}>
+          <Text style={styles.standardDualArrowTxt}>‖</Text>
+        </View>
+        <View style={[styles.standardDualCol, styles.standardDualColRight]}>
+          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>THE STANDARD</Text>
+          <Text style={styles.standardDualName}>{chapter.chapterTitle}</Text>
+        </View>
+      </View>
+
+      <Text style={styles.standardLearnTitle}>WHAT ELITE PLAYERS LEARN HERE</Text>
+      <Text style={styles.standardLearnBody}>{chapter.whatTheyLearn}</Text>
+
+      <Text style={styles.standardLearnTitle}>THE PROFESSIONAL BEHAVIOUR TO STUDY</Text>
+      <View style={styles.standardBullets}>
+        {chapter.behaviourToStudy.map((b, i) => (
+          <View key={i} style={styles.standardBulletRow}>
+            <View style={styles.standardBulletDot} />
+            <Text style={styles.standardBulletTxt}>{b}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.standardBenchmark}>
+        <Text style={styles.standardBenchmarkTxt}>“{chapter.benchmark}”</Text>
+        <Text style={styles.standardBenchmarkBy}>— THE STANDARD · {chapter.chapterTitle}</Text>
+      </View>
+
+      <Text style={styles.standardMotto}>
+        YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
+      </Text>
+    </Animated.View>
   );
 }
 
@@ -735,4 +805,75 @@ const styles = StyleSheet.create({
   ledgerBig: { marginTop: 6, fontFamily: monoFont, fontSize: 26, fontWeight: '900', color: colors.primary, letterSpacing: 1 },
   ledgerSub: { marginTop: 1, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.72)' },
   ledgerCta: { marginTop: 9, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
+
+  // ── THE STANDARD ──
+  standardCard: {
+    marginTop: 14,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.55)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(20,16,8,0.92)',
+    padding: 14,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  standardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  standardTitleBlock: { flex: 1 },
+  standardName: { fontFamily: monoFont, fontSize: 12, fontWeight: '900', letterSpacing: 2.6, color: colors.accent },
+  standardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.8, color: 'rgba(242,192,120,0.65)' },
+  standardStagePill: {
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.5)',
+    borderRadius: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+  },
+  standardStageTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+
+  standardDual: {
+    marginTop: 13,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.3)',
+    borderRadius: 11,
+    backgroundColor: 'rgba(10,8,4,0.5)',
+    padding: 10,
+  },
+  standardDualCol: { flex: 1 },
+  standardDualColRight: { alignItems: 'flex-end' },
+  standardDualTag: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  standardDualTagGold: { color: colors.accent },
+  standardDualName: { marginTop: 5, fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
+  standardDualArrow: { alignItems: 'center', justifyContent: 'center' },
+  standardDualArrowTxt: { fontFamily: monoFont, fontSize: 9, color: 'rgba(242,192,120,0.5)' },
+
+  standardLearnTitle: { marginTop: 12, fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.9, color: 'rgba(242,192,120,0.8)' },
+  standardLearnBody: { marginTop: 6, fontSize: 10, lineHeight: 15, color: '#c4d4c8' },
+  standardBullets: { marginTop: 8, gap: 6 },
+  standardBulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  standardBulletDot: { marginTop: 4.5, width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accent },
+  standardBulletTxt: { flex: 1, fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
+
+  standardBenchmark: {
+    marginTop: 12,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.accent,
+    paddingLeft: 10,
+  },
+  standardBenchmarkTxt: { fontSize: 10.5, lineHeight: 16, fontStyle: 'italic', color: colors.fg },
+  standardBenchmarkBy: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(242,192,120,0.7)' },
+
+  standardMotto: {
+    marginTop: 12,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    letterSpacing: 1.4,
+    lineHeight: 9,
+    color: 'rgba(143,184,155,0.65)',
+  },
 });

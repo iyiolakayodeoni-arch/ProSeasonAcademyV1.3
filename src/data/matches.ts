@@ -62,6 +62,9 @@ export interface VaultState {
 // qualifying matches/goals/lines complete the objective.
 export type ObjectiveCheck =
   | { kind: 'journal'; count: number } // Loss Journal lines written
+  | { kind: 'thread'; count: number } // Thread lessons settled (held + broke)
+  | { kind: 'matches_played'; count: number } // matches logged in the vault
+  | { kind: 'composure'; count: number } // matches with a self-rated head state
   | { kind: 'win'; count: number; rankedOnly?: boolean; noSprint?: boolean }
   | { kind: 'pass_acc'; min: number; count: number; rankedOnly?: boolean }
   | { kind: 'concede_max'; max: number; count: number; rankedOnly?: boolean }
@@ -147,6 +150,17 @@ export function removeMatch(id: string) {
   set({ matches: state.matches.filter((m) => m.id !== id) });
 }
 
+/** attach/update a self-rated head state on an existing receipt (THE MIND
+ *  is semi-automatic by design: the machine counts goals, the player owns
+ *  the psychology — the Mirror Session writes it after the full-time
+ *  reflection, before the review). */
+export function setMatchComposure(id: string, composure: number) {
+  const c = Math.max(1, Math.min(5, Math.round(composure)));
+  set({
+    matches: state.matches.map((m) => (m.id === id ? { ...m, composure: c } : m)),
+  });
+}
+
 // server row shape (backend.ts ServerMatchRow) — declared structurally
 // here so the cloud layer can feed us rows without a circular import
 export interface ServerMatchRowLike {
@@ -212,16 +226,23 @@ export function describeMatch(m: MatchEntry): string {
   return `${resultOf(m)} ${m.gf}–${m.ga} · ${m.mode} · VS ${m.oppStyle}`;
 }
 
-/** grade one objective against the whole vault (+ journal total) */
+/** grade one objective against the whole vault (+ journal + thread totals) */
 export function objectiveCount(
   check: ObjectiveCheck,
   matches: MatchEntry[],
   journalTotal: number,
+  threadTotal = 0,
 ): number {
   const ranked = (m: MatchEntry, only?: boolean) => !only || m.mode === 'RANKED';
   switch (check.kind) {
     case 'journal':
       return journalTotal;
+    case 'thread':
+      return threadTotal;
+    case 'matches_played':
+      return matches.length;
+    case 'composure':
+      return matches.filter((m) => m.composure != null).length;
     case 'win':
       return matches.filter((m) => resultOf(m) === 'W' && ranked(m, check.rankedOnly) && (!check.noSprint || m.noSprint)).length;
     case 'pass_acc':

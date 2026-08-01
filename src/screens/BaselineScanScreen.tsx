@@ -3,38 +3,74 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image } from 
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import MomentReview from '../components/MomentReview';
+import { RecordingPlayer, SECONDS_PER_MATCH_MIN } from '../components/RecordingPlayer';
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
+  BASELINE_DAYS,
+  BASELINE_DAY_INTRO,
+  BASELINE_DAY_MS,
+  BASELINE_MATCHES,
+  BASELINE_MOMENT_MIN_ANSWER,
+  BASELINE_MOMENT_QUESTIONS,
+  BASELINE_MOMENT_TAGS,
+  BASELINE_REST_LINES,
+  BaselineAnalysisKey,
+  BaselineDayStatus,
+  BaselineMoment,
   BaselineSession,
   beatKey,
+  currentBaselineDay,
+  dayStatus,
+  isWeekComplete,
   loadBaseline,
+  nextUnlockAt,
   recordBaselineMatch,
+  saveBaselineReflection,
   sealBaseline,
+  sealBaselineDay,
+  tendenciesOf,
+  weekMoments,
 } from '../data/baselineScan';
-import { TaggedMoment, momentsComplete } from '../data/scanMoments';
+import { armWatcher, beginMatchRecording, finishWatcher, useMatchWatcher } from '../data/matchWatcher';
 import { getSettings } from '../data/settings';
-import { resultOf } from '../data/matches';
-import { CheckIcon, EyeIcon } from '../components/Icons';
+import { COMPOSURE_LABELS, resultOf } from '../data/matches';
+import { scheduleBaselineUnlock } from '../data/notifications';
+import { CheckIcon, EyeIcon, LockIcon } from '../components/Icons';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
-// BASELINE SCAN — the 5-match trial gate. The full match-scan
-// exercise runs here too: you play, the scanner tags the key
-// moments, the coach asks his questions on each one — but NO
-// lesson is written yet. Five debriefs of psychology data become
-// your sealed profile (tendencies + composure + ambition); the
-// lesson-carrying MAIN QUEST only starts on the journey itself.
-// Phases: TALK → ×5 MATCH DEBRIEF → AMBITION → SEALED CARD.
+// BASELINE WEEK — the honest 7-day gate.
+//
+//   DAY 1–5   one ranked match a day. After each match you WATCH
+//             the recording, NAME the moments where you failed,
+//             then analyse EACH one (thinking / cause / why /
+//             different / the rest) — your words, never ours.
+//   DAY 6     the week so far — every named moment back, one
+//             reflection, no match.
+//   DAY 7     the ambition question, then the sealed profile card.
+//
+// Nothing is bombarded: the next day unlocks 24h after the previous
+// one is sealed, so there is always a full day to think. Lateness is
+// never punished — the academy just waits.
+// Phases: TALK → ×5 DAY (ARM → MATCH → WATCH/NAME → ANALYSE → DAY Q)
+//         → REST → WEEK REFLECTION → AMBITION → SEALED CARD.
 // ─────────────────────────────────────────────────────────────
 
-const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
-const TOTAL = 5;
 const MIN_ANSWER = 12;
 
-type Phase = 'talk' | 'match' | 'ambition' | 'card';
+type Phase = 'talk' | 'day' | 'locked' | 'reflection' | 'ambition' | 'card';
+type DayStep = 'arm' | 'match' | 'review' | 'analysis' | 'dayq';
+
+interface DraftMoment {
+  id: string;
+  name: string;
+  startMin: number;
+  endMin: number;
+  tag: string | null;
+  analysis: Partial<Record<BaselineAnalysisKey, string>>;
+}
 
 function Stepper({ value, onChange, accent }: { value: number; onChange: (n: number) => void; accent?: boolean }) {
   return (
@@ -50,82 +86,239 @@ function Stepper({ value, onChange, accent }: { value: number; onChange: (n: num
   );
 }
 
+/** the week strip — 7 pills: done / today / locked / future */
+function WeekStrip({ session, now }: { session: BaselineSession | null; now: number }) {
+  return (
+    <View style={styles.weekStrip}>
+      {Array.from({ length: BASELINE_DAYS }).map((_, i) => {
+        const day = i + 1;
+        const st: BaselineDayStatus = dayStatus(session, day);
+        const pill =
+          st === 'done' ? styles.dayPillDone : st === 'today' ? styles.dayPillNow : st === 'locked' ? styles.dayPillLocked : styles.dayPillFuture;
+        const txt =
+          st === 'done' ? styles.dayPillTxtDone : st === 'today' ? styles.dayPillTxtNow : styles.dayPillTxtMuted;
+        return (
+          <View key={day} style={[styles.dayPill, pill]}>
+            <Text style={[styles.dayPillTxt, txt]}>{day}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function momentComplete(m: DraftMoment): boolean {
+  return BASELINE_MOMENT_QUESTIONS.every(
+    (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
+  );
+}
+
+function hms(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
+  const watcher = useMatchWatcher();
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
+  const [step, setStep] = useState<DayStep>('arm');
   const [notReady, setNotReady] = useState(false);
-
-  // ── current debrief state ──
-  const [gf, setGf] = useState(0);
-  const [ga, setGa] = useState(0);
-  const [touched, setTouched] = useState(false); // 0–0 IS a result — any stepper tap means "played"
-
-  const [composure, setComposure] = useState<number | null>(null);
-  const [answer, setAnswer] = useState('');
-  const [moments, setMoments] = useState<TaggedMoment[]>([]);
-  const [ambition, setAmbition] = useState('');
-  const [sealing, setSealing] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const scrollRef = useRef<ScrollView>(null);
 
+  // ── the day's local drafts ──
+  const [gf, setGf] = useState(0);
+  const [ga, setGa] = useState(0);
+  const [touched, setTouched] = useState(false);
+  const [composure, setComposure] = useState<number | null>(null);
+  const [moments, setMoments] = useState<DraftMoment[]>([]);
+  const [dayAnswer, setDayAnswer] = useState('');
+  const [recPath, setRecPath] = useState<string | null>(null);
+  const [playbackSec, setPlaybackSec] = useState(0);
+  const [seekToSec, setSeekToSec] = useState<number | undefined>(undefined);
+  const [momentName, setMomentName] = useState('');
+  const [momentStart, setMomentStart] = useState(0);
+  const [momentEnd, setMomentEnd] = useState(5);
+  const [reflection, setReflection] = useState({ repeated: '', changed: '' });
+  const [ambition, setAmbition] = useState('');
+  const [sealing, setSealing] = useState(false);
+  const seq = useRef(1);
+
+  const day = currentBaselineDay(session);
+  const complete = isWeekComplete(session);
+
+  // ── boot: restore where the player left off ──
   useEffect(() => {
     void loadBaseline(coach.id).then((s) => {
       setSession(s);
       if (s.card) setPhase('card');
-      else if (s.entries.length >= TOTAL) setPhase('ambition');
-      else if (s.entries.length > 0) setPhase('match');
+      else if (currentBaselineDay(s) === BASELINE_DAYS + 1) setPhase('ambition');
+      else if (currentBaselineDay(s) === BASELINE_DAYS) setPhase('reflection');
+      else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) {
+        // a returning player skips the talk unless the week truly just began
+        setPhase(dayStatus(s, currentBaselineDay(s)) === 'locked' ? 'locked' : 'day');
+      } else {
+        setPhase(s.entries.length > 0 ? 'day' : 'talk');
+      }
     });
   }, [coach.id]);
 
-  const matchNo = (session?.entries.length ?? 0) + 1;
+  // tick for the REST-day countdown
+  useEffect(() => {
+    if (phase !== 'locked') return;
+    const id = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, [phase]);
+
+  const first = coach.name.split(' ')[0].toUpperCase();
   const result = resultOf({ gf, ga });
   const played = touched || gf > 0 || ga > 0;
   const question = useMemo(() => {
     const bank = script.questions[result];
-    return bank[(matchNo - 1) % bank.length];
-  }, [script, result, matchNo]);
+    return bank[(Math.max(1, day) - 1) % bank.length];
+  }, [script, result, day]);
   const beat = played ? script.beats[beatKey(gf, ga)] : null;
-  const canContinue = composure !== null && answer.trim().length >= MIN_ANSWER && momentsComplete(moments);
-  const first = coach.name.split(' ')[0].toUpperCase();
+  const allMomentsDone = moments.length > 0 && moments.every(momentComplete);
+  const canSealDay =
+    composure !== null && allMomentsDone && dayAnswer.trim().length >= MIN_ANSWER;
+  const unlockAt = nextUnlockAt(session);
+  const lastEntry = session?.entries[session.entries.length - 1] ?? null;
 
-  const submitMatch = () => {
-    if (!canContinue || !session) return;
-    sfx('whoosh'); // the debrief is sealed and filed
-    recordBaselineMatch({
-      gf,
-      ga,
-      result,
-      composure: composure as number,
-      question,
-      answer: answer.trim(),
-      moments: moments.map((m) => ({ kind: m.kind, when: m.when, answer: m.answer.trim() })),
-    });
+  /** seal the day: file the match + the named moments, then REST */
+  const sealDay = () => {
+    if (!canSealDay || !session) return;
+    sfx('whoosh');
+    const filed: BaselineMoment[] = moments.map((m) => ({
+      id: m.id,
+      name: m.name,
+      startMin: m.startMin,
+      endMin: m.endMin,
+      tag: m.tag,
+      when: `${m.startMin}’–${m.endMin}’`,
+      kind: m.tag ?? 'FAIL MOMENT',
+      answer: (m.analysis.happened ?? '').trim(),
+      analysis: m.analysis,
+    }));
+    recordBaselineMatch(
+      {
+        gf,
+        ga,
+        result,
+        composure: composure as number,
+        question,
+        answer: dayAnswer.trim(),
+        moments: filed,
+      },
+      recPath,
+    );
+    sealBaselineDay(day, { recordingPath: recPath });
+    // reset the day's drafts
     setGf(0);
     setGa(0);
     setTouched(false);
     setComposure(null);
-    setAnswer('');
     setMoments([]);
-    const done = session.entries.length + 1 >= TOTAL;
+    setDayAnswer('');
+    setRecPath(null);
+    setMomentName('');
+    setMomentStart(0);
+    setMomentEnd(5);
+    setStep('arm');
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
-      setPhase(done ? 'ambition' : 'match');
+      const d = currentBaselineDay(s);
+      if (d > BASELINE_DAYS) {
+        setPhase('ambition');
+      } else if (d === BASELINE_DAYS) {
+        setPhase('locked'); // day 6 unlocks tomorrow
+      } else if (d === 1 && s.entries.length === 0) {
+        setPhase('talk');
+      } else {
+        setPhase('locked'); // the next match day unlocks in 24h
+      }
+      // schedule the nudge for the day that just unlocked (fires at its
+      // unlock time even if the app is closed — fails soft if denied)
+      const nxt = nextUnlockAt(s);
+      if (d <= BASELINE_DAYS && nxt != null) {
+        void scheduleBaselineUnlock(d, nxt);
+      }
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     });
   };
 
+  /** day 6 — seal the week's reflection, day 7 unlocks tomorrow */
+  const sealReflection = () => {
+    if (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER || !session) return;
+    sfx('whoosh');
+    saveBaselineReflection(reflection.repeated, reflection.changed);
+    sealBaselineDay(6);
+    void loadBaseline(coach.id).then((s) => {
+      setSession({ ...s });
+      setPhase('locked'); // day 7 unlocks tomorrow
+      const nxt = nextUnlockAt(s);
+      if (nxt != null) void scheduleBaselineUnlock(7, nxt); // DAY 7 — THE LAST QUESTION
+    });
+  };
+
+  /** day 7 — the ambition question, then the card seals */
   const seal = async () => {
     if (ambition.trim().length < MIN_ANSWER || sealing) return;
     setSealing(true);
     const card = await sealBaseline(getSettings().displayName, coach.id, ambition.trim());
-    sfx('success'); // the tier lands — the academy knows who you are now
+    sfx('success');
     const s = await loadBaseline(coach.id);
     setSession({ ...s, card });
     setPhase('card');
     setSealing(false);
   };
 
-  // ── render ──
+  /** begin the match: record only after the player confirms the match started */
+  const startMatch = async () => {
+    sfx('whoosh');
+    setStep('match');
+    beginMatchRecording();
+  };
+
+  /** full time: log the score, stop the capture, get the local recording path */
+  const logScore = () => {
+    sfx('whoosh');
+    void finishWatcher().then((sess) => {
+      if (sess?.recordingPath) setRecPath(sess.recordingPath);
+    });
+    setStep('review');
+  };
+
+  const addMoment = () => {
+    const name = momentName.trim();
+    if (name.length < 2) return;
+    sfx('pop');
+    setMoments((prev) => [
+      ...prev,
+      {
+        id: `BM${Date.now().toString(36)}${(seq.current++).toString(36)}`,
+        name,
+        startMin: Math.max(0, Math.min(44, momentStart)),
+        endMin: Math.max(momentStart, Math.min(45, momentEnd)),
+        tag: null,
+        analysis: {},
+      },
+    ]);
+    setMomentName('');
+    setMomentEnd(Math.min(45, momentStart + 5));
+  };
+
+  const setMomentAnalysis = (id: string, key: BaselineAnalysisKey, text: string) => {
+    setMoments((prev) => prev.map((m) => (m.id === id ? { ...m, analysis: { ...m.analysis, [key]: text } } : m)));
+  };
+
+  const tendencies = useMemo(() => tendenciesOf(session?.entries ?? []), [session]);
+  const allWeekMoments = useMemo(() => weekMoments(session), [session]);
+
   return (
     <View style={styles.root}>
       <GridBackground />
@@ -134,150 +327,433 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       </View>
 
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Animated.View key={phase + matchNo} entering={FadeIn.duration(280)}>
-          {/* ════ TALK: the serious gate ════ */}
+        <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
+          {/* ════ TALK — the serious gate (day 1, before anything) ════ */}
           {phase === 'talk' && (
             <>
               <Text style={styles.eyebrow}>BEFORE YOUR JOURNEY UNLOCKS</Text>
-              <Text style={styles.title}>THE BASELINE SCAN</Text>
-              <Text style={styles.sub}>FIVE MATCHES · FIVE DEBRIEFS · NO SHORTCUTS</Text>
+              <Text style={styles.title}>THE BASELINE WEEK</Text>
+              <Text style={styles.sub}>ONE MATCH A DAY · SEVEN DAYS · NO SHORTCUTS</Text>
 
               <View style={styles.coachRow}>
                 <Image source={coach.portrait} style={styles.coachFace} />
                 <Text style={styles.coachName}>{first} · ON THE GATE</Text>
               </View>
 
-              {script.talk.map((beat, i) => (
+              {script.talk.map((b, i) => (
                 <Animated.View key={i} entering={FadeInUp.delay(200 + i * 260).duration(300)} style={styles.beat}>
                   <View style={[styles.quoteBar, { backgroundColor: coach.cardAccent }]} />
-                  <Text style={styles.beatTxt}>{beat}</Text>
+                  <Text style={styles.beatTxt}>{b}</Text>
                 </Animated.View>
               ))}
 
               <Animated.View entering={FadeInUp.delay(200 + script.talk.length * 260).duration(300)} style={styles.bluffBox}>
+                <Text style={styles.bluffLabel}>HOW THIS WEEK WORKS</Text>
+                <Text style={styles.bluffTxt}>
+                  Five matches, one per day, over seven days. Each day: play the match, then WATCH the recording and name
+                  the moments where you failed, then analyse each one — how you were thinking, what made you fail, what
+                  you could have done differently. The next day unlocks 24 hours after you finish the review. That gap is
+                  the point — it gives you time to actually think. Nobody is forcing you, and nobody is waiting with a
+                  whip. The academy just doesn't carry passengers.
+                </Text>
+              </Animated.View>
+
+              <Animated.View entering={FadeInUp.delay(200 + (script.talk.length + 1) * 260).duration(300)} style={styles.bluffBox}>
                 <Text style={styles.bluffLabel}>HIS HOUSE RULE</Text>
                 <Text style={styles.bluffTxt}>“{script.bluff}”</Text>
               </Animated.View>
 
-              <Pressable onPress={() => setPhase('match')} style={styles.cta}>
-                <Text style={styles.ctaTxt}>I'M IN — START MATCH 1 DEBRIEF</Text>
+              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('arm'); }} style={styles.cta}>
+                <Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text>
               </Pressable>
               <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}>
                 <Text style={styles.skipLink}>{notReady ? 'UNDERSTOOD — THIS GATE STAYS REAL' : 'NOT READY?'}</Text>
               </Pressable>
               {notReady && (
                 <Text style={styles.notReadyTxt}>
-                  Then the journey waits. The academy does not remove you for thinking — but it does
-                  not carry passengers either. Come back when you mean it; this screen will be here.
-                  That is not harshness, that is us being serious about what we do.
+                  Then the journey waits. The academy does not remove you for thinking — but it does not carry
+                  passengers either. Come back when you mean it; this screen will be here. That is not harshness,
+                  that is us being serious about what we do.
                 </Text>
               )}
             </>
           )}
 
-          {/* ════ MATCH DEBRIEF (×5) ════ */}
-          {phase === 'match' && (
+          {/* ════ A MATCH DAY (1–5): ARM → MATCH → WATCH/NAME → ANALYSE → DAY Q ════ */}
+          {phase === 'day' && day <= BASELINE_MATCHES && (
             <>
-              <Text style={styles.eyebrow}>BASELINE · MATCH {matchNo} OF {TOTAL} — WHAT HAPPENED?</Text>
+              <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {day} OF {BASELINE_MATCHES}</Text>
+              <WeekStrip session={session} now={now} />
 
-              <View style={styles.progressDots}>
-                {Array.from({ length: TOTAL }).map((_, i) => (
-                  <View key={i} style={[styles.dot, i < matchNo - 1 && styles.dotDone, i === matchNo - 1 && styles.dotNow]} />
-                ))}
-              </View>
-
-              <View style={styles.scoreCard}>
-                <View style={styles.scoreSide}>
-                  <Text style={styles.scoreLabel}>YOU</Text>
-                  <Stepper value={gf} onChange={(n) => { setTouched(true); setGf(n); }} accent={result === 'W'} />
-                </View>
-                <View style={[styles.pill, result === 'W' && styles.pillW, result === 'D' && styles.pillD, result === 'L' && styles.pillL]}>
-                  <Text style={styles.pillTxt}>{result}</Text>
-                </View>
-                <View style={styles.scoreSide}>
-                  <Text style={styles.scoreLabel}>THEM</Text>
-                  <Stepper value={ga} onChange={(n) => { setTouched(true); setGa(n); }} accent={result === 'L'} />
-                </View>
-              </View>
-
-              {beat && (
-                <Animated.View entering={FadeInUp.duration(280)} style={styles.beatBubble}>
+              {day > 1 && (
+                <View style={styles.dayIntro}>
                   <Image source={coach.portrait} style={styles.beatFace} />
-                  <Text style={styles.beatBubbleTxt}>{beat}</Text>
+                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.obinna?.[day]}</Text>
+                </View>
+              )}
+
+              {/* ── ARM ── */}
+              {step === 'arm' && (
+                <Animated.View entering={FadeInUp.duration(300)}>
+                  <Text style={styles.heroLine}>ARM THE MIRROR, THEN PLAY ONE RANKED MATCH.</Text>
+                  <Text style={styles.heroSub}>
+                    The mirror asks the system for screen-capture consent — recording never starts silently. It only
+                    begins when your match starts, and it stays on your phone.
+                  </Text>
+                  <View style={styles.armNote}>
+                    <Text style={styles.armNoteTxt}>
+                      {watcher.available ? 'SCREEN CAPTURE: READY' : 'SCREEN CAPTURE: NOT AVAILABLE ON THIS DEVICE — MANUAL MODE'}
+                      {watcher.lastError ? `\n${watcher.lastError}` : ''}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => { void armWatcher(); }}
+                    style={[styles.cta, { opacity: 0.9 }]}
+                  >
+                    <Text style={styles.ctaTxt}>ARM THE MIRROR ›</Text>
+                  </Pressable>
+                  <Pressable onPress={() => void startMatch()} style={styles.ghostCtaWrap} hitSlop={6}>
+                    <Text style={styles.ghostCta}>MATCH STARTED — BEGIN THE SESSION + RECORDING ›</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setPhase('locked')} style={styles.ghostCtaWrap} hitSlop={6}>
+                    <Text style={styles.ghostCta}>REST DAY — COME BACK TOMORROW</Text>
+                  </Pressable>
                 </Animated.View>
               )}
 
-              {played && (
-                <>
-                  {/* ════ KEY MOMENTS — the scanner's tags + his questions (NO lesson yet) ════ */}
-                  <View style={styles.momentWrap}>
-                    <View style={styles.momentHead}>
-                      <EyeIcon size={12} color={colors.accent} />
-                      <Text style={styles.momentHeadTxt}>KEY MOMENTS — WHAT THE SCANNER SAW</Text>
+              {/* ── MATCH: score + head state ── */}
+              {step === 'match' && (
+                <Animated.View entering={FadeInUp.duration(300)}>
+                  <Text style={styles.heroLine}>PLAYED. FULL TIME — WHAT WAS THE SCORE?</Text>
+                  <View style={styles.scoreCard}>
+                    <View style={styles.scoreSide}>
+                      <Text style={styles.scoreLabel}>YOU</Text>
+                      <Stepper value={gf} onChange={(n) => { setTouched(true); setGf(n); }} accent={result === 'W'} />
                     </View>
-                    <MomentReview
-                      coach={coach}
-                      moments={moments}
-                      onChange={setMoments}
-                      cue={
-                        coach.id === 'chinedu'
-                          ? 'Not the score — the moments the score was made of. Tag what made or broke this match, then answer my question on each one. No lesson writing yet: these five games are me reading YOU.'
-                          : 'Not the score, little one — the moments the score was made of. Tag what turned the match, then answer my question on each one. No lesson writing yet — these five games are me learning who you are.'
-                      }
-                    />
-                    <Text style={styles.noLessonNote}>
-                      NO LESSON IS WRITTEN IN THE TRIAL — THE PROFILE COMES FIRST. YOUR LESSONS START THE MOMENT THE JOURNEY OPENS.
-                    </Text>
+                    <View style={[styles.pill, result === 'W' && styles.pillW, result === 'D' && styles.pillD, result === 'L' && styles.pillL]}>
+                      <Text style={styles.pillTxt}>{result}</Text>
+                    </View>
+                    <View style={styles.scoreSide}>
+                      <Text style={styles.scoreLabel}>THEM</Text>
+                      <Stepper value={ga} onChange={(n) => { setTouched(true); setGa(n); }} accent={result === 'L'} />
+                    </View>
                   </View>
-
-                  <Text style={styles.fieldLabel}>YOUR HEAD, FULL 90</Text>
-                  <View style={styles.chipRow}>
-                    {COMPOSURE_LABELS.map((label, i) => (
-                      <Pressable
-                        key={label}
-                        onPress={() => setComposure(composure === i + 1 ? null : i + 1)}
-                        style={[styles.chip, composure === i + 1 && styles.chipActive]}
-                      >
-                        <Text style={[styles.chipTxt, composure === i + 1 && styles.chipTxtActive]}>{label}</Text>
+                  {beat && (
+                    <Animated.View entering={FadeInUp.duration(280)} style={styles.beatBubble}>
+                      <Image source={coach.portrait} style={styles.beatFace} />
+                      <Text style={styles.beatBubbleTxt}>{beat}</Text>
+                    </Animated.View>
+                  )}
+                  {played && (
+                    <>
+                      <Text style={styles.fieldLabel}>YOUR HEAD, FULL 90</Text>
+                      <View style={styles.chipRow}>
+                        {COMPOSURE_LABELS.map((label, i) => (
+                          <Pressable
+                            key={label}
+                            onPress={() => setComposure(composure === i + 1 ? null : i + 1)}
+                            style={[styles.chip, composure === i + 1 && styles.chipActive]}
+                          >
+                            <Text style={[styles.chipTxt, composure === i + 1 && styles.chipTxtActive]}>{label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      <Pressable onPress={logScore} style={styles.cta}>
+                        <Text style={styles.ctaTxt}>FULL TIME — UNLOCK THE EVIDENCE ›</Text>
                       </Pressable>
-                    ))}
+                    </>
+                  )}
+                  {!played && <Text style={styles.requireTxt}>SET THE SCORE FIRST — THEN WE MOVE.</Text>}
+                </Animated.View>
+              )}
+
+              {/* ── REVIEW: watch the recording, NAME the moments where you failed ── */}
+              {step === 'review' && (
+                <Animated.View entering={FadeInUp.duration(300)}>
+                  <Text style={styles.heroLine}>WATCH THE EVIDENCE. NAME THE MOMENTS WHERE YOU FAILED.</Text>
+                  <Text style={styles.heroSub}>
+                    Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
+                    give each one a name. Then we analyse them one at a time.
+                  </Text>
+                  {recPath ? (
+                    <>
+                      <RecordingPlayer uri={recPath} seekToSeconds={seekToSec} onCurrentSecond={setPlaybackSec} />
+                      <View style={styles.markRow}>
+                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentStart(Math.min(44, Math.max(0, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
+                          <Text style={styles.markBtnTxt}>MARK START ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
+                        </Pressable>
+                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentEnd(Math.max(momentStart + 1, Math.min(45, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
+                          <Text style={styles.markBtnTxt}>MARK END ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.armNote}>
+                      <Text style={styles.armNoteTxt}>NO RECORDING ON THIS DEVICE — NAME YOUR MOMENTS WITH THE TIMELINE BELOW.</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.momentCard}>
+                    <Text style={styles.qLabel}>NAME THE MOMENT (YOUR WORDS)</Text>
+                    <TextInput
+                      value={momentName}
+                      onChangeText={setMomentName}
+                      placeholder="e.g. CONCEDED AFTER A PANIC PASS"
+                      placeholderTextColor="rgba(143,184,155,0.35)"
+                      style={styles.inputSmall}
+                    />
+                    <Text style={styles.qLabel}>TIMELINE (MATCH MINUTES)</Text>
+                    <View style={styles.minRow}>
+                      <MiniStat label="FROM" value={`${momentStart}’`} />
+                      <MiniStat label="TO" value={`${momentEnd}’`} />
+                      <View style={styles.minButtons}>
+                        <Pressable onPress={() => setMomentStart((s) => Math.max(0, s - 1))} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>−</Text></Pressable>
+                        <Pressable onPress={() => setMomentStart((s) => Math.min(44, s + 1))} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>+</Text></Pressable>
+                        <Pressable onPress={() => setMomentEnd((e) => Math.max(momentStart + 1, e - 1))} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>−</Text></Pressable>
+                        <Pressable onPress={() => setMomentEnd((e) => Math.min(45, e + 1))} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>+</Text></Pressable>
+                      </View>
+                    </View>
+                    <Text style={styles.qLabel}>WHAT KIND (OPTIONAL — FEEDS YOUR WEEK SUMMARY)</Text>
+                    <View style={styles.tagRow}>
+                      {BASELINE_MOMENT_TAGS.map((tag) => (
+                        <Pressable
+                          key={tag}
+                          onPress={() => {
+                            sfx('pop');
+                            setMoments((prev) =>
+                              prev.length
+                                ? prev.map((m, i) => (i === prev.length - 1 ? { ...m, tag: m.tag === tag ? null : tag } : m))
+                                : [{ id: `BM${Date.now().toString(36)}${(seq.current++).toString(36)}`, name: momentName.trim() || tag, startMin: momentStart, endMin: momentEnd, tag, analysis: {} }],
+                            );
+                          }}
+                          style={[styles.tagChip, moments[moments.length - 1]?.tag === tag && styles.tagChipOn]}
+                        >
+                          <Text style={[styles.tagTxt, moments[moments.length - 1]?.tag === tag && styles.tagTxtOn]}>{tag}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
                   </View>
 
-                  <Text style={styles.fieldLabel}>{first} ASKS:</Text>
-                  <Text style={styles.questionTxt}>{question}</Text>
+                  <Pressable onPress={addMoment} style={[styles.cta, momentName.trim().length < 2 && { opacity: 0.35 }]}>
+                    <Text style={styles.ctaTxt}>ADD THIS MOMENT ›</Text>
+                  </Pressable>
+
+                  {moments.map((m, i) => (
+                    <View key={m.id} style={styles.momentChip}>
+                      <Text style={styles.momentChipTxt}>{i + 1}. {m.startMin}’–{m.endMin}’ · {m.name.toUpperCase()}{m.tag ? ` · ${m.tag}` : ''}</Text>
+                      <Pressable hitSlop={8} onPress={() => setMoments((prev) => prev.filter((x) => x.id !== m.id))}>
+                        <Text style={styles.removeTxt}>✕</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+
+                  <Pressable
+                    onPress={() => { sfx('whoosh'); setStep('analysis'); }}
+                    style={[styles.cta, moments.length === 0 && { opacity: 0.35 }]}
+                  >
+                    <Text style={styles.ctaTxt}>MY MOMENTS ARE NAMED — ANALYSE THEM ›</Text>
+                  </Pressable>
+                  {moments.length === 0 && (
+                    <Text style={styles.requireTxt}>NAME AT LEAST ONE MOMENT WHERE YOU FAILED — THAT IS THE DAY'S WORK.</Text>
+                  )}
+                </Animated.View>
+              )}
+
+              {/* ── ANALYSIS: every moment, every question, your words ── */}
+              {step === 'analysis' && (
+                <Animated.View entering={FadeInUp.duration(300)}>
+                  <Text style={styles.heroLine}>EVERY MOMENT, ANALYSED BY YOU.</Text>
+                  <Text style={styles.heroSub}>
+                    The app never writes your psychology. It just keeps the questions in front of you, one moment at a
+                    time, until your own answers say what actually happened.
+                  </Text>
+                  {moments.map((m, mi) => (
+                    <View key={m.id} style={styles.analysisBlock}>
+                      <View style={styles.analysisHead}>
+                        <EyeIcon size={12} color={colors.accent} />
+                        <Text style={styles.analysisHeadTxt}>MOMENT {mi + 1} · {m.startMin}’–{m.endMin}’ · {m.name.toUpperCase()}</Text>
+                      </View>
+                      {recPath && (
+                        <Pressable hitSlop={8} onPress={() => setSeekToSec(m.startMin * SECONDS_PER_MATCH_MIN)}>
+                          <Text style={styles.playTxt}>▶ WATCH THIS MOMENT AGAIN</Text>
+                        </Pressable>
+                      )}
+                      {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (
+                        <View key={q.key} style={styles.aqCard}>
+                          <Text style={styles.aqLabel}>{q.label}</Text>
+                          <TextInput
+                            value={m.analysis[q.key] ?? ''}
+                            onChangeText={(t) => setMomentAnalysis(m.id, q.key, t)}
+                            placeholder="YOUR WORDS — NOBODY ELSE'S"
+                            placeholderTextColor="rgba(143,184,155,0.35)"
+                            style={styles.inputSmall}
+                            multiline
+                          />
+                          <Text style={styles.aqCount}>
+                            {((m.analysis[q.key] ?? '').trim().length)}/{BASELINE_MOMENT_MIN_ANSWER}+
+                          </Text>
+                        </View>
+                      ))}
+                      {momentComplete(m) ? (
+                        <Text style={styles.momentDoneTxt}>✓ MOMENT {mi + 1} ANALYSED</Text>
+                      ) : (
+                        <Text style={styles.requireTxt}>ANSWER EVERY QUESTION ({BASELINE_MOMENT_MIN_ANSWER}+ CHARACTERS EACH)</Text>
+                      )}
+                    </View>
+                  ))}
+                  <Pressable
+                    onPress={() => { sfx('whoosh'); setStep('dayq'); }}
+                    style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}
+                  >
+                    <Text style={styles.ctaTxt}>ANALYSIS DONE — THE DAY QUESTION ›</Text>
+                  </Pressable>
+                </Animated.View>
+              )}
+
+              {/* ── DAY QUESTION + SEAL ── */}
+              {step === 'dayq' && (
+                <Animated.View entering={FadeInUp.duration(300)}>
+                  <Text style={styles.heroLine}>ONE LAST QUESTION FOR DAY {day}.</Text>
+                  <View style={styles.questionCard}>
+                    <Image source={coach.portrait} style={styles.beatFace} />
+                    <Text style={styles.questionTxt}>{question}</Text>
+                  </View>
                   <TextInput
-                    value={answer}
-                    onChangeText={(t) => setAnswer(t.slice(0, 500))}
+                    value={dayAnswer}
+                    onChangeText={(t) => setDayAnswer(t.slice(0, 500))}
                     placeholder="THINK. THEN ANSWER — YOUR WORDS, NOT OURS."
                     placeholderTextColor={colors.muted}
                     style={styles.input}
                     multiline
                     maxLength={500}
                   />
-                  <Text style={styles.countTxt}>
-                    {answer.trim().length}/{MIN_ANSWER}+ · THE EYE NEVER READS THIS — {first === 'CHINEDU' ? 'HE DOES' : `${first} DOES`}
-                  </Text>
-
-                  <Pressable onPress={submitMatch} style={[styles.cta, !canContinue && { opacity: 0.35 }]}>
+                  <Text style={styles.countTxt}>{dayAnswer.trim().length}/{MIN_ANSWER}+ · THE EYE NEVER READS THIS — {first} DOES</Text>
+                  <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}>
                     <Text style={styles.ctaTxt}>
-                      {matchNo >= TOTAL ? 'LOG MATCH 5 — HEAR THE VERDICT' : `LOG MATCH ${matchNo} — NEXT`}
+                      {day >= BASELINE_MATCHES ? 'SEAL DAY 5 — THE WEEK SO FAR UNLOCKS TOMORROW' : `SEAL DAY ${day} — MATCH ${day + 1} UNLOCKS TOMORROW`}
                     </Text>
                   </Pressable>
-                  {!canContinue && (
+                  {!canSealDay && (
                     <Text style={styles.requireTxt}>
-                      TAG + ANSWER THE KEY MOMENTS, ANSWER THE QUESTION ({MIN_ANSWER}+ CHARACTERS), PICK YOUR HEAD STATE — THEN WE MOVE
+                      ANSWER THE QUESTION ({MIN_ANSWER}+), FINISH EVERY MOMENT ANALYSIS, PICK YOUR HEAD STATE — THEN WE MOVE
                     </Text>
                   )}
-                </>
+                </Animated.View>
               )}
-              {!played && <Text style={styles.requireTxt}>SET THE SCORE FIRST — THEN WE TALK.</Text>}
             </>
           )}
 
-          {/* ════ AMBITION ════ */}
+          {/* ════ REST — the 24h gap, on purpose ════ */}
+          {phase === 'locked' && (
+            <Animated.View entering={FadeInUp.duration(300)} style={styles.restCard}>
+              <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS}</Text>
+              <View style={styles.restIcon}>
+                <LockIcon size={16} color={colors.accent} />
+              </View>
+              <Text style={styles.restTitle}>REST. THE WORK NEEDS TONIGHT.</Text>
+              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.obinna}</Text>
+              {unlockAt != null && (
+                <View style={styles.countdownBox}>
+                  <Text style={styles.countdownLabel}>DAY {day} UNLOCKS IN</Text>
+                  <Text style={styles.countdownTxt}>{hms(unlockAt - now)}</Text>
+                  <Text style={styles.countdownNote}>ONE TASK A DAY IS THE CONTRACT. NOTHING IS FORCED — THE ACADEMY JUST WAITS.</Text>
+                </View>
+              )}
+              <WeekStrip session={session} now={now} />
+
+              {/* yesterday's review, still warm */}
+              {lastEntry && (
+                <View style={styles.lastReview}>
+                  <Text style={styles.lastReviewTag}>YOUR LAST REVIEW — DAY {session?.days.find((d) => d.entryIndex === session.entries.length - 1)?.day ?? day - 1}</Text>
+                  <Text style={styles.lastReviewScore}>
+                    {lastEntry.result} {lastEntry.gf}–{lastEntry.ga} · HEAD {lastEntry.composure}/5
+                  </Text>
+                  {(lastEntry.moments ?? []).map((m) => (
+                    <Text key={m.id} style={styles.lastReviewMoment}>
+                      · {m.startMin}’–{m.endMin}’ {m.name.toUpperCase()}
+                    </Text>
+                  ))}
+                  <Text style={styles.lastReviewQ}>“{lastEntry.question}”</Text>
+                  <Text style={styles.lastReviewA}>{lastEntry.answer}</Text>
+                </View>
+              )}
+            </Animated.View>
+          )}
+
+          {/* ════ DAY 6 — THE WEEK SO FAR ════ */}
+          {phase === 'reflection' && (
+            <Animated.View entering={FadeInUp.duration(300)}>
+              <Text style={styles.eyebrow}>BASELINE WEEK · DAY 6 OF {BASELINE_DAYS} · NO MATCH TODAY</Text>
+              <WeekStrip session={session} now={now} />
+              <Text style={styles.heroLine}>THE WEEK HAS BEEN SPEAKING. LISTEN TO IT TOGETHER.</Text>
+              <Text style={styles.heroSub}>
+                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.obinna[6]} Here is what you named, across all five matches — your own words, back in front of you.
+              </Text>
+
+              <View style={styles.receiptBox}>
+                <Text style={styles.receiptTag}>THE MOMENTS YOU NAMED THIS WEEK</Text>
+                {allWeekMoments.length === 0 && <Text style={styles.receiptEmpty}>None yet — the week is waiting.</Text>}
+                {session?.entries.map((e, ei) => (
+                  <View key={ei} style={styles.receiptEntry}>
+                    <Text style={styles.receiptEntryHead}>DAY {ei + 1} · {e.result} {e.gf}–{e.ga} · HEAD {e.composure}/5</Text>
+                    {(e.moments ?? []).map((m) => (
+                      <Text key={m.id} style={styles.receiptMoment}>
+                        · {m.startMin}’–{m.endMin}’ {m.name.toUpperCase()}
+                        {m.tag ? ` — ${m.tag}` : ''}
+                      </Text>
+                    ))}
+                  </View>
+                ))}
+                {tendencies.length > 0 && (
+                  <View style={styles.tendencyWrap}>
+                    <Text style={styles.receiptTag}>WHAT KEEPS APPEARING</Text>
+                    <View style={styles.tendencyRow}>
+                      {tendencies.map((t) => (
+                        <View key={t} style={styles.tendencyPill}>
+                          <Text style={styles.tendencyTxt}>{t}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.fieldLabel}>WHAT DO YOU KEEP REPEATING?</Text>
+              <TextInput
+                value={reflection.repeated}
+                onChangeText={(t) => setReflection((r) => ({ ...r, repeated: t }))}
+                placeholder="LOOK AT THE MOMENTS ABOVE. THE PATTERN IS YOURS."
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                multiline
+              />
+              <Text style={styles.countTxt}>{reflection.repeated.trim().length}/{MIN_ANSWER}+</Text>
+
+              <Text style={styles.fieldLabel}>WHAT HAS ACTUALLY CHANGED SINCE DAY 1?</Text>
+              <TextInput
+                value={reflection.changed}
+                onChangeText={(t) => setReflection((r) => ({ ...r, changed: t }))}
+                placeholder="IN YOUR DECISIONS, NOT YOUR RESULTS — BE HONEST."
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                multiline
+              />
+              <Text style={styles.countTxt}>{reflection.changed.trim().length}/{MIN_ANSWER}+</Text>
+
+              <Pressable
+                onPress={sealReflection}
+                style={[styles.cta, (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER) && { opacity: 0.35 }]}
+              >
+                <Text style={styles.ctaTxt}>SEAL THE WEEK'S REFLECTION — DAY 7 UNLOCKS TOMORROW</Text>
+              </Pressable>
+            </Animated.View>
+          )}
+
+          {/* ════ DAY 7 — AMBITION ════ */}
           {phase === 'ambition' && (
             <>
-              <Text style={styles.eyebrow}>BASELINE COMPLETE · ONE LAST QUESTION</Text>
+              <Text style={styles.eyebrow}>BASELINE WEEK · DAY 7 · THE LAST QUESTION</Text>
+              <WeekStrip session={session} now={now} />
               <View style={styles.coachRow}>
                 <Image source={coach.portrait} style={styles.coachFace} />
                 <Text style={styles.beatTxt}>{script.ambitionAsk}</Text>
@@ -301,7 +777,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
           {/* ════ SEALED CARD ════ */}
           {phase === 'card' && session?.card && (
             <Animated.View entering={FadeInUp.duration(360)}>
-              <Text style={styles.eyebrow}>BASELINE 001 · SEALED</Text>
+              <Text style={styles.eyebrow}>BASELINE WEEK · SEALED</Text>
               <View style={[styles.cardBox, { borderColor: coach.cardAccent }]}>
                 <Text style={styles.cardTier}>{session.card.tier}</Text>
                 <Text style={styles.cardHandle}>{session.card.handle}</Text>
@@ -317,7 +793,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Text style={styles.cardReadTxt}>“{session.card.coachRead}”</Text>
                 {(session.card.tendencies?.length ?? 0) > 0 && (
                   <>
-                    <Text style={styles.cardAmbLabel}>WHAT THE SCANNER LEARNED ABOUT YOU:</Text>
+                    <Text style={styles.cardAmbLabel}>WHAT THE WEEK LEARNED ABOUT YOU:</Text>
                     <View style={styles.tendencyRow}>
                       {session.card.tendencies.map((t) => (
                         <View key={t} style={styles.tendencyPill}>
@@ -340,8 +816,21 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               </Pressable>
             </Animated.View>
           )}
+
+          {complete && !session?.card && phase !== 'ambition' && phase !== 'card' && (
+            <Text style={styles.requireTxt}>THE WEEK IS COMPLETE — ONE LAST QUESTION AWAITS.</Text>
+          )}
         </Animated.View>
       </ScrollView>
+    </View>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.miniStat}>
+      <Text style={styles.miniStatLabel}>{label}</Text>
+      <Text style={styles.miniStatValue}>{value}</Text>
     </View>
   );
 }
@@ -375,11 +864,30 @@ const styles = StyleSheet.create({
   ctaTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 11.5, letterSpacing: 1.5, fontWeight: '700' },
   skipLink: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.6, textAlign: 'center', marginTop: 14 },
   notReadyTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 10, lineHeight: 16, letterSpacing: 0.4, marginTop: 10, textAlign: 'center' },
-  progressDots: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginTop: 14, marginBottom: 16 },
-  dot: { width: 22, height: 4, borderRadius: 2, backgroundColor: colors.border },
-  dotDone: { backgroundColor: colors.primary },
-  dotNow: { backgroundColor: colors.accent },
-  scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingVertical: 16, paddingHorizontal: 20 },
+
+  // ── week strip ──
+  weekStrip: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, marginBottom: 4 },
+  dayPill: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  dayPillDone: { backgroundColor: 'rgba(57,255,106,0.15)', borderColor: colors.primary },
+  dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dayPillLocked: { backgroundColor: colors.surface, borderColor: 'rgba(143,184,155,0.4)' },
+  dayPillFuture: { backgroundColor: 'transparent', borderColor: 'rgba(143,184,155,0.15)' },
+  dayPillTxt: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '800' },
+  dayPillTxtDone: { color: colors.primary },
+  dayPillTxtNow: { color: '#0a0f0a' },
+  dayPillTxtMuted: { color: 'rgba(143,184,155,0.6)' },
+
+  heroLine: { marginTop: 16, fontFamily: monoFont, fontSize: 12.5, fontWeight: '900', letterSpacing: 1.2, lineHeight: 18, color: colors.primary },
+  heroSub: { marginTop: 7, fontSize: 10, lineHeight: 15, color: '#9db4a3' },
+  dayIntro: { flexDirection: 'row', gap: 10, marginTop: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
+  dayIntroTxt: { flex: 1, color: colors.warm, fontFamily: monoFont, fontSize: 11, lineHeight: 17, letterSpacing: 0.3 },
+  armNote: { marginTop: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 11, backgroundColor: colors.surface, padding: 12 },
+  armNoteTxt: { fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
+  ghostCtaWrap: { marginTop: 12 },
+  ghostCta: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.4, textAlign: 'center', textDecorationLine: 'underline' },
+
+  // ── score ──
+  scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingVertical: 16, paddingHorizontal: 20, marginTop: 14 },
   scoreSide: { alignItems: 'center' },
   scoreLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, marginBottom: 8 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -394,24 +902,82 @@ const styles = StyleSheet.create({
   beatBubble: { flexDirection: 'row', gap: 10, marginTop: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
   beatFace: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border },
   beatBubbleTxt: { flex: 1, color: colors.warm, fontFamily: monoFont, fontSize: 11, lineHeight: 17, letterSpacing: 0.3 },
-  momentWrap: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 14, backgroundColor: 'rgba(22,18,8,0.4)', padding: 12 },
-  momentHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  momentHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2, fontWeight: '700' },
-  noLessonNote: { marginTop: 12, color: colors.muted, fontFamily: monoFont, fontSize: 7.5, lineHeight: 12.5, letterSpacing: 1, textAlign: 'center' },
-  tendencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, alignSelf: 'flex-start' },
-  tendencyPill: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(242,192,120,0.06)' },
-  tendencyTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, fontWeight: '700' },
-  tendencyNote: { marginTop: 7, color: colors.muted, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1, alignSelf: 'flex-start' },
+
   fieldLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, marginTop: 18, marginBottom: 8 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surface },
   chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.1)' },
   chipTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 9.5, letterSpacing: 1 },
   chipTxtActive: { color: colors.primary },
-  questionTxt: { color: colors.fg, fontFamily: monoFont, fontSize: 13, lineHeight: 20, letterSpacing: 0.3 },
+  requireTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.4, marginTop: 12, textAlign: 'center' },
+
+  // ── review / moments ──
+  markRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  markBtn: { flex: 1, height: 42, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', backgroundColor: 'rgba(38,30,12,0.5)', alignItems: 'center', justifyContent: 'center' },
+  markBtnTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
+  momentCard: { marginTop: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, padding: 13 },
+  qLabel: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 1.2, color: colors.fg, lineHeight: 11, marginTop: 10 },
+  inputSmall: { marginTop: 7, borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)', borderRadius: 8, backgroundColor: '#0a0f0a', color: colors.fg, fontFamily: monoFont, fontSize: 11, lineHeight: 17, padding: 10, minHeight: 42, textAlignVertical: 'top' },
+  minRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
+  minButtons: { flexDirection: 'row', gap: 6, marginLeft: 'auto' },
+  miniStat: { flex: 1, borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 10, backgroundColor: 'rgba(10,20,13,0.8)', paddingVertical: 10, alignItems: 'center', gap: 4 },
+  miniStatLabel: { fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.65)' },
+  miniStatValue: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 8 },
+  tagChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surface },
+  tagChipOn: { borderColor: colors.accent, backgroundColor: 'rgba(242,192,120,0.1)' },
+  tagTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1 },
+  tagTxtOn: { color: colors.accent },
+  momentChip: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 9, backgroundColor: 'rgba(10,20,13,0.7)', paddingHorizontal: 11, paddingVertical: 9 },
+  momentChipTxt: { fontFamily: monoFont, fontSize: 6.8, letterSpacing: 0.9, color: '#c4d4c8', flex: 1 },
+  removeTxt: { color: colors.loss, fontFamily: monoFont, fontSize: 11 },
+
+  // ── analysis ──
+  analysisBlock: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.6)', padding: 12 },
+  analysisHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  analysisHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8, letterSpacing: 1.6, fontWeight: '700', flex: 1 },
+  aqCard: { marginTop: 12 },
+  aqLabel: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '800', letterSpacing: 1.1, color: colors.fg, lineHeight: 11 },
+  aqCount: { marginTop: 4, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1, color: 'rgba(143,184,155,0.6)', textAlign: 'right' },
+  momentDoneTxt: { marginTop: 10, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4, color: colors.primary, textAlign: 'center' },
+  playTxt: { marginTop: 8, fontFamily: monoFont, fontSize: 7.6, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+
+  // ── day question ──
+  questionCard: { flexDirection: 'row', gap: 10, marginTop: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
+  questionTxt: { flex: 1, color: colors.fg, fontFamily: monoFont, fontSize: 13, lineHeight: 20, letterSpacing: 0.3 },
   input: { marginTop: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: '#0a0f0a', borderRadius: 12, color: colors.fg, fontFamily: monoFont, fontSize: 11.5, lineHeight: 18, padding: 12, minHeight: 90, textAlignVertical: 'top' },
   countTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, marginTop: 6, textAlign: 'right' },
-  requireTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.4, marginTop: 12, textAlign: 'center' },
+
+  // ── rest day ──
+  restCard: { alignItems: 'center' },
+  restIcon: { marginTop: 18, width: 44, height: 44, borderRadius: 22, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.6)', alignItems: 'center', justifyContent: 'center' },
+  restTitle: { marginTop: 14, fontFamily: monoFont, fontSize: 15, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
+  restLine: { marginTop: 8, fontSize: 10.5, lineHeight: 16, color: '#9db4a3', textAlign: 'center', fontStyle: 'italic' },
+  countdownBox: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.45)', borderRadius: 13, backgroundColor: 'rgba(38,30,12,0.5)', paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center', alignSelf: 'stretch' },
+  countdownLabel: { fontFamily: monoFont, fontSize: 7, letterSpacing: 2, color: colors.accent },
+  countdownTxt: { marginTop: 6, fontFamily: monoFont, fontSize: 26, fontWeight: '900', letterSpacing: 3, color: colors.accent },
+  countdownNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.65)', textAlign: 'center' },
+  lastReview: { marginTop: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.surface, padding: 13, alignSelf: 'stretch' },
+  lastReviewTag: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.8, color: colors.accent },
+  lastReviewScore: { marginTop: 7, fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 1.2, color: colors.fg },
+  lastReviewMoment: { marginTop: 4, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 0.8, color: '#c4d4c8' },
+  lastReviewQ: { marginTop: 10, fontSize: 10, lineHeight: 15, fontStyle: 'italic', color: colors.fg },
+  lastReviewA: { marginTop: 4, fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
+
+  // ── day 6 receipts ──
+  receiptBox: { marginTop: 14, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.5)', padding: 13 },
+  receiptTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.8, color: colors.accent },
+  receiptEmpty: { marginTop: 8, fontSize: 10, color: '#9db4a3' },
+  receiptEntry: { marginTop: 10 },
+  receiptEntryHead: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
+  receiptMoment: { marginTop: 4, fontFamily: monoFont, fontSize: 7.2, letterSpacing: 0.8, color: '#c4d4c8' },
+  tendencyWrap: { marginTop: 14 },
+  tendencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, alignSelf: 'flex-start' },
+  tendencyPill: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(242,192,120,0.06)' },
+  tendencyTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, fontWeight: '700' },
+  tendencyNote: { marginTop: 7, color: colors.muted, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1, alignSelf: 'flex-start' },
+
+  // ── card ──
   cardBox: { marginTop: 16, borderWidth: 1.5, borderRadius: 18, backgroundColor: colors.surface, padding: 20, alignItems: 'center' },
   cardTier: { color: colors.accent, fontFamily: monoFont, fontSize: 20, fontWeight: '800', letterSpacing: 3 },
   cardHandle: { color: colors.fg, fontFamily: monoFont, fontSize: 14, letterSpacing: 1.6, marginTop: 8 },
