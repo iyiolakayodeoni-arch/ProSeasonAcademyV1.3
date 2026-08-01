@@ -18,11 +18,96 @@ const KEY = 'psa.baseline.v1';
 
 export type MatchResult = 'W' | 'D' | 'L';
 
-/** one scanner tag + the player's reasoning, as filed by a baseline debrief */
+// ─────────────────────────────────────────────────────────────
+// THE BASELINE WEEK — 5 matches across 7 calendar-paced days.
+//
+// The point of the pacing is HONESTY: one match a day, and the
+// review work (watch the recording, name the moments where you
+// failed, analyse each one) is done while the day is still real.
+// Nothing is bombarded — the next day unlocks 24h after the
+// previous one is sealed, so the player always has time to think.
+//
+//   DAY 1–5   one ranked match + review each (watch → name → analyse)
+//   DAY 6     the week so far — receipts + one reflection, no match
+//   DAY 7     the ambition question + the sealed profile card
+// ─────────────────────────────────────────────────────────────
+export const BASELINE_MATCHES = 5;
+export const BASELINE_DAYS = 7;
+export const BASELINE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/** the per-moment analysis of a failing moment (the day's core task) */
+export type BaselineAnalysisKey =
+  | 'happened'
+  | 'thinking'
+  | 'feel'
+  | 'cause'
+  | 'why'
+  | 'noticed'
+  | 'missed'
+  | 'differently'
+  | 'evidence';
+
+export const BASELINE_MOMENT_QUESTIONS: { key: BaselineAnalysisKey; label: string }[] = [
+  { key: 'happened', label: 'WHAT HAPPENED?' },
+  { key: 'thinking', label: 'WHAT WERE YOU THINKING IN THAT MOMENT?' },
+  { key: 'feel', label: 'WHAT WERE YOU FEELING?' },
+  { key: 'cause', label: 'WHAT MADE YOU FAIL THERE?' },
+  { key: 'why', label: 'WHY DID THIS MOMENT TURN AGAINST YOU?' },
+  { key: 'noticed', label: 'WHAT DID YOU NOTICE BEFORE THE DECISION?' },
+  { key: 'missed', label: 'WHAT DID YOU FAIL TO NOTICE?' },
+  { key: 'differently', label: 'WHAT COULD YOU HAVE DONE DIFFERENTLY?' },
+  { key: 'evidence', label: 'WHAT EVIDENCE SUPPORTS YOUR ANSWER?' },
+];
+
+export const BASELINE_MOMENT_MIN_ANSWER = 8;
+
+/** optional coarse tags a player can stick on a named moment — they feed the
+ *  week's tendency read. Honesty is never forced: naming is required, tagging
+ *  is a choice. */
+export const BASELINE_MOMENT_TAGS = [
+  'LOST BALL',
+  'PANIC PASS',
+  'TILT MOMENT',
+  'BAD DEFENDING',
+  'MISSED CHANCE',
+  'COUNTER AGAINST',
+  'CARD / FOUL',
+] as const;
+
+/** a moment the player named from the recording — their words, their timeline */
 export interface BaselineMoment {
-  kind: string;
+  id: string;
+  /** the player's own name for the moment, e.g. "CONCEDED AFTER A PANIC PASS" */
+  name: string;
+  startMin: number;
+  endMin: number;
+  /** optional coarse tag (LOST BALL / PANIC PASS / TILT MOMENT…) — feeds the
+   *  week's tendency read. Skipping is allowed; honesty is not forced. */
+  tag: string | null;
+  /** derived: "27’–31’" (kept for legacy consumers) */
   when: string | null;
+  /** derived: the tag, or 'FAIL MOMENT' (feeds tendenciesOf) */
+  kind: string;
+  /** legacy slot: the 'happened' answer (kept for old readers) */
   answer: string;
+  /** the per-moment analysis — the player's own words, never ours */
+  analysis: Partial<Record<BaselineAnalysisKey, string>>;
+}
+
+export function baselineMomentComplete(m: BaselineMoment): boolean {
+  return BASELINE_MOMENT_QUESTIONS.every(
+    (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
+  );
+}
+
+export interface BaselineDay {
+  day: number; // 1..7
+  sealedAt: number | null;
+  /** epoch ms when this day opened (day 1 = session start; later days = prev seal + 24h) */
+  unlockedAt: number;
+  entryIndex?: number; // match days: index into entries[]
+  recordingPath?: string | null; // the day's local recording, if any
+  reflection?: { repeated: string; changed: string }; // day 6
 }
 
 export interface BaselineEntry {
@@ -32,7 +117,7 @@ export interface BaselineEntry {
   composure: number; // 1..5
   question: string; // the deep question that was asked
   answer: string;   // the soul-searching answer (their words, not ours)
-  /** the key moments the scanner saw + the answers — pure psychology data.
+  /** the failing moments the player named from the recording + their analysis.
    *  NO lesson is written during the trial: the lessons start at Stage 1. */
   moments: BaselineMoment[];
   at: number;
@@ -62,27 +147,136 @@ export interface BaselineSession {
   ambition: string | null;
   card: BaselineCard | null;
   startedAt: number;
+  /** the 7-day schedule (migrated automatically for old sessions) */
+  days: BaselineDay[];
 }
 
 // ── store ────────────────────────────────────────────────────
 let session: BaselineSession | null = null;
 let hydrated = false;
 
+/** build the 7-day schedule. Day 1 opens at the session start; each next day
+ *  opens 24h after the previous one is sealed. Old sessions (pre-week) are
+ *  migrated from their existing entries so no one is reset mid-baseline. */
+function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
+  const days: BaselineDay[] = [];
+  let prevSeal = startedAt;
+  for (let day = 1; day <= BASELINE_DAYS; day++) {
+    const entryIndex = day <= entries.length ? day - 1 : undefined;
+    const sealedAt = entryIndex !== undefined ? entries[entryIndex].at : null;
+    const unlock = day === 1 ? startedAt : prevSeal + BASELINE_DAY_MS;
+    days.push({ day, sealedAt, unlockedAt: unlock, entryIndex });
+    if (sealedAt != null) prevSeal = sealedAt;
+  }
+  return days;
+}
+
 export async function loadBaseline(coachId: string): Promise<BaselineSession> {
   if (!hydrated) {
     hydrated = true;
     try {
       const raw = await AsyncStorage.getItem(KEY);
-      if (raw) session = JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<BaselineSession>;
+        session = {
+          coachId: parsed.coachId ?? coachId,
+          entries: Array.isArray(parsed.entries) ? (parsed.entries as BaselineEntry[]) : [],
+          ambition: typeof parsed.ambition === 'string' ? parsed.ambition : null,
+          card: parsed.card && typeof parsed.card === 'object' ? (parsed.card as BaselineCard) : null,
+          startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
+          // pre-week sessions have no `days` — migrate from their entries
+          days: Array.isArray(parsed.days)
+            ? (parsed.days as BaselineDay[])
+            : makeDays(
+                Array.isArray(parsed.entries) ? (parsed.entries as BaselineEntry[]) : [],
+                typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
+              ),
+        };
+      }
     } catch {
       /* corrupt → fresh session */
     }
   }
   if (!session || session.coachId !== coachId) {
-    session = { coachId, entries: [], ambition: null, card: null, startedAt: Date.now() };
+    const now = Date.now();
+    session = { coachId, entries: [], ambition: null, card: null, startedAt: now, days: makeDays([], now) };
     void persist();
   }
   return session;
+}
+
+// ── THE WEEK — schedule helpers (pure, unit-tested) ──────────
+
+/** the first day not yet sealed; BASELINE_DAYS + 1 when the week is complete */
+export function currentBaselineDay(s: BaselineSession | null): number {
+  if (!s) return 1;
+  for (let day = 1; day <= BASELINE_DAYS; day++) {
+    if (!(s.days ?? []).find((d) => d.day === day)?.sealedAt) return day;
+  }
+  return BASELINE_DAYS + 1;
+}
+
+export function isWeekComplete(s: BaselineSession | null): boolean {
+  return currentBaselineDay(s) > BASELINE_DAYS;
+}
+
+/** when the current unsealed day unlocks (null when the week is complete) */
+export function nextUnlockAt(s: BaselineSession | null): number | null {
+  const day = currentBaselineDay(s);
+  if (day > BASELINE_DAYS) return null;
+  return (s?.days ?? []).find((d) => d.day === day)?.unlockedAt ?? s?.startedAt ?? 0;
+}
+
+export type BaselineDayStatus = 'done' | 'today' | 'locked' | 'future';
+
+export function dayStatus(s: BaselineSession | null, day: number): BaselineDayStatus {
+  if (!s) return day === 1 ? 'today' : 'future';
+  const d = s.days.find((x) => x.day === day);
+  if (d?.sealedAt) return 'done';
+  const cur = currentBaselineDay(s);
+  if (day > cur) return 'future';
+  return Date.now() >= (d?.unlockedAt ?? 0) ? 'today' : 'locked';
+}
+
+// ── THE WEEK — day actions ───────────────────────────────────
+
+/**
+ * Seal a day of the week. The next day unlocks 24h from THIS seal —
+ * that enforced gap is the honesty mechanism: it gives the player a
+ * full day to sit with the review before the next match.
+ */
+export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void {
+  if (!session) return;
+  const sealedAt = Date.now();
+  const days = session.days.map((d) => (d.day === day ? { ...d, ...extra, sealedAt } : d));
+  const nextIdx = days.findIndex((d) => d.day === day + 1);
+  if (nextIdx >= 0 && !days[nextIdx].sealedAt) {
+    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt + BASELINE_DAY_MS };
+  }
+  session = { ...session, days };
+  void persist();
+}
+
+/** day 6 — the week's reflection, no match */
+export function saveBaselineReflection(repeated: string, changed: string): void {
+  if (!session) return;
+  const days = session.days.map((d) =>
+    d.day === 6 ? { ...d, reflection: { repeated: repeated.trim(), changed: changed.trim() } } : d,
+  );
+  session = { ...session, days };
+  void persist();
+}
+
+/** which match number a sealed day produced (1-based) */
+export function matchNumberForDay(s: BaselineSession | null, day: number): number {
+  return (s?.days ?? []).find((d) => d.day === day)?.entryIndex != null
+    ? ((s?.days ?? []).find((d) => d.day === day)?.entryIndex ?? 0) + 1
+    : day;
+}
+
+/** the week's receipts for day 6 — every named moment across the matches */
+export function weekMoments(s: BaselineSession | null): BaselineMoment[] {
+  return (s?.entries ?? []).flatMap((e) => e.moments ?? []);
 }
 
 export function getBaseline(): BaselineSession | null {
@@ -93,10 +287,18 @@ async function persist() {
   await AsyncStorage.setItem(KEY, JSON.stringify(session)).catch(() => {});
 }
 
-/** record one debriefed match; also lands in the real vault */
-export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
+/** record one debriefed match; also lands in the real vault. The day whose
+ *  match this is gets its entry index + recording path linked automatically. */
+export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>, recordingPath?: string | null): void {
   if (!session) return;
-  session = { ...session, entries: [...session.entries, { ...entry, at: Date.now() }] };
+  const at = Date.now();
+  session = { ...session, entries: [...session.entries, { ...entry, at }] };
+  // match N belongs to day N — link the entry + recording path
+  const idx = session.entries.length - 1;
+  const days = session.days.map((d) =>
+    d.day === idx + 1 ? { ...d, entryIndex: idx, recordingPath: recordingPath ?? null } : d,
+  );
+  session = { ...session, days };
   const momentLine = entry.moments.length
     ? entry.moments.map((m) => `${m.kind}@${m.when ?? '?'}`).join(' · ')
     : 'NONE TAGGED';
@@ -112,7 +314,7 @@ export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
       ledAt75: null,
       decisive: null,
       composure: entry.composure,
-      note: `BASELINE M${session.entries.length} — ${entry.answer} | MOMENTS: ${momentLine}`.slice(0, 140),
+      note: `BASELINE M${idx + 1} — ${entry.answer} | MOMENTS: ${momentLine}`.slice(0, 140),
     },
     'manual',
   );
@@ -322,4 +524,31 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     ambitionAsk:
       'One more thing, little one, and this stays between us until we need it: where do you want your game to BE when we look back a year from now? Tell me the real dream — I will hold it for you.',
   },
+};
+
+// ── THE WEEK — short day-to-day lines (match days 2–5, rest, reflection) ──
+// Day 1 uses the full TALK. Day 7 uses ambitionAsk. These keep the pacing
+// human: a word from the coach, then the day's work — never a wall of text.
+
+export const BASELINE_DAY_INTRO: Record<string, Record<number, string>> = {
+  chinedu: {
+    2: 'Match two. Yesterday’s moments are still warm — good. Bring them into this one on purpose.',
+    3: 'Halfway, little bro. The mirror does not care about your excuses, and neither do I. Play like day one meant something.',
+    4: 'Match four. You should be starting to hear yourself before you do it. That is the point of this week.',
+    5: 'Last trial match. Leave yourself nothing to hide behind — the card you get is built from these five days.',
+    6: 'No match today. Sit with the week — I will show you what you keep doing; you tell me what it means.',
+  },
+  obinna: {
+    2: 'Match two, little one. Let yesterday’s review sit inside you before you play — calm carries over.',
+    3: 'Halfway. The water remembers every ripple — and so do I. I have your week in front of me.',
+    4: 'Match four. Notice how you start. Notice when the calm goes. That noticing IS the training.',
+    5: 'The last trial match, little one. Play it like the mirror is kind — because it is, and it does not forget.',
+    6: 'Rest today. The week has been speaking to you — today we listen to it together.',
+  },
+};
+
+/** what the coach says on the REST day (the 24h gap between tasks) */
+export const BASELINE_REST_LINES: Record<string, string> = {
+  chinedu: 'Rest is part of the work. The match will be here tomorrow — your review needs tonight.',
+  obinna: 'Sit with today’s review, little one. The match will still be here tomorrow — and so will I.',
 };

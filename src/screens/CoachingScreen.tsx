@@ -44,6 +44,7 @@ import { useLessonThread } from '../data/lessonThread';
 import { sideLessonFromPlan } from '../data/sideLesson';
 import StageScanSheet from './StageScanSheet';
 import SideLessonSheet from './SideLessonSheet';
+import MirrorSessionScreen from './MirrorSessionScreen';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
@@ -141,10 +142,12 @@ type Props = {
 // ─────────────────────────────────────────────────────────────
 // THE COACHING SCREEN — the stage room, framed as TWO QUESTS.
 //
-//   MAIN QUEST — THE THREAD: the lesson you swore after your
-//   last match scan, carried into today's match. The scanner
-//   tags your key moments, you answer for them, you jot the
-//   next lesson. Psychology only your own matches can teach.
+//   MAIN QUEST — THE MIRROR SESSION: one ranked match walked
+//   with structure — intention before the kick-off, a half-time
+//   checkpoint, your memory before the recording, your own key
+//   moments, the versions placed beside each other, and the one
+//   lesson you swear into THE THREAD. The app never writes your
+//   psychology; it only refuses to let you forget what you said.
 //
 //   SIDE QUEST — TODAY'S MECHANIC: the bot's researched trick,
 //   animated board + blog read in-app. A side note to try —
@@ -164,6 +167,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const thread = useLessonThread();
   const carried = thread.current;
   const [scanSheet, setScanSheet] = useState(false);
+  const [mirrorOpen, setMirrorOpen] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
 
   // ── resolve TODAY'S MECHANIC from the live bot feed ──
@@ -257,6 +261,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const [clipW, setClipW] = useState(0);
 
   // ── MATCH SCAN — graded against the REAL vault, never a timer ──
+  const threadSettled = thread.heldCount + thread.brokeCount;
   const { status, result, start, gradeNow } = useMatchScan(
     stage,
     vault.matches,
@@ -269,6 +274,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         badge: stage.rewardBadge,
       });
     },
+    threadSettled,
   );
 
   const scanDisabled = status === 'scanning';
@@ -278,8 +284,8 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       : status === 'passed' || (cleared && status === 'armed')
         ? 'BACK TO THE MAP ›'
         : status === 'failed'
-          ? 'RUN IT BACK — PLAY + LOG THE SESSION ›'
-          : 'PLAY + RUN THE MATCH SCAN ›';
+          ? 'RUN IT BACK — START A NEW MIRROR SESSION ›'
+          : 'START A MIRROR SESSION ›';
 
   // the room talks as it renders — one pop per beat of the briefing
   useEffect(() => {
@@ -303,7 +309,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
     if (scanDisabled) return;
     if (status === 'passed' || (cleared && status === 'armed')) return onClose();
     sfx('whoosh');
-    setScanSheet(true); // the full ritual: log the match, then it grades
+    setMirrorOpen(true); // the full Mirror Session: intention → evidence → lesson
   };
 
   /** the in-room scan closed — if a match was logged, grade immediately */
@@ -313,11 +319,19 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
     if (didLog) gradeNow();
   };
 
+  /** the MIRROR SESSION closed — a completed session logged a real match to
+   *  the vault; grade the stage objectives from the evidence immediately */
+  const handleMirrorClose = (completed: boolean) => {
+    setMirrorOpen(false);
+    sfx('tap');
+    if (completed) gradeNow();
+  };
+
   /** live objective standings, so the card is honest BEFORE any scan runs */
   const liveTargets = useMemo(
     () =>
       (stage.objectives ?? []).map((o) => {
-        const count = o.check ? objectiveCount(o.check, vault.matches, journal.entries.length) : o.done;
+        const count = o.check ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled) : o.done;
         return {
           label: o.label,
           target: String(o.target),
@@ -325,7 +339,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           met: count >= o.target,
         };
       }),
-    [stage.objectives, vault.matches, journal.entries.length],
+    [stage.objectives, vault.matches, journal.entries.length, threadSettled],
   );
 
   const TileIcon = { target: TargetGlyphIcon, waves: WavesGlyphIcon, arrow: ArrowOutIcon };
@@ -533,7 +547,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           <MessageMeta time={t(4)} />
         </Animated.View>
 
-        {/* ── MATCH SCAN — the MAIN QUEST; passing unlocks the next node ── */}
+        {/* ── MIRROR SESSION — the MAIN QUEST; passing unlocks the next node ── */}
         <Animated.View entering={FadeInDown.delay(400).duration(360)} style={styles.scanCard}>
           {cleared && status !== 'passed' && (
             <View style={styles.clearedBanner}>
@@ -556,7 +570,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
               <Text style={styles.threadBoxTag}>YOUR MAIN QUEST — SWORN AFTER YOUR LAST SCAN</Text>
               <Text style={styles.threadLesson}>“{carried.lesson}”</Text>
               <Text style={styles.threadMeta}>
-                CARRY IT INTO THIS MATCH · THE SCAN OPENS BY ASKING HOW IT HELD
+                CARRY IT INTO THIS MATCH · THE MIRROR SESSION OPENS BY ASKING HOW IT HELD
                 {thread.entries.length > 1
                   ? ` · ${thread.heldCount} HELD · ${thread.brokeCount} BROKE SO FAR`
                   : ''}
@@ -574,7 +588,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </View>
           )}
 
-          <Text style={styles.scanHeadline}>Prove it in a real match.</Text>
+          <Text style={styles.scanHeadline}>Prove it in a Mirror Session.</Text>
           <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
 
           {/* what the scan ACTUALLY grades — live counts off the vault */}
@@ -636,22 +650,22 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
               <Text style={[styles.scanStatusTitle, status === 'failed' && { color: colors.loss }]}>
                 {status === 'armed'
                   ? cleared
-                    ? `SCAN COMPLETE · STAGE ${stage.n} CLEARED`
-                    : 'SCAN ARMED · AWAITING YOUR MATCH'
+                    ? `STAGE ${stage.n} CLEARED — THE EVIDENCE HOLDS`
+                    : 'READY FOR YOUR MIRROR SESSION'
                   : status === 'scanning'
                     ? 'READING YOUR MATCH…'
                     : status === 'passed'
-                      ? `SCAN COMPLETE · STAGE ${stage.n} CLEARED`
-                      : 'SCAN FAILED · RUN IT BACK'}
+                      ? `STAGE ${stage.n} CLEARED — THE EVIDENCE HOLDS`
+                      : 'OBJECTIVES NOT MET — RUN IT BACK'}
               </Text>
               <Text style={styles.scanStatusSub}>
                 {status === 'armed'
-                  ? `RESULT LANDS WITH ${coach.name} THE SECOND IT READS`
+                  ? `THE RESULT IS GRADED FROM YOUR VAULT — ${coach.name} NEVER READS YOUR HEAD`
                   : status === 'scanning'
-                    ? 'THE SCAN IS READING YOUR GAME — HOLD TIGHT'
+                    ? 'THE VAULT IS BEING GRADED — HOLD TIGHT'
                     : status === 'passed'
                       ? `${coachFirst.toUpperCase()} HAS YOUR RESULT — THE NEXT NODE IS OPEN`
-                      : 'THE MECHANIC DIDN’T SHOW UP ENOUGH — BACK TO THE LAB'}
+                      : 'THE EVIDENCE DIDN’T MEET THE OBJECTIVES — BACK TO THE LAB'}
               </Text>
             </View>
           </View>
@@ -663,10 +677,17 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </View>
           </Pressable>
 
-          {/* ghost CTA — grade the matches already in the vault, no new scan */}
+          {/* ghost CTA — grade the matches already in the vault, no new session */}
           {status !== 'scanning' && status !== 'passed' && !cleared && vault.played > 0 && (
             <Pressable onPress={start} hitSlop={6}>
               <Text style={styles.ghostCta}>OR GRADE THE {vault.played} MATCH{vault.played === 1 ? '' : 'ES'} ALREADY IN MY VAULT ›</Text>
+            </Pressable>
+          )}
+
+          {/* legacy quick path — the old in-room scan ritual, kept for speed */}
+          {status !== 'scanning' && status !== 'passed' && !cleared && (
+            <Pressable onPress={() => { sfx('tap'); setScanSheet(true); }} hitSlop={6}>
+              <Text style={styles.ghostCta}>QUICK MATCH SCAN (SHORTER RITUAL) ›</Text>
             </Pressable>
           )}
 
@@ -682,7 +703,14 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         <ChevronLeftIcon size={15} color={colors.fg} />
       </Pressable>
 
-      {/* ── THE SCAN RITUAL — full-screen, in-room ── */}
+      {/* ── THE MIRROR SESSION — the full ritual: intention → evidence → lesson ── */}
+      {mirrorOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <MirrorSessionScreen coach={coach} stage={stage} onClose={handleMirrorClose} />
+        </View>
+      )}
+
+      {/* ── THE SCAN RITUAL — the shorter legacy path, still in-room ── */}
       {scanSheet && (
         <View style={StyleSheet.absoluteFill}>
           <StageScanSheet coach={coach} stage={stage} plan={plan} onClose={handleScanSheetClose} />

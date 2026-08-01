@@ -28,6 +28,7 @@ import { fetchAnnouncements } from '../data/announcements';
 import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
 import { sfx } from '../audio/sound';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors, monoFont } from '../theme';
 
 type Props = {
@@ -139,11 +140,27 @@ export default function MainScreen({ coach, onSignOut }: Props) {
       </View>
 
       <View style={styles.body}>
-        {tab === 'home' && <HomeTab coach={coach} />}
-        {tab === 'journey' && <JourneyTab coach={coach} onOpenStage={openStage} />}
-        {tab === 'community' && <CommunityTab coach={coach} />}
+        {/* each tab is its own boundary — one tab crashing shows a reload
+            card instead of taking the whole app down */}
+        {tab === 'home' && (
+          <ErrorBoundary key="home">
+            <HomeTab coach={coach} />
+          </ErrorBoundary>
+        )}
+        {tab === 'journey' && (
+          <ErrorBoundary key="journey">
+            <JourneyTab coach={coach} onOpenStage={openStage} />
+          </ErrorBoundary>
+        )}
+        {tab === 'community' && (
+          <ErrorBoundary key="community">
+            <CommunityTab coach={coach} />
+          </ErrorBoundary>
+        )}
         {tab === 'settings' && (
-          <SettingsTab coach={coach} onSignOut={onSignOut} onOpenJourney={() => setTab('journey')} />
+          <ErrorBoundary key="settings">
+            <SettingsTab coach={coach} onSignOut={onSignOut} onOpenJourney={() => setTab('journey')} />
+          </ErrorBoundary>
         )}
       </View>
 

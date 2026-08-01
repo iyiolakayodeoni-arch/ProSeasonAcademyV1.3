@@ -14,12 +14,14 @@ import SignInScreen from './src/screens/SignInScreen';
 import CoachSelectScreen from './src/screens/CoachSelectScreen';
 import HearAboutScreen from './src/screens/HearAboutScreen';
 import CoachIntroScreen from './src/screens/CoachIntroScreen';
+import WeekOrientationScreen from './src/screens/WeekOrientationScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
 import SetupLoaderScreen from './src/screens/SetupLoaderScreen';
 import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
 import { hydrateThread } from './src/data/lessonThread';
+import { hydrateMirror } from './src/data/mirrorSession';
 import { initCloudSync } from './src/data/cloudSync';
 import { initAudio } from './src/audio/sound';
 import {
@@ -29,6 +31,7 @@ import {
   lockCoach,
   markBaselineDone,
   markIntroDone,
+  markOrientationDone,
   markSignedIn,
   setReferral as persistReferral,
 } from './src/data/session';
@@ -44,9 +47,39 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 // pre-loader logo flash before the structured loading screen.
 void NativeSplash.preventAutoHideAsync().catch(() => {});
 
-// SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → BASELINE SCAN
-//        → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
-type Route = 'signin' | 'coach' | 'intro' | 'scan' | 'hear' | 'setup' | 'hub';
+// ── CRASH LOG — an uncaught JS error must never be silent. When the app
+// closes unexpectedly on a phone, the last errors are saved to AsyncStorage
+// (psa.crashlog.v1) so the founder can read the actual cause instead of
+// guessing. The handler itself never throws.
+if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
+  const prev = (globalThis as any).ErrorUtils.getGlobalHandler();
+  (globalThis as any).ErrorUtils.setGlobalHandler((error: any, isFatal?: boolean) => {
+    try {
+      const entry = {
+        at: Date.now(),
+        message: String(error?.message ?? error),
+        stack: String(error?.stack ?? ''),
+      };
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+      AsyncStorage.getItem('psa.crashlog.v1')
+        .then((old: string | null) => {
+          const list: unknown[] = old ? (JSON.parse(old) as unknown[]) : [];
+          list.push(entry);
+          return AsyncStorage.setItem('psa.crashlog.v1', JSON.stringify(list.slice(-10)));
+        })
+        .catch(() => {});
+    } catch {
+      /* the logger must never crash the crash handler */
+    }
+    if (isFatal) prev(error, isFatal);
+    else console.error('[psa] uncaught', error);
+  });
+}
+
+// SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → WEEK ORIENTATION
+//        → BASELINE SCAN → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
+type Route = 'signin' | 'coach' | 'intro' | 'orientation' | 'scan' | 'hear' | 'setup' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
@@ -115,6 +148,7 @@ export default function App() {
         // before the map renders; a bad file must not block the boot
         await hydrateProgress(s.coachId).catch(() => {});
         await hydrateThread(s.coachId).catch(() => {});
+        await hydrateMirror(s.coachId).catch(() => {});
         if (!alive) return;
         setCoachId(s.coachId);
       }
@@ -122,6 +156,7 @@ export default function App() {
       if (!signedIn) setRoute('signin');
       else if (!s.coachId) setRoute('coach');
       else if (!s.introDone) setRoute('intro');
+      else if (!s.orientationDone) setRoute('orientation');
       else if (!s.baselineDone) setRoute('scan');
       else setRoute('hub');
       setRestored(true);
@@ -188,7 +223,8 @@ export default function App() {
     const s = getSession();
     // a returning player who already locked in skips straight to his floor
     if (s.coachId && s.baselineDone) setRoute('hub');
-    else if (s.coachId && s.introDone) setRoute('scan');
+    else if (s.coachId && s.orientationDone) setRoute('scan');
+    else if (s.coachId && s.introDone) setRoute('orientation');
     else if (s.coachId) setRoute('intro');
     else setRoute('coach');
   }, []);
@@ -199,11 +235,17 @@ export default function App() {
     setCoachId(id);
     void hydrateProgress(id);
     void hydrateThread(id);
+    void hydrateMirror(id);
     setRoute('intro'); // coach speaks first, then the Baseline Scan gate
   }, []);
 
   const handleIntroDone = useCallback(() => {
     markIntroDone();
+    setRoute('orientation'); // the 30-second handshake before the week
+  }, []);
+
+  const handleOrientationDone = useCallback(() => {
+    markOrientationDone();
     setRoute('scan');
   }, []);
 
@@ -240,6 +282,7 @@ export default function App() {
                 <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
               )}
               {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
+              {route === 'orientation' && <WeekOrientationScreen coach={lockedCoach} onDone={handleOrientationDone} />}
               {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
               {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
               {route === 'setup' && (

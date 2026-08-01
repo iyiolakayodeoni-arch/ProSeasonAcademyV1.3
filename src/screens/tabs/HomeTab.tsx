@@ -112,6 +112,19 @@ export default function HomeTab({ coach }: { coach: Coach }) {
     return [...annHeads, ...newsHeads, ...base];
   }, [coach, announcements, news]);
 
+  // ── the HERO — the freshest live trick (real content, not a placeholder).
+  // When the bot has exported a fresh approved mechanic with a lesson, the
+  // hero shows IT and tapping opens the in-app blog (SideLessonSheet). The
+  // fallback only appears when there is genuinely nothing fresh.
+  const hero = useMemo(() => {
+    const trick = feed.find(
+      (c) =>
+        (c.kind === 'EXPLOIT' || c.kind === 'SKILL_MOVE' || c.kind === 'TRICK_OF_THE_WEEK') &&
+        !!c.sideLesson,
+    );
+    return trick ?? null;
+  }, [feed]);
+
   const kinds = CHIP_KINDS[chip];
   const showFounder = chip === 'ALL' || chip === 'FOUNDER';
   const showNews = chip === 'ALL' || chip === 'NEWS';
@@ -204,23 +217,41 @@ export default function HomeTab({ coach }: { coach: Coach }) {
 
         {chip !== 'FOUNDER' && chip !== 'NEWS' && (
           <Animated.View entering={FadeInUp.duration(350)} style={styles.hero}>
-            <View style={styles.heroTagRow}>
-              <Text style={styles.heroTag}>TRICK OF THE WEEK</Text>
-            </View>
-            <View style={styles.heroThumb}>
-              <MiniPitch width={318} height={150} variant="pitchRun" showPlay />
-              <View style={styles.heroDuration}>
-                <Text style={styles.heroDurationTxt}>{HERO_FALLBACK.duration}</Text>
+            <Pressable
+              onPress={() => {
+                if (!hero?.sideLesson) return;
+                sfx('whoosh');
+                setSide(hero.sideLesson); // the in-app blog — never a browser link
+              }}
+            >
+              <View style={styles.heroTagRow}>
+                <Text style={styles.heroTag}>{hero ? 'TRICK OF THE WEEK — LIVE FROM THE BOT' : 'TRICK OF THE WEEK'}</Text>
+                {hero && <Text style={styles.heroTagLive}>● FRESH</Text>}
               </View>
-            </View>
-            <Text style={styles.heroHeadline}>{HERO_FALLBACK.headline}</Text>
-            <Text style={styles.heroBody}>{HERO_FALLBACK.body}</Text>
-            <View style={styles.heroFoot}>
-              <Text style={styles.heroCta}>
-                {HERO_FALLBACK.cta} <Text style={styles.heroMeta}>· {HERO_FALLBACK.meta}</Text>
+              <View style={styles.heroThumb}>
+                <MiniPitch width={318} height={150} variant={hero?.sideLesson?.clip.variant ?? 'pitchRun'} showPlay />
+                <View style={styles.heroDuration}>
+                  <Text style={styles.heroDurationTxt}>
+                    {hero?.sideLesson?.clip.duration ?? HERO_FALLBACK.duration}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.heroHeadline}>
+                {hero?.headline ?? HERO_FALLBACK.headline}
               </Text>
-              <BookmarkIcon size={14} color="rgba(143,184,155,0.7)" />
-            </View>
+              <Text style={styles.heroBody}>
+                {hero?.body ?? HERO_FALLBACK.body}
+              </Text>
+              <View style={styles.heroFoot}>
+                <Text style={styles.heroCta}>
+                  {hero ? 'READ THE IN-APP BLOG ›' : HERO_FALLBACK.cta}{' '}
+                  <Text style={styles.heroMeta}>
+                    · {hero?.sideLesson?.mechanicName ?? HERO_FALLBACK.meta}
+                  </Text>
+                </Text>
+                <BookmarkIcon size={14} color="rgba(143,184,155,0.7)" />
+              </View>
+            </Pressable>
           </Animated.View>
         )}
 
@@ -666,7 +697,7 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
   },
-  heroTagRow: { marginBottom: 9 },
+  heroTagRow: { marginBottom: 9, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTag: {
     alignSelf: 'flex-start',
     fontFamily: monoFont,
@@ -680,6 +711,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
     backgroundColor: 'rgba(57,255,106,0.08)',
+  },
+  heroTagLive: {
+    fontFamily: monoFont,
+    fontSize: 6.4,
+    fontWeight: '900',
+    letterSpacing: 1.6,
+    color: colors.warm,
   },
   heroThumb: { alignItems: 'center' },
   heroDuration: {

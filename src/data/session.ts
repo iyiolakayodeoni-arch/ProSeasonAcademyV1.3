@@ -21,7 +21,9 @@ export interface SessionState {
   coachId: string | null;
   /** coach's fictional backstory screen seen */
   introDone: boolean;
-  /** the 5-match Baseline Scan gate cleared → journey unlocked */
+  /** the 30-second week orientation seen (between intro and baseline) */
+  orientationDone: boolean;
+  /** the Baseline Week gate cleared → journey unlocked */
   baselineDone: boolean;
   /** "how did you hear" answer, kept for the founder's own numbers */
   referral: string | null;
@@ -33,6 +35,7 @@ const EMPTY: SessionState = {
   signedIn: false,
   coachId: null,
   introDone: false,
+  orientationDone: false,
   baselineDone: false,
   referral: null,
   enteredAt: null,
@@ -72,6 +75,7 @@ export function hydrateSession(): Promise<void> {
             signedIn: s.signedIn === true,
             coachId: typeof s.coachId === 'string' ? s.coachId : null,
             introDone: s.introDone === true,
+            orientationDone: s.orientationDone === true,
             baselineDone: s.baselineDone === true,
             referral: typeof s.referral === 'string' ? s.referral : null,
             enteredAt: typeof s.enteredAt === 'number' ? s.enteredAt : null,
@@ -104,6 +108,7 @@ export function lockCoach(coachId: string) {
 }
 
 export const markIntroDone = () => set({ introDone: true });
+export const markOrientationDone = () => set({ orientationDone: true });
 export const markBaselineDone = () => set({ baselineDone: true });
 export const setReferral = (referral: string | null) => set({ referral });
 

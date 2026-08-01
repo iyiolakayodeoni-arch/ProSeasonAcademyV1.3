@@ -157,6 +157,96 @@ export function parseDeepLink(data: any): DeepLink | null {
   return (allowed as string[]).includes(raw) ? (raw as DeepLink) : null;
 }
 
+// ── BASELINE WEEK — day-unlock local notifications ──────────
+// When a day seals, the next day unlocks exactly 24h later. A local
+// notification (scheduled by the OS, so it fires even if the app is
+// closed) is the nudge that brings the player back for that day's
+// one match — the pacing contract working as a reminder, never a nag.
+
+export const BASELINE_UNLOCK_CHANNEL = 'baseline-week';
+
+/** per-day notification copy (1–7) */
+export function baselineUnlockCopy(day: number): { title: string; body: string } {
+  switch (day) {
+    case 6:
+      return {
+        title: 'DAY 6 — THE WEEK SO FAR',
+        body: 'No match today. Open the app and sit with what you named — the reflection unlocks your last question tomorrow.',
+      };
+    case 7:
+      return {
+        title: 'DAY 7 — THE LAST QUESTION',
+        body: 'Your Baseline Week is complete. One honest answer about where your game is going — then your profile seals.',
+      };
+    default:
+      return {
+        title: `DAY ${day} IS UNLOCKED — MATCH ${day}`,
+        body: 'One ranked match, then watch the evidence, name your moments and analyse each one. The mirror is waiting.',
+      };
+  }
+}
+
+/**
+ * Schedule the local notification that fires when the next Baseline
+ * day unlocks. Safe to call repeatedly — Expo dedupes by identifier.
+ * Fails soft when notifications are unavailable or permission is
+ * denied; the in-app REST countdown is the fallback.
+ */
+export async function scheduleBaselineUnlock(day: number, unlockAt: number): Promise<boolean> {
+  const Notifications = await loadExpoNotifications();
+  if (!Notifications) return false;
+  try {
+    // show while the app is open too
+    Notifications.setNotificationHandler?.({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+      }),
+    });
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      const req = await Notifications.requestPermissionsAsync();
+      if (req.status !== 'granted') return false;
+    }
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(BASELINE_UNLOCK_CHANNEL, {
+        name: 'Baseline Week',
+        importance: Notifications.AndroidImportance?.DEFAULT ?? 3,
+      });
+    }
+    const copy = baselineUnlockCopy(day);
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: copy.title,
+        body: copy.body,
+        data: { deepLink: 'journey' },
+        sound: Platform.OS === 'android' ? undefined : 'default',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes?.DATE ?? 'date',
+        date: new Date(unlockAt),
+        channelId: Platform.OS === 'android' ? BASELINE_UNLOCK_CHANNEL : undefined,
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** cancel every pending Baseline Week unlock notification (Delete Account) */
+export async function cancelBaselineUnlocks(): Promise<void> {
+  const Notifications = await loadExpoNotifications();
+  if (!Notifications) return;
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    /* best effort */
+  }
+}
+
 /** hook: register once when the hub mounts */
 export function usePushRegistration(enabled: boolean) {
   const [status, setStatus] = useState<'idle' | 'ok' | 'denied' | 'missing' | 'failed'>('idle');
