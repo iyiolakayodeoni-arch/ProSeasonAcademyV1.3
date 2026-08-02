@@ -1,7 +1,14 @@
 name: Verify Android release build (Gradle 9 deprecations)
 
+# ─────────────────────────────────────────────────────────────
+# This file is provided as a template — the branch that ships it
+# cannot push files into .github/workflows/. To enable it, copy
+# it to .github/workflows/verify-android-release.yml and push.
+# Then run it manually: Actions → "Verify Android release build".
+# ─────────────────────────────────────────────────────────────
+
 # Manual trigger:  Actions → "Verify Android release build" → Run workflow
-# (or: gh workflow run verify-android-release.yml --ref arena/019fc340-proseasonacademyv1-3)
+# (or: gh workflow run verify-android-release.yml)
 on:
   workflow_dispatch:
 

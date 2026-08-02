@@ -63,12 +63,18 @@ safe to re-run.
 Wired to run automatically after `npm install` (`postinstall` script) and
 available manually as `npm run fix:gradle`.
 
-### 3. `.github/workflows/verify-android-release.yml`
+### 3. `.github/workflows.example/verify-android-release.yml`
 
 A manual GitHub Actions workflow that proves the fix: it checks out the
 pre-fix commit, runs the real `./gradlew assembleRelease --warning-mode all`,
 then does the same on the fixed branch and prints before/after deprecation
 counts. The release APK from the fixed build is uploaded as an artifact.
+
+> Note: the file lives under `.github/workflows.example/` (not
+> `.github/workflows/`) because the CI token used to prepare this branch is
+> not allowed to push workflow files. To enable it, copy it into place:
+> `mkdir -p .github/workflows && cp .github/workflows.example/verify-android-release.yml .github/workflows/`
+> then push it (any normal GitHub token can).
 
 ## How to apply on your machine
 
