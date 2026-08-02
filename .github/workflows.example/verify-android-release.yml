@@ -1,0 +1,119 @@
+name: Verify Android release build (Gradle 9 deprecations)
+
+# ─────────────────────────────────────────────────────────────
+# This file is provided as a template — the branch that ships it
+# cannot push files into .github/workflows/. To enable it, copy
+# it to .github/workflows/verify-android-release.yml and push.
+# Then run it manually: Actions → "Verify Android release build".
+# ─────────────────────────────────────────────────────────────
+
+# Manual trigger:  Actions → "Verify Android release build" → Run workflow
+# (or: gh workflow run verify-android-release.yml)
+on:
+  workflow_dispatch:
+
+jobs:
+  baseline:
+    name: "Baseline: pre-fix build (reproduces warnings)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout pre-fix commit
+        uses: actions/checkout@v4
+        with:
+          # The commit this branch was created from — the exact state that
+          # produced the Gradle 9 deprecation warnings on the user's machine.
+          ref: d486d1bb65f31c82dacf4f87b73b11b353bd5176
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install JS dependencies
+        run: npm ci
+      - name: Generate android/ (expo prebuild, no fix plugin)
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: "1"
+          EXPO_NO_TELEMETRY: "1"
+      - name: Build release APK and capture warnings
+        run: cd android && ./gradlew assembleRelease --warning-mode all 2>&1 | tee ../baseline-build.log
+      - name: Summarize deprecation warnings (baseline)
+        run: |
+          echo "::group::Baseline deprecation warning counts"
+          echo "total 'has been deprecated': $(grep -c 'has been deprecated' baseline-build.log || true)"
+          echo "usage attribute legacy:      $(grep -c 'Usage attribute with a legacy value' baseline-build.log || true)"
+          echo "multi-string notation:       $(grep -c 'multi-string notation' baseline-build.log || true)"
+          echo "propName=value syntax:       $(grep -c "propName = value" baseline-build.log || true)"
+          echo "::endgroup::"
+          grep -E "has been deprecated" baseline-build.log | sort | uniq -c | sort -rn | head -25 || true
+      - name: Upload baseline build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: baseline-build-log
+          path: baseline-build.log
+
+  fixed:
+    name: "Fixed: post-fix build (warnings should be gone)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout fixed branch
+        uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install JS dependencies (postinstall patches @expo/log-box etc.)
+        run: npm ci
+      - name: Generate android/ (expo prebuild applies withGradleCompat plugin)
+        run: npx expo prebuild --platform android --no-install
+        env:
+          CI: "1"
+          EXPO_NO_TELEMETRY: "1"
+      - name: Confirm fixes are in place
+        run: |
+          echo "--- android/build.gradle classpath ---"
+          grep "com.android.tools.build:gradle" android/build.gradle
+          echo "--- android/gradle.properties kotlin override ---"
+          grep "android.kotlinVersion" android/gradle.properties
+          echo "--- android/app/build.gradle property assignments ---"
+          grep -nE "^\s*(ndkVersion|namespace|signingConfig|shrinkResources|crunchPngs|useLegacyPackaging|ignoreAssetsPattern)\s*=" android/app/build.gradle
+          echo "--- @expo/log-box patched ---"
+          grep -nE "^\s*(canBePublished|namespace|ignoreAssetsPattern)\s*=" node_modules/@expo/log-box/android/build.gradle
+      - name: Build release APK and capture warnings
+        run: cd android && ./gradlew assembleRelease --warning-mode all 2>&1 | tee ../fixed-build.log
+      - name: Summarize deprecation warnings (fixed)
+        run: |
+          echo "::group::Fixed deprecation warning counts"
+          echo "total 'has been deprecated': $(grep -c 'has been deprecated' fixed-build.log || true)"
+          echo "usage attribute legacy:      $(grep -c 'Usage attribute with a legacy value' fixed-build.log || true)"
+          echo "multi-string notation:       $(grep -c 'multi-string notation' fixed-build.log || true)"
+          echo "propName=value syntax:       $(grep -c "propName = value" fixed-build.log || true)"
+          echo "::endgroup::"
+          grep -E "has been deprecated" fixed-build.log | sort | uniq -c | sort -rn | head -25 || true
+          echo "::group::BUILD RESULT"
+          if grep -q "BUILD SUCCESSFUL" fixed-build.log; then
+            echo "✅ BUILD SUCCESSFUL"
+          else
+            echo "❌ BUILD FAILED — see log"
+          fi
+          echo "::endgroup::"
+      - name: Upload fixed build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixed-build-log
+          path: fixed-build.log
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: warn

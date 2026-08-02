@@ -36,7 +36,9 @@
     "test:watcher": "node tests/frameAnalysis.test.js",
     "typecheck": "tsc --noEmit",
     "test": "node tests/frameAnalysis.test.js && node tests/mirrorSession.test.js && node tests/baselineWeek.test.js",
-    "doctor": "expo-doctor"
+    "doctor": "expo-doctor",
+    "fix:gradle": "node scripts/fix-gradle-deprecations.cjs",
+    "postinstall": "node scripts/fix-gradle-deprecations.cjs"
   },
   "private": true
 }
