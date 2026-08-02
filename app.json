@@ -35,6 +35,7 @@
     },
     "plugins": [
       "./plugins/withMatchWatcher",
+      "./plugins/withGradleCompat",
       [
         "expo-splash-screen",
         {

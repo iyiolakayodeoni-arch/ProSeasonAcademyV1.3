@@ -1,3 +1,54 @@
+# v1.3.1 — The Android Build, Fixed
+
+**Date:** 1 August 2026
+
+## The failure
+
+`./gradlew` (or `npx expo run:android`) died at `:app:compileReleaseKotlin` with only
+"Compilation error. See log for more details" — no source file, no line number, nothing to
+act on.
+
+## The cause
+
+`plugins/withMatchWatcher.js` (THE EYE) injects `MatchWatcherModule.kt`,
+`MatchWatcherService.kt` and `MatchWatcherPackage.kt` at prebuild time. That Kotlin was
+written for the **old Java RN bridge** and stopped compiling the day the project moved to
+**React Native 0.86 / SDK 57**, where the bridge was migrated to Kotlin. Three hard errors,
+all in `MatchWatcherModule.kt`:
+
+1. `onActivityResult(activity: Activity?, …)` — RN 0.86's `ActivityEventListener` now
+   declares `activity: Activity` **non-null** → override mismatch (`'onActivityResult'
+   overrides nothing`).
+2. `onNewIntent(intent: Intent?)` — same story, `Intent` is non-null → override mismatch.
+3. `val activity = currentActivity` — `ReactContextBaseJavaModule` is now Kotlin, so
+   `getCurrentActivity()` is a plain function with **no synthetic `currentActivity`
+   property** → `Unresolved reference: currentActivity`.
+
+## The fix (all in `plugins/withMatchWatcher.js`)
+
+- Both override signatures made non-null (`Activity`, `Intent`) to match RN 0.86.
+- `currentActivity` → `reactApplicationContext.currentActivity` (the property survives on
+  the Java `ReactContext`, which is exactly what RN's own deprecation notice recommends).
+- `MainApplication.kt` registration hardened: it already handled the SDK 57
+  `PackageList(this).packages.apply { … }` shape; now it also handles the RN-classic
+  `val packages = PackageList(this).packages` shape with `packages.add(...)`, and **warns
+  loudly** instead of injecting Kotlin that cannot compile if a future template matches
+  nothing.
+
+Verified: the plugin was run through Expo's real mod compiler against a simulated SDK 57
+project — 13/13 checks pass (registration lands inside the `apply` block, manifest gets the
+three permissions + the `mediaProjection` service, all three Kotlin files are written with
+the corrected signatures). `tsc --noEmit` clean, all tests pass, `expo config` resolves.
+
+> If you already have a generated `android/` folder, delete it first — the injected files
+> are only re-written at prebuild time:
+> ```bash
+> rm -rf android
+> npx expo run:android   # or: npx expo prebuild && cd android && ./gradlew assembleRelease
+> ```
+
+---
+
 # v1.3.0 — The Nine Blockers, Fixed
 
 **Date:** 28 July 2026 · **Backend:** `ymnkphqgjxexsnbgtqvk.supabase.co` (live, verified)
