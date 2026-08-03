@@ -27,6 +27,13 @@ function fail(msg) {
   process.exit(1);
 }
 
+if (process.cwd() !== ROOT) {
+  log(
+    'note: you are not in the project root (' + ROOT + ') — the script auto-detected ' +
+      'it, but `expo prebuild` must be run from the root, not from inside android/.'
+  );
+}
+
 if (!fs.existsSync(PLUGIN)) {
   fail('plugins/withMatchWatcher.js not found. Run from the project root.');
 }
@@ -71,6 +78,29 @@ for (const [file, constName] of Object.entries(files)) {
   fs.writeFileSync(path.join(OUT_DIR, file), extractTemplate(constName), 'utf8');
   log('wrote ' + file);
 }
+
+// Self-verify: the written Kotlin must be the RN 0.86-compatible version, otherwise
+// :app:compileReleaseKotlin will fail again with the same errors.
+const written = (f) => fs.readFileSync(path.join(OUT_DIR, f), 'utf8');
+const moduleKt = written('MatchWatcherModule.kt');
+const serviceKt = written('MatchWatcherService.kt');
+const checks = [
+  ['MatchWatcherModule.kt implements onNewIntent', moduleKt.includes('override fun onNewIntent(intent: Intent)')],
+  ['MatchWatcherModule.kt has exactly one onActivityResult', (moduleKt.match(/fun onActivityResult\(/g) || []).length === 1],
+  ['MatchWatcherModule.kt defines emit()', moduleKt.includes('internal fun emit(name: String, map: WritableMap)')],
+  ['MatchWatcherModule.kt uses reactApplicationContext.currentActivity', moduleKt.includes('reactApplicationContext.currentActivity')],
+  ['MatchWatcherService.kt uses ImageFormat.RGBA_8888', serviceKt.includes('ImageFormat.RGBA_8888')],
+  ['MatchWatcherService.kt imports android.view.Display', serviceKt.includes('import android.view.Display')],
+];
+const failed = checks.filter(([, ok]) => !ok);
+if (failed.length) {
+  fail(
+    'the files just written are NOT the RN 0.86 fixed version — ' +
+      failed.map(([name]) => name).join('; ') +
+      '. Is plugins/withMatchWatcher.js up to date?'
+  );
+}
+for (const [name] of checks) log('verified: ' + name + ' ✓');
 
 const mainApp = path.join(OUT_DIR, '..', 'MainApplication.kt');
 if (fs.existsSync(mainApp)) {
