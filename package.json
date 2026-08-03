@@ -35,7 +35,7 @@
     "web": "expo start --web",
     "test:watcher": "node tests/frameAnalysis.test.js",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/frameAnalysis.test.js && node tests/mirrorSession.test.js && node tests/baselineWeek.test.js",
+    "test": "node tests/frameAnalysis.test.js && node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/gradleDeprecations.test.js",
     "doctor": "expo-doctor",
     "fix:gradle": "node scripts/fix-gradle-deprecations.cjs",
     "postinstall": "node scripts/fix-gradle-deprecations.cjs"
