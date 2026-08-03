@@ -273,7 +273,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.graphics.ImageFormat
 import android.graphics.Point
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -376,7 +375,11 @@ class MatchWatcherService : Service() {
     }
 
     private fun startFrames() {
-        val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, ImageFormat.RGBA_8888, 2)
+        // Format 1 == ImageFormat.RGBA_8888 (stable since API 1). We pass the
+        // literal instead of the named constant because some toolchains fail
+        // to resolve ImageFormat.RGBA_8888 during :app:compileReleaseKotlin —
+        // the literal is immune to that and behaves identically.
+        val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, 1 /* ImageFormat.RGBA_8888 */, 2)
         frameReader = reader
         reader.setOnImageAvailableListener({ r -> onFrame(r) }, handler)
         frameDisplay = projection?.createVirtualDisplay(
