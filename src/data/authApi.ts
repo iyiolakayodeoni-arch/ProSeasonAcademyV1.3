@@ -10,6 +10,9 @@ import { PSA_SUPABASE_ANON_KEY, PSA_SUPABASE_URL } from '../config';
 
 const TOKEN_CACHE_KEY = 'psa.academy.token.v1';
 
+/** how long we wait for the academy to answer before calling it OFFLINE */
+const REQUEST_TIMEOUT_MS = 12_000;
+
 export type AuthErrorCode =
   | 'INVALID_EMAIL'
   | 'WEAK_PASSWORD'
@@ -99,15 +102,24 @@ async function invokeFn(name: string, body: Record<string, unknown>, authed = fa
   }
 
   try {
-    const res = await fetch(`${PSA_SUPABASE_URL}/functions/v1/${name}`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), REQUEST_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(`${PSA_SUPABASE_URL}/functions/v1/${name}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        signal: ctl.signal,
+      });
+    } finally {
+      clearTimeout(timer);
+    }
     const j = await res.json().catch(() => null);
     if (!j) return { ok: false, error: res.ok ? 'UNKNOWN' : 'OFFLINE' };
     return j;
   } catch {
+    // fetch threw: no network, DNS, TLS, or the 12s timeout fired
     return { ok: false, error: 'OFFLINE' };
   }
 }
