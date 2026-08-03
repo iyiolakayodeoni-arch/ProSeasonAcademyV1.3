@@ -21,22 +21,15 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
 
   const auth = req.headers.get('authorization') ?? '';
-  const anon = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    {
-      global: {
-        headers: {
-          apikey: Deno.env.get('SUPABASE_ANON_KEY')!,
-          authorization: auth,
-        },
-      },
-    },
-  );
-  const { data: { user }, error: uerr } = await anon.auth.getUser();
+  // Validate the caller's session with the SERVICE client, passing the token
+  // explicitly (same pattern as founder-broadcast). This avoids the
+  // apikey/header-forwarding gotchas of an anon client with custom headers.
+  const token = auth.replace(/^Bearer\s+/i, '');
+  if (!token) return json({ ok: false, error: 'auth required' }, 401);
+  const sb = service();
+  const { data: { user }, error: uerr } = await sb.auth.getUser(token);
   if (uerr || !user) return json({ ok: false, error: 'auth required' }, 401);
 
-  const sb = service();
   const { data: profile } = await sb
     .from('profiles')
     .select('id, academy_id, is_founder')

@@ -145,10 +145,16 @@ Deno.serve(async (req) => {
   } catch (_) {}
   try { await sb.rpc('welcome_member', { p_academy: academy }); } catch (_) {}
 
-  // issue a session so the app is signed in immediately
+  // issue a session so the app is signed in immediately.
+  // Use an ANON client (not the service-role client) for signInWithPassword —
+  // guarantees a normal user session JWT that anon.auth.getUser() accepts.
   let sess = null;
   try {
-    const r = await sb.auth.signInWithPassword({ email, password });
+    const anon = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+    );
+    const r = await anon.auth.signInWithPassword({ email, password });
     sess = r.data?.session ?? null;
   } catch (_) {
     sess = null;
