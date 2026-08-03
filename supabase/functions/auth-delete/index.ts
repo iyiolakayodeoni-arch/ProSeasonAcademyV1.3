@@ -41,10 +41,12 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'FOUNDER_PROTECTED' }, 403);
   }
 
-  await sb.rpc('delete_my_account').catch(async () => {
+  try {
+    await sb.rpc('delete_my_account');
+  } catch (_) {
     await sb.from('profiles').update({ status: 'removed' }).eq('id', profile.id);
     await sb.from('push_tokens').delete().eq('user_id', profile.id);
-  });
+  }
 
   // hard-delete the auth user (cascades remaining profile rows)
   const { error: derr } = await sb.auth.admin.deleteUser(user.id);
