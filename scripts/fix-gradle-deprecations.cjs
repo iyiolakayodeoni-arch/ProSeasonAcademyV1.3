@@ -8,14 +8,19 @@
  *   1. "Properties should be assigned using the 'propName = value' syntax."
  *      Setting a property via the Gradle-generated 'propName value' or
  *      'propName(value)' syntax in Groovy DSL has been deprecated.
- *      → Rewrites `ndkVersion "x"`, `namespace "y"`, `signingConfig ...`,
+ *      → Rewrites property calls (`buildConfig true`, `prefab true`, `compose ...`,
+ *        `ndkVersion "x"`, `ndkPath "..."`, `namespace "y"`, `signingConfig ...`,
  *        `shrinkResources ...`, `crunchPngs ...`, `useLegacyPackaging ...`,
- *        `ignoreAssetsPattern ...`, `canBePublished ...` to the `= value` form.
+ *        `ignoreAssetsPattern ...`, `canBePublished ...`, `versionCode ...`,
+ *        `versionName ...`, `abortOnError ...`, `testInstrumentationRunner ...`, etc.)
+ *        to the `= value` form across android/ and node_modules/.
  *
  *   2. `maven { url '...' }` → `maven { url = '...' }` (same deprecation).
  *
- *   3. Upgrades the Kotlin Gradle Plugin to 2.2.21 (Expo-supported override,
- *      `android.kotlinVersion`) and pins AGP 8.13.2 explicitly — the versions
+ *   3. Upgrades the Kotlin Gradle Plugin to 2.2.21 (via rootProject.ext.kotlinVersion
+ *      in `android/build.gradle` and properties in `android/gradle.properties`,
+ *      including explicit overrides for @react-native-async-storage/async-storage)
+ *      and pins AGP 8.13.2 explicitly across any classpath format — the versions
  *      that no longer emit the Kotlin/AGP-internal deprecations
  *      ("Declaring a Usage attribute with a legacy value",
  *      "Declaring dependencies using multi-string notation").
@@ -37,7 +42,7 @@ const ROOT = path.resolve(__dirname, '..');
 const tag = '[fix-gradle-deprecations]';
 
 // Property names whose Gradle-generated Groovy accessor (`propName value`)
-// is deprecated. Assignment form (`propName = value`) is always valid.
+// is deprecated in Gradle 9. Assignment form (`propName = value`) is always valid.
 const DSL_PROPS = [
   'namespace',
   'canBePublished',
@@ -46,8 +51,28 @@ const DSL_PROPS = [
   'crunchPngs',
   'shrinkResources',
   'ndkVersion',
+  'ndkPath',
   'signingConfig',
+  'buildConfig',
+  'prefab',
+  'compose',
+  'multiDexEnabled',
+  'versionCode',
+  'versionName',
+  'applicationId',
+  'testInstrumentationRunner',
+  'debuggable',
+  'minifyEnabled',
+  'javaMaxHeapSize',
+  'abortOnError',
+  'checkReleaseBuilds',
+  'sourceCompatibility',
+  'targetCompatibility',
+  'resourceConfigurations',
 ];
+
+const AGP_VERSION = '8.13.2';
+const KOTLIN_VERSION = '2.2.21';
 
 function log(...args) {
   console.log(tag, ...args);
@@ -59,8 +84,8 @@ function log(...args) {
  * property names above. Only touches lines that are NOT already assigned.
  */
 function rewriteDeprecatedPropertyCalls(text) {
-  // Matches e.g. `  namespace "expo.modules.foo"` or `    ndkVersion rootProject.ext.ndkVersion`
-  // but NOT `  namespace = "expo.modules.foo"` (already assigned) and NOT
+  // Matches e.g. `  buildConfig true` or `    ndkVersion rootProject.ext.ndkVersion`
+  // but NOT `  buildConfig = true` (already assigned) and NOT
   // `  namespace('...')`-style calls with parens (those are method calls and
   // are outside the scope of this deprecation).
   const propNames = DSL_PROPS.join('|');
@@ -80,6 +105,67 @@ function rewriteMavenUrl(text) {
     /(maven\s*\{\s*url\s+)(['"])/g,
     '$1= $2'
   );
+}
+
+/**
+ * Replace any AGP classpath declaration in root android/build.gradle with explicit AGP_VERSION.
+ * Supports classpath("com.android.tools.build:gradle"), classpath '...', existing version numbers, etc.
+ */
+function ensureAgpVersion(text) {
+  const re = /classpath\s*\(\s*['"]com\.android\.tools\.build:gradle(?::[0-9.]+)?['"]\s*\)|classpath\s+['"]com\.android\.tools\.build:gradle(?::[0-9.]+)?['"]/g;
+  return text.replace(re, `classpath('com.android.tools.build:gradle:${AGP_VERSION}')`);
+}
+
+/**
+ * Ensure kotlinVersion and kspVersion are defined inside buildscript.ext of android/build.gradle
+ * so that packages checking rootProject.ext.kotlinVersion (e.g. @react-native-async-storage/async-storage,
+ * expo-modules-core) use KOTLIN_VERSION instead of falling back to legacy versions (1.9.24 / 2.0.21 / 2.1.20)
+ * that emit "Declaring a Usage attribute with a legacy value has been deprecated".
+ */
+function ensureKotlinVersionInBuildscript(text) {
+  if (
+    text.includes(`kotlinVersion = '${KOTLIN_VERSION}'`) ||
+    text.includes(`kotlinVersion = "${KOTLIN_VERSION}"`) ||
+    text.includes(`kotlinVersion = ${KOTLIN_VERSION}`)
+  ) {
+    return text;
+  }
+  if (/kotlinVersion\s*=\s*['"][0-9.]+['"]/.test(text)) {
+    return text
+      .replace(/kotlinVersion\s*=\s*['"][0-9.]+['"]/g, `kotlinVersion = "${KOTLIN_VERSION}"`)
+      .replace(/kspVersion\s*=\s*['"][0-9.-]+['"]/g, `kspVersion = "${KOTLIN_VERSION}-1.0.29"`);
+  }
+  if (/buildscript\s*\{/.test(text)) {
+    return text.replace(
+      /buildscript\s*\{/,
+      `buildscript {\n  ext {\n    kotlinVersion = "${KOTLIN_VERSION}"\n    kspVersion = "${KOTLIN_VERSION}-1.0.29"\n  }`
+    );
+  }
+  return text;
+}
+
+/**
+ * Ensure android/gradle.properties has Kotlin version overrides for Expo and rootProject/libraries
+ * so that no module falls back to older KGP/KSP versions.
+ */
+function ensureGradleProperties(text) {
+  let updated = text;
+  const propsToAdd = [
+    ['android.kotlinVersion', KOTLIN_VERSION],
+    ['kotlinVersion', KOTLIN_VERSION],
+    ['AsyncStorage_kotlinVersion', KOTLIN_VERSION],
+    ['AsyncStorage_next_kspVersion', `${KOTLIN_VERSION}-1.0.29`],
+  ];
+  for (const [key, val] of propsToAdd) {
+    const re = new RegExp(`^${key}\\s*=.*$`, 'm');
+    if (re.test(updated)) {
+      updated = updated.replace(re, `${key}=${val}`);
+    } else {
+      if (!updated.endsWith('\n') && updated.length > 0) updated += '\n';
+      updated += `${key}=${val}\n`;
+    }
+  }
+  return updated;
 }
 
 function patchTextFile(relPath, transform, what) {
@@ -146,61 +232,49 @@ function patchNodeModules() {
   };
   walk(nm);
 
+  const propRegex = new RegExp('^\\s*(?:' + DSL_PROPS.join('|') + ')\\s+[^=]', 'gm');
+
   for (const bg of candidates) {
     const rel = path.relative(ROOT, bg).split(path.sep).join('/');
     const text = fs.readFileSync(bg, 'utf8');
     const after = rewriteDeprecatedPropertyCalls(text);
     if (after !== text) {
-      const count = (text.match(/^\s*(?:namespace|canBePublished|ignoreAssetsPattern|useLegacyPackaging|crunchPngs|shrinkResources|ndkVersion|signingConfig)\s+[^=]/gm) || []).length;
+      const count = (text.match(propRegex) || []).length;
       patchTextFile(rel, (t) => rewriteDeprecatedPropertyCalls(t), `${count} deprecated property call(s)`);
       changed++;
     }
   }
 }
 
-/**
- * Pin the Kotlin Gradle Plugin version via the Expo-supported override and
- * make sure AGP is pinned on the buildscript classpath. These two versions
- * no longer emit the Kotlin/AGP-internal Gradle 9 deprecations.
- */
-const AGP_VERSION = '8.13.2';
-const KOTLIN_VERSION = '2.2.21';
-
 function patchAndroidFolder() {
-  // android/build.gradle — `maven { url ... }` + explicit AGP classpath
-  patchTextFile(
+  // android/build.gradle — `maven { url ... }`, explicit AGP classpath, and buildscript.ext.kotlinVersion
+  const okProject = patchTextFile(
     'android/build.gradle',
     (t) => {
       let s = rewriteMavenUrl(t);
-      if (s.includes("classpath('com.android.tools.build:gradle')")) {
-        s = s.replace(
-          "classpath('com.android.tools.build:gradle')",
-          `classpath('com.android.tools.build:gradle:${AGP_VERSION}')`
-        );
-      }
+      s = ensureAgpVersion(s);
+      s = ensureKotlinVersionInBuildscript(s);
       return s;
     },
-    'maven url assignment + AGP version'
+    'maven url assignment, AGP version, buildscript.ext.kotlinVersion'
   );
+  if (okProject) changed++;
 
   // android/app/build.gradle — deprecated property calls
-  patchGradleFile('android/app/build.gradle');
+  const okApp = patchTextFile(
+    'android/app/build.gradle',
+    (t) => rewriteDeprecatedPropertyCalls(t),
+    'propName = value syntax'
+  );
+  if (okApp) changed++;
 
-  // android/gradle.properties — Kotlin override (Expo-supported)
-  const gp = path.join(ROOT, 'android', 'gradle.properties');
-  if (fs.existsSync(gp)) {
-    let text = fs.readFileSync(gp, 'utf8');
-    if (!/^android\.kotlinVersion\s*=/m.test(text)) {
-      text +=
-        '\n' +
-        '# Kotlin 2.2.x: removes Gradle 9 deprecation warnings emitted by KGP 2.1.x\n' +
-        `# (see GRADLE9_DEPRECATIONS.md). Expo supports this override; KSP is mapped automatically.\n` +
-        `android.kotlinVersion=${KOTLIN_VERSION}\n`;
-      fs.writeFileSync(gp, text, 'utf8');
-      log('patched android/gradle.properties (android.kotlinVersion=' + KOTLIN_VERSION + ')');
-      changed++;
-    }
-  }
+  // android/gradle.properties — Kotlin and KSP override properties
+  const okProps = patchTextFile(
+    'android/gradle.properties',
+    (t) => ensureGradleProperties(t),
+    `Kotlin and KSP override properties (${KOTLIN_VERSION})`
+  );
+  if (okProps) changed++;
 }
 
 function main() {
@@ -222,6 +296,10 @@ if (require.main === module) {
 module.exports = {
   rewriteDeprecatedPropertyCalls,
   rewriteMavenUrl,
+  ensureAgpVersion,
+  ensureKotlinVersionInBuildscript,
+  ensureGradleProperties,
   AGP_VERSION,
   KOTLIN_VERSION,
+  DSL_PROPS,
 };

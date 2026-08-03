@@ -22,21 +22,18 @@ const {
 const {
   rewriteDeprecatedPropertyCalls,
   rewriteMavenUrl,
-  AGP_VERSION,
-  KOTLIN_VERSION,
+  ensureAgpVersion,
+  ensureKotlinVersionInBuildscript,
+  ensureGradleProperties,
 } = require('../scripts/fix-gradle-deprecations.cjs');
 
 function withGradleCompat(config) {
-  // android/build.gradle — `maven { url = ... }` + explicit AGP classpath
+  // android/build.gradle — `maven { url = ... }`, explicit AGP classpath, buildscript.ext.kotlinVersion
   config = withProjectBuildGradle(config, (cfg) => {
     let contents = cfg.modResults.contents;
     contents = rewriteMavenUrl(contents);
-    if (contents.includes("classpath('com.android.tools.build:gradle')")) {
-      contents = contents.replace(
-        "classpath('com.android.tools.build:gradle')",
-        `classpath('com.android.tools.build:gradle:${AGP_VERSION}')`
-      );
-    }
+    contents = ensureAgpVersion(contents);
+    contents = ensureKotlinVersionInBuildscript(contents);
     cfg.modResults.contents = contents;
     return cfg;
   });
@@ -49,19 +46,29 @@ function withGradleCompat(config) {
     return cfg;
   });
 
-  // android/gradle.properties — Kotlin override (Expo-supported)
+  // android/gradle.properties — Kotlin versions and KSP overrides
   config = withGradleProperties(config, (cfg) => {
+    // Convert existing property list to text, ensure all overrides, and re-parse
     const props = cfg.modResults;
-    const existing = props.find((p) => p.key === 'android.kotlinVersion');
-    if (existing) {
-      existing.value = KOTLIN_VERSION;
-    } else {
-      props.push({
-        type: 'comment',
-        value:
-          ' Kotlin 2.2.x: removes Gradle 9 deprecation warnings emitted by KGP 2.1.x (see GRADLE9_DEPRECATIONS.md)',
-      });
-      props.push({ type: 'property', key: 'android.kotlinVersion', value: KOTLIN_VERSION });
+    const existingMap = new Map();
+    for (const item of props) {
+      if (item.type === 'property') {
+        existingMap.set(item.key, item);
+      }
+    }
+    const overrides = [
+      ['android.kotlinVersion', '2.2.21'],
+      ['kotlinVersion', '2.2.21'],
+      ['AsyncStorage_kotlinVersion', '2.2.21'],
+      ['AsyncStorage_next_kspVersion', '2.2.21-1.0.29'],
+    ];
+    for (const [key, val] of overrides) {
+      const existing = existingMap.get(key);
+      if (existing) {
+        existing.value = val;
+      } else {
+        props.push({ type: 'property', key, value: val });
+      }
     }
     return cfg;
   });
