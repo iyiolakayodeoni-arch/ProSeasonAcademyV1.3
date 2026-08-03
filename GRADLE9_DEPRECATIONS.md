@@ -17,6 +17,57 @@ There were three families of warnings:
 | `Declaring a Usage attribute with a legacy value has been deprecated` (from `org.jetbrains.kotlin.jvm`, `kotlin-android`, `org.jetbrains.kotlin.android`) | Kotlin Gradle Plugin 2.1.20 / 1.9.24 (RN 0.86 / library default) declares legacy variant attributes when modules check `rootProject.ext.kotlinVersion` | ✅ fixed by injecting `buildscript.ext.kotlinVersion = "2.2.21"` into root `android/build.gradle` + overrides in `android/gradle.properties` |
 | `Declaring dependencies using multi-string notation has been deprecated` (from `com.android.internal.application` / `com.android.internal.library`) | AGP 8.12 internals (RN 0.86 default) when AGP classpath wasn't matched | ✅ fixed by upgrading any format of `com.android.tools.build:gradle` classpath to `8.13.2` |
 
+## Update — the three gaps that kept `async-storage:98` warning
+
+A later report showed `@react-native-async-storage/async-storage/android/build.gradle:98`
+*still* warning after `npm run fix:gradle`, along with the "Usage attribute" and
+"multi-string notation" lists. Three concrete bugs in the patcher were found and fixed:
+
+1. **`maven { url … }` spanning multiple lines was never matched.**
+   The old regex was `/(maven\s*\{\s*url\s+)(['"])/` — it only matched the
+   *single-line* form `maven { url '…' }`. But async-storage (line 98) and
+   react-native-svg (line 134) both write it across several lines, with a comment
+   in between:
+
+   ```groovy
+   maven {
+       // All of React Native … is installed from npm
+       url "${project.ext.resolveModulePath("react-native")}/android"
+   }
+   ```
+
+   `rewriteMavenUrl` is now a brace-tracking line scanner that handles both
+   layouts, ignores braces that appear inside `${…}` interpolations and string
+   literals, and leaves a `url` outside any `maven` block untouched.
+
+2. **`rewriteMavenUrl` was never applied to `node_modules` at all.**
+   `patchNodeModules()` only ran `rewriteDeprecatedPropertyCalls`, so even a
+   matchable `url` inside a package would have been left alone. Both transforms
+   now run over every scanned file.
+
+3. **Discovery only looked at `<pkg>/android/build.gradle`.**
+   That skipped Expo's shared *script plugins* — notably
+   `expo-modules-core/android/ExpoModulesCorePlugin.gradle`, which carries
+   `abortOnError false` (line 73) and is applied into every Expo module's build.
+   Discovery now walks **every `*.gradle` file** under `node_modules`.
+
+A fourth, latent bug was fixed defensively: `rewriteDeprecatedPropertyCalls`
+would have rewritten a block opener such as `compose {` into `compose = {`,
+producing a broken build file. Lines whose value starts with `{` are now skipped.
+
+`tests/gradleDeprecations.test.js` (14 assertions, wired into `npm test`) locks
+all of this in, including the exact async-storage:98 and svg:134 layouts.
+
+### Verified on a clean install
+
+After `rm -rf node_modules && npm install && npm run fix:gradle`, a grep across
+all 25 `*.gradle` files under `node_modules` returns **zero** remaining
+deprecated property calls and **zero** remaining `url <value>` method calls.
+Re-running reports `nothing to do — project already clean`. Diffing a patched
+package against the pristine tarball from npm shows only the intended
+one-token edits (e.g. `namespace "…"` → `namespace = "…"`), with no structural
+change to any file.
+
 ## Root cause & why some warnings remained previously
 
 Expo SDK 57 / React Native 0.86 ships a Gradle project that runs on
@@ -51,7 +102,7 @@ Registered in `app.json`. Runs on every `npx expo prebuild` (and `eas build`):
 ### 2. `scripts/fix-gradle-deprecations.cjs` — standalone patcher
 
 Same fixes, applied to an **existing** `android/` folder (no prebuild
-needed) **plus** all 22 Expo/RN module packages inside `node_modules`
+needed) **plus** every `*.gradle` file inside `node_modules`
 (`@react-native-async-storage/async-storage`, `expo-modules-core`, `@expo/log-box`, `expo`, `expo-constants`, `react-native-svg`, …) whose
 `android/build.gradle` files use the deprecated syntax. Idempotent and
 safe to re-run.
@@ -79,7 +130,8 @@ npx expo prebuild --platform android   # withGradleCompat plugin applies all fix
 
 ## What was verified
 
-- ✅ `npm run fix:gradle` patches all 22 affected files in `node_modules` (including `@react-native-async-storage/async-storage:44` and `expo-modules-core:131-133`) plus `android/build.gradle`, `android/app/build.gradle`, and `android/gradle.properties`.
+- ✅ `npm run fix:gradle` patches all 20 affected files in `node_modules` (including `@react-native-async-storage/async-storage:44` **and `:98`**, `expo-modules-core:131-133`, `expo-modules-core/android/ExpoModulesCorePlugin.gradle:73`, and `react-native-svg:134`) plus `android/build.gradle`, `android/app/build.gradle`, and `android/gradle.properties`.
 - ✅ `npx expo prebuild --platform android --clean` output contains all fixes (verified in sandbox).
 - ✅ `npm run fix:gradle` is idempotent (running again outputs `nothing to do — project already clean`).
-- ✅ All 18 automated test suites (`npm test`) and TypeScript typecheck (`npm run typecheck`) pass cleanly.
+- ✅ A clean `rm -rf node_modules && npm install` followed by `npm run fix:gradle` leaves **zero** deprecated property calls and **zero** `url <value>` method calls anywhere under `node_modules`.
+- ✅ All automated test suites (`npm test`, including the 14 new `tests/gradleDeprecations.test.js` assertions) and TypeScript typecheck (`npm run typecheck`) pass cleanly.
