@@ -1,8 +1,25 @@
 #!/usr/bin/env node
 'use strict';
 
+// Re-injects the fixed MatchWatcher Kotlin (from plugins/withMatchWatcher.js)
+// into the generated android/ project. Run from the project root:
+//
+//   node scripts/fix-matchwatcher.cjs
+//
+// The written MatchWatcherService.kt never references ImageFormat.RGBA_8888
+// as a member: the ImageReader format argument is the literal 1
+// (RGBA_8888 == 1 since API 1), which is immune to the
+// `Unresolved reference 'RGBA_8888'` compile error some toolchains hit.
+// If an older plugin template still emits the bare constant, this script
+// converts it automatically — that's why no flag is needed.
+//
+// `--sledgehammer` is accepted for backwards compatibility; it now only logs
+// a note, since the conversion happens by default.
+
 const fs = require('fs');
 const path = require('path');
+
+const SLEDGEHAMMER = process.argv.includes('--sledgehammer');
 
 const ROOT = fs.existsSync(path.join(__dirname, '..', 'package.json'))
   ? path.resolve(__dirname, '..')
@@ -79,17 +96,34 @@ for (const [file, constName] of Object.entries(files)) {
   log('wrote ' + file);
 }
 
+// Deterministic harden (always on): the generated MatchWatcherService.kt must
+// never call a member named RGBA_8888 — the ImageReader format argument is the
+// literal 1 (RGBA_8888 == 1, stable since API 1), which compiles on every
+// machine regardless of import resolution. Converts any bare reference the
+// plugin template may still emit, then re-writes the file.
+const servicePath = path.join(OUT_DIR, 'MatchWatcherService.kt');
+let serviceKt = fs.readFileSync(servicePath, 'utf8');
+const bare = (serviceKt.match(/ImageFormat\.RGBA_8888,/g) || []).length;
+if (bare > 0) {
+  serviceKt = serviceKt.split('ImageFormat.RGBA_8888,').join('1 /* ImageFormat.RGBA_8888 */,');
+  fs.writeFileSync(servicePath, serviceKt, 'utf8');
+  log(`hardened MatchWatcherService.kt: replaced ${bare} bare ImageFormat.RGBA_8888 reference(s) with the literal 1`);
+} else {
+  log('MatchWatcherService.kt: no bare ImageFormat.RGBA_8888 reference (already deterministic) ✓');
+}
+
 // Self-verify: the written Kotlin must be the RN 0.86-compatible version, otherwise
 // :app:compileReleaseKotlin will fail again with the same errors.
 const written = (f) => fs.readFileSync(path.join(OUT_DIR, f), 'utf8');
 const moduleKt = written('MatchWatcherModule.kt');
-const serviceKt = written('MatchWatcherService.kt');
+serviceKt = written('MatchWatcherService.kt');
 const checks = [
   ['MatchWatcherModule.kt implements onNewIntent', moduleKt.includes('override fun onNewIntent(intent: Intent)')],
   ['MatchWatcherModule.kt has exactly one onActivityResult', (moduleKt.match(/fun onActivityResult\(/g) || []).length === 1],
   ['MatchWatcherModule.kt defines emit()', moduleKt.includes('internal fun emit(name: String, map: WritableMap)')],
   ['MatchWatcherModule.kt uses reactApplicationContext.currentActivity', moduleKt.includes('reactApplicationContext.currentActivity')],
-  ['MatchWatcherService.kt uses ImageFormat.RGBA_8888', serviceKt.includes('ImageFormat.RGBA_8888')],
+  ['MatchWatcherService.kt uses the deterministic format literal (1 == RGBA_8888)', serviceKt.includes('1 /* ImageFormat.RGBA_8888 */')],
+  ['MatchWatcherService.kt has no bare ImageFormat.RGBA_8888 member access', !serviceKt.includes('ImageFormat.RGBA_8888,')],
   ['MatchWatcherService.kt imports android.view.Display', serviceKt.includes('import android.view.Display')],
 ];
 const failed = checks.filter(([, ok]) => !ok);
@@ -115,4 +149,5 @@ if (fs.existsSync(mainApp)) {
   }
 }
 
-log('Done. Build now with:  cd android && ./gradlew assembleRelease');
+log('Done. Build now with:  cd android && ./gradlew assembleRelease' +
+  (SLEDGEHAMMER ? '   (note: --sledgehammer is no longer needed — the literal is applied by default)' : ''));
