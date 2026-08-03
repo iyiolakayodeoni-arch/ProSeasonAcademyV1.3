@@ -29,7 +29,9 @@ Previous attempts to fix these warnings left three gaps that caused warnings to 
 1. **`buildConfig`, `prefab`, `compose`, and `ndkPath` method calls:**
    Groovy DSL calls such as `buildConfig true` in `@react-native-async-storage/async-storage` (line 44) and `buildConfig true`, `prefab true`, `compose shouldIncludeCompose` in `expo-modules-core` (lines 131–133) require assignment syntax (`buildConfig = true`). Our property list now covers **25 known AGP/Gradle DSL properties** (`namespace`, `canBePublished`, `ignoreAssetsPattern`, `useLegacyPackaging`, `crunchPngs`, `shrinkResources`, `ndkVersion`, `ndkPath`, `signingConfig`, `buildConfig`, `prefab`, `compose`, `multiDexEnabled`, `versionCode`, `versionName`, `applicationId`, `testInstrumentationRunner`, `debuggable`, `minifyEnabled`, `javaMaxHeapSize`, `abortOnError`, `checkReleaseBuilds`, `sourceCompatibility`, `targetCompatibility`, `resourceConfigurations`).
 2. **Kotlin Gradle Plugin version fallback in third-party modules:**
-   Libraries like `@react-native-async-storage/async-storage` and `expo-modules-core` check `rootProject.ext.kotlinVersion` (or `rootProject.ext.has('kotlinVersion')`). Because standard Expo SDK 57 projects do not define `ext.kotlinVersion` in the root `android/build.gradle`, those packages fell back to Kotlin `1.9.24` and `2.0.21`, which emit `Declaring a Usage attribute with a legacy value has been deprecated`. Our patch now injects `buildscript { ext { kotlinVersion = "2.2.21"; kspVersion = "2.2.21-1.0.29" } }` directly into root `android/build.gradle` and adds explicit overrides (`AsyncStorage_kotlinVersion=2.2.21`, etc.) in `android/gradle.properties`.
+   Libraries like `@react-native-async-storage/async-storage` and `expo-modules-core` check `rootProject.ext.kotlinVersion` (or `rootProject.ext.has('kotlinVersion')`). Because standard Expo SDK 57 projects do not define `ext.kotlinVersion` in the root `android/build.gradle`, those packages fell back to Kotlin `1.9.24` and `2.0.21`, which emit `Declaring a Usage attribute with a legacy value has been deprecated`. Our patch now injects `buildscript { ext { kotlinVersion = "2.2.21"; kspVersion = "2.2.21-2.0.5" } }` directly into root `android/build.gradle` and adds explicit overrides (`AsyncStorage_kotlinVersion=2.2.21`, etc.) in `android/gradle.properties`.
+
+   > **KSP version numbering:** KSP dropped the `1.0.x` release numbering when Kotlin 2.2 shipped. For Kotlin 2.2.x the published artifacts are `2.2.x-2.0.y` (e.g. `2.2.21-2.0.4`, `2.2.21-2.0.5`). A version like `2.2.21-1.0.29` was **never published**, and declaring it fails the build with `Could not find com.google.devtools.ksp:symbol-processing-gradle-plugin:2.2.21-1.0.29` (searching Maven Central and Google Maven). The fix pins `2.2.21-2.0.5` (the newest KSP for Kotlin 2.2.21).
 3. **AGP classpath regex matching:**
    If `android/build.gradle` used double quotes (`classpath("com.android.tools.build:gradle")`), no parentheses, or already had a version tag (`:8.12.0`), simple string replacement failed to upgrade AGP, leaving AGP 8.12.0 active and emitting `Declaring dependencies using multi-string notation has been deprecated`. Our patch now matches all classpath formats and pins `8.13.2`.
 
@@ -42,9 +44,9 @@ Registered in `app.json`. Runs on every `npx expo prebuild` (and `eas build`):
 - `android/build.gradle`
   - `maven { url 'https://www.jitpack.io' }` → `maven { url = 'https://www.jitpack.io' }`
   - pins `classpath('com.android.tools.build:gradle:8.13.2')` across all classpath syntax forms — removes the *multi-string notation* warnings.
-  - defines `buildscript { ext { kotlinVersion = "2.2.21"; kspVersion = "2.2.21-1.0.29" } }` so third-party modules inherit Kotlin 2.2.21 — removes the *Usage attribute legacy value* warnings.
+  - defines `buildscript { ext { kotlinVersion = "2.2.21"; kspVersion = "2.2.21-2.0.5" } }` so third-party modules inherit Kotlin 2.2.21 — removes the *Usage attribute legacy value* warnings.
 - `android/app/build.gradle` — rewrites deprecated method-call property syntax to assignment form (`= value`).
-- `android/gradle.properties` — sets `android.kotlinVersion=2.2.21`, `kotlinVersion=2.2.21`, `AsyncStorage_kotlinVersion=2.2.21`, and `AsyncStorage_next_kspVersion=2.2.21-1.0.29`.
+- `android/gradle.properties` — sets `android.kotlinVersion=2.2.21`, `kotlinVersion=2.2.21`, `AsyncStorage_kotlinVersion=2.2.21`, and `AsyncStorage_next_kspVersion=2.2.21-2.0.5`.
 
 ### 2. `scripts/fix-gradle-deprecations.cjs` — standalone patcher
 

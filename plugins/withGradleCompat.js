@@ -25,6 +25,7 @@ const {
   ensureAgpVersion,
   ensureKotlinVersionInBuildscript,
   ensureGradleProperties,
+  KSP_VERSION,
 } = require('../scripts/fix-gradle-deprecations.cjs');
 
 function withGradleCompat(config) {
@@ -60,7 +61,7 @@ function withGradleCompat(config) {
       ['android.kotlinVersion', '2.2.21'],
       ['kotlinVersion', '2.2.21'],
       ['AsyncStorage_kotlinVersion', '2.2.21'],
-      ['AsyncStorage_next_kspVersion', '2.2.21-1.0.29'],
+      ['AsyncStorage_next_kspVersion', KSP_VERSION],
     ];
     for (const [key, val] of overrides) {
       const existing = existingMap.get(key);
