@@ -73,6 +73,11 @@ const DSL_PROPS = [
 
 const AGP_VERSION = '8.13.2';
 const KOTLIN_VERSION = '2.2.21';
+// KSP dropped the 1.0.x release numbering when Kotlin 2.2 shipped: for Kotlin
+// 2.2.x the published artifacts are `2.2.x-2.0.y` (e.g. `2.2.21-2.0.4` and
+// `2.2.21-2.0.5`). `2.2.21-1.0.29` was never published, so declaring it fails
+// with "Could not find com.google.devtools.ksp:symbol-processing-gradle-plugin".
+const KSP_VERSION = '2.2.21-2.0.5';
 
 function log(...args) {
   console.log(tag, ...args);
@@ -123,22 +128,35 @@ function ensureAgpVersion(text) {
  * that emit "Declaring a Usage attribute with a legacy value has been deprecated".
  */
 function ensureKotlinVersionInBuildscript(text) {
-  if (
-    text.includes(`kotlinVersion = '${KOTLIN_VERSION}'`) ||
-    text.includes(`kotlinVersion = "${KOTLIN_VERSION}"`) ||
-    text.includes(`kotlinVersion = ${KOTLIN_VERSION}`)
-  ) {
-    return text;
-  }
-  if (/kotlinVersion\s*=\s*['"][0-9.]+['"]/.test(text)) {
-    return text
+  // Always re-check kspVersion too: an already-patched file may have
+  // kotlinVersion = 2.2.21 but a stale/invalid kspVersion (e.g. the
+  // never-published "2.2.21-1.0.29"), which must still be corrected.
+  const hasKotlinVersion = /kotlinVersion\s*=\s*['"][0-9.]+['"]/.test(text) ||
+    /kotlinVersion\s*=\s*[0-9.]+/.test(text);
+  const hasKspVersion = /kspVersion\s*=\s*['"][0-9.-]+['"]/.test(text);
+
+  if (hasKotlinVersion) {
+    let s = text
       .replace(/kotlinVersion\s*=\s*['"][0-9.]+['"]/g, `kotlinVersion = "${KOTLIN_VERSION}"`)
-      .replace(/kspVersion\s*=\s*['"][0-9.-]+['"]/g, `kspVersion = "${KOTLIN_VERSION}-1.0.29"`);
+      .replace(/kotlinVersion\s*=\s*[0-9.]+/g, `kotlinVersion = "${KOTLIN_VERSION}"`);
+    if (hasKspVersion) {
+      s = s.replace(
+        /kspVersion\s*=\s*['"][0-9.-]+['"]/g,
+        `kspVersion = "${KSP_VERSION}"`
+      );
+    } else {
+      // kotlinVersion present but kspVersion missing — insert it right after.
+      s = s.replace(
+        /(kotlinVersion\s*=\s*"[^"]*")/,
+        `$1\n    kspVersion = "${KSP_VERSION}"`
+      );
+    }
+    return s;
   }
   if (/buildscript\s*\{/.test(text)) {
     return text.replace(
       /buildscript\s*\{/,
-      `buildscript {\n  ext {\n    kotlinVersion = "${KOTLIN_VERSION}"\n    kspVersion = "${KOTLIN_VERSION}-1.0.29"\n  }`
+      `buildscript {\n  ext {\n    kotlinVersion = "${KOTLIN_VERSION}"\n    kspVersion = "${KSP_VERSION}"\n  }`
     );
   }
   return text;
@@ -154,7 +172,7 @@ function ensureGradleProperties(text) {
     ['android.kotlinVersion', KOTLIN_VERSION],
     ['kotlinVersion', KOTLIN_VERSION],
     ['AsyncStorage_kotlinVersion', KOTLIN_VERSION],
-    ['AsyncStorage_next_kspVersion', `${KOTLIN_VERSION}-1.0.29`],
+    ['AsyncStorage_next_kspVersion', KSP_VERSION],
   ];
   for (const [key, val] of propsToAdd) {
     const re = new RegExp(`^${key}\\s*=.*$`, 'm');
@@ -301,5 +319,6 @@ module.exports = {
   ensureGradleProperties,
   AGP_VERSION,
   KOTLIN_VERSION,
+  KSP_VERSION,
   DSL_PROPS,
 };

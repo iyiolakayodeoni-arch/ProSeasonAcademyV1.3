@@ -288,6 +288,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Base64
+import android.view.Display
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.WritableMap
 import java.io.File
