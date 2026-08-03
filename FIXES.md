@@ -1,3 +1,61 @@
+# v1.3.2 — "The expected package.json path … android\package.json" — false alarm, wrong folder
+
+**Date:** 3 August 2026
+
+## The failure
+
+Following the v1.3.1 instructions, the release build failed twice in a row:
+
+1. `npx expo prebuild --platform android` died instantly with
+   `ConfigError: The expected package.json path: C:\Users\admin\...\android\package.json does not exist`
+2. `cd android` then failed with `Cannot find path '...\android\android'`
+3. `./gradlew assembleRelease` compiled but died at `:app:compileReleaseKotlin` with the
+   **v1.3.1 errors again** (`MatchWatcherModule.kt`: `Conflicting overloads` on
+   `onActivityResult`, `Unresolved reference 'emit' / 'currentActivity'`, `Missing '}'`;
+   `MatchWatcherService.kt`: `Unresolved reference 'RGBA_8888' / 'Display'`).
+
+## The cause — not a code bug this time
+
+The terminal session was sitting **inside `android/`** when the block was pasted:
+
+- `npx expo prebuild` therefore treated `android/` as the project root. Expo's
+  `getConfig()` demands a `package.json` at the root → `android\package.json does not exist`
+  (there is never supposed to be one there; the project root has the real one).
+- Because prebuild never ran, the **fixed** MatchWatcher Kotlin (v1.3.1, in
+  `plugins/withMatchWatcher.js`) was never re-injected into `android/` — the stale
+  pre-fix files stayed and gradle compiled those, hence the identical errors.
+- The `cd android` failure (`...\android\android`) is the giveaway: it only happens when
+  you are *already inside* `android/`.
+
+## The fix
+
+Run everything from the project root, never from inside `android/`:
+
+```powershell
+cd C:\Users\admin\ProSeasonAcademyV1.3
+npx expo prebuild --platform android   # re-injects the fixed MatchWatcher Kotlin
+cd android
+.\gradlew assembleRelease
+```
+
+No keystore was touched — nothing was deleted. (If prebuild is ever unwanted, the
+one-command equivalent that only rewrites the three Kotlin files is
+`node scripts/fix-matchwatcher.cjs` — now self-verifying: it re-checks every file it
+writes against the RN 0.86 requirements and fails loudly if the plugin is stale.)
+
+Hardening added in this version:
+
+- `package.json`: new `npm run fix:matchwatcher` script (discoverable recovery command).
+- `scripts/fix-matchwatcher.cjs`: warns when run outside the project root; after writing
+  the Kotlin files it verifies `onNewIntent` is implemented, exactly one
+  `onActivityResult` exists, `emit()` is defined, `currentActivity` resolves via
+  `reactApplicationContext`, and the service uses `ImageFormat.RGBA_8888` +
+  `android.view.Display` — 6/6 checks, fails with a clear message otherwise.
+- `BUILD.md`: new "1b · Direct gradle build (no EAS)" section documenting the root-only
+  rule and both failure modes above.
+
+---
+
 # v1.3.1 — The Android Build, Fixed
 
 **Date:** 1 August 2026

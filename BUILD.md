@@ -52,6 +52,47 @@ phones will refuse to install over the top.
 
 ---
 
+## 1b · Direct gradle build (no EAS, your own PC)
+
+Use this when you want the APK built on your machine instead of on EAS's servers.
+
+```powershell
+# ALWAYS run these from the PROJECT ROOT (the folder that contains package.json),
+# never from inside the android/ folder.
+npx expo prebuild --platform android     # re-syncs android/ and re-injects the
+                                         # MatchWatcher native module (fixed Kotlin)
+cd android
+.\gradlew assembleRelease                # Windows PowerShell
+# ./gradlew assembleRelease              # macOS / Linux
+```
+
+The APK lands in `android\app\build\outputs\apk\release\`.
+
+**Troubleshooting**
+
+- `ConfigError: The expected package.json path: ...\android\package.json does not exist`
+  → you ran the command from **inside** `android/` (Expo then treats `android/` as the
+  project root). Run `cd C:\Users\admin\ProSeasonAcademyV1.3` (or wherever the repo is)
+  first and repeat the block above. A tell-tale sign: `cd android` fails with
+  `Cannot find path '...\android\android'`.
+- `Task :app:compileReleaseKotlin FAILED` with errors in `MatchWatcherModule.kt` /
+  `MatchWatcherService.kt` (`Unresolved reference 'emit'`, `Conflicting overloads`,
+  `Missing '}'`, …) → the `android/` folder still contains the **old** pre-fix
+  MatchWatcher files (the fixed ones are only written into `android/` when prebuild or
+  the patch script runs). Fix without touching your keystore:
+
+  ```powershell
+  node scripts/fix-matchwatcher.cjs    # copies the fixed Kotlin from plugins/withMatchWatcher.js
+  cd android
+  .\gradlew assembleRelease
+  ```
+
+- **Never delete the `android/` folder** unless you have backed up the release keystore
+  (`android/app/*.jks`, plus its passwords). Deleting it regenerates a fresh debug
+  keystore and drops any manual signing config.
+
+---
+
 ## 2 · Where the Supabase keys come from
 
 **They are baked in at build time — this is the part that used to be broken.**

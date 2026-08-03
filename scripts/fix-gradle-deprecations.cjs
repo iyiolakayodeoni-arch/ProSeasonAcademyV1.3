@@ -98,18 +98,79 @@ function rewriteDeprecatedPropertyCalls(text) {
     '^(\\s*)(' + propNames + ')\\s+([^=\\s][^\\r\\n]*)$',
     'gm'
   );
-  return text.replace(re, '$1$2 = $3');
+  return text.replace(re, (match, indent, prop, value) => {
+    // Never turn a nested configuration block into an assignment:
+    //   `compose {`  must NOT become  `compose = {`
+    // (`compose`, `signingConfig`, `prefab` etc. can legitimately open a block).
+    if (value.trimStart().startsWith('{')) return match;
+    return `${indent}${prop} = ${value}`;
+  });
 }
 
 /**
- * Rewrite `maven { url '...' }` / `maven { url "..." }` → `maven { url = '...' }`.
- * Does not touch `url =` (already correct).
+ * Rewrite the deprecated `url <value>` method-call form inside `maven { ... }`
+ * blocks into the assignment form `url = <value>`.
+ *
+ * Handles both layouts that occur in the wild:
+ *
+ *   maven { url 'https://www.jitpack.io' }          // single line
+ *
+ *   maven {                                          // multi-line, often with
+ *       // a comment line in between                 // an intervening comment
+ *       url "${project.ext.resolveModulePath("react-native")}/android"
+ *   }
+ *
+ * The multi-line layout is what `@react-native-async-storage/async-storage`
+ * (android/build.gradle:98) and `react-native-svg` (…:134) use, and it is the
+ * exact line the Gradle 9 warning points at. An earlier version of this
+ * function only matched the single-line layout, so those two warnings survived
+ * every `npm run fix:gradle` run.
+ *
+ * Only `url` lines that are genuinely inside a `maven {` block are rewritten,
+ * so an unrelated `url` property elsewhere is left alone. Lines already using
+ * `url =` are untouched (idempotent).
  */
 function rewriteMavenUrl(text) {
-  return text.replace(
-    /(maven\s*\{\s*url\s+)(['"])/g,
-    '$1= $2'
-  );
+  const lines = text.split('\n');
+  // Depth of nested braces measured from the `maven {` that opened the block;
+  // null means "not currently inside a maven block".
+  let depth = null;
+
+  const countBraces = (line) => {
+    // Strip line comments and string literals so braces inside them don't skew
+    // the depth count (e.g. `url "${...}/android"` contains `{` and `}`).
+    const cleaned = line
+      .replace(/\/\/.*$/, '')
+      .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+      .replace(/'(?:[^'\\]|\\.)*'/g, "''");
+    let delta = 0;
+    for (const ch of cleaned) {
+      if (ch === '{') delta++;
+      else if (ch === '}') delta--;
+    }
+    return delta;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (depth === null) {
+      if (/(^|[^\w.])maven\s*\{/.test(line)) {
+        depth = countBraces(line);
+        // Single-line form: `maven { url '...' }` — rewrite in place.
+        lines[i] = line.replace(/(\burl\s+)(?!=)(?=['"$])/, '$1= ');
+        if (depth <= 0) depth = null;
+      }
+      continue;
+    }
+
+    // Inside a maven block: rewrite a bare `url <value>` line.
+    lines[i] = line.replace(/^(\s*url\s+)(?!=)(?=['"$])/, '$1= ');
+    depth += countBraces(lines[i]);
+    if (depth <= 0) depth = null;
+  }
+
+  return lines.join('\n');
 }
 
 /**
@@ -152,6 +213,17 @@ function ensureKotlinVersionInBuildscript(text) {
       );
     }
     return s;
+  }
+  // Prefer extending the buildscript's existing `ext { ... }` block rather than
+  // emitting a second one. Two ext blocks are legal Groovy and behave
+  // identically, but a single merged block keeps the generated file readable.
+  const extInBuildscript = /(buildscript\s*\{[\s\S]*?\n(\s*)ext\s*\{)/.exec(text);
+  if (extInBuildscript) {
+    const indent = extInBuildscript[2] + '    ';
+    return text.replace(
+      extInBuildscript[1],
+      `${extInBuildscript[1]}\n${indent}kotlinVersion = "${KOTLIN_VERSION}"\n${indent}kspVersion = "${KSP_VERSION}"`
+    );
   }
   if (/buildscript\s*\{/.test(text)) {
     return text.replace(
@@ -239,26 +311,45 @@ function patchNodeModules() {
       if (entry.name === '.cache' || entry.name === '.bin') continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'android') {
-          const bg = path.join(full, 'build.gradle');
-          if (fs.existsSync(bg)) candidates.push(bg);
-        } else if (entry.name !== 'node_modules') {
-          walk(full);
-        }
+        // Recurse everywhere (including nested node_modules, where hoisting
+        // can place a second copy of a native module).
+        walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.gradle')) {
+        // Every *.gradle file counts, not just `android/build.gradle`:
+        // Expo ships shared script plugins such as
+        // `expo-modules-core/android/ExpoModulesCorePlugin.gradle` (which has
+        // a deprecated `abortOnError false` on line 73) that are applied into
+        // every Expo module's build and emit warnings of their own.
+        candidates.push(full);
       }
     }
   };
   walk(nm);
 
   const propRegex = new RegExp('^\\s*(?:' + DSL_PROPS.join('|') + ')\\s+[^=]', 'gm');
+  // `maven { url ... }` also needs fixing inside node_modules — previously this
+  // ran only against the app's own android/ folder, which is why
+  // @react-native-async-storage/async-storage:98 kept warning.
+  const transform = (t) => rewriteMavenUrl(rewriteDeprecatedPropertyCalls(t));
 
   for (const bg of candidates) {
     const rel = path.relative(ROOT, bg).split(path.sep).join('/');
-    const text = fs.readFileSync(bg, 'utf8');
-    const after = rewriteDeprecatedPropertyCalls(text);
+    let text;
+    try {
+      text = fs.readFileSync(bg, 'utf8');
+    } catch {
+      continue;
+    }
+    const after = transform(text);
     if (after !== text) {
-      const count = (text.match(propRegex) || []).length;
-      patchTextFile(rel, (t) => rewriteDeprecatedPropertyCalls(t), `${count} deprecated property call(s)`);
+      const propCount = (text.match(propRegex) || []).length;
+      const urlCount =
+        (text.match(/^\s*url\s+(?!=)['"$]/gm) || []).length +
+        (text.match(/maven\s*\{\s*url\s+(?!=)['"$]/g) || []).length;
+      const parts = [];
+      if (propCount) parts.push(`${propCount} deprecated property call(s)`);
+      if (urlCount) parts.push(`${urlCount} maven url assignment(s)`);
+      patchTextFile(rel, transform, parts.join(', ') || 'deprecated syntax');
       changed++;
     }
   }
