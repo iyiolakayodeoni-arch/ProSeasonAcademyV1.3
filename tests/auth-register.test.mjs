@@ -2,12 +2,22 @@
 // AUTH-REGISTER BATTERY — proves the email/password academy door
 // works against the REAL Supabase project, end to end:
 //
-//   node tests/auth-register.test.mjs
+//   node tests/auth-register.test.mjs        (or: npm run test:register)
 //
 // Creates ONE throwaway seat, exercises register → duplicate
 // checks → login → wrong-password → delete, then hard-deletes the
 // account so the seat count returns to exactly where it started.
 // Requires .env with EXPO_PUBLIC_PSA_SUPABASE_URL + _ANON_KEY.
+//
+// What it asserts (9 checks):
+//   1. register → ok:true, PSA-XXXXXX academy token, profile row
+//   2. duplicate username  → USERNAME_TAKEN
+//   3. duplicate email     → EMAIL_TAKEN
+//   4. login (right password) → ok:true + fresh session
+//   5. login (wrong password) → BAD_CREDENTIALS
+//   6. delete → ok:true
+//   7. login after delete → fails (account really gone)
+//   8. seat count back to baseline (no litter left behind)
 // ─────────────────────────────────────────────────────────────
 import { readFileSync } from 'node:fs';
 

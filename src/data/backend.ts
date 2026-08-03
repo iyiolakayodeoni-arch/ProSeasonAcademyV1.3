@@ -41,10 +41,19 @@ export function getSeasonGate(): SeasonGate | null {
  * actual claimed seats, not visitors browsing. No auth required to
  * read it — it is a public number by design.
  */
+/** resolve when the promise does, or reject after ms — used so a dead
+ *  network never hangs the UI forever */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+  ]);
+}
+
 export async function liveSeatCount(): Promise<SeasonGate | null> {
   if (!supabase) return null;
   try {
-    const { data, error } = await supabase.rpc('season_seats');
+    const { data, error } = await withTimeout(supabase.rpc('season_seats'), 12_000);
     if (error) return null;
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;

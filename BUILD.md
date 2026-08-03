@@ -86,6 +86,14 @@ The APK lands in `android\app\build\outputs\apk\release\`.
   cd android
   .\gradlew assembleRelease
   ```
+  **`Unresolved reference 'RGBA_8888'` is a thing of the past:** the plugin now generates
+  the `ImageReader` format argument as the literal `1` (`1 /* ImageFormat.RGBA_8888 */` —
+  identical behaviour, since RGBA_8888 == 1 in every Android version), so the generated
+  Kotlin contains no member reference that can fail to resolve. Just re-inject with
+  `node scripts/fix-matchwatcher.cjs`, then if needed clear the stale build cache
+  (`.\gradlew.bat --stop`, `.\gradlew.bat clean`, delete `android\.gradle`,
+  `android\build`, `android\app\build`, `android\app\.kotlin`) and rebuild.
+  Quick check that only compiles Kotlin: `.\gradlew.bat :app:compileReleaseKotlin`.
 
 - **Never delete the `android/` folder** unless you have backed up the release keystore
   (`android/app/*.jks`, plus its passwords). Deleting it regenerates a fresh debug
