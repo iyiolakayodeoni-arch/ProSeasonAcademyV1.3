@@ -154,6 +154,7 @@ Deno.serve(async (req) => {
   }
 
   return json({
+  
     ok: true,
     academyToken: academy,
     profile,
