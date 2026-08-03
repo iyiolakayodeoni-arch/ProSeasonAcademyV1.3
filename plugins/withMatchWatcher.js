@@ -1,30 +1,30 @@
-// ─────────────────────────────────────────────────────────────
-// withMatchWatcher — Expo config plugin.
+﻿// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// withMatchWatcher â€” Expo config plugin.
 //
 // Injects the native Android MatchWatcher module into the
 // prebuilt android/ project during `expo prebuild`. The module:
 //
 //   1. SHOWS THE OFFICIAL MediaProjection CONSENT DIALOG once per
-//      session (launched from the current Activity — recording
+//      session (launched from the current Activity â€” recording
 //      never starts silently).
 //   2. Starts a foreground service (type mediaProjection) that
 //      runs TWO virtual displays off one projection:
-//        · a 96×54 grayscale frame feed at ~1fps → "mw-frame"
-//          events → frameAnalysis.ts (the pure ScoreTracker)
+//        Â· a 96Ã—54 grayscale frame feed at ~1fps â†’ "mw-frame"
+//          events â†’ frameAnalysis.ts (the pure ScoreTracker)
 //          counts goals on-device; and
-//        · a full-resolution MediaRecorder (H.264 MP4) that only
+//        Â· a full-resolution MediaRecorder (H.264 MP4) that only
 //          begins when the match starts ("mw-begin-recording" /
-//          JS calls beginRecording()) — so the app never records
+//          JS calls beginRecording()) â€” so the app never records
 //          an entire phone session before a match is detected.
 //   3. Emits time-based "mw-checkpoint" events (half / full) so
 //      the Mirror Session can pause at the right moments.
 //   4. On stop, resolves with the local file path (app-private
-//      external files dir — never uploaded by default).
+//      external files dir â€” never uploaded by default).
 //
 // No cloud, no paid AI, no third-party service. Raw video stays
 // on the device. On web / iOS / missing module the app degrades
 // to manual mode, which the whole session ritual supports.
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const { withMainApplication, withAndroidManifest } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -64,7 +64,7 @@ function withMatchWatcher(config) {
       } else {
         console.warn(
           '[withMatchWatcher] Could not find a ReactPackage registration point in ' +
-            'MainApplication.kt — MatchWatcherPackage was NOT registered. ' +
+            'MainApplication.kt â€” MatchWatcherPackage was NOT registered. ' +
             'THE EYE will stay in manual mode.'
         );
       }
@@ -113,7 +113,7 @@ function withMatchWatcher(config) {
 
 module.exports = withMatchWatcher;
 
-// ── Inlined Kotlin sources (generated at prebuild time) ─────
+// â”€â”€ Inlined Kotlin sources (generated at prebuild time) â”€â”€â”€â”€â”€
 
 const MATCH_WATCHER_MODULE_KT = `package com.onliversity.proseasonacademy
 
@@ -134,15 +134,15 @@ import com.facebook.react.modules.core.DeviceEventManagerModule.RCTDeviceEventEm
 /**
  * React Native bridge for the Match Watcher (THE EYE + THE RECORDING).
  *
- * JS calls start() → Android shows the official screen-capture consent
- * dialog once → MatchWatcherService starts a foreground service with
+ * JS calls start() â†’ Android shows the official screen-capture consent
+ * dialog once â†’ MatchWatcherService starts a foreground service with
  * MediaProjection consent. The service emits:
- *   - "mw-frame"      {w,h,b64} 96×54 grayscale, ~1fps → ScoreTracker
+ *   - "mw-frame"      {w,h,b64} 96Ã—54 grayscale, ~1fps â†’ ScoreTracker
  *   - "mw-checkpoint" {kind: "half"|"full"} time-based match checkpoints
  *   - "mw-state"      {state, path, durationMs} recording lifecycle
  *   - "mw-error"      {message}
  *
- * beginRecording() tells the service to START the MediaRecorder — the
+ * beginRecording() tells the service to START the MediaRecorder â€” the
  * app never records an entire phone session before a match is detected.
  */
 class MatchWatcherModule(reactContext: ReactApplicationContext) :
@@ -159,7 +159,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
         @Volatile
         var pendingStop: Promise? = null
 
-        /** set by the module while the service is alive — the service
+        /** set by the module while the service is alive â€” the service
          *  dispatches native events through it (cross-thread safe) */
         @Volatile
         var eventBridge: ((String, WritableMap) -> Unit)? = null
@@ -253,7 +253,7 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
     }
 
     override fun onNewIntent(intent: Intent) {
-        // required by ActivityEventListener — unused
+        // required by ActivityEventListener â€” unused
     }
 
     @ReactMethod
@@ -295,9 +295,9 @@ import java.io.File
 
 /**
  * Foreground service (type mediaProjection) that:
- *   1. streams 96×54 grayscale frames at ~1fps → "mw-frame" events,
+ *   1. streams 96Ã—54 grayscale frames at ~1fps â†’ "mw-frame" events,
  *      which the pure ScoreTracker (frameAnalysis.ts) uses to count
- *      goals on-device — no cloud, no OCR, no paid AI; and
+ *      goals on-device â€” no cloud, no OCR, no paid AI; and
  *   2. records the match as H.264 MP4, but ONLY after the JS side
  *      calls beginRecording() (match detected / player confirms),
  *      so an entire phone session is never recorded up front.
@@ -305,7 +305,7 @@ import java.io.File
  * Raw video is written to the app-private external files dir and
  * never uploaded by default. Half-time / full-time checkpoints are
  * time-based heuristics from the recording start (~6-min halves in
- * FC Mobile) — the player can always override the checkpoint in the
+ * FC Mobile) â€” the player can always override the checkpoint in the
  * Mirror Session UI.
  */
 class MatchWatcherService : Service() {
@@ -320,7 +320,7 @@ class MatchWatcherService : Service() {
         const val CHANNEL_ID = "match_watcher"
         const val OUTPUT_W = 96
         const val OUTPUT_H = 54
-        /** FC Mobile halves run ~6 real minutes — heuristic checkpoints */
+        /** FC Mobile halves run ~6 real minutes â€” heuristic checkpoints */
         const val HALF_MS = 330_000L
         const val FULL_MS = 690_000L
     }
@@ -355,7 +355,7 @@ class MatchWatcherService : Service() {
         return START_STICKY
     }
 
-    // ── capture ──────────────────────────────────────────────
+    // â”€â”€ capture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun startCapture(intent: Intent) {
         startAsForeground()
@@ -376,7 +376,7 @@ class MatchWatcherService : Service() {
     }
 
     private fun startFrames() {
-        val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, ImageFormat.RGBA_8888, 2)
+        val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, 1 /* ImageFormat.RGBA_8888 */, 2)
         frameReader = reader
         reader.setOnImageAvailableListener({ r -> onFrame(r) }, handler)
         frameDisplay = projection?.createVirtualDisplay(
@@ -418,7 +418,7 @@ class MatchWatcherService : Service() {
         }
     }
 
-    /** RGBA_8888 → 96×54 luminance bytes → base64 (what the ScoreTracker sees) */
+    /** RGBA_8888 â†’ 96Ã—54 luminance bytes â†’ base64 (what the ScoreTracker sees) */
     private fun grayB64(image: Image): String? {
         val plane = image.planes[0]
         val buffer = plane.buffer
@@ -439,7 +439,7 @@ class MatchWatcherService : Service() {
         return Base64.encodeToString(out, Base64.NO_WRAP)
     }
 
-    // ── recording ────────────────────────────────────────────
+    // â”€â”€ recording â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun startRecorder() {
         if (recording || recorder != null) return
@@ -489,7 +489,7 @@ class MatchWatcherService : Service() {
         }
     }
 
-    // ── teardown ─────────────────────────────────────────────
+    // â”€â”€ teardown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun stopAll() {
         var durationMs = 0L
@@ -523,14 +523,14 @@ class MatchWatcherService : Service() {
         }
     }
 
-    // ── foreground / helpers ─────────────────────────────────
+    // â”€â”€ foreground / helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private fun startAsForeground() {
         createChannel()
         val notification: Notification
         val builder = android.app.Notification.Builder(this, CHANNEL_ID)
         builder
-            .setContentTitle("MIRROR — armed")
+            .setContentTitle("MIRROR â€” armed")
             .setContentText("Waiting for your match. Recording starts when the match starts.")
             .setSmallIcon(android.R.drawable.ic_media_play)
             .setOngoing(true)
@@ -585,3 +585,4 @@ class MatchWatcherPackage : ReactPackage {
     ): List<ViewManager<*, *>> = emptyList()
 }
 `
+
