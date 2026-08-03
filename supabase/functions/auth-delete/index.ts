@@ -24,7 +24,14 @@ Deno.serve(async (req) => {
   const anon = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { authorization: auth } } },
+    {
+      global: {
+        headers: {
+          apikey: Deno.env.get('SUPABASE_ANON_KEY')!,
+          authorization: auth,
+        },
+      },
+    },
   );
   const { data: { user }, error: uerr } = await anon.auth.getUser();
   if (uerr || !user) return json({ ok: false, error: 'auth required' }, 401);
