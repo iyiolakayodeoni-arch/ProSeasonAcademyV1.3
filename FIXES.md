@@ -54,6 +54,66 @@ Hardening added in this version:
 - `BUILD.md`: new "1b · Direct gradle build (no EAS)" section documenting the root-only
   rule and both failure modes above.
 
+## Addendum 2 (3 Aug 2026) — root cause removed: the constant is gone from the generated code
+
+If you are STILL seeing `Unresolved reference 'RGBA_8888'` at
+`MatchWatcherService.kt:114:78`, stop fighting the symptom — the source of truth no
+longer generates that reference at all:
+
+- `plugins/withMatchWatcher.js` (the template that produces `MatchWatcherService.kt`)
+  now emits the **literal `1`** for the `ImageReader` format argument
+  (`1 /* ImageFormat.RGBA_8888 */`). `RGBA_8888 == 1` since API 1, so the behaviour is
+  identical, but the generated Kotlin contains **no member reference that Kotlin has to
+  resolve** — so no toolchain/cache/classpath quirk can ever reproduce this error.
+- `scripts/fix-matchwatcher.cjs` applies that deterministic form by default (no flag
+  needed) and converts any bare reference if an older template is ever used again.
+  `--sledgehammer` is accepted for backwards compatibility but is no longer required.
+
+To apply to your machine (from the project root, never from inside `android/`):
+
+```powershell
+cd C:\Users\admin\ProSeasonAcademyV1.3
+node scripts/fix-matchwatcher.cjs
+cd android
+.\gradlew.bat --stop
+.\gradlew.bat clean
+cd ..
+Remove-Item -Recurse -Force android\.gradle, android\build, android\app\build, android\app\.kotlin
+cd android
+.\gradlew.bat :app:compileReleaseKotlin     # fast check — just the failing task
+.\gradlew.bat assembleRelease               # full build once the check passes
+```
+
+Sanity check that your disk file is the new one — the line must read
+`1 /* ImageFormat.RGBA_8888 */`:
+
+```powershell
+Select-String -Path "C:\Users\admin\ProSeasonAcademyV1.3\android\app\src\main\java\com\onliversity\proseasonacademy\MatchWatcherService.kt" -Pattern "ImageReader.newInstance"
+```
+
+If it still shows `ImageFormat.RGBA_8888` after running the script, your build is reading
+a different/older copy of the file (wrong folder, OneDrive copy, or a second checkout) —
+search your drive for all copies:
+
+```powershell
+Get-ChildItem -Path C:\Users\admin -Recurse -Filter MatchWatcherService.kt -ErrorAction SilentlyContinue | Select-Object FullName
+```
+
+## Addendum 3 (3 Aug 2026) — verify registration against the live backend
+
+Two batteries, both read-only-ish (they clean up after themselves):
+
+- `npm run test:register` (`tests/auth-register.test.mjs`) — proves the **email/password
+  register** door end to end against the real project: register → `PSA-XXXXXX` token →
+  duplicate-username/email rejection → login (right + wrong password) → delete account →
+  seat count returns to baseline. Creates one throwaway seat and hard-deletes it.
+- `npm run test:live` (`tests/live-backend.test.mjs`) — the 20-assertion battery for the
+  anonymous path (channels, RLS, anon sign-in, seat claim, vault idempotence, founder
+  forgery). Claims one anonymous seat and leaves it (by design).
+
+Both require `.env` with the two `EXPO_PUBLIC_PSA_SUPABASE_*` vars (from `.env.example`).
+Expect `9 passed · 0 failed` for register, `20 passed · 0 failed` for live.
+
 ---
 
 # v1.3.1 — The Android Build, Fixed

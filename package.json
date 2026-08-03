@@ -34,6 +34,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test:watcher": "node tests/frameAnalysis.test.js",
+    "test:register": "node tests/auth-register.test.mjs",
+    "test:live": "node tests/live-backend.test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node tests/frameAnalysis.test.js && node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/gradleDeprecations.test.js",
     "doctor": "expo-doctor",
