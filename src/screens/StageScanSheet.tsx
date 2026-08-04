@@ -24,6 +24,8 @@ import { useLessonThread, settleCarried, swearLesson } from '../data/lessonThrea
 import { useMatchWatcher } from '../data/matchWatcher';
 import { sfx } from '../audio/sound';
 import { CheckIcon, ChevronLeftIcon, EyeIcon, GamepadIcon, ScanGlyphIcon } from '../components/Icons';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
 // STAGE MATCH SCAN v3 — the ritual, inside the stage room.
@@ -147,10 +149,10 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const isWin = result === 'W';
   const question = stageSoulQuestion(coach.id, result, stage.n, gf, ga);
 
-  const mindReady = composure != null && answer.trim().length >= MIN_ANSWER;
+  const mindReady = composure != null && isValidReflection(answer, { minLength: MIN_ANSWER, minWords: 2, prompt: question });
   const momentsReady = momentsComplete(moments);
-  const verdictReady = !carried || (verdict != null && verdictNote.trim().length >= MIN_VERDICT_NOTE);
-  const lessonReady = lesson.trim().length >= MIN_LESSON;
+  const verdictReady = !carried || (verdict != null && isValidReflection(verdictNote, { minLength: MIN_VERDICT_NOTE, minWords: 2 }));
+  const lessonReady = isValidReflection(lesson, { minLength: MIN_LESSON, minWords: 3 });
   const scanReady = mindReady && momentsReady && verdictReady && lessonReady;
 
   // ── THE EYE's auto markers: when a finished watcher session has goal
@@ -557,9 +559,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 multiline
                 maxLength={140}
               />
-              <Text style={styles.count}>
-                {answer.trim().length < MIN_ANSWER ? `${answer.trim().length}/${MIN_ANSWER} TO SPEAK` : `${answer.length}/140`} · THIS LINE IS YOURS — NO AI WILL EVER WRITE IT FOR YOU
-              </Text>
+              <HonestyBadge
+                text={answer}
+                options={{ minLength: MIN_ANSWER, minWords: 2, prompt: question }}
+                defaultNote="THIS LINE IS YOURS — NO AI WILL EVER WRITE IT FOR YOU"
+                coachId={coach.id}
+              />
 
               <View style={styles.bluffBox}>
                 <Text style={styles.bluffTxt}>“{copy.bluff}”</Text>
@@ -605,11 +610,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                     multiline
                     maxLength={160}
                   />
-                  <Text style={styles.count}>
-                    {verdictNote.trim().length < MIN_VERDICT_NOTE
-                      ? `${verdictNote.trim().length}/${MIN_VERDICT_NOTE} · ONE HONEST LINE — THE THREAD KEEPS SCORE OF YOUR HEAD, NOT YOUR PRIDE`
-                      : 'VERDICT FILED'}
-                  </Text>
+                  <HonestyBadge
+                    text={verdictNote}
+                    options={{ minLength: MIN_VERDICT_NOTE, minWords: 2 }}
+                    defaultNote="ONE HONEST LINE — THE THREAD KEEPS SCORE OF YOUR HEAD, NOT YOUR PRIDE"
+                    coachId={coach.id}
+                  />
                 </View>
               )}
 
@@ -623,11 +629,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 multiline
                 maxLength={140}
               />
-              <Text style={styles.count}>
-                {lesson.trim().length < MIN_LESSON
-                  ? `${lesson.trim().length}/${MIN_LESSON} TO JOT THE LESSON · WRITE IT LIKE THE NEXT MATCH CAN HEAR YOU`
-                  : `${lesson.length}/140 · SEALED AS YOUR NEXT MAIN QUEST`}
-              </Text>
+              <HonestyBadge
+                text={lesson}
+                options={{ minLength: MIN_LESSON, minWords: 3 }}
+                defaultNote="WRITE IT LIKE THE NEXT MATCH CAN HEAR YOU · YOUR NEXT MAIN QUEST"
+                coachId={coach.id}
+              />
               <Text style={styles.demand}>{copy.demand}</Text>
             </Animated.View>
 

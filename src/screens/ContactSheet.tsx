@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 import { colors, monoFont } from '../theme';
 import * as backend from '../data/backend';
 
@@ -37,7 +39,7 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
   };
   useEffect(loadThread, []);
 
-  const canSend = body.trim().length >= MIN_LEN && !sending;
+  const canSend = body.trim().length >= MIN_LEN && isValidReflection(body, { minLength: MIN_LEN, minWords: 2 }) && !sending;
 
   const send = async () => {
     if (!canSend) return;
@@ -107,11 +109,11 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
             maxLength={2000}
             style={styles.input}
           />
-          <Text style={styles.count}>
-            {body.trim().length < MIN_LEN
-              ? `${MIN_LEN - body.trim().length} MORE CHARACTERS`
-              : `${body.length}/2000`}
-          </Text>
+          <HonestyBadge
+            text={body}
+            options={{ minLength: MIN_LEN, minWords: 2 }}
+            defaultNote="PRIVATE LINE — HE READS EVERY ONE"
+          />
 
           {error && <Text style={styles.error}>{error}</Text>}
           {sent && (
