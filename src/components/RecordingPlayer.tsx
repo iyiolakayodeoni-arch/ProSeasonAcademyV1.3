@@ -7,7 +7,7 @@ import { colors, monoFont } from '../theme';
 // RECORDING PLAYER — the local match recording (MP4), shared by
 // the MIRROR SESSION and the BASELINE WEEK review screens.
 //
-// FC Mobile runs ~12 real minutes per 90 match-minutes, so the
+// FC 26/27 console matches run ~12 real minutes per 90 match-minutes, so the
 // timeline mapping used for MARK is ≈ 8 recording-seconds per
 // match-minute (honest approximation, shown on the panel).
 //
@@ -61,7 +61,7 @@ export function RecordingPlayer({
   return (
     <View style={styles.wrap}>
       <VideoView player={player} style={styles.video} nativeControls contentFit="contain" />
-      <Text style={styles.note}>RECORDED LOCALLY · NEVER UPLOADED · ≈1 MIN MATCH = {SECONDS_PER_MATCH_MIN} SEC OF RECORDING</Text>
+      <Text style={styles.note}>RECORDED LOCALLY OR CONSOLE CAPTURE · NEVER UPLOADED · ≈1 MIN MATCH = {SECONDS_PER_MATCH_MIN} SEC OF RECORDING</Text>
     </View>
   );
 }

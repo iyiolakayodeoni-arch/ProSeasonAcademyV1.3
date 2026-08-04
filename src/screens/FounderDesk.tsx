@@ -864,7 +864,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
         {/* MetaBot news review — drafts never auto-publish */}
         <Animated.View entering={FadeInDown.delay(135).duration(320)} style={styles.card}>
           <View style={styles.rowBetween}>
-            <Text style={styles.cardTag}>FC MOBILE NEWS · PENDING REVIEW</Text>
+            <Text style={styles.cardTag}>FC 26/27 CONSOLE NEWS · PENDING REVIEW</Text>
             <Text style={[styles.cardTag, pendingNews.length > 0 && { color: colors.accent }]}>
               {pendingNews.length} DRAFT{pendingNews.length === 1 ? '' : 'S'}
             </Text>

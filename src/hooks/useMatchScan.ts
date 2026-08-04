@@ -10,7 +10,7 @@ import { MatchEntry, objectiveCount } from '../data/matches';
 // a timer expired — a stage clears only when the ledger says the
 // work was actually done.
 //
-// Match entry stays honour-system (FC Mobile has no public feed);
+// Match entry stays honour-system (EA SPORTS FC 26/27 Console has no public feed);
 // both the score and moments are entered by the player manually.
 // Manual observation is where mental resilience is forged.
 // ─────────────────────────────────────────────────────────────

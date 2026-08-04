@@ -8,7 +8,7 @@
 //   DAY 7:   Match 5 (The Finale) + Ambition & Profile Card seal
 //
 // For every match, players follow The Chinedu Way ritual:
-//   1. Screen record and watch the match tape.
+//   1. Record as usual and watch the match tape.
 //   2. Pen the key moments and unusual events on paper with a biro.
 //      "There is a special connection a biro has to a book that
 //       cannot be typed."
@@ -514,7 +514,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     introSignoff: 'Enough about me. Now you.',
     talk: [
       'Before one tactic. Before one mechanic. Five matches. Yours.',
-      'For every match, follow The Chinedu Way: screen record your game and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
+      'For every match, follow The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
       'Let your head cool for 24–30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.',
     ],
@@ -571,7 +571,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     introSignoff: 'My story is told. Yours starts now, little one.',
     talk: [
       'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches across seven days, walked at your own pace.',
-      'For every match, we train The Chinedu Way: screen record your match and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
+      'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
       'Let your mind cool down for 24–30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
     ],

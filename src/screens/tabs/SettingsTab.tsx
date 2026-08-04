@@ -388,7 +388,7 @@ export default function SettingsTab({
               THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE
             </Text>
             <Text style={{ marginTop: 8, fontFamily: monoFont, fontSize: 9.5, lineHeight: 15, color: 'rgba(143,184,155,0.9)' }}>
-              1. SCREEN RECORD & WATCH: Start your screen recording before kick-off, play your match, then watch your tape back.
+              1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
               {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
               {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
               {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
@@ -433,8 +433,8 @@ export default function SettingsTab({
             />
             <Row
               icon={<BellIcon size={15} color="#57d07c" />}
-              title="FC Mobile news"
-              sub="FOUNDER-APPROVED META ALERTS"
+              title="FC 26/27 Console news"
+              sub="FOUNDER-APPROVED CONSOLE META ALERTS"
               right={<Toggle on={s.toggles.fcMobileNews !== false} onFlip={() => flip('fcMobileNews')} />}
             />
             <Row
@@ -661,7 +661,13 @@ export default function SettingsTab({
                 <Text style={styles.sheetEyebrow}>PLATFORM</Text>
                 <Text style={styles.sheetTitle}>WHERE YOUR MATCHES GET SCANNED</Text>
                 {PLATFORMS.map((p) => (
-                  <OptionRow key={p} label={p} sub={p === 'CONSOLE' ? 'PS / XBOX — CAPTURE VIA CLIPS' : 'FC MOBILE — DIRECT MATCH FEED'} active={s.platform === p} onPress={() => setPlatform(p)} />
+                  <OptionRow
+                    key={p}
+                    label={p}
+                    sub={p === 'PS5 / XBOX' ? 'PS5 / XBOX SERIES X|S — CONSOLE CAPTURE & CLIPS' : 'PC / EA APP / STEAM — RECORD AS USUAL'}
+                    active={s.platform === p}
+                    onPress={() => setPlatform(p)}
+                  />
                 ))}
                 <SheetButton label="DONE" onPress={close} ghost />
               </View>

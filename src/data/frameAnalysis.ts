@@ -5,7 +5,7 @@
 // grayscale frames captured from the screen while a match plays
 // and counts goals WITHOUT any OCR, cloud service, or paid AI:
 //
-//   The scorebug (top-left in FC Mobile, but the ROIs are
+//   The scorebug (top-left in FC 26/27 Console / screen capture, but the ROIs are
 //   configurable) is a tiny strip of pixels. When a goal lands,
 //   one digit box changes. We diff each digit box against a
 //   reference snapshot; when the change is big and SUSTAINED
@@ -49,7 +49,7 @@ export interface ScoreTrackerOpts {
   adaptRate?: number;       // 0..1 slow drift blend rate when ROI is stable (default 0.08)
 }
 
-// Default ROIs: FC Mobile-style scorebug, left digit + right digit.
+// Default ROIs: FC 26/27-style scorebug, left digit + right digit.
 // These are fractional so they survive resolution changes; the coach
 // can recalibrate later without touching this file's logic.
 export const DEFAULT_ROI_LEFT: Roi = { x: 0.028, y: 0.022, w: 0.036, h: 0.052 };

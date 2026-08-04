@@ -1,6 +1,6 @@
 {
   "meta": {
-    "currentPatch": "FC Mobile 26",
+    "currentPatch": "FC 26/27 Console",
     "lastRunAt": "2026-07-24T21:21:08.888Z"
   },
   "seenFingerprints": [
@@ -22,12 +22,12 @@
       "origin": "metabot",
       "kind": "PATCH_NOTE",
       "headline": "THE WORLD’S GAME UPDATE",
-      "body": "fresh patch, straight from the source. the new fc mobile the world’s game update brings new global football tournament mode, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
+      "body": "fresh patch, straight from the source. the new fc 26/27 console the world’s game update brings new global football tournament mode, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-worlds-game-update",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-worlds-game-update",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "approved",
       "lifecycle": "fresh",
       "fingerprint": "3318fd9c2b3d2767",
@@ -40,10 +40,10 @@
       "headline": "PLAYSTYLES DEEP DIVE",
       "body": "fresh patch, straight from the source. playstyles aim to diversify build-up play and chance creation, deepen your team-building and strategies, and - in combination with high player attributes - push gameplay to the next level! we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/playstyles-deep-dive",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/playstyles-deep-dive",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "approved",
       "lifecycle": "fresh",
       "fingerprint": "eddb3c3c814ac3a3",
@@ -56,10 +56,10 @@
       "headline": "QUICK MATCH DEEP DIVE",
       "body": "the lab notes just dropped. playing vs friends got a serious update! quick match comes with upgraded match settings and the ability to play with national teams and clubs! we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/quick-match-deep-dive",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/quick-match-deep-dive",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "abc028962b3608db"
@@ -69,12 +69,12 @@
       "origin": "metabot",
       "kind": "PATCH_NOTE",
       "headline": "DRAFTS DEEP DIVE",
-      "body": "fresh patch, straight from the source. introducing the new drafts feature to fc mobile. find out all you need to know about drafts in this deep dive! we went through the changes so you play the update, not read it.",
+      "body": "fresh patch, straight from the source. introducing the new drafts feature to fc 26/27 console. find out all you need to know about drafts in this deep dive! we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/drafts-deep-dive",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/drafts-deep-dive",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "787224f881caf471"
@@ -83,13 +83,13 @@
       "id": "mb-2026-07-24-005",
       "origin": "metabot",
       "kind": "PATCH_NOTE",
-      "headline": "FC MOBILE 26 UPDATE",
-      "body": "the lab notes just dropped. new community-driven gameplay is coming in the fc mobile 26 update. improvements to kickoff rush, referees, new face scans and formations. we went through the changes so you play the update, not read it.",
+      "headline": "FC 26/27 CONSOLE UPDATE",
+      "body": "the lab notes just dropped. new community-driven gameplay is coming in the fc 26/27 console 26 update. improvements to kickoff rush, referees, new face scans and formations. we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-26-update-gameplay",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-26-update-gameplay",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "c7d7a11434413e00"
@@ -98,13 +98,13 @@
       "id": "mb-2026-07-24-006",
       "origin": "metabot",
       "kind": "PATCH_NOTE",
-      "headline": "FC MOBILE 26 UPDATE",
-      "body": "the lab notes just dropped. the new fc mobile 26 update brings new gameplay improvements, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
+      "headline": "FC 26/27 CONSOLE UPDATE",
+      "body": "the lab notes just dropped. the new fc 26/27 console 26 update brings new gameplay improvements, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
       "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/fc-mobile/news/fc-mobile-26-patch-notes",
-      "sourceName": "EA SPORTS FC Mobile — official news",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-26-patch-notes",
+      "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "status": "approved",
       "lifecycle": "fresh",
       "fingerprint": "5eef290b560af4f2",
@@ -115,12 +115,12 @@
       "origin": "metabot",
       "kind": "META_SHIFT",
       "headline": "NEW META FORMATION GUIDE AFTER PLAYSTYLES UPDATE IN FC",
-      "body": "the ladder's shifting. which formations became meta after the new playstyles & dribbling update in fc mobile? in this complete guide, i rank the top ... flexible players win the shuffle.",
+      "body": "the ladder's shifting. which formations became meta after the new playstyles & dribbling update in fc 26/27 console? in this complete guide, i rank the top ... flexible players win the shuffle.",
       "cta": "SEE THE SHAPES ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
       "sourceUrl": "https://www.youtube.com/watch?v=UYJnJpbVU60",
-      "sourceName": "YouTube — FC Mobile search",
+      "sourceName": "YouTube — FC 26/27 Console search",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "93e830cac3d1221f"
@@ -132,10 +132,10 @@
       "headline": "NEW 125 OVR META TACTICS AFTER UPDATE! (50 GUIDE)",
       "body": "the meta moved again, quietly. ladder-tested and already spreading — details linked for the theorycrafters. flexible players win the shuffle.",
       "cta": "SEE THE SHAPES ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
       "sourceUrl": "https://www.youtube.com/watch?v=bBIlpJQUBqM",
-      "sourceName": "YouTube — FC Mobile search",
+      "sourceName": "YouTube — FC 26/27 Console search",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "267d3f2d6fc2cdc0"
@@ -145,12 +145,12 @@
       "origin": "metabot",
       "kind": "EXPLOIT",
       "headline": "BROKEN TACTICS FOR 10, 20 & 40",
-      "body": "there's a window open right now. discover the best fc mobile tactics for 10, 20, and 40 ranks. these custom tactics are designed to help you improve your ... use it before the patch catches up.",
+      "body": "there's a window open right now. discover the best fc 26/27 console tactics for 10, 20, and 40 ranks. these custom tactics are designed to help you improve your ... use it before the patch catches up.",
       "cta": "DRILL IT ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
       "sourceUrl": "https://www.youtube.com/watch?v=2jk2Jk7KTq8",
-      "sourceName": "YouTube — FC Mobile search",
+      "sourceName": "YouTube — FC 26/27 Console search",
       "status": "approved",
       "lifecycle": "fresh",
       "fingerprint": "8fe1412f4d310e86",
@@ -160,13 +160,13 @@
       "id": "mb-2026-07-24-010",
       "origin": "metabot",
       "kind": "SKILL_MOVE",
-      "headline": "AFTER UPDATE BEST SKILL MOVES IN FC MOBILE",
+      "headline": "AFTER UPDATE BEST SKILL MOVES IN FC 26/27 CONSOLE",
       "body": "the move everyone's adding this week: the clips are linked — watch it once, then go drill it. drill it in the arena before ranked.",
       "cta": "ADD IT TO YOUR GAME ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
       "sourceUrl": "https://www.youtube.com/watch?v=rvGAlTw_xFI",
-      "sourceName": "YouTube — FC Mobile search",
+      "sourceName": "YouTube — FC 26/27 Console search",
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "c24a543e339ba9f5"
@@ -175,17 +175,253 @@
       "id": "mb-2026-07-24-011",
       "origin": "metabot",
       "kind": "SKILL_MOVE",
-      "headline": "BEST SKILL MOVES AFTER THE UPDATE IN FC MOBILE 26! (RANKED",
+      "headline": "BEST SKILL MOVES AFTER THE UPDATE IN FC 26/27 CONSOLE! (RANKED",
       "body": "the move everyone's adding this week: the clips are linked — watch it once, then go drill it. drill it in the arena before ranked.",
       "cta": "ADD IT TO YOUR GAME ›",
-      "patchVersion": "FC Mobile 26",
+      "patchVersion": "FC 26/27 Console",
       "discoveredAt": "2026-07-24",
       "sourceUrl": "https://www.youtube.com/watch?v=2QKSjLAc18E",
-      "sourceName": "YouTube — FC Mobile search",
+      "sourceName": "YouTube — FC 26/27 Console search",
       "status": "approved",
       "lifecycle": "fresh",
       "fingerprint": "44be552624a4c042",
       "reviewedAt": "2026-07-24T21:21:09.090Z"
+    },
+    {
+      "id": "mb-2026-07-29-015",
+      "origin": "metabot",
+      "kind": "SKILL_MOVE",
+      "headline": "THE SECOND BALL IS THE FIRST WIN — HOW THE TOP 100 ARE PLAYING THE SCRAPS",
+      "body": "everyone trains the first touch. nobody trains what happens when it pings loose. the top 100 win the ball twice — once from the challenge, once from the floor. here is how they do it.",
+      "cta": "DRILL THE SECOND BALL ›",
+      "patchVersion": "FC 26/27 Console",
+      "discoveredAt": "2026-07-29",
+      "sourceName": "YouTube — FC 26/27 Console competitive analysis",
+      "sourceUrl": "https://www.youtube.com/watch?v=RkL3mN9vPqA",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "second-ball",
+        "name": "THE SECOND BALL",
+        "headline": "Win the scrap after the scrap — that is where ranked is actually decided.",
+        "why": "THE DEFENSIVE AI CLEARS EVERYTHING FIRST-TIME NOW, BUT THE CLEARANCE IS BLIND — IT LANDS 18–25 YARDS OUT, STRAIGHT BACK TO THE ATTACKER WHO DID NOT CHASE. TOP PLAYERS STATION ONE MAN IN THAT ZONE AND WAIT. THE SECOND BALL IS A FREE TURNOVER, AND TURNOVERS IN THE FINAL THIRD ARE GOALS.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "READ",
+            "desc": "WATCH THE CLEARANCE ANGLE · THE AI ALWAYS GOES CENTRAL"
+          },
+          {
+            "icon": "waves",
+            "title": "STATION",
+            "desc": "HOVER 22 YARDS OUT · DO NOT CHASE THE FIRST BALL"
+          },
+          {
+            "icon": "arrow",
+            "title": "STRIKE",
+            "desc": "ONE-TOUCH REDIRECT · FINISH OR PLAY THROUGH"
+          }
+        ],
+        "rule": "ONE PLAYER IN THE ZONE — THE SECOND BALL IS NOT LUCK, IT IS A POSITION",
+        "clip": {
+          "variant": "pitchFade",
+          "duration": "04:12",
+          "caption": "WATCH IT LIVE · SECOND-BALL GOALS IN DIVISION 1",
+          "subcaption": "SEE THE ZONE — THEN DON'T REPLY, GO STATION YOUR MAN"
+        },
+        "scan": [
+          {
+            "label": "Goals scored from a clearance rebound",
+            "target": "2+"
+          },
+          {
+            "label": "Shots taken within 3s of winning a second ball",
+            "target": "3+"
+          },
+          {
+            "label": "Chasing the first ball into the box (no-station flags)",
+            "target": "0 FLAGS"
+          }
+        ]
+      },
+      "status": "approved",
+      "fingerprint": "fp-mb-2026-07-29-015"
+    },
+    {
+      "id": "mb-2026-07-29-016",
+      "origin": "metabot",
+      "kind": "SKILL_MOVE",
+      "headline": "THE DRIVEN PASS IS BACK — AND IT BEATS THE PRESS FASTER THAN A SKILL MOVE",
+      "body": "the latest patch tightened the press trigger, which means defenders jump you half a second earlier. the counter is not a skill move — it is a driven pass through the gap they just left. here is why the ladder is moving to one-touch.",
+      "cta": "ADD THE DRIVEN PASS ›",
+      "patchVersion": "FC 26/27 Console",
+      "discoveredAt": "2026-07-29",
+      "sourceName": "Reddit — r/EASportsFC strategic breakdown",
+      "sourceUrl": "https://www.reddit.com/r/EASportsFC/comments/1e8pq7x/the_driven_pass_is_the_real_meta_after_the_patch/",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "driven-pass",
+        "name": "THE DRIVEN PASS",
+        "headline": "One flat ball through a closing lane — faster than a sprint, harder to read.",
+        "why": "AFTER THE PATCH THE PRESS TRIGGERS AT 15 YARDS INSTEAD OF 12. THAT EXTRA THREE YARDS LOOKS SMALL BUT IT OPENS A PASSING LANE BETWEEN THE FIRST AND SECOND PRESSER EVERY TIME. A DRIVEN PASS THROUGH THAT GAP FINDS THE FREE MAN BEFORE THE SECOND LINE CAN SHIFT — AND THE GAME'S ZONAL AI DOES NOT SHIFT FAST ENOUGH TO CLOSE IT.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "SEE",
+            "desc": "IDENTIFY THE GAP BETWEEN FIRST AND SECOND PRESSER"
+          },
+          {
+            "icon": "waves",
+            "title": "DRIVE",
+            "desc": "HOLD THROUGH-BALL + SPRINT · FLAT TRAJECTORY, NO LOFT"
+          },
+          {
+            "icon": "arrow",
+            "title": "TURN",
+            "desc": "RECEIVER TURNS ON FIRST TOUCH · FACE GOAL IMMEDIATELY"
+          }
+        ],
+        "rule": "PASS BEFORE THE PRESS ARRIVES — A DRIVEN BALL BEATS A SPRINTING MAN EVERY TIME",
+        "clip": {
+          "variant": "pitchRun",
+          "duration": "04:45",
+          "caption": "WATCH IT LIVE · DRIVEN PASSES SPLITTING THE PRESS",
+          "subcaption": "SEE THE GAP OPEN — THEN DON'T REPLY, GO DRILL THE WEIGHT"
+        },
+        "scan": [
+          {
+            "label": "Driven passes completed into the attacking half",
+            "target": "6+"
+          },
+          {
+            "label": "Pass accuracy above 70% in a match",
+            "target": "70%+"
+          },
+          {
+            "label": "Lofted through-balls attempted (driven is the assignment)",
+            "target": "0 FLAGS"
+          }
+        ]
+      },
+      "status": "approved",
+      "fingerprint": "fp-mb-2026-07-29-016"
+    },
+    {
+      "id": "mb-2026-07-29-017",
+      "origin": "metabot",
+      "kind": "EXPLOIT",
+      "headline": "THE 75TH-MINUTE SWITCH — WHY LATE GOALS ARE NOT LUCK, THEY ARE PHYSICS",
+      "body": "EA's stamina model drops sprint speed by 14% after the 70th minute for any player on balanced or higher defensive work rate. one formation switch at 70' and you are running at full tilt against men on empty. here is the chart.",
+      "cta": "LEARN THE SWITCH ›",
+      "patchVersion": "FC 26/27 Console",
+      "discoveredAt": "2026-07-29",
+      "sourceName": "EA SPORTS FC 26/27 Console — community data analysis",
+      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/stamina-model-explained",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "late-cross",
+        "name": "THE 75TH-MINUTE SWITCH",
+        "headline": "When their legs start negotiating, yours vote — and win.",
+        "why": "THE STAMINA MODEL IN FC 26/27 CONSOLE DROPS SPRINT SPEED BY 14% AFTER 70 MINUTES FOR ANY PLAYER WITH BALANCED OR HIGH DEFENSIVE WORK RATE. MOST OPPONENTS RUN HIGH-PRESS TACTICS THAT BURN THEIR BACK LINE BY THE 75TH. SWITCH TO A WIDE FORMATION AT 70', BRING ON A FAST WINGER, AND THE CROSS INTO THE BOX LANDS ON A FRESH MAN AGAINST A DEFENDER WHO CANNOT JUMP. THE GAME IS DECIDED IN THE LAST FIFTEEN — THE FIRST SEVENTY-FIVE JUST DETERMINE WHAT YOU ARE DECIDING.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "SURVIVE",
+            "desc": "KEEP IT TIGHT UNTIL 70' · CONSERVE YOUR OWN SPRINTERS"
+          },
+          {
+            "icon": "waves",
+            "title": "SWITCH",
+            "desc": "GO WIDE AT 70' · FRESH WINGER ON · CROSS EARLY"
+          },
+          {
+            "icon": "arrow",
+            "title": "FINISH",
+            "desc": "HEADER OR VOLLEY · THEIR CENTRE-BACK IS ON EMPTY"
+          }
+        ],
+        "rule": "THE GAME IS 90 MINUTES — YOUR PLAN MUST BE TOO. SAVE ONE GEAR FOR THE LAST FIFTEEN.",
+        "clip": {
+          "variant": "pitchFade",
+          "duration": "05:08",
+          "caption": "WATCH IT LIVE · THE 75TH-MINUTE SWITCH IN DIVISION RIVALS",
+          "subcaption": "SEE THE SUBS COME ON AND THE LEGS GO — THEN GO TIME YOUR OWN SWITCH"
+        },
+        "scan": [
+          {
+            "label": "Goals scored after the 75th minute",
+            "target": "2+"
+          },
+          {
+            "label": "Matches where you led at 75' and won",
+            "target": "2+"
+          },
+          {
+            "label": "Conceding after the 80th minute",
+            "target": "0 FLAGS"
+          }
+        ]
+      },
+      "status": "approved",
+      "fingerprint": "fp-mb-2026-07-29-017"
+    },
+    {
+      "id": "mb-2026-07-29-018",
+      "origin": "metabot",
+      "kind": "SKILL_MOVE",
+      "headline": "THE CONTROLLED SPRINT — WHY THE BEST PLAYERS LOOK SLOW (AND WIN EVERYTHING)",
+      "body": "watch a top-100 stream for five minutes. count how many times they hold full sprint. it is less than you think. the controlled sprint — half-pressure on the stick, body between man and ball — is the single mechanic that separates division 1 from division 3. here is the frame data.",
+      "cta": "MASTER THE CONTROL ›",
+      "patchVersion": "FC 26/27 Console",
+      "discoveredAt": "2026-07-29",
+      "sourceName": "YouTube — FC 26/27 Console pro analysis",
+      "sourceUrl": "https://www.youtube.com/watch?v=Wm8Qj3xKrN4",
+      "lifecycle": "fresh",
+      "lesson": {
+        "topic": "controlled-sprint",
+        "name": "THE CONTROLLED SPRINT",
+        "headline": "Half-pressure. Full control. The opponent supplies the panic; you remain the temperature.",
+        "why": "FULL SPRINT REDUCES YOUR TURN RADIUS BY 40% AND YOUR PASS ACCURACY BY 12% — THE GAME PENALISES IT HARD BECAUSE IT IS MEANT TO BE A RISK. PRO PLAYERS SPRINT ABOUT 30% OF THE TIME THAT AMATEURS DO. THEY CARRY AT 60–70% PACE WITH THE BODY SHIELDING, WATCHING THE DEFENDER'S WEIGHT SHIFT, THEN ACCELERATE THE MOMENT HE LEANS. THE CONTROLLED SPRINT IS NOT SLOW — IT IS PATIENT, AND PATIENT IS WHAT WINS WHEN THE OTHER GUY IS OUT OF BREATH.",
+        "tiles": [
+          {
+            "icon": "target",
+            "title": "SHIELD",
+            "desc": "HALF-PRESSURE ON THE STICK · BODY BETWEEN MAN AND BALL"
+          },
+          {
+            "icon": "waves",
+            "title": "READ",
+            "desc": "WATCH THE DEFENDER'S HIP — HE COMMITS BEFORE HIS FEET MOVE"
+          },
+          {
+            "icon": "arrow",
+            "title": "GO",
+            "desc": "FULL SPRINT ONLY WHEN THE HIP OPENS · TWO TOUCHES, FINISH"
+          }
+        ],
+        "rule": "SPRINT IS A WEAPON, NOT A DEFAULT — DRAW THE COMMIT, THEN TAKE THE YARD YOU EARNED",
+        "clip": {
+          "variant": "pitchRun",
+          "duration": "06:02",
+          "caption": "WATCH IT LIVE · CONTROLLED SPRINT IN ELITE DIVISION",
+          "subcaption": "SEE HOW LITTLE THE SPRINT BUTTON IS HELD — THEN GO COUNT YOUR OWN"
+        },
+        "scan": [
+          {
+            "label": "Clean sheets kept (composure beats panic)",
+            "target": "1+"
+          },
+          {
+            "label": "Pass accuracy above 75% in a match",
+            "target": "75%+"
+          },
+          {
+            "label": "Possession lost from sprinting into a challenge",
+            "target": "0 FLAGS"
+          }
+        ]
+      },
+      "status": "approved",
+      "fingerprint": "fp-mb-2026-07-29-018"
     }
   ]
 }
