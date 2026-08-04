@@ -192,7 +192,12 @@ export async function armWatcher(): Promise<boolean> {
       set({ status: 'idle', session: null, lastError: 'Screen capture permission was declined.' });
       return false;
     }
-    return true; // status flips to 'running' on the first frame
+    // The native promise resolves only after Android has accepted the
+    // MediaProjection consent and the foreground service has been started.
+    // Mark this explicitly instead of waiting for the first frame: the UI can
+    // dismiss its consent hand-off even if the game is still opening.
+    set({ status: 'running' });
+    return true;
   } catch (e: any) {
     set({ status: 'idle', session: null, lastError: String(e?.message ?? e) });
     return false;

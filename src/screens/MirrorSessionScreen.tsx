@@ -391,6 +391,7 @@ export default function MirrorSessionScreen({
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
                   ARMING requests the official screen-capture consent — recording never starts silently. On devices without the native watcher, the session still runs fully in manual mode.
+                  {watcher.lastError ? `\n\nCAPTURE NOT ARMED: ${watcher.lastError}` : ''}
                 </Text>
               </View>
               <StepButton

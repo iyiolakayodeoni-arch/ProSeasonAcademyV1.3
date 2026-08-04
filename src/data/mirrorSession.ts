@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch, setMatchComposure } from './matches';
 import { getThread, settleCarried, swearLesson, ThreadVerdict } from './lessonThread';
-import { armWatcher, finishWatcher } from './matchWatcher';
+import { armWatcher, finishWatcher, watcherNativeAvailable } from './matchWatcher';
 
 // ─────────────────────────────────────────────────────────────
 // THE MIRROR SESSION — the structured match-development session.
@@ -355,11 +355,19 @@ export function saveIntention(a: IntentionAnswers): void {
 }
 
 /** ARM THE MIRROR — official MediaProjection consent must be shown by the
- *  OS; recording must never start silently. Fails soft: on devices without
- *  the native watcher the session proceeds in manual mode. */
+ *  OS; recording must never start silently. On Android we only call the
+ *  session armed *after* the player has answered that OS prompt. On builds
+ *  without the native watcher, manual mode remains a first-class route. */
 export async function armMirrorSession(): Promise<boolean> {
-  set({ phase: 'armed' });
+  if (!watcherNativeAvailable) {
+    set({ phase: 'armed' });
+    return false;
+  }
+
   const armed = await armWatcher().catch(() => false);
+  if (armed) set({ phase: 'armed' });
+  // A declined/failed request leaves the player on the intention screen,
+  // where they can retry or deliberately choose the manual session.
   return armed;
 }
 

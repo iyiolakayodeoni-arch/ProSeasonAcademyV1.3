@@ -41,6 +41,7 @@ import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import CaptureConsentOverlay from './src/components/CaptureConsentOverlay';
 
 // Keep the native OS splash as a plain academy background until
 // the real React loading screen is ready. This prevents the old
@@ -301,6 +302,10 @@ export default function App() {
             <SplashScreen onFinish={handleSplashFinish} />
           </Animated.View>
         )}
+
+        {/* Always explain the hand-off to Android's protected capture prompt.
+            The prompt itself is supplied by the OS, never faked by the app. */}
+        <CaptureConsentOverlay />
       </View>
     </ErrorBoundary>
   );
