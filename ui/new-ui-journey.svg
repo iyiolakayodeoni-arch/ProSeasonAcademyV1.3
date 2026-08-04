@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="780" height="1180" viewBox="0 0 780 1180" font-family="monospace">
+  <defs>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0 L0 0 0 48" fill="none" stroke="rgba(57,255,106,0.045)" stroke-width="1"/>
+    </pattern>
+    <!-- player card -->
+    <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0e1712"/><stop offset="60%" stop-color="#0b130d"/>
+      <stop offset="100%" stop-color="#39FF6A" stop-opacity="0.16"/></linearGradient>
+    <radialGradient id="phalo" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#39FF6A" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#39FF6A" stop-opacity="0.03"/></radialGradient>
+    <linearGradient id="psheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#39FF6A" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#39FF6A" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#39FF6A" stop-opacity="0"/></linearGradient>
+    <!-- role model card -->
+    <linearGradient id="rbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10160f"/><stop offset="58%" stop-color="#0c120d"/>
+      <stop offset="100%" stop-color="#f2c078" stop-opacity="0.2"/></linearGradient>
+    <radialGradient id="rhalo" cx="50%" cy="42%" r="62%">
+      <stop offset="0%" stop-color="#f2c078" stop-opacity="0.2"/>
+      <stop offset="70%" stop-color="#f2c078" stop-opacity="0.04"/></radialGradient>
+    <linearGradient id="rplate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2c078"/><stop offset="100%" stop-color="#856b3f"/></linearGradient>
+    <filter id="drop" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="16" stdDeviation="11" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#39FF6A" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- background -->
+  <rect width="780" height="1180" fill="#0a0f0a"/>
+  <rect width="780" height="1180" fill="url(#grid)"/>
+
+  <!-- phone frame -->
+  <rect x="30" y="30" width="720" height="1120" rx="44" fill="#070b07" stroke="#1f3826" stroke-width="2"/>
+  <rect x="48" y="60" width="684" height="1060" rx="28" fill="#0a0f0a"/>
+  <rect x="48" y="60" width="684" height="1060" rx="28" fill="url(#grid)"/>
+
+  <!-- header -->
+  <text x="78" y="106" font-size="15" font-weight="700" letter-spacing="3" fill="#eef2ec">PROSEASONACADEMY</text>
+  <rect x="76" y="112" width="232" height="2.5" fill="#39FF6A"/>
+  <rect x="588" y="92" width="120" height="26" rx="10" fill="none" stroke="#284a33" stroke-width="1.5"/>
+  <text x="648" y="109" font-size="11" letter-spacing="1.6" fill="#8fb89b" text-anchor="middle">SEASON 1 · 3/6</text>
+
+  <text x="390" y="166" font-size="27" font-weight="900" letter-spacing="3.4" fill="#39FF6A" text-anchor="middle">YOUR JOURNEY</text>
+  <text x="390" y="190" font-size="11" letter-spacing="1.6" fill="#7a9c88" text-anchor="middle">GUIDED BY CHINEDU OKAFOR · THE STANDARD SHOWS THE WAY</text>
+
+  <line x1="96" y1="214" x2="300" y2="214" stroke="rgba(57,255,106,0.22)" stroke-width="1.5"/>
+  <line x1="480" y1="214" x2="684" y2="214" stroke="rgba(57,255,106,0.22)" stroke-width="1.5"/>
+  <text x="390" y="219" font-size="10" letter-spacing="2" fill="#7a9c88" text-anchor="middle">STAGE 7 — WHERE THIS PATH ENDS</text>
+
+  <!-- YOUR CARD vs THE STANDARD pills -->
+  <rect x="206" y="244" width="200" height="24" rx="6" fill="rgba(57,255,106,0.07)" stroke="#2c6638" stroke-width="1.2"/>
+  <text x="306" y="261" font-size="11" font-weight="900" letter-spacing="1.6" fill="#39FF6A" text-anchor="middle">YOUR CARD · THE EVIDENCE</text>
+  <text x="486" y="261" font-size="11" font-weight="900" letter-spacing="1.6" fill="#f2c078" text-anchor="middle">vs THE STANDARD</text>
+
+  <!-- PLAYER CARD (left) -->
+  <g transform="translate(122 286)" filter="url(#drop)">
+    <path d="M84 224 C106 221,126 216,142 205 C156 194,164 177,164 155 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 155 C4 177,12 194,26 205 C42 216,62 221,84 224 Z" fill="url(#pbg)"/>
+    <g clip-path="url(#pclipL)">
+      <circle cx="84" cy="92" r="74" fill="url(#phalo)"/>
+      <circle cx="84" cy="90" r="33" stroke="rgba(57,255,106,0.14)" stroke-width="2.4" fill="none"/>
+      <circle cx="84" cy="90" r="33" stroke="#39FF6A" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-dasharray="207.3" stroke-dashoffset="111.9" transform="rotate(-90 84 90)"/>
+      <circle cx="75" cy="90" r="13" stroke="#39FF6A" stroke-width="2" fill="none" opacity="0.18"/>
+      <circle cx="93" cy="90" r="13" stroke="#39FF6A" stroke-width="2" fill="none" opacity="0.18"/>
+      <text x="84" y="86" text-anchor="middle" font-size="30" font-weight="900" fill="#ffcf7a">78</text>
+      <text x="84" y="100" text-anchor="middle" font-size="5" letter-spacing="2" fill="#8fb89b">OVR · ASCENT 46%</text>
+      <g transform="translate(40 0)"><rect x="0" y="-60" width="64" height="352" transform="rotate(-22 32 116)" fill="url(#psheen)"/></g>
+    </g>
+    <path d="M84 224 C106 221,126 216,142 205 C156 194,164 177,164 155 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 155 C4 177,12 194,26 205 C42 216,62 221,84 224 Z" fill="none" stroke="#39FF6A" stroke-width="1.5" stroke-opacity="0.9"/>
+    <path d="M84 199 C104 196,122 193,137 183 C150 174,158 163,158 151 L158 17 C158 11,154 8,148 8 L20 8 C14 8,10 11,10 17 L10 153 C10 163,18 174,31 183 C46 193,64 196,84 199 Z" fill="none" stroke="#39FF6A" stroke-width="0.7" stroke-opacity="0.45"/>
+    <rect x="12" y="142" width="144" height="22" rx="7" fill="rgba(57,255,106,0.92)" stroke="#39FF6A" stroke-width="0.9"/>
+    <text x="84" y="158" text-anchor="middle" font-size="12" font-weight="900" letter-spacing="2.4" fill="#05130a">YOU</text>
+    <g font-weight="900">
+      <text x="44" y="176" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">FORM</text><text x="82" y="176" text-anchor="end" font-size="9" fill="#ffcf7a">72</text>
+      <text x="83" y="176" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">DEFENCE</text><text x="126" y="176" text-anchor="end" font-size="9" fill="#ffcf7a">64</text>
+      <text x="44" y="186" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">COMPOSURE</text><text x="82" y="186" text-anchor="end" font-size="9" fill="#39FF6A">80</text>
+      <text x="83" y="186" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">DISCIPLINE</text><text x="126" y="186" text-anchor="end" font-size="9" fill="#ffcf7a">55</text>
+      <text x="44" y="196" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">CLUTCH</text><text x="82" y="196" text-anchor="end" font-size="9" fill="#ffcf7a">40</text>
+      <text x="83" y="196" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">INSIGHT</text><text x="126" y="196" text-anchor="end" font-size="9" fill="#6b7d72">30</text>
+    </g>
+    <rect x="44" y="201.2" width="30" height="0.6" fill="#39FF6A" fill-opacity="0.4"/>
+    <rect x="94" y="201.2" width="30" height="0.6" fill="#39FF6A" fill-opacity="0.4"/>
+    <text x="84" y="203.6" text-anchor="middle" font-size="3.9" letter-spacing="0.6" fill="rgba(166,190,172,0.9)">STAGE 3/6 · 2 CLEARED</text>
+  </g>
+  <clipPath id="pclipL"><path d="M84 224 C106 221,126 216,142 205 C156 194,164 177,164 155 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 155 C4 177,12 194,26 205 C42 216,62 221,84 224 Z" transform="translate(122 286)"/></clipPath>
+
+  <!-- ROLE MODEL CARD (right) -->
+  <g transform="translate(488 292)" filter="url(#drop)">
+    <path d="M84 219 C106 216,126 211,142 200 C156 189,164 172,164 150 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 150 C4 172,12 189,26 200 C42 211,62 216,84 219 Z" fill="url(#rbg)"/>
+    <g clip-path="url(#rclipR)">
+      <circle cx="84" cy="96" r="72" fill="url(#rhalo)"/>
+      <ellipse cx="84" cy="126" rx="34" ry="44" fill="#1d291b"/>
+      <circle cx="84" cy="80" r="23" fill="#273322"/>
+    </g>
+    <path d="M84 219 C106 216,126 211,142 200 C156 189,164 172,164 150 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 150 C4 172,12 189,26 200 C42 211,62 216,84 219 Z" fill="none" stroke="#f2c078" stroke-width="1.5" stroke-opacity="0.9"/>
+    <text x="26" y="40" text-anchor="middle" font-size="28" font-weight="900" fill="#f2c078">99</text>
+    <circle cx="138" cy="28" r="7" stroke="#f2c078" stroke-width="1.5" fill="none"/>
+    <circle cx="148" cy="28" r="7" stroke="#f2c078" stroke-width="1.5" fill="none"/>
+    <rect x="12" y="142" width="144" height="24" rx="7" fill="url(#rplate)" stroke="#f2c078" stroke-width="0.9"/>
+    <text x="84" y="159" text-anchor="middle" font-size="10.6" font-weight="900" letter-spacing="2" fill="#0a0f0a">CHINEDU</text>
+    <g font-weight="900">
+      <text x="44" y="174.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">FORM</text><text x="82" y="174.5" text-anchor="end" font-size="8.8" fill="#f2c078">96</text>
+      <text x="83" y="174.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">DEFENCE</text><text x="126" y="174.5" text-anchor="end" font-size="8.8" fill="#f2c078">97</text>
+      <text x="44" y="184.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">COMPOSURE</text><text x="82" y="184.5" text-anchor="end" font-size="8.8" fill="#f2c078">99</text>
+      <text x="83" y="184.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">DISCIPLINE</text><text x="126" y="184.5" text-anchor="end" font-size="8.8" fill="#f2c078">98</text>
+      <text x="44" y="194.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">CLUTCH</text><text x="82" y="194.5" text-anchor="end" font-size="8.8" fill="#f2c078">98</text>
+      <text x="83" y="194.5" font-size="4.8" letter-spacing="0.8" fill="#8fb89b">INSIGHT</text><text x="126" y="194.5" text-anchor="end" font-size="8.8" fill="#f2c078">97</text>
+    </g>
+    <text x="84" y="202.5" text-anchor="middle" font-size="3.9" letter-spacing="0.6" fill="rgba(166,190,172,0.9)">THE STANDARD · WALKS THE ROAD WITH YOU</text>
+  </g>
+  <clipPath id="rclipR"><path d="M84 219 C106 216,126 211,142 200 C156 189,164 172,164 150 L164 14 C164 6,159 2,152 2 L16 2 C9 2,4 6,4 14 L4 150 C4 172,12 189,26 200 C42 211,62 216,84 219 Z" transform="translate(488 292)"/></clipPath>
+
+  <!-- stat detail card -->
+  <rect x="96" y="556" width="588" height="232" rx="16" fill="rgba(12,20,14,0.9)" stroke="#2c6638" stroke-width="1.2"/>
+  <text x="116" y="586" font-size="11" font-weight="900" letter-spacing="1.7" fill="#8fb89b">YOUR RECEIPTS · HOW YOU'RE ACTUALLY PLAYING</text>
+  <g transform="translate(116 604)">
+    <text x="0" y="10" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">FORM</text>
+    <rect x="74" y="4" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="4" width="309.6" height="7" rx="3.5" fill="#ffcf7a"/>
+    <text x="546" y="11" font-size="11" font-weight="900" fill="#ffcf7a">72</text>
+    <text x="0" y="38" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">DEFENCE</text>
+    <rect x="74" y="32" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="32" width="275.2" height="7" rx="3.5" fill="#ffcf7a"/>
+    <text x="546" y="39" font-size="11" font-weight="900" fill="#ffcf7a">64</text>
+    <text x="0" y="66" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">COMPOSURE</text>
+    <rect x="74" y="60" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="60" width="344" height="7" rx="3.5" fill="#39FF6A"/>
+    <text x="546" y="67" font-size="11" font-weight="900" fill="#39FF6A">80</text>
+    <text x="0" y="94" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">DISCIPLINE</text>
+    <rect x="74" y="88" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="88" width="236.5" height="7" rx="3.5" fill="#ffcf7a"/>
+    <text x="546" y="95" font-size="11" font-weight="900" fill="#ffcf7a">55</text>
+    <text x="0" y="122" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">CLUTCH</text>
+    <rect x="74" y="116" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="116" width="172" height="7" rx="3.5" fill="#ffcf7a"/>
+    <text x="546" y="123" font-size="11" font-weight="900" fill="#ffcf7a">40</text>
+    <text x="0" y="150" font-size="9" font-weight="800" letter-spacing="1.4" fill="#8fb89b">INSIGHT</text>
+    <rect x="74" y="144" width="430" height="7" rx="3.5" fill="rgba(57,255,106,0.12)"/>
+    <rect x="74" y="144" width="129" height="7" rx="3.5" fill="#6b7d72"/>
+    <text x="546" y="151" font-size="11" font-weight="900" fill="#6b7d72">30</text>
+  </g>
+  <text x="116" y="774" font-size="9" letter-spacing="1.1" fill="#7a9c88">GREEN WHEN THE EVIDENCE HOLDS · AMBER WHEN IT'S THIN · NEVER PAINTED.</text>
+
+  <!-- badge row -->
+  <text x="96" y="824" font-size="11" font-weight="900" letter-spacing="1.7" fill="#f2c078">STAGE BADGES · SEALED WHEN THE EVIDENCE HOLDS</text>
+  <g transform="translate(96 840)" filter="url(#glow)">
+    <g transform="translate(0 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.08)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="#39FF6A" stroke-width="2.6" stroke-opacity="0.95" stroke-linejoin="round"/><path d="M28 50 C36 40 64 40 72 50 C64 60 36 60 28 50 Z" stroke="#39FF6A" stroke-width="2.2" fill="none"/><circle cx="50" cy="50" r="7.5" stroke="#39FF6A" stroke-width="2.2" fill="rgba(57,255,106,0.25)"/><circle cx="50" cy="50" r="3" fill="#39FF6A"/></g>
+    <g transform="translate(98 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.08)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="#39FF6A" stroke-width="2.6" stroke-opacity="0.95" stroke-linejoin="round"/><circle cx="50" cy="50" r="15" stroke="#39FF6A" stroke-width="2.1" fill="none"/><circle cx="50" cy="50" r="8" stroke="#39FF6A" stroke-width="2.1" fill="rgba(57,255,106,0.2)"/><circle cx="50" cy="50" r="2.6" fill="#39FF6A"/></g>
+    <g transform="translate(196 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.08)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="#39FF6A" stroke-width="2.6" stroke-opacity="0.95" stroke-linejoin="round"/><line x1="32" y1="38" x2="68" y2="38" stroke="#39FF6A" stroke-width="1.8"/><line x1="32" y1="50" x2="68" y2="50" stroke="#39FF6A" stroke-width="1.8"/><line x1="32" y1="62" x2="68" y2="62" stroke="#39FF6A" stroke-width="1.8"/><line x1="38" y1="36" x2="38" y2="64" stroke="#39FF6A" stroke-width="1.8"/><line x1="50" y1="36" x2="50" y2="64" stroke="#39FF6A" stroke-width="1.8"/><line x1="62" y1="36" x2="62" y2="64" stroke="#39FF6A" stroke-width="1.8"/><circle cx="50" cy="50" r="2.6" fill="#39FF6A"/></g>
+    <g transform="translate(294 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.03)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="rgba(143,184,155,0.55)" stroke-width="1.6" stroke-opacity="0.6" stroke-linejoin="round"/><rect x="34" y="58" width="32" height="7" rx="1.6" stroke="rgba(143,184,155,0.55)" stroke-width="1.9" fill="none"/><rect x="37" y="48" width="26" height="7" rx="1.6" stroke="rgba(143,184,155,0.55)" stroke-width="1.9" fill="none"/><rect x="40" y="38" width="20" height="7" rx="1.6" stroke="rgba(143,184,155,0.55)" stroke-width="1.9" fill="none"/></g>
+    <g transform="translate(392 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.03)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="rgba(143,184,155,0.55)" stroke-width="1.6" stroke-opacity="0.6" stroke-linejoin="round"/><line x1="32" y1="64" x2="68" y2="64" stroke="rgba(143,184,155,0.55)" stroke-width="2.4"/><path d="M50 30 L50 58 M42 50 L50 58 L58 50" stroke="rgba(143,184,155,0.55)" stroke-width="2.4" fill="none"/></g>
+    <g transform="translate(490 0)"><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="rgba(57,255,106,0.03)"/><path d="M50 6 L86 24 L86 58 C86 76 70 88 50 94 C30 88 14 76 14 58 L14 24 Z" fill="none" stroke="rgba(143,184,155,0.55)" stroke-width="1.6" stroke-opacity="0.6" stroke-linejoin="round"/><path d="M30 62 L50 34 L70 62" stroke="rgba(143,184,155,0.55)" stroke-width="2.3" fill="none"/></g>
+  </g>
+  <text x="96" y="958" font-size="9" font-weight="800" letter-spacing="1.2" fill="#39FF6A">SEALED</text>
+  <text x="178" y="958" font-size="9" font-weight="800" letter-spacing="1.2" fill="#7a9c88">UNSEALED — SEALS WHEN THE STAGE CLEARS</text>
+
+  <text x="390" y="1080" font-size="10" letter-spacing="2.6" fill="rgba(143,184,155,0.4)" text-anchor="middle">PROSEASONACADEMY · YOUR ROAD · THE STANDARD · NO EXCUSES</text>
+</svg>

@@ -11,6 +11,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
+import UpdateBanner from '../../components/UpdateBanner';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
@@ -186,6 +187,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             ))}
           </Marquee>
         </View>
+
+        <UpdateBanner />
 
         {/* FOUNDER ANNOUNCEMENTS — official, never community-style placeholders */}
         {showFounder && announcements.length > 0 && (

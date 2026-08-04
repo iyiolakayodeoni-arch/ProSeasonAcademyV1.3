@@ -76,7 +76,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
   const thread = useLessonThread();
   const SEASON = journeySeasonFor(coach.id);
   const cleared = prog.completedCount >= SEASON.totalStages;
-  const story = STORIES[coach.id] ?? STORIES.obinna;
+  const story = STORIES[coach.id] ?? STORIES.chinedu;
   const coachFirst = coach.name.split(' ')[0];
 
   return (

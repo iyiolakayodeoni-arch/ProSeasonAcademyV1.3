@@ -395,7 +395,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
           {/* ── THE MIND — yours by design ── */}
           <View style={styles.mindBox}>
             <Text style={styles.mindTitle}>THE MIND — THE PART THE MACHINE CANNOT SCAN</Text>
-            <Text style={styles.mindFrame}>{MIND_FRAME[coach.id] ?? MIND_FRAME.obinna}</Text>
+            <Text style={styles.mindFrame}>{MIND_FRAME[coach.id] ?? MIND_FRAME.chinedu}</Text>
 
             <Text style={styles.fieldLabel}>YOUR HEAD, FULL 90 — HOW WAS IT?</Text>
             <View style={styles.chipRow}>

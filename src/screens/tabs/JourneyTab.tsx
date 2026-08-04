@@ -14,6 +14,9 @@ import Animated, {
 import GridBackground from '../../components/GridBackground';
 import MiniPitch from '../../components/MiniPitch';
 import RoleModelCard from '../../components/RoleModelCard';
+import PlayerCard from '../../components/PlayerCard';
+import BadgeMark, { BADGE_LABELS } from '../../components/BadgeMark';
+import { EvidenceRing, StatBar, EvidenceMeter } from '../../components/StatReadout';
 import { CheckIcon, LockIcon, PersonIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
 import {
@@ -33,6 +36,7 @@ import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
 import { useLessonThread } from '../../data/lessonThread';
 import { useStandard, StandardChapter } from '../../data/standard';
+import { playerCardData, evidenceFromVault, PLAYER_CARD } from '../../data/playerCard';
 import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
@@ -90,6 +94,46 @@ export default function JourneyTab({
   const threadSettled = thread.heldCount + thread.brokeCount;
   // THE STANDARD — the parallel benchmark journey, revealed by progress
   const standard = useStandard();
+
+  // ── THE PLAYER CARD — derived honestly from the same ledgers every
+  //    objective is graded from. Rating is stage-gated (clears lift it);
+  //    the six stats are the live receipt readout. (Principles P1/P2)
+  const playerCard = React.useMemo(
+    () =>
+      playerCardData(
+        progress,
+        evidenceFromVault({
+          played: vault.played,
+          w: vault.w,
+          d: vault.d,
+          l: vault.l,
+          ga: vault.ga,
+          cleanSheets: vault.cleanSheets,
+          matches: vault.matches,
+          journalTotal: journal.total,
+          journalStreakDays: journal.streakDays,
+          threadSettled: threadSettled,
+          threadHeld: thread.heldCount,
+          threadBroke: thread.brokeCount,
+        }),
+      ),
+    [progress, vault, journal.total, journal.streakDays, threadSettled, thread.heldCount, thread.brokeCount],
+  );
+
+  // ── LIVE stage progress — the honest met-objective ratio, replacing the
+  //    author-set progressPct. A stage's bar fills only as the vault/journal
+  //    actually meet its objectives. (Principle P1)
+  const stageLiveProgress = React.useMemo(() => {
+    const objs = selected.objectives ?? [];
+    if (!objs.length) return 0;
+    const met = objs.filter((o) => {
+      const count = o.check
+        ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled)
+        : o.done;
+      return count >= o.target;
+    }).length;
+    return Math.round((met / objs.length) * 100);
+  }, [selected, vault.matches, journal.entries.length, threadSettled]);
   const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
@@ -204,18 +248,14 @@ export default function JourneyTab({
               <Circle cx={current.at.x} cy={current.at.y} r={4} fill={colors.primary} />
             </Svg>
 
-            {/* player card */}
-            <View style={[styles.playerCard, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y - 42 }]}>
-              <Text style={styles.playerRating}>
-                {SEASON.playerCard.rating + progress.completedCount}
-                <Text style={styles.playerRatingSub}>{'\n'}ACADEMY</Text>
-              </Text>
-              <PersonIcon size={22} color="rgba(238,242,236,0.85)" />
-              <Text style={styles.playerName}>PLAYER</Text>
-              <Text style={styles.playerMeta}>PROSEASON ACADEMY</Text>
+            {/* player position token — "YOU · here". The full identity card
+                lives just below the map, so the map only marks the spot. */}
+            <View style={[styles.youToken, { left: SEASON.playerCard.at.x - 30, top: SEASON.playerCard.at.y - 30 }]}>
+              <PersonIcon size={16} color={colors.primary} />
+              <Text style={styles.youTokenTxt}>YOU</Text>
             </View>
-            <Text style={[styles.playerLabel, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y + 48 }]}>
-              YOU — STAGE {progress.completedCount}
+            <Text style={[styles.playerLabel, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y + 36 }]}>
+              YOU · STAGE {playerCard.stageN} / {SEASON.totalStages}
             </Text>
 
             {/* stage nodes */}
@@ -293,6 +333,40 @@ export default function JourneyTab({
           stageN={CUR}
         />
 
+        {/* ── YOUR CARD — the player's own collectible, derived from receipts.
+            Pairs with the Role Model above: YOUR JOURNEY (evidence) vs THE
+            STANDARD (benchmark), both as instruments. (Principles P1/P2) ── */}
+        <View style={styles.youCardWrap}>
+          <View style={styles.dualTagRow}>
+            <Text style={styles.dualTagGreen}>YOUR CARD · THE EVIDENCE</Text>
+            <Text style={styles.dualTagGold}>vs THE STANDARD</Text>
+          </View>
+          <View style={styles.youCardHolder}>
+            <PlayerCard
+              rating={playerCard.rating}
+              stats={playerCard.stats}
+              stageN={playerCard.stageN}
+              totalStages={playerCard.totalStages}
+              clearedCount={playerCard.clearedCount}
+              ascent={playerCard.ascent}
+              displayName={settings.displayName}
+            />
+          </View>
+          {/* the six honest stats in detail — the bars the card summarises */}
+          <View style={styles.youStatsCard}>
+            <Text style={styles.youStatsTitle}>YOUR RECEIPTS · HOW YOU'RE ACTUALLY PLAYING</Text>
+            <View style={styles.youStatsGap}>
+              {playerCard.stats.map((s, i) => (
+                <StatBar key={s.label} label={s.label} value={s.value} delay={i * 70} />
+              ))}
+            </View>
+            <Text style={styles.youStatsNote}>
+              GREEN WHEN THE EVIDENCE HOLDS · AMBER WHEN IT'S THIN · NEVER PAINTED. THE RATING
+              ONLY RISES WHEN A STAGE CLEARS — YOU CANNOT GRIND IT UP.
+            </Text>
+          </View>
+        </View>
+
         {/* ── stage detail card ── */}
         <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, isLocked && styles.stageCardLocked]}>
           <View style={styles.stageTop}>
@@ -329,7 +403,8 @@ export default function JourneyTab({
             </View>
           ) : (
             <>
-              {/* objectives — GRADED LIVE against the vault + the journal */}
+              {/* objectives — GRADED LIVE against the vault + the journal.
+                  Each is now an evidence ring, not a checkbox + "2/3" text. */}
               <View style={styles.objectives}>
                 {(selected.objectives ?? []).map((o, i) => {
                   const count = o.check
@@ -339,33 +414,48 @@ export default function JourneyTab({
                   const done = count >= o.target;
                   return (
                     <View key={i} style={styles.objRow}>
-                      <View style={[styles.objBox, done && styles.objBoxDone]}>
-                        {done && <CheckIcon size={9} color="#05130a" />}
-                      </View>
-                      <Text style={[styles.objLabel, done && styles.objLabelDone]} numberOfLines={1}>
+                      <EvidenceRing
+                        value={shown}
+                        target={o.target}
+                        size={28}
+                        stroke={3.1}
+                        delay={i * 70}
+                        glyph={done ? <CheckIcon size={13} color={colors.primary} /> : undefined}
+                      />
+                      <Text style={[styles.objLabel, done && styles.objLabelDone]} numberOfLines={2}>
                         {o.label}
                       </Text>
                       <Text style={[styles.objStatus, done && { color: colors.primary }]}>
-                        {done ? 'DONE' : `${shown}/${o.target}`}
+                        {done ? 'HIT' : `${shown}/${o.target}`}
                       </Text>
                     </View>
                   );
                 })}
               </View>
 
-              {/* progress */}
+              {/* progress — LIVE evidence meter (replaces the author-set bar) */}
               <View style={styles.progRow}>
-                <Text style={styles.progLbl}>STAGE PROGRESS</Text>
-                <Text style={styles.progPct}>{selected.progressPct ?? 0}%</Text>
+                <Text style={styles.progLbl}>STAGE PROGRESS · LIVE</Text>
+                <Text style={styles.progPct}>{stageLiveProgress}%</Text>
               </View>
-              <View style={styles.progTrack}>
-                <View style={[styles.progFill, { width: `${selected.progressPct ?? 0}%` }]} />
-              </View>
+              <EvidenceMeter value={stageLiveProgress} height={6} delay={120} />
 
-              {/* reward */}
-              <Text style={styles.reward}>
-                <Text style={styles.rewardHot}>REWARD ›</Text> +{selected.rewardXp} XP · {selected.rewardBadge}
-              </Text>
+              {/* reward — the badge as a real sealed/unsealed medallion + XP */}
+              <View style={styles.rewardRow}>
+                <BadgeMark stage={selected.n} sealed={!!cleared} size={48} />
+                <View style={styles.rewardMeta}>
+                  <Text style={styles.rewardTitle}>
+                    {BADGE_LABELS[selected.n] ?? selected.rewardBadge ?? 'STAGE BADGE'}
+                  </Text>
+                  <Text style={styles.rewardSub}>
+                    {cleared ? 'SEALED · THE EVIDENCE HOLDS' : 'SEALS WHEN THE STAGE CLEARS'}
+                  </Text>
+                </View>
+                <View style={styles.rewardXpBox}>
+                  <Text style={styles.rewardXpNum}>+{selected.rewardXp}</Text>
+                  <Text style={styles.rewardXpLbl}>XP</Text>
+                </View>
+              </View>
 
               {/* coach quote */}
               {selected.quote && (
@@ -604,6 +694,23 @@ const styles = StyleSheet.create({
   playerName: { fontSize: 10, fontWeight: '800', letterSpacing: 1.6, color: colors.fg, marginTop: 2 },
   playerMeta: { fontFamily: monoFont, fontSize: 4.6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
   playerLabel: { position: 'absolute', width: 104, textAlign: 'center', fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.primary },
+  youToken: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1.4,
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(10,17,12,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  youTokenTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
 
   pulseRing: {
     position: 'absolute',
@@ -746,6 +853,17 @@ const styles = StyleSheet.create({
 
   reward: { marginTop: 11, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.6, color: colors.fg },
   rewardHot: { color: colors.primary, fontWeight: '800' },
+  rewardRow: {
+    marginTop: 13, flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1.1, borderColor: 'rgba(57,255,106,0.4)', borderRadius: 12,
+    backgroundColor: 'rgba(15,26,19,0.55)', paddingVertical: 10, paddingHorizontal: 12,
+  },
+  rewardMeta: { flex: 1 },
+  rewardTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
+  rewardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  rewardXpBox: { alignItems: 'center', borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(57,255,106,0.07)' },
+  rewardXpNum: { fontFamily: monoFont, fontSize: 13, fontWeight: '900', color: colors.primary },
+  rewardXpLbl: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)' },
 
   quoteCard: {
     marginTop: 12,
@@ -875,5 +993,40 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     lineHeight: 9,
     color: 'rgba(143,184,155,0.65)',
+  },
+
+  // ── YOUR CARD hero ──
+  youCardWrap: { marginTop: 16, alignItems: 'center' },
+  dualTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  dualTagGreen: {
+    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary,
+    borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 4, backgroundColor: 'rgba(57,255,106,0.07)',
+  },
+  dualTagGold: {
+    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+  },
+  youCardHolder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  youStatsCard: {
+    width: '100%',
+    marginTop: 16,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.4)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.9)',
+    padding: 14,
+  },
+  youStatsTitle: {
+    fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.7, color: colors.muted,
+  },
+  youStatsGap: { marginTop: 12, gap: 9 },
+  youStatsNote: {
+    marginTop: 13,
+    fontFamily: monoFont, fontSize: 5.4, lineHeight: 9, letterSpacing: 1.1, color: 'rgba(143,184,155,0.55)',
   },
 });
