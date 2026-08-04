@@ -57,8 +57,10 @@ Deno.serve(async (req) => {
   }
 
   const sb = service();
-  const { data: geo } = await sb.rpc('geo_for_country', { p_code: code }).catch(() => ({ data: null }));
-  const { data: price } = await sb.rpc('pricing_region_for', { p_code: code, p_geo: geo ?? 'unset' }).catch(() => ({ data: null }));
+  let geo = null;
+  try { ({ data: geo } = await sb.rpc('geo_for_country', { p_code: code })); } catch (_) {}
+  let price = null;
+  try { ({ data: price } = await sb.rpc('pricing_region_for', { p_code: code, p_geo: geo ?? 'unset' })); } catch (_) {}
 
   const pricingRegion = price === 'africa' || price === 'world' ? price : (geo === 'africa' || geo === 'world' ? geo : 'unset');
 

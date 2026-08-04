@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     if (!email || !email.includes('@')) return json({ ok: false, error: 'INVALID_EMAIL' }, 400);
     // Always return ok — never confirm whether the email exists.
     const redirectTo = String(body.redirectTo ?? 'proseasonacademy://reset-password');
-    await anon.auth.resetPasswordForEmail(email, { redirectTo }).catch(() => {});
+    try { await anon.auth.resetPasswordForEmail(email, { redirectTo }); } catch (_) {}
     return json({ ok: true, message: 'IF THAT EMAIL HAS A SEAT, A RESET LINK IS ON ITS WAY.' });
   }
 

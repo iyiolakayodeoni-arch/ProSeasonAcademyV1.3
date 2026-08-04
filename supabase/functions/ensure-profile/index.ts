@@ -4,10 +4,6 @@
 // seats last. Full season → they land on the waitlist instead.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-// ── helpers, inlined on purpose ──────────────────────────────
-// The Supabase DASHBOARD deploys one file and cannot resolve
-// '../_shared/...'. Keeping these here means this file deploys
-// by copy-paste as well as by CLI. Do not re-extract them.
 export const cors = {
   'access-control-allow-origin': '*',
   'access-control-allow-headers': 'authorization, content-type, x-founder-key',
@@ -31,7 +27,6 @@ export const cleanHandle = (raw: unknown): string => {
   const base = String(raw || '').toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 14);
   return base || `PLAYER${Math.floor(1000 + Math.random() * 9000)}`;
 };
-// ── end helpers ──────────────────────────────────────────────
 
 const REGION = (r: unknown) => (r === 'africa' || r === 'world' ? r : 'unset');
 
@@ -69,10 +64,6 @@ Deno.serve(async (req) => {
   }
 
   // ── NEW PLAYER → THE DOOR ──────────────────────────────────
-  // The player does NOT type an invite/token. The app is private by
-  // distribution. The only hard gate here is the season cap — not
-  // invite codes. Sign-up is open to anyone with the app, up to the
-  // 1,000-seat cap.
   const { data: seats0 } = await sb.rpc('season_seats').single();
   const season = seats0?.season ?? 'SEASON ONE';
   const cap = seats0?.cap ?? 1000;
@@ -109,9 +100,6 @@ Deno.serve(async (req) => {
   const { data: created, error: cerr } = await sb.from('profiles').insert(insert).select().single();
 
   if (cerr) {
-    // The trigger fired between our check and this insert — someone
-    // else took the last seat first. This is the race path, and it
-    // now ends honestly instead of over-selling.
     if (String(cerr.message).includes('SEASON_FULL')) {
       await joinWaitlist();
       const { data: sNow } = await sb.rpc('season_seats').single();
@@ -125,16 +113,18 @@ Deno.serve(async (req) => {
 
   // joined during the announced free window → they get the trial too,
   // so nobody who took a seat that week is left out.
-  await sb.rpc('grant_trial_one', { p_academy: academy });
+  try { await sb.rpc('grant_trial_one', { p_academy: academy }); } catch (_) {}
 
   // start their clock and send the welcome + terms to their inbox
   const { data: trialCfg } = await sb
     .from('config').select('value').eq('key', 'trial_days').maybeSingle();
-  await sb.rpc('set_deadline', {
-    p_academy: academy,
-    p_days: Number(trialCfg?.value ?? 14),
-  });
-  await sb.rpc('welcome_member', { p_academy: academy });
+  try {
+    await sb.rpc('set_deadline', {
+      p_academy: academy,
+      p_days: Number(trialCfg?.value ?? 14),
+    });
+  } catch (_) {}
+  try { await sb.rpc('welcome_member', { p_academy: academy }); } catch (_) {}
 
   const { data: seats1 } = await sb.rpc('season_seats').single();
   return json({ ok: true, profile: created, seats: seats1 ?? null });

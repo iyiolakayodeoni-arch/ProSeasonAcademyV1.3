@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
   const { data: created, error: aerr } = await sb.auth.admin.createUser({
     email,
     password,
-    email_confirm: true, // app-first academy: confirm server-side; toggle off in console if you want email confirm
+    email_confirm: true,
     user_metadata: { username, country, country_code: countryCode },
   });
   if (aerr || !created.user) {
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
   const { data: profile, error: perr } = await sb.from('profiles').insert(insert).select().single();
   if (perr) {
     // roll back auth user so they can retry cleanly
-    await sb.auth.admin.deleteUser(user.id).catch(() => {});
+    try { await sb.auth.admin.deleteUser(user.id); } catch (_) {}
     if (String(perr.message).includes('SEASON_FULL')) {
       return json({ ok: false, error: 'SEASON_FULL', season, cap, taken: seats0?.taken ?? cap }, 409);
     }
@@ -131,18 +131,35 @@ Deno.serve(async (req) => {
     return json({ ok: false, error: 'PROFILE_FAILED', detail: perr.message }, 500);
   }
 
-  // trial + welcome (best effort — older DBs may lack these RPCs)
-  await sb.rpc('grant_trial_one', { p_academy: academy }).catch(() => {});
+  // trial + welcome (best effort — older DBs may lack these RPCs).
+  // NOTE: never chain .catch() on sb.rpc() — some edge-runtime builds of
+  // supabase-js return a builder without .catch(). try/catch + await works
+  // with any thenable and any real promise, so this cannot throw.
+  try { await sb.rpc('grant_trial_one', { p_academy: academy }); } catch (_) {}
   const { data: trialCfg } = await sb.from('config').select('value').eq('key', 'trial_days').maybeSingle();
-  await sb.rpc('set_deadline', {
-    p_academy: academy,
-    p_days: Number(trialCfg?.value ?? 14),
-  }).catch(() => {});
-  await sb.rpc('welcome_member', { p_academy: academy }).catch(() => {});
+  try {
+    await sb.rpc('set_deadline', {
+      p_academy: academy,
+      p_days: Number(trialCfg?.value ?? 14),
+    });
+  } catch (_) {}
+  try { await sb.rpc('welcome_member', { p_academy: academy }); } catch (_) {}
 
-  // issue a session so the app is signed in immediately
-  const { data: sess, error: serr } = await sb.auth.signInWithPassword({ email, password });
-  if (serr || !sess.session) {
+  // issue a session so the app is signed in immediately.
+  // Use an ANON client (not the service-role client) for signInWithPassword —
+  // guarantees a normal user session JWT that anon.auth.getUser() accepts.
+  let sess = null;
+  try {
+    const anon = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+    );
+    const r = await anon.auth.signInWithPassword({ email, password });
+    sess = r.data?.session ?? null;
+  } catch (_) {
+    sess = null;
+  }
+  if (!sess) {
     // profile exists — they can log in manually
     return json({
       ok: true,
@@ -158,9 +175,9 @@ Deno.serve(async (req) => {
     academyToken: academy,
     profile,
     session: {
-      access_token: sess.session.access_token,
-      refresh_token: sess.session.refresh_token,
-      expires_at: sess.session.expires_at,
+      access_token: sess.access_token,
+      refresh_token: sess.refresh_token,
+      expires_at: sess.expires_at,
     },
   });
 });
