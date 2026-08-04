@@ -33,6 +33,7 @@ import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
 import { useLessonThread } from '../../data/lessonThread';
 import { useStandard, StandardChapter } from '../../data/standard';
+import { storyForStage } from '../../data/coachStory';
 import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
@@ -88,7 +89,7 @@ export default function JourneyTab({
   // THE THREAD — settled lessons count toward PROVE IT (the objective engine)
   const thread = useLessonThread();
   const threadSettled = thread.heldCount + thread.brokeCount;
-  // HIS ROAD — the benchmark journey, revealed by progress
+  // HIS STORY — the benchmark journey (his turning points), revealed by progress
   const standard = useStandard();
   const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
 
@@ -168,7 +169,7 @@ export default function JourneyTab({
         </View>
 
         <Text style={styles.headline}>YOUR JOURNEY</Text>
-        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · HIS ROAD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
+        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · HIS STORY SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
           <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
@@ -286,7 +287,7 @@ export default function JourneyTab({
           </View>
         </View>
 
-        {/* ── HIS ROAD — the benchmark journey (Chinedu's own) ── */}
+        {/* ── HIS STORY — the benchmark journey (Chinedu's turning points) ── */}
         <StandardPanel
           chapter={standard.current}
           clearedCount={standard.clearedCount}
@@ -457,24 +458,26 @@ export default function JourneyTab({
   );
 }
 
-// ── HIS ROAD — the benchmark journey. Not a second progression
+// ── HIS STORY — the benchmark journey. Not a second progression
 // track: it moves beside YOUR JOURNEY and reveals the chapter of
 // Chinedu's own road that matches your current stage. Read his
 // road. Walk your own.
 function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
+  // HIS STORY — the turning point he faced at this same point of his own road.
+  const tp = storyForStage(stageN);
   return (
     <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
       <View style={styles.standardHead}>
         <View style={styles.standardTitleBlock}>
           <Text style={styles.standardName}>CHINEDU OKAFOR</Text>
-          <Text style={styles.standardSub}>HIS ROAD — TOP OF THE GAME, SEASON AFTER SEASON</Text>
+          <Text style={styles.standardSub}>HIS STORY — THE ROAD TO THE TOP</Text>
         </View>
         <View style={styles.standardStagePill}>
           <Text style={styles.standardStageTxt}>STAGE {stageN}</Text>
         </View>
       </View>
 
-      {/* the dual line — YOUR JOURNEY vs HIS ROAD at the same point */}
+      {/* the dual line — YOUR JOURNEY vs HIS STORY at the same point */}
       <View style={styles.standardDual}>
         <View style={styles.standardDualCol}>
           <Text style={styles.standardDualTag}>YOUR JOURNEY</Text>
@@ -484,9 +487,17 @@ function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardCha
           <Text style={styles.standardDualArrowTxt}>‖</Text>
         </View>
         <View style={[styles.standardDualCol, styles.standardDualColRight]}>
-          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>HIS ROAD</Text>
-          <Text style={styles.standardDualName}>{chapter.chapterTitle}</Text>
+          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>HIS STORY</Text>
+          <Text style={styles.standardDualName}>{tp.title}</Text>
         </View>
+      </View>
+
+      {/* ── HIS TURNING POINT — the story moment at this stage ── */}
+      <View style={styles.turningCard}>
+        <Text style={styles.turningTag}>HIS TURNING POINT — {tp.stageKey}</Text>
+        <Text style={styles.turningTitle}>“{tp.title}”</Text>
+        <Text style={styles.turningStory}>{tp.story}</Text>
+        <Text style={styles.turningBy}>— CHINEDU OKAFOR · EPISODE {tp.ep} OF 6</Text>
       </View>
 
       <Text style={styles.standardLearnTitle}>WHAT CHINEDU LEARNED HERE</Text>
@@ -507,8 +518,14 @@ function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardCha
         <Text style={styles.standardBenchmarkBy}>— CHINEDU OKAFOR · {chapter.chapterTitle}</Text>
       </View>
 
+      {/* ── YOUR MOVE — the mirror hands the story back to the player ── */}
+      <View style={styles.yourMove}>
+        <Text style={styles.yourMoveTag}>YOUR MOVE — THE MIRROR</Text>
+        <Text style={styles.yourMoveTxt}>{tp.cue}</Text>
+      </View>
+
       <Text style={styles.standardMotto}>
-        YOUR JOURNEY IS THE EVIDENCE · HIS ROAD IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
+        YOUR JOURNEY IS THE EVIDENCE · HIS STORY IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
       </Text>
     </Animated.View>
   );
@@ -807,7 +824,7 @@ const styles = StyleSheet.create({
   ledgerSub: { marginTop: 1, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.72)' },
   ledgerCta: { marginTop: 9, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
 
-  // ── HIS ROAD ──
+  // ── HIS STORY ──
   standardCard: {
     marginTop: 14,
     borderWidth: 1.2,
@@ -868,6 +885,30 @@ const styles = StyleSheet.create({
   standardBenchmarkTxt: { fontSize: 10.5, lineHeight: 16, fontStyle: 'italic', color: colors.fg },
   standardBenchmarkBy: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(242,192,120,0.7)' },
 
+  turningCard: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(20,16,8,0.9)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 13,
+  },
+  turningTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.8, color: colors.warm },
+  turningTitle: { marginTop: 7, fontFamily: monoFont, fontSize: 12, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
+  turningStory: { marginTop: 7, fontFamily: monoFont, fontSize: 9.2, lineHeight: 15, letterSpacing: 0.4, color: 'rgba(238,242,236,0.9)' },
+  turningBy: { marginTop: 8, fontFamily: monoFont, fontSize: 6.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.6)', textAlign: 'right' },
+  yourMove: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.5)',
+    backgroundColor: 'rgba(10,26,15,0.9)',
+    borderRadius: 12,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
+  },
+  yourMoveTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  yourMoveTxt: { marginTop: 6, fontFamily: monoFont, fontSize: 9, lineHeight: 14.5, letterSpacing: 0.4, color: '#cdeed6' },
   standardMotto: {
     marginTop: 12,
     textAlign: 'center',

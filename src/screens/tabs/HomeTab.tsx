@@ -11,7 +11,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
-import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
+import { BellIcon, ChevronLeftIcon, ChevronRightIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
@@ -26,6 +26,8 @@ import {
 import { fetchPublishedNews, NewsItem } from '../../data/newsFeed';
 import { brandMutter, caughtUpLine, greetingLine } from '../../data/humor';
 import { useSettings } from '../../data/settings';
+import { useJourneyProgress } from '../../data/progress';
+import { STORY_EPISODES, storyForStage } from '../../data/coachStory';
 import * as backend from '../../data/backend';
 import { sfx } from '../../audio/sound';
 import StoreSheet from '../StoreSheet';
@@ -81,6 +83,19 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   useEffect(() => {
     void fetchPublishedNews(20).then(setNews);
   }, []);
+
+  const progress = useJourneyProgress();
+  // HIS STORY — starts on the turning point matching YOUR current stage.
+  // Flick the arrows to read the whole road; it is the same story that
+  // sits beside your journey on the map.
+  const [storyEp, setStoryEp] = useState<number | null>(null);
+  const storyIdx = Math.max(1, Math.min(STORY_EPISODES.length, storyEp ?? progress.currentStage));
+  const episode = storyForStage(storyIdx);
+  const flipStory = (dir: 1 | -1) => {
+    const n = Math.max(1, Math.min(STORY_EPISODES.length, storyIdx + dir));
+    setStoryEp(n);
+    sfx('tap');
+  };
 
   const [tillOpen, setTillOpen] = useState(false);
   // the SIDE NOTE — a bot trick opened as an in-app lesson + blog
@@ -252,6 +267,30 @@ export default function HomeTab({ coach }: { coach: Coach }) {
                 <BookmarkIcon size={14} color="rgba(143,184,155,0.7)" />
               </View>
             </Pressable>
+          </Animated.View>
+        )}
+
+        {/* ── HIS STORY — the turning points, told for you ── */}
+        {chip !== 'FOUNDER' && chip !== 'NEWS' && (
+          <Animated.View entering={FadeInUp.duration(350)} style={styles.storyCard}>
+            <View style={styles.storyHead}>
+              <Text style={styles.storyTag}>HIS STORY · EPISODE {episode.ep} OF {STORY_EPISODES.length}</Text>
+              <Text style={styles.storyStage}>TURNING POINT — {episode.stageKey}</Text>
+            </View>
+            <Text style={styles.storyTitle}>“{episode.title}”</Text>
+            <Text style={styles.storyBody}>{episode.story}</Text>
+            <View style={styles.storyFoot}>
+              <Pressable onPress={() => flipStory(-1)} hitSlop={10} style={styles.storyArrow}>
+                <ChevronLeftIcon size={16} color={colors.warm} />
+              </Pressable>
+              <View style={styles.storyCue}>
+                <Text style={styles.storyCueTag}>YOUR MOVE — THE MIRROR</Text>
+                <Text style={styles.storyCueTxt}>{episode.cue}</Text>
+              </View>
+              <Pressable onPress={() => flipStory(1)} hitSlop={10} style={styles.storyArrow}>
+                <ChevronRightIcon size={16} color={colors.warm} />
+              </Pressable>
+            </View>
           </Animated.View>
         )}
 
@@ -738,6 +777,34 @@ const styles = StyleSheet.create({
   heroCta: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
   heroMeta: { color: 'rgba(143,184,155,0.7)', fontWeight: '400' },
 
+  storyCard: {
+    marginHorizontal: 12,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.5)',
+    backgroundColor: 'rgba(20,16,8,0.92)',
+    borderRadius: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+  },
+  storyHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  storyTag: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.8, color: colors.warm },
+  storyStage: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.75)' },
+  storyTitle: { marginTop: 9, fontFamily: monoFont, fontSize: 13, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
+  storyBody: { marginTop: 8, fontFamily: monoFont, fontSize: 9.2, lineHeight: 15, letterSpacing: 0.4, color: 'rgba(238,242,236,0.9)' },
+  storyFoot: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  storyArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  storyCue: { flex: 1 },
+  storyCueTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  storyCueTxt: { marginTop: 4, fontFamily: monoFont, fontSize: 8.4, lineHeight: 13, letterSpacing: 0.3, color: '#cdeed6' },
   chipsWrap: { marginTop: 12, marginBottom: 2 },
   chipsRow: { flexDirection: 'row', gap: 7, paddingRight: 26 },
   chip: {

@@ -2,21 +2,23 @@ import { useSyncExternalStore } from 'react';
 import { useJourneyProgress } from './progress';
 
 // ─────────────────────────────────────────────────────────────
-// HIS ROAD — the benchmark journey.
+// HIS STORY — the benchmark journey.
 //
 // THE BENCHMARK IS ONE MAN: CHINEDU OKAFOR. Not a fictional
-// composite — the road the academy's single coach actually
-// walked, season after season, at the top of the game. His
-// journey is the benchmark; the player's own journey is the
-// evidence. Same six chapters, his receipts vs the player's.
+// composite — his own story, told in six turning points (one per
+// stage, see coachStory.ts): the 6–1 and the three pages, the
+// 2–0 that became 2–2, the man tying his boot, the bus review,
+// the clean sheet, still coachable. His story is the benchmark;
+// the player's own journey is the evidence.
 //
-// His road is NOT a second progression track: no player
+// His story is NOT a second progression track: no player
 // objectives, no XP, no badges, no second route to complete. It
-// moves alongside the player's Journey and reveals the chapter
-// that matches the player's current stage.
+// moves alongside the player's Journey and reveals the turning
+// point that matches the player's current stage. Stage rooms
+// themselves stay about the player — the mirror, not the tale.
 //
-//   "Your Journey is the evidence. His road is the benchmark."
-//   "Read his road. Walk your own."
+//   "Your Journey is the evidence. His story is the benchmark."
+//   "Read his story. Write your own."
 // ─────────────────────────────────────────────────────────────
 
 export interface StandardChapter {
@@ -46,7 +48,7 @@ export interface StandardModel {
 
 export const STANDARD: StandardModel = {
   name: 'CHINEDU OKAFOR',
-  title: 'HIS ROAD — TOP OF THE GAME, SEASON AFTER SEASON',
+  title: 'HIS STORY — THE ROAD TO THE TOP',
   credo: [
     'The honest review came before the highlight reel.',
     'The head was trained before the thumbs were fast.',
@@ -167,7 +169,7 @@ export interface StandardView {
   clearedCount: number;
 }
 
-/** live view — His Road moves with the player's own progress */
+/** live view — His Story moves with the player's own progress */
 export function useStandard(): StandardView {
   const progress = useJourneyProgress();
   return {

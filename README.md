@@ -7,9 +7,11 @@ selection exists, by design: the only decision a player should carry is the one 
 forward — their training, their thinking, the programme ahead — never *which coach to use*.
 He is your voice, guide and accountability presence on a **universal six-stage development
 journey** (See Yourself → Control Yourself → Read the Game → Build Discipline → Perform Under
-Pressure → Prove It). Beside it runs **His Road** — the benchmark journey Chinedu himself
-walked, season after season at the top of the game, revealed as you advance: *your journey is
-the evidence, his road is the benchmark.*
+Pressure → Prove It). Beside it runs **His Story** — the benchmark: six turning points from Chinedu's own road (the
+6–1 and the three pages, the bus review, the clean sheet), one per stage, revealed as you
+advance so you see the moment he was tested at the same point of his path: *your journey is
+the evidence, his story is the benchmark.* The story also plays on the Home feed; stage rooms
+stay about you — the mirror, not the tale.
 
 The heart of the programme is the **Mirror Session**: you set an intention before the match,
 answer checkpoints at half-time and full-time, divide the match into your own key moments,

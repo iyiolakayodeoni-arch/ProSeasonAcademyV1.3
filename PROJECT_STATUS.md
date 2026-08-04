@@ -300,9 +300,15 @@ Season" the programme, "FC Mobile Pro" the first specialist path.
   inside each. The coach (Chinedu Okafor) is the single voice, guide and
   accountability presence, but the curriculum never varies: the only decision a
   player carries is the one that moves them forward.
-- **HIS ROAD** (`src/data/standard.ts`): the benchmark journey is Chinedu's own
-  — not a fictional composite. What he learned at each chapter, season after
-  season at the top of the game, with the professional pillars
+- **HIS STORY** (`src/data/standard.ts` + `src/data/coachStory.ts`): the
+  benchmark journey is Chinedu's own story — six turning points, one per
+  stage (the 6–1 and the three pages, the 2–0 that became 2–2, the man tying
+  his boot, the bus review, the clean sheet, still coachable). As you move
+  through a stage you see him moving through the benchmark at the same point;
+  the dual panel shows YOUR JOURNEY ‖ HIS STORY side by side, each episode
+  closes with a YOUR MOVE cue that hands it back to the mirror. The story
+  also plays on the Home feed; stage rooms stay about the player. With the
+  professional pillars
   (deliberate practice, honest review, emotional control, preparation,
   consistency, decisions under pressure, recovery, disciplined repetition,
   professional conduct). Six chapters mirror the Journey and reveal as the

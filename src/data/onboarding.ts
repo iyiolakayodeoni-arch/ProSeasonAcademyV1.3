@@ -111,9 +111,9 @@ export const ONBOARD_CARDS: OnboardCard[] = [
   {
     id: 'standard',
     section: 'YOUR PROGRESS',
-    eyebrow: 'HIS ROAD',
+    eyebrow: 'HIS STORY',
     title: 'THE BENCHMARK',
-    body: 'Beside your map runs Chinedu’s own road — what he actually learned at each of the six chapters, season after season at the top. It is not a second track to complete. Read it, then walk your own road.',
+    body: 'Beside your map runs Chinedu’s own story — six turning points, one per stage: the 6–1 and the three pages, the bus review, the clean sheet. As you move through a stage you see the moment he was tested at the same point of his road — so you know what your own path should look like. Not a second track to complete. Read his story, then write your own.',
     tone: 'gold',
   },
   {
