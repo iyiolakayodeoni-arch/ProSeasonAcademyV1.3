@@ -51,7 +51,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     section: 'THE ACADEMY',
     eyebrow: 'YOUR COACH',
     title: 'CHINEDU OKAFOR',
-    body: 'THE DISCIPLINARIAN, 92 rated. Top of the game for 10+ seasons — he stayed there because he stayed coachable. He talks one-way: he teaches, you answer with your matches. His road is the benchmark; your journey is the evidence.',
+    body: 'THE DISCIPLINARIAN, 92 rated. He grew up on Cinder Row — night games on broken concrete, Mama Ukae watching from her shopfront step. He was never the best player there; he was the first one who stopped lying to himself after full time. That habit carried him to the top for 10+ seasons, and it is the same one he hands you. He talks one-way: he teaches, you answer with your matches. His road is the benchmark; your journey is the evidence.',
     tone: 'gold',
   },
   {

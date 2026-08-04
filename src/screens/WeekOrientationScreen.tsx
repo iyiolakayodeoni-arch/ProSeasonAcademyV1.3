@@ -18,7 +18,7 @@ const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'g
   {
     eyebrow: 'THE ACADEMY',
     title: 'ONE VOICE, ONE PROGRAMME',
-    body: 'Chinedu Okafor — THE DISCIPLINARIAN, top of the game for 10+ seasons. One universal six-chapter journey, one season at a time, 1,000 seats. The film room, the clubhouse and the Till all serve one thing: your evidence. Nothing else moves the map.',
+    body: 'Chinedu Okafor — THE DISCIPLINARIAN, top of the game for 10+ seasons. He grew up on Cinder Row, where Mama Ukae’s shopfront look forgave nothing — and that look is what every scan ships to your pocket. One universal six-chapter journey, one season at a time, 1,000 seats. The film room, the clubhouse and the Till all serve one thing: your evidence. Nothing else moves the map.',
     tone: 'gold',
   },
   {

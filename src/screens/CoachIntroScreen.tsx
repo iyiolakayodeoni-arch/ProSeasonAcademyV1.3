@@ -61,8 +61,23 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
             — {script.introSignoff}
           </Animated.Text>
 
-          {/* ── THE MIRROR METHOD — what this academy actually is ── */}
+          {/* ── HIS STORY — where he came from, why he can be trusted ── */}
           <Animated.View entering={FadeInUp.delay(base + 260).duration(320)} style={styles.doctrine}>
+            <Text style={[styles.doctrineTag, { color: coach.cardAccent }]}>HIS STORY — WHO I AM</Text>
+            <Text style={styles.doctrineLine}>
+              FROM CINDER ROW TO THE TOP — AND STILL COACHABLE
+            </Text>
+            <Text style={styles.doctrineBody}>
+              I learned the ball on Cinder Row: night games on broken concrete, Mama Ukae watching
+              from her shopfront step. She never blew a whistle — she just looked, and I could not
+              hide a thing from her. That look is the whole academy. Every scan you sit through is
+              that same shopfront look, shipped to your pocket. I stayed at the top for ten seasons
+              because I never stopped answering for my own matches. Now you answer for yours.
+            </Text>
+          </Animated.View>
+
+          {/* ── THE MIRROR METHOD — what this academy actually is ── */}
+          <Animated.View entering={FadeInUp.delay(base + 480).duration(320)} style={styles.doctrine}>
             <Text style={[styles.doctrineTag, { color: coach.cardAccent }]}>THE MIRROR METHOD</Text>
             <Text style={styles.doctrineLine}>
               “THE MACHINE RECORDS THE EVIDENCE. YOU DO THE SEEING.”
@@ -77,7 +92,7 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
           </Animated.View>
 
           {/* ── THE PHILOSOPHY — one voice, one path ── */}
-          <Animated.View entering={FadeInUp.delay(base + 480).duration(320)} style={styles.doctrine}>
+          <Animated.View entering={FadeInUp.delay(base + 700).duration(320)} style={styles.doctrine}>
             <Text style={[styles.doctrineTag, { color: coach.cardAccent }]}>OUR PHILOSOPHY — ONE VOICE, ONE PATH</Text>
             <Text style={styles.doctrineBody}>
               You will never be asked to choose a coach. Not here, not ever. I have been at the top
@@ -89,7 +104,7 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
           </Animated.View>
 
           {/* ── THE PROGRAMME — what this academy actually is ── */}
-          <Animated.View entering={FadeInUp.delay(base + 700).duration(320)} style={styles.doctrine}>
+          <Animated.View entering={FadeInUp.delay(base + 920).duration(320)} style={styles.doctrine}>
             <Text style={[styles.doctrineTag, { color: coach.cardAccent }]}>THE PROGRAMME — SIX CHAPTERS, ONE SEASON</Text>
             <Text style={styles.doctrineLine}>
               WHAT THIS ACADEMY ACTUALLY IS
@@ -106,7 +121,7 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
             </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(base + 920).duration(320)}>
+          <Animated.View entering={FadeInUp.delay(base + 1140).duration(320)}>
             <Pressable onPress={onDone} style={styles.cta}>
               <Text style={styles.ctaTxt}>CONTINUE TO THE BASELINE GATE</Text>
               <ChevronRightIcon size={14} color="#0a0f0a" />

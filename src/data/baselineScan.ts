@@ -413,7 +413,9 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
   chinedu: {
     intro: [
       'Sit down. My name is Chinedu. They call me THE DISCIPLINARIAN and I earned every letter of it.',
-      'I was never the best player on any pitch. Too slow, too small, take your pick. So I became the most honest one instead — and honest players are the ones still standing in April.',
+      'I grew up on Cinder Row — night games on broken concrete, Mama Ukae watching from her shopfront step. She never blew a whistle, she just looked. I was never the best player on that row. I was the first one who stopped lying to himself after full time.',
+      'That is where the name came from. My worst loss was 6–1 and I wrote three pages about it on the bus home. Page four was tears, but pages one to three got me a clean sheet the next week. We write it down or it writes YOU down.',
+      'Ten seasons at the top of this game, little bro. The secret is boring: I stayed coachable. The day I think I know everything is the day the ladder starts eating me — so the scan keeps me honest too. It never lets me coast.',
       'I have watched a hundred careers die from one disease: lying to yourself after a match. “The game is rigged.” “My phone lagged.” Maybe. Usually it was your head, and we both know it.',
       'And hear what this place is, before we go further: not a tips page, not a download counter. An academy. Six chapters, one season, and a thousand seats — every one of them a player I can actually speak to. You are one of them now. That is the whole promise.',
       'You are here. Good. I do not do comfort — I do receipts. And for the record: I am glad you are here. Now let us find out the truth about you.',
