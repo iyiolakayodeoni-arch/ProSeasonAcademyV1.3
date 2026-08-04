@@ -41,10 +41,17 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     tone: 'gold',
   },
   {
+    id: 'chinedu-way',
+    eyebrow: 'THE CHINEDU WAY',
+    title: 'PEN TO PAPER BEFORE YOU TYPE',
+    body: 'There is a special connection a biro has to a book that cannot be typed. Screen record your match, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
+    tone: 'green',
+  },
+  {
     id: 'mirror',
     eyebrow: 'MIRROR SESSION',
     title: 'THE MAIN RITUAL',
-    body: 'Before a match you set an intention. At half-time and full-time you answer in your own words. You mark your key moments, review them, and place your versions beside the evidence. The app never thinks for you.',
+    body: 'Before a match you set an intention. You screen record, watch your tape, and write your moments on paper. After your 24–30 minute cool-down, you type your review into your database. The app never thinks for you.',
   },
   {
     id: 'thread',

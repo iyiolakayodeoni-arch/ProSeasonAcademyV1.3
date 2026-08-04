@@ -83,6 +83,20 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         </View>
       </View>
 
+      {/* ── THE CHINEDU WAY: LOSS JOURNAL PHILOSOPHY ── */}
+      <View style={[styles.ruleStrip, { borderColor: 'rgba(57,255,106,0.35)', backgroundColor: 'rgba(57,255,106,0.04)', flexDirection: 'column', alignItems: 'flex-start' }]}>
+        <Text style={[styles.ruleTxt, { color: colors.primary, fontSize: 8, fontWeight: '800' }]}>
+          THE CHINEDU WAY · HOW YOU LOG A LOSS
+        </Text>
+        <Text style={[styles.ruleTxt, { marginTop: 4, fontSize: 9.5, lineHeight: 14.5 }]}>
+          1. SCREEN RECORD & WATCH: Watch your match tape back. Don't look away from what went wrong.
+          {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen the unusual things and mistake patterns on paper first.
+          {'\n'}3. 24–30 MIN COOL-DOWN: Never log while tilted. Let your mind cool down for 24–30 minutes after full time.
+          {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your one honest line into your database.
+          {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+        </Text>
+      </View>
+
       {/* ── composer: what killed you? ── */}
       <View style={styles.composer}>
         <Text style={styles.composerEyebrow}>LOST ONE? ONE HONEST LINE:</Text>
@@ -117,7 +131,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         <HonestyMeter
           text={text}
           options={{ minLength: 4, minWords: 2 }}
-          defaultNote="NO ESSAYS · ONE HONEST LINE PER LOSS"
+          defaultNote="PEN TO PAPER FIRST · COOL DOWN FOR 24–30 MINS · ONE HONEST LINE"
           coachId={coach.id}
         />
       </View>
@@ -136,7 +150,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
       {/* rule strip */}
       <View style={styles.ruleStrip}>
         <JournalIcon size={13} color="#57d07c" />
-        <Text style={styles.ruleTxt}>THE RULE — ONE LINE PER LOSS · NO ESSAYS · THE PATTERN YOU WRITE IS THE PATTERN HE FIXES</Text>
+        <Text style={styles.ruleTxt}>THE CHINEDU WAY — PEN YOUR LOSS ON PAPER FIRST, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR ONE HONEST LINE INTO YOUR DATABASE</Text>
       </View>
 
       {/* entries */}

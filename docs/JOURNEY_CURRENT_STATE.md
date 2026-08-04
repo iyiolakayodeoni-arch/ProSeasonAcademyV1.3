@@ -483,15 +483,31 @@ Each Match Vault entry may contain:
 
 A stage passes only when **every objective** is met. The scan does not require the latest match alone to satisfy every objective; it grades the accumulated ledger. This makes earlier qualifying matches count toward the stage.
 
-### Honest-system boundary
+### Honest-system boundary: "The Chinedu Way"
 
-The application does not have an official FC Mobile match feed. Match data is normally entered by the player. On supported Android builds, **The Eye** / Match Watcher can watch the scorebug, detect goal events, and prefill the score; it does not replace the player's reflection or all context fields. The app intentionally keeps the psychology and lesson player-authored.
+The application does not have an official FC Mobile match feed. Match data and key moments are entered manually by the player following **The Chinedu Way**:
+1. **Pen to Paper:** *"There is a special connection a biro has to a book that cannot be typed."* Players screen record their match, watch their tape back, and pen the unusual and key make-or-break moments on paper with a biro first.
+2. **24–30 Minute Cool-Down:** Players let their thoughts settle for 24–30 minutes after the match before typing their written answers into the Academy database.
+3. **The 7-Day Cadence (3 Matches → Rest 1 → Match 4 → Rest 2 → Match 5 Finale):**
+   - **Days 1–3:** Matches 1, 2, and 3 (building momentum).
+   - **Day 4:** Rest Day 1 (mid-week rest & reflection on matches 1–3, no match played — respecting that players have a life outside the pitch).
+   - **Day 5:** Match 4.
+   - **Day 6:** Rest Day 2 (pre-finale preparation & reflection, no match played).
+   - **Day 7:** Match 5 (The Finale) + Ambition & Profile Card seal.
+4. **Philosophy:** In a world looking for the easy way out, the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.
 
 ---
 
 ## 8. The stage room: what happens after opening a stage
 
 The stage room is a coach-led film-room screen with two quests.
+
+### 8.0 "The Chinedu Way" in Our Own Path (The Journey)
+
+The entire universal player Journey (our own path across the 18 stages, not the role model's path) is walked using **The Chinedu Way**:
+- **Stage Room (`CoachingScreen.tsx`):** Displays **The Chinedu Way: How You Work In Our Path** card right above the Main Quest, instructing players to screen record, pen to paper with a biro first, cool down for 24–30 minutes, and type their truth into the database.
+- **Coach Briefings (`coaching.ts`):** Both Coach Chinedu and Coach Obinna remind the player that *"there is a special connection a biro has to a book that cannot be typed"* and *"the hard way is the easy way; tech is meant to elevate."*
+- **Main Quest (`MirrorSessionScreen.tsx`) & Stage Scan (`StageScanSheet.tsx`):** Every review and checkpoint prompts the player to answer from their immediate memory or paper notes before typing into the app.
 
 ### 8.1 Coach briefing
 

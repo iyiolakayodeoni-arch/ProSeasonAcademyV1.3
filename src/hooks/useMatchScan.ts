@@ -11,8 +11,8 @@ import { MatchEntry, objectiveCount } from '../data/matches';
 // work was actually done.
 //
 // Match entry stays honour-system (FC Mobile has no public feed);
-// THE EYE prefills the score where the native watcher exists. Both
-// land in the same vault, so grading never cares which one wrote it.
+// both the score and moments are entered by the player manually.
+// Manual observation is where mental resilience is forged.
 // ─────────────────────────────────────────────────────────────
 
 export type ScanStatus = 'armed' | 'scanning' | 'passed' | 'failed';

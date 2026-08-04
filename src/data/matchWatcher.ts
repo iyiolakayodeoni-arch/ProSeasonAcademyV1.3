@@ -52,8 +52,8 @@ interface WatcherState {
   lastError: string | null;
 }
 
-const native: any = Platform.OS === 'android' ? (NativeModules as any).MatchWatcher : null;
-export const watcherNativeAvailable = !!native;
+const native: any = null; // Automated match watcher removed — manual observation is where resilience is forged.
+export const watcherNativeAvailable = false;
 
 let state: WatcherState = { status: watcherNativeAvailable ? 'idle' : 'unavailable', session: null, lastError: null };
 const listeners = new Set<() => void>();

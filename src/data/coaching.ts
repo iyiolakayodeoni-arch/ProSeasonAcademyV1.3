@@ -178,10 +178,10 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
       mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
       quip: coachQuip('obinna', plan.contentId),
-      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, divide the moments yourself, and swear the next lesson. **The mirror preserves every version of what you thought.** It never writes it for you.`,
+      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session** and follow **The Chinedu Way**: screen record your match, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after full time, then type your truth into your database. **There is a special connection a biro has to a book that cannot be typed.**`,
       scanIntro:
-        'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION CAPTURES WHAT YOU THOUGHT BEFORE THE MATCH, AT HALF-TIME, AT FULL-TIME, AND AFTER YOU REVIEW YOUR OWN MOMENTS. THEN YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
-      footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
+        'THE CHINEDU WAY: SCREEN RECORD YOUR MATCH, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. THE HARD WAY IS THE EASY WAY.',
+      footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR OWN PATH — PEN TO PAPER BEFORE YOU TYPE.',
     };
   }
   return {
@@ -190,10 +190,10 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
-    closer: `That’s the whole side note. Now the real work — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, mark your own moments, swear the next lesson. **The mirror does not think for you.** It just makes sure you cannot forget what you believed.`,
+    closer: `That’s the whole side note. Now the real work — start a **Mirror Session** and follow **The Chinedu Way**: screen record your match, watch your tape, and write your key moments on paper with a biro. Let your mind cool down for 24–30 minutes, then type your truth into your database. **The hard way is the easy way, and tech is meant to elevate.**`,
     scanIntro:
-      'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION KEEPS YOUR PRE-MATCH THINKING, YOUR HALF-TIME HEAD, YOUR FULL-TIME MEMORY AND YOUR REVIEWED EVIDENCE SIDE BY SIDE. YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
-    footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
+      'THE CHINEDU WAY: SCREEN RECORD YOUR MATCH, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.',
+    footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR OWN PATH — ONLY YOUR MATCHES WRITE IT.',
   };
 }
 

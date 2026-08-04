@@ -4,10 +4,10 @@ import { isValidReflection } from './honestyGuard';
 // SCAN MOMENTS — the key-moment vocabulary of the MATCH SCAN.
 //
 // The scanner (and the player) tags the moments that make or
-// break a match — NOT the score. Auto markers land from THE EYE
-// (goal for / goal against), player markers land from honest
-// review. Every tag earns a guiding question from the coach:
-// he never hands you the lesson — he asks until you find it.
+// break a match — NOT the score. We do not watch or tag the match
+// for you; all markers land from honest manual review. Every tag
+// earns a guiding question from the coach: he never hands you the
+// lesson — he asks until you find it.
 //
 // The answer to each moment is psychology DATA in the baseline
 // (no lesson written there — he is still reading you) and the

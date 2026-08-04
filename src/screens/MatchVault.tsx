@@ -19,23 +19,18 @@ import {
   useMatches,
 } from '../data/matches';
 import { dayLabel } from '../data/journal';
-import { useMatchWatcher } from '../data/matchWatcher';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
 
-const hhmmss = (ts: number) => {
-  const d = new Date(ts);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-};
-
-// THE EYE + THE MIND — the scan is semi-automatic ON PURPOSE:
-// pixels can count goals, only the player can report the psychology.
+// MANUAL BY DESIGN — we do not watch or tag your match for you.
+// Screen record your match, watch it back, and note key moments yourself.
+// Manual observation and reporting is where mental resilience is forged.
 const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 const MIND_FRAME: Record<string, string> = {
   chinedu:
-    'The machine counts goals. It cannot read your head — I once tried guessing from the score alone. Guessed wrong. Twice. Same minute. So this part is yours, and that is not a flaw. That is the point.',
+    'There is a special connection a biro has to a book that cannot be typed, little bro. Screen record your match, watch your tape, and write your key moments on paper. Cool down for 24–30 minutes after full time, then type your truth into your database. Tech is meant to elevate and not make you dormant — that is the Chinedu Way.',
   obinna:
-    'The watcher counts goals, little one. It cannot count heart — and between me and you, I would not trust a machine with yours anyway. Tell me the truth yourself.',
+    'Screen record your match, watch your tape, and pen your moments on paper, little one. Cool down for 24–30 minutes, then type your truth into your database. The hard way is the easy way, and the easy way is the hard way.',
 };
 import {
   CheckIcon,
@@ -89,9 +84,6 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
   const [ledAt75, setLedAt75] = useState(false);
   const [decisive, setDecisive] = useState<DecisiveWindow | null>(null);
   const [ack, setAck] = useState<string | null>(null);
-  const watcher = useMatchWatcher();
-  const [swapSides, setSwapSides] = useState(false);
-  const [watcherPrefill, setWatcherPrefill] = useState(false);
   // ── THE MIND (yours by design) ──
   const [composure, setComposure] = useState<number | null>(null);
   const [note, setNote] = useState('');
@@ -110,12 +102,11 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
       mechanicsUsed: mechanics,
       ledAt75: isWin ? ledAt75 : null,
       decisive: isWin ? decisive : null,
-      // THE MIND — the part the machine can never fill in (by design)
+      // THE MIND — the part only you can fill in (by design)
       composure,
       note: note.trim() ? note : null,
     };
-    addMatch(draft, watcherPrefill ? 'watcher' : 'manual');
-    setWatcherPrefill(false);
+    addMatch(draft, 'manual');
     setComposure(null);
     setNote('');
     // chain-logging: scores reset, mode/style stay (same session, same ladder)
@@ -188,111 +179,21 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 26 }} showsVerticalScrollIndicator={false}>
-        {/* ── THE EYE: MATCH WATCHER / AUTOPILOT (semi-automatic BY DESIGN) ── */}
+        {/* ── THE CHINEDU WAY: PEN TO PAPER & MANUAL OBSERVATION PHILOSOPHY ── */}
         <View style={styles.watchCard}>
           <View style={styles.watchHead}>
             <GamepadIcon size={14} color={colors.primary} />
-            <Text style={styles.watchTitle}>THE EYE — AUTO SCORE WATCHER</Text>
-            {watcher.status === 'running' && <Text style={styles.watchLive}>LIVE</Text>}
+            <Text style={styles.watchTitle}>THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE</Text>
           </View>
-          <Text style={styles.watchTagline}>SEMI-AUTOMATIC BY DESIGN — THE MACHINE COUNTS GOALS; THE MIND BELOW IS YOURS.</Text>
-
-          {!watcher.available && (
-            <Text style={styles.watchNote}>
-              Inside the ANDROID app, THE EYE reads the scorebug while you play and drops the
-              score straight into this composer. This preview has no screen watcher — THE MIND
-              below still works, and manual scorekeeping takes five seconds.
-            </Text>
-          )}
-
-          {watcher.available && watcher.status === 'idle' && (
-            <>
-              <Text style={styles.watchNote}>
-                Arm it before kick-off, switch to your match, play. THE EYE reads the scorebug
-                on your screen — nothing leaves your phone until the vault syncs. The one thing
-                it cannot read is your head; that part stays yours (see THE MIND below).
-              </Text>
-              {watcher.lastError ? <Text style={styles.watchErr}>{watcher.lastError}</Text> : null}
-              <Pressable onPress={() => void watcher.arm()} style={styles.watchBtn}>
-                <Text style={styles.watchBtnTxt}>ARM THE EYE</Text>
-              </Pressable>
-            </>
-          )}
-
-          {watcher.available && watcher.status === 'arming' && (
-            <Text style={styles.watchNote}>ASKING ANDROID FOR SCREEN CAPTURE — TAP “START NOW”…</Text>
-          )}
-
-          {watcher.available && (watcher.status === 'running' || watcher.status === 'arming') && watcher.session && (
-            <>
-              <View style={styles.watchScoreRow}>
-                <Text style={styles.watchScoreLabel}>{swapSides ? 'THEM' : 'YOU'}</Text>
-                <Text style={styles.watchScoreValue}>
-                  {(swapSides ? watcher.session.scoreR : watcher.session.scoreL)}
-                  <Text style={styles.watchScoreDim}> : </Text>
-                  {(swapSides ? watcher.session.scoreL : watcher.session.scoreR)}
-                </Text>
-                <Text style={styles.watchScoreLabel}>{swapSides ? 'YOU' : 'THEM'}</Text>
-              </View>
-              <Text style={styles.watchMeta}>
-                {watcher.session.frames} FRAMES READ · {watcher.session.events.length} GOAL{watcher.session.events.length === 1 ? '' : 'S'} DETECTED
-              </Text>
-              {watcher.session.events.map((e, i) => (
-                <Text key={`${e.at}-${i}`} style={styles.watchEvent}>
-                  {hhmmss(e.at)} · GOAL — {(e.type === 'goal-left') !== swapSides ? 'YOU' : 'THEM'} ({(swapSides ? e.scoreR : e.scoreL)}–{(swapSides ? e.scoreL : e.scoreR)})
-                </Text>
-              ))}
-              {Date.now() - watcher.session.startedAt > 10 * 60000 && (
-                <Text style={styles.watchMeta}>CLOCK CHECK — AT FULL TIME? WRAP IT UP WHILE YOUR HEAD IS STILL IN THE MATCH.</Text>
-              )}
-              <View style={styles.watchBtnRow}>
-                <Pressable onPress={() => setSwapSides((s) => !s)} style={[styles.watchBtn, styles.watchBtnGhost]}>
-                  <Text style={[styles.watchBtnTxt, styles.watchBtnGhostTxt]}>SWAP SIDES</Text>
-                </Pressable>
-                {watcher.status === 'running' && (
-                  <Pressable onPress={() => void watcher.finish()} style={styles.watchBtn}>
-                    <Text style={styles.watchBtnTxt}>FULL TIME</Text>
-                  </Pressable>
-                )}
-              </View>
-            </>
-          )}
-
-          {watcher.available && watcher.status === 'finished' && watcher.session && (
-            <>
-              <Text style={styles.watchNote}>
-                FULL TIME — THE EYE read {(swapSides ? watcher.session.scoreR : watcher.session.scoreL)}–{(swapSides ? watcher.session.scoreL : watcher.session.scoreR)}
-                {' '}(you–them) across {watcher.session.frames} frames. Wrong way round? Swap, then send it down.
-                Now the part only you can do: THE MIND, while it is still fresh.
-              </Text>
-              <View style={styles.watchBtnRow}>
-                <Pressable onPress={() => setSwapSides((s) => !s)} style={[styles.watchBtn, styles.watchBtnGhost]}>
-                  <Text style={[styles.watchBtnTxt, styles.watchBtnGhostTxt]}>SWAP SIDES</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    if (!watcher.session) return;
-                    setGf(clampGoals(swapSides ? watcher.session.scoreR : watcher.session.scoreL));
-                    setGa(clampGoals(swapSides ? watcher.session.scoreL : watcher.session.scoreR));
-                    setWatcherPrefill(true);
-                    setSwapSides(false);
-                    void watcher.cancel();
-                  }}
-                  style={styles.watchBtn}
-                >
-                  <Text style={styles.watchBtnTxt}>SEND SCORE TO COMPOSER ↓</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
+          <Text style={styles.watchTagline}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
+          <Text style={styles.watchNote}>
+            There is a special connection a biro has to a book that cannot be typed. Watch your screen recording, then pen the key moments and unusual things that happened in your match on paper. Let your mind cool down for 24–30 minutes, then open the app and type your results so we can store them in your database. In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way — tech is meant to elevate and not make you dormant. That is the Chinedu Way.
+          </Text>
         </View>
 
         {/* ── composer ── */}
         <View style={styles.composer}>
           <Text style={styles.composerEyebrow}>FULL-TIME — LOG THE MATCH:</Text>
-          {watcherPrefill && (
-            <Text style={styles.watchPrefillNote}>SCORE CAME FROM THE EYE — WILL SAVE AS AUTO</Text>
-          )}
 
           {/* score steppers */}
           <View style={styles.scoreRow}>
@@ -423,7 +324,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
             <HonestyBadge
               text={note}
               options={{ minLength: 3, minWords: 2 }}
-              defaultNote="THIS LINE IS YOURS — THE EYE NEVER SEES IT"
+              defaultNote="THIS LINE IS YOURS — YOUR WORDS, YOUR ACCOUNTABILITY"
               coachId={coach.id}
             />
           </View>
@@ -504,7 +405,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
                       <Text style={styles.entryNote} numberOfLines={2}>“{m.note}”</Text>
                     ) : null}
                     <Text style={styles.entryTime}>
-                      {new Date(m.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — {m.source === 'watcher' ? 'VIA THE EYE (AUTO)' : 'VIA HONOR LOG'}
+                      {new Date(m.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — {m.source === 'watcher' ? 'AUTO (LEGACY)' : 'VIA HONOR LOG'}
                     </Text>
                   </View>
                   <Pressable onPress={() => removeMatch(m.id)} hitSlop={8} style={styles.entryDel}>

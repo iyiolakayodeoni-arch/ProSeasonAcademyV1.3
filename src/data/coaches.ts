@@ -63,7 +63,7 @@ export const COACHES: Coach[] = [
     id: 'chinedu',
     name: 'CHINEDU OKAFOR',
     title: 'THE DISCIPLINARIAN',
-    oneLiner: 'Comfort is the enemy. We train until losing hurts more than the work.',
+    oneLiner: 'Comfort is the enemy. Pen to paper before you type — tech is meant to elevate, not make you dormant.',
     rating: 99,
     journeyTag: 'PRO JOURNEY',
     metaLine: 'THE BENCHMARK · WALKS THE ROAD WITH YOU',

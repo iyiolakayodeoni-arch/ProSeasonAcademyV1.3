@@ -21,7 +21,7 @@ import {
 } from '../data/matches';
 import { TaggedMoment, momentsComplete } from '../data/scanMoments';
 import { useLessonThread, settleCarried, swearLesson } from '../data/lessonThread';
-import { useMatchWatcher } from '../data/matchWatcher';
+
 import { sfx } from '../audio/sound';
 import { CheckIcon, ChevronLeftIcon, EyeIcon, GamepadIcon, ScanGlyphIcon } from '../components/Icons';
 import HonestyBadge from '../components/HonestyBadge';
@@ -111,7 +111,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const coachFirst = coach.name.split(' ')[0];
   const stern = coach.id === 'chinedu';
   const mechShort = plan?.shortName ?? null;
-  const watcher = useMatchWatcher();
   const thread = useLessonThread();
   const carried = thread.current; // the lesson sworn after your LAST scan
 
@@ -125,7 +124,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const [mechanics, setMechanics] = useState(0);
   const [ledAt75, setLedAt75] = useState(false);
   const [decisive, setDecisive] = useState<DecisiveWindow | null>(null);
-  const [watcherPrefill, setWatcherPrefill] = useState(false);
   const [swap, setSwap] = useState(false);
 
   // ── KEY MOMENTS (the scanner's tags + yours) ──
@@ -155,35 +153,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
   const lessonReady = isValidReflection(lesson, { minLength: MIN_LESSON, minWords: 3 });
   const scanReady = mindReady && momentsReady && verdictReady && lessonReady;
 
-  // ── THE EYE's auto markers: when a finished watcher session has goal
-  // events, seed them as tagged moments the moment the review opens ──
-  const eyeSeeded = moments.some((m) => m.auto);
-  useEffect(() => {
-    if (phase !== 'scan' || eyeSeeded) return;
-    const s = watcher.session;
-    if (!s || !s.events.length) return;
-    const seeded: TaggedMoment[] = s.events.map((ev, i) => {
-      const mine = (ev.type === 'goal-left') !== swap; // left = YOU unless swapped
-      return makeMoment(mine ? 'GOAL FOR' : 'GOAL AGAINST', {
-        id: `eye-${ev.at}-${i}`,
-        auto: true,
-        eyeNote: `SPOTTED ${fmtClock(ev.at - s.startedAt)} INTO THE SESSION · THE EYE DOES NOT LIE — BUT IT ONLY SEES GOALS`,
-      });
-    });
-    if (seeded.length) setMoments((cur) => [...seeded, ...cur]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-
-  // swapping sides flips the EYE's tags too
-  const flipSwap = () => {
-    setSwap((s) => !s);
-    setMoments((cur) =>
-      cur.map((m) =>
-        m.auto ? { ...m, kind: m.kind === 'GOAL FOR' ? 'GOAL AGAINST' : 'GOAL FOR' } : m,
-      ),
-    );
-  };
-
   const resetComposer = () => {
     setGf(0);
     setGa(0);
@@ -198,8 +167,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
     setVerdict(null);
     setVerdictNote('');
     setLesson('');
-    setWatcherPrefill(false);
-    setSwap(false);
   };
 
   const logScan = () => {
@@ -228,7 +195,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
         .filter(Boolean)
         .join(' | '),
     };
-    const entry = addMatch(draft, watcherPrefill ? 'watcher' : 'manual');
+    const entry = addMatch(draft, 'manual');
     // the loop closes and reopens in one motion: the old lesson gets its
     // verdict, the new one takes the thread as your next main quest
     if (carried && verdict) settleCarried(carried.id, verdict, verdictNote);
@@ -242,16 +209,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
     });
     setLoggedOnce(true);
     setPhase('read');
-  };
-
-  // pull the score THE EYE counted (Android build only; hidden otherwise)
-  const takeEyeScore = () => {
-    const s = watcher.session;
-    if (!s) return;
-    setGf(clampGoals(swap ? s.scoreR : s.scoreL));
-    setGa(clampGoals(swap ? s.scoreL : s.scoreR));
-    setWatcherPrefill(true);
-    void watcher.cancel();
   };
 
   return (
@@ -297,62 +254,44 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>1</Text>
                 <Text style={styles.briefTxt}>
-                  {watcher.available
-                    ? 'ARM THE EYE BEFORE KICK-OFF (SCREEN-RECORD PERMISSION, ONCE) — IT WATCHES THE SCOREBUG AND DROPS GOAL MARKERS FOR YOU. NO ANDROID BUILD? YOUR OWN EYES DO THE SCANNING — SAME RITUAL.'
-                    : 'PLAY THE MATCH FOR REAL. ON THIS PHONE YOUR OWN EYES ARE THE SCANNER — TAG THE MOMENTS YOURSELF AFTER FULL TIME. SAME RITUAL, SAME STANDARD.'}
+                  THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE: There is a special connection a biro has to a book that cannot be typed. Screen record your match, watch your tape back, and write the key moments and unusual things on paper.
                 </Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>2</Text>
-                <Text style={styles.briefTxt}>THE SCANNER TAGS THE KEY MOMENTS — THE MAKE-OR-BREAK MINUTES. GOALS COME IN AS MARKERS; THE MISTAKES AND GOOD CALLS YOU TAG YOURSELF, HONESTLY.</Text>
+                <Text style={styles.briefTxt}>
+                  24–30 MINUTE COOL-DOWN: Let your mind settle for 24–30 minutes after the match. Once you have cooled down, open the app and type your written answers into your database.
+                </Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>3</Text>
-                <Text style={styles.briefTxt}>{coachFirst.toUpperCase()} ASKS A QUESTION ON EVERY TAG. ANSWER EACH ONE LIKE YOU WANT TO KEEP IT — THE HEADSPACE IS THE POINT, NOT THE CONFESSION.</Text>
+                <Text style={styles.briefTxt}>
+                  {coachFirst.toUpperCase()} ASKS A QUESTION ON EVERY TAG. We give you the questions to guide your analysis — answer them honestly from your paper notes.
+                </Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>4</Text>
-                <Text style={styles.briefTxt}>JOT THE LESSON YOU CARRY INTO YOUR NEXT MATCH. ONE LINE YOU WOULD SIGN. IT MEETS YOU AT THE NEXT STAGE ROOM AS YOUR MAIN QUEST.</Text>
+                <Text style={styles.briefTxt}>
+                  IN A WORLD LOOKING FOR THE EASY WAY OUT: The hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant.
+                </Text>
               </View>
               <View style={styles.privacyBox}>
                 <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: ANY VIDEO STAYS ON YOUR PHONE AND GOES WHEN THE SESSION SEALS. THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — NEVER YOUR RAW MATCH.
+                  DEFAULT RULE: YOUR SCREEN RECORDING STAYS ON YOUR PHONE. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
                 </Text>
               </View>
             </Animated.View>
-
-            {watcher.available && (watcher.status === 'idle' || watcher.status === 'unavailable') && (
-              <Pressable
-                onPress={() => {
-                  sfx('whoosh');
-                  void watcher.arm();
-                }}
-              >
-                <View style={[styles.logBtn, styles.armBtn]}>
-                  <EyeIcon size={11} color={colors.primary} />
-                  <Text style={[styles.logBtnTxt, { color: colors.primary }]}>ARM THE EYE — THEN GO PLAY ›</Text>
-                </View>
-              </Pressable>
-            )}
-            {watcher.available && (watcher.status === 'arming' || watcher.status === 'running') && (
-              <View style={styles.eyeLiveStrip}>
-                <EyeIcon size={11} color={colors.primary} />
-                <Text style={styles.eyeLiveTxt}>
-                  THE EYE IS LIVE — {watcher.session?.scoreL ?? 0}–{watcher.session?.scoreR ?? 0} SO FAR. GO PLAY. WHEN IT'S FULL TIME, COME BACK AND RUN THE REVIEW.
-                </Text>
-              </View>
-            )}
 
             <Pressable onPress={() => { sfx('whoosh'); setPhase('scan'); }}>
               <View style={styles.logBtn}>
                 <ScanGlyphIcon size={11} color="#0a0f0a" />
                 <Text style={styles.logBtnTxt}>
-                  {(watcher.session?.events.length ?? 0) > 0 ? 'FULL TIME — OPEN THE MOMENT REVIEW ›' : 'I PLAYED THE MATCH — START THE REVIEW ›'}
+                  I PLAYED THE MATCH — START THE REVIEW ›
                 </Text>
               </View>
             </Pressable>
             <Text style={styles.honor}>
-              IF THE EYE IS STILL RUNNING, FINISH IT IN THE VAULT FIRST SO THE MARKERS LAND HERE. NO SHORTCUTS — THE ANSWERS ARE THE SESSION.
+              THE CHINEDU WAY: WATCH YOUR TAPE, PEN YOUR MOMENTS ON PAPER, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.
             </Text>
           </>
         ) : phase === 'scan' ? (
@@ -371,38 +310,6 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 <ScanGlyphIcon size={13} color={colors.primary} />
               </View>
               <Text style={styles.cue}>{copy.numbersCue}</Text>
-
-              {/* THE EYE — compact bridge to the on-device watcher */}
-              {watcher.available && (
-                <View style={styles.eyeStrip}>
-                  <GamepadIcon size={11} color={colors.primary} />
-                  {watcher.status === 'finished' && watcher.session ? (
-                    <View style={{ flex: 1, gap: 7 }}>
-                      <Text style={styles.eyeTxt}>
-                        THE EYE READ {swap ? watcher.session.scoreR : watcher.session.scoreL}–{swap ? watcher.session.scoreL : watcher.session.scoreR} (YOU–THEM) ACROSS {watcher.session.frames} FRAMES
-                        {watcher.session.events.length > 0 ? ` · ${watcher.session.events.length} GOAL MARKER${watcher.session.events.length === 1 ? '' : 'S'} ALREADY TAGGED BELOW` : ''}
-                      </Text>
-                      <View style={styles.eyeBtnRow}>
-                        <Pressable onPress={takeEyeScore} style={styles.eyeBtn}>
-                          <Text style={styles.eyeBtnTxt}>USE THE EYE'S SCORE</Text>
-                        </Pressable>
-                        <Pressable onPress={flipSwap} style={[styles.eyeBtn, styles.eyeBtnGhost]}>
-                          <Text style={[styles.eyeBtnTxt, styles.eyeBtnGhostTxt]}>SWAP</Text>
-                        </Pressable>
-                      </View>
-                    </View>
-                  ) : (watcher.status === 'running' || watcher.status === 'arming') && watcher.session ? (
-                    <Text style={[styles.eyeTxt, { flex: 1 }]}>
-                      THE EYE IS LIVE — {watcher.session.scoreL}–{watcher.session.scoreR} SO FAR. FULL TIME? FINISH IT IN THE VAULT, OR ENTER THE SCORE BY HAND BELOW.
-                    </Text>
-                  ) : (
-                    <Text style={[styles.eyeTxt, { flex: 1 }]}>
-                      THE EYE CAN COUNT GOALS FOR YOU — ARM IT BEFORE KICK-OFF AND THE SCORE + GOAL MARKERS FILL THEMSELVES IN.
-                    </Text>
-                  )}
-                </View>
-              )}
-              {watcherPrefill && <Text style={styles.eyePrefill}>SCORE CAME FROM THE EYE — SAVED AS AUTO</Text>}
 
               {/* score */}
               <View style={styles.scoreRow}>

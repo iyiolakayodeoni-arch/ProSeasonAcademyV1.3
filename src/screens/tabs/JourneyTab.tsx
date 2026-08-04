@@ -213,6 +213,20 @@ export default function JourneyTab({
 
         <Text style={styles.headline}>YOUR JOURNEY</Text>
         <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
+
+        {/* ── THE CHINEDU WAY: OUR OWN PATH PHILOSOPHY ── */}
+        <View style={styles.chineduCard}>
+          <Text style={styles.chineduTag}>THE CHINEDU WAY · HOW YOU WALK OUR PATH</Text>
+          <Text style={styles.chineduTitle}>PEN TO PAPER BEFORE YOU TYPE · THE HARD WAY IS THE EASY WAY</Text>
+          <Text style={styles.chineduText}>
+            1. SCREEN RECORD & WATCH: Start your screen recording before kick-off, play your match, then watch your tape back.
+            {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
+            {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
+            {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
+            {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+          </Text>
+        </View>
+
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
           <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
@@ -668,6 +682,37 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     color: 'rgba(143,184,155,0.75)',
   },
+
+  chineduCard: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    borderColor: 'rgba(57,255,106,0.35)',
+    backgroundColor: 'rgba(57,255,106,0.04)',
+  },
+  chineduTag: {
+    fontFamily: monoFont,
+    fontSize: 7.2,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    color: colors.primary,
+  },
+  chineduTitle: {
+    marginTop: 5,
+    fontFamily: monoFont,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.fg,
+  },
+  chineduText: {
+    marginTop: 8,
+    fontSize: 10.5,
+    lineHeight: 16.5,
+    color: 'rgba(143,184,155,0.9)',
+  },
+
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingHorizontal: 8 },
   divLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.22)' },
   dividerTxt: { fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },

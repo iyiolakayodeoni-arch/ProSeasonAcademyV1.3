@@ -151,6 +151,18 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
           </View>
         ) : null}
 
+        {/* the chinedu way: pen to paper */}
+        <View style={[styles.sideNote, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
+          <Text style={[styles.sideNoteTitle, { color: colors.primary }]}>THE CHINEDU WAY · HOW YOU TRAIN</Text>
+          <Text style={styles.sideNoteBody}>
+            1. SCREEN RECORD & WATCH: Record your match and watch your tape back. Don't look away from mistakes.
+            {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down how this mechanic felt on paper first.
+            {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind cool for 24–30 minutes after full time.
+            {'\n'}4. LOG TO DATABASE: Open the app and type your written truth into your database.
+            {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+          </Text>
+        </View>
+
         {/* the honest framing — a side note, never the assignment */}
         <View style={styles.sideNote}>
           <Text style={styles.sideNoteTitle}>WHY THIS IS A SIDE QUEST</Text>
