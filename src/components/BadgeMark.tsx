@@ -22,6 +22,10 @@ export const BADGE_LABELS: Record<number, string> = {
   4: 'BUILD DISCIPLINE',
   5: 'PERFORM UNDER PRESSURE',
   6: 'PROVE IT',
+  101: 'SHIELD MASTER',
+  102: 'TACTICAL MASTER',
+  103: 'CRASH MASTER',
+  104: 'DEFENSIVE LOCK',
 };
 
 // the hex/shield frame every crest sits inside — one consistent silhouette
@@ -87,6 +91,40 @@ function Crest({ stage, color, dim }: { stage: number; color: string; dim: boole
           <Path d="M 50 34 L 50 62" stroke={stroke} strokeWidth={1.6} opacity={0.6} />
           <Path d="M 36 44 C 42 36 58 36 64 44" stroke={stroke} strokeWidth={1.8} fill="none" opacity={0.7} />
           <Polygon points="50,28 52.2,33 57.5,33 53.3,36.2 54.9,41.4 50,38.2 45.1,41.4 46.7,36.2 42.5,33 47.8,33" fill={fill} />
+        </G>
+      );
+    case 101: // Shield Trap - a central shield or block
+      return (
+        <G opacity={o}>
+          <Path d="M 35 40 L 65 40 L 65 55 C 65 67 50 75 50 78 C 50 75 35 67 35 55 Z" stroke={stroke} strokeWidth={2} fill={dim ? 'none' : 'rgba(242,192,120,0.2)'} />
+          <Circle cx="50" cy="50" r="3" fill={fill} />
+        </G>
+      );
+    case 102: // Inverted Overload - three connecting dots
+      return (
+        <G opacity={o}>
+          <Circle cx="50" cy="50" r="6" stroke={stroke} strokeWidth={2} fill="none" />
+          <Line x1="32" y1="50" x2="44" y2="50" stroke={stroke} strokeWidth={2} />
+          <Line x1="68" y1="50" x2="56" y2="50" stroke={stroke} strokeWidth={2} />
+          <Line x1="50" y1="32" x2="50" y2="44" stroke={stroke} strokeWidth={2} />
+          <Circle cx="32" cy="50" r="3" fill={fill} />
+          <Circle cx="68" cy="50" r="3" fill={fill} />
+          <Circle cx="50" cy="32" r="3" fill={fill} />
+        </G>
+      );
+    case 103: // Box Crash Run - an arrow crashing into a square
+      return (
+        <G opacity={o}>
+          <Rect x="35" y="32" width="30" height="24" stroke={stroke} strokeWidth={2} fill="none" />
+          <Path d="M 50 70 L 50 44 M 44 52 L 50 44 L 56 52" stroke={stroke} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </G>
+      );
+    case 104: // Tackle Personality - intersecting bars
+      return (
+        <G opacity={o}>
+          <Line x1="32" y1="42" x2="68" y2="58" stroke={stroke} strokeWidth={2.4} strokeLinecap="round" />
+          <Line x1="32" y1="58" x2="68" y2="42" stroke={stroke} strokeWidth={2.4} strokeLinecap="round" />
+          <Circle cx="50" cy="50" r="5" fill={fill} />
         </G>
       );
     default:

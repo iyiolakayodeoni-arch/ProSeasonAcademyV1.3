@@ -3,19 +3,13 @@ import { tickerWit } from './humor';
 import { SideLesson, sideLessonFromPost } from './sideLesson';
 
 // ─────────────────────────────────────────────────────────────
-// HOME FEED DATA LAYER
+// HOME FEED DATA LAYER — CONSOLE FC 26 COMPETITIVE FOCUS
 //
-// The Home page is not fake community filler anymore.
-// It has two honest lanes:
-//   1) FOUNDER / COACH posts — written by you or generated from
-//      actual academy events. These are never pretending to be
-//      random members.
-//   2) METABOT posts — approved scouting finds from liveFeed.json.
-//      MetaBot can collect for free, but nothing reaches players
-//      until the founder approves/exports it. Trick posts carry
-//      their SIDE NOTE payload so the card opens an in-app
-//      lesson + blog (SideLessonSheet) instead of sending the
-//      player out to a browser.
+// The Home page is calibrated specifically for PS5 & Xbox Series X|S
+// competitive play. No mobile-first framing, no touch-tap language.
+// Tactical debriefs, custom formations, Weekend League (Champs)
+// qualification, Division Rivals ladder climbing, and controller inputs
+// govern every note.
 // ─────────────────────────────────────────────────────────────
 
 interface LiveLessonBlock {
@@ -91,35 +85,34 @@ export function nextGroupSessionLabel(now = Date.now()): string {
   return `${d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()} · 18:00`;
 }
 
-// Founder/coaches only. Replace this with a backend announcements table
-// when the Founder Desk message composer is wired into Home.
+// Hand-authored items focusing strictly on console FC 26
 export function handAuthored(coach: Coach): FeedCardData[] {
   const first = coach.name.split(' ')[0];
   const groupWhen = nextGroupSessionLabel();
   return [
     {
-      id: 'founder-state-of-academy',
+      id: 'founder-console-positioning',
       kind: 'ACADEMY_NEWS',
-      tag: 'FROM THE FOUNDER',
+      tag: 'CONSOLES ONLY · PS5 & XBOX',
       time: 'PINNED',
-      headline: 'Testing first. No January promise. No broken money flow.',
+      headline: 'Mainline FC 26 competitive training sandbox.',
       body:
-        'The academy opens when the UX, backend, paywall, lessons, songs and match scan are ready. I will post every official academy announcement here myself.',
-      cta: 'READ FOUNDER NOTE ›',
-      metaRight: 'IMPORTANT',
+        'We do not build for FC Mobile or casual touch-tap styles. This academy is calibrated exclusively for PS5 and Xbox Series X|S competitive play. Every tactic, controller button-combo, and Match Scan targets the mainline console gameplay — Division Rivals, Champions, and Clubs session debriefs.',
+      cta: 'SWEAR THE CONSOLE STANDARD ›',
+      metaRight: 'MAINLINE FC 26',
       accent: 'gold',
       origin: 'academy',
     },
     {
       id: 'coach-group-session',
       kind: 'COACH_UPDATE',
-      tag: 'GROUP FILM ROOM',
+      tag: 'CO-OP & CLUBS TACTICAL LAB',
       time: groupWhen,
-      headline: `${first}'s next compulsory group session`,
+      headline: `${first}'s Elite Rivals & Champs debrief`,
       body:
-        'Every player on the same coach path comes into the film room together: same lesson, shared notes, questions, receipts and accountability.',
-      cta: 'SESSION DETAILS ›',
-      metaRight: 'EVERY 4 DAYS',
+        'Controllers in hand, squad. We are dissecting the 4-3-2-1 Inverted Wingback overloads, analyzing the frame data of Tackle Personality, and sharing raw Match Vault receipts. Mandatory attendance for the competitive ladder.',
+      cta: 'ENTER THE TACTIC LAB ›',
+      metaRight: 'COACH\'S ROOM',
       accent: 'green',
       avatar: 'coach',
       live: false,
@@ -129,19 +122,19 @@ export function handAuthored(coach: Coach): FeedCardData[] {
 }
 
 export const HERO_FALLBACK = {
-  headline: 'Founder channel is warming up',
+  headline: 'Founder console channel is warming up',
   body:
-    'When the bot exports fresh approved finds, the newest mechanic appears here. When the founder needs to speak, Home reads like an announcement board — not fake member noise.',
-  cta: 'OPEN THE LATEST NOTE ›',
+    'When the scouting bot exports fresh approved console clips, the newest mechanic appears here. When the founder speaks, Home reads like an announcement board for serious controller players.',
+  cta: 'OPEN THE CONSOLE BRIEFING ›',
   meta: 'FOUNDER',
   duration: 'LOOP',
 };
 
 const KIND_TAG: Record<string, string> = {
-  EXPLOIT: 'EXPLOIT',
-  SKILL_MOVE: 'SKILL MOVE',
-  PATCH_NOTE: 'PATCH NOTE',
-  META_SHIFT: 'META SHIFT',
+  EXPLOIT: 'CONSOLE EXPLOIT',
+  SKILL_MOVE: 'CONTROLLER SKILL MOVE',
+  PATCH_NOTE: 'CONSOLES PATCH NOTE',
+  META_SHIFT: 'COMPETITIVE META SHIFT',
   TRICK_OF_THE_WEEK: 'TRICK OF THE WEEK',
 };
 
@@ -157,12 +150,12 @@ export function metabotPosts(): FeedCardData[] {
   return LIVE_FEED.posts.map((p) => ({
     id: p.id,
     kind: (p.kind as FeedKind) ?? 'META_SHIFT',
-    tag: KIND_TAG[p.kind] ?? 'META WATCH',
+    tag: KIND_TAG[p.kind] ?? 'CONSOLE META WATCH',
     time: timeAgo(p.discoveredAt),
     headline: p.headline,
     body: p.body,
     // a post with a lesson is a SIDE NOTE — read it in the app, not the browser
-    cta: p.lesson ? 'READ THE SIDE NOTE — IN-APP BLOG ›' : p.cta,
+    cta: p.lesson ? 'READ THE CONTROLLER DEBRIEF — IN-APP ›' : p.cta,
     ctaUrl: p.sourceUrl,
     accent: 'green' as FeedAccent,
     thumbnail: p.kind === 'EXPLOIT' || p.kind === 'SKILL_MOVE' ? ('pitchRun' as const) : null,
@@ -210,8 +203,8 @@ export function buildFeed(coach: Coach): FeedCardData[] {
 export function buildTicker(coach: Coach): string[] {
   const first = coach.name.split(' ')[0];
   const manual = [
-    'FOUNDER NOTE: TESTING FIRST, NO RUSHED LAUNCH',
-    `NEXT ${first.toUpperCase()} GROUP SESSION: ${nextGroupSessionLabel()}`,
+    'FOUNDER CONSOLE LOGS: REPOSITIONED FOR CONTROLLER GRINDERS ONLY',
+    `NEXT ${first.toUpperCase()} RIVALS FILM ROOM: ${nextGroupSessionLabel()}`,
   ];
   const botHeads = metabotPosts()
     .slice(0, 4)

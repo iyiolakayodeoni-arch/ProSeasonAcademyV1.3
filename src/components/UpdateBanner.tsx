@@ -36,7 +36,7 @@ export default function UpdateBanner() {
         </View>
         {!!info.note && <Text style={styles.body}>{info.note}</Text>}
         <Text style={styles.hint}>
-          YOU'RE ON {info.current}. THE PM INSTALLS IT IN ONE TAP — OR A DIRECT DOWNLOAD IF YOU DON'T HAVE IT YET.
+          YOU'RE ON {info.current}. THE PM INSTALLS IT INSTANTLY — OR A DIRECT DOWNLOAD IF YOU DON'T HAVE IT YET.
         </Text>
       </View>
     </Pressable>

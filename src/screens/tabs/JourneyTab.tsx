@@ -167,8 +167,8 @@ export default function JourneyTab({
   const litPath = buildLitPath(CUR);
   const dots = footprintDots(CUR);
   const current = SEASON.stages[CUR - 1] ?? SEASON.stages[SEASON.stages.length - 1];
-  const cleared = progress.completed[selected.n];
-  const isLocked = selected.n > CUR;
+  const cleared = !!progress.completed[selected.n];
+  const isLocked = selected.isSideQuest ? (selected.parentStageN ?? 1) > CUR : selected.n > CUR;
 
   // node tap → the node zooms open into the Coaching Screen
   const zoomIntoStage = (s: JourneyStage) => {
@@ -243,7 +243,7 @@ export default function JourneyTab({
             }}
           />
           <Text style={styles.heroHint}>
-            TAP THE CARD — WHY THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
+            PRESS [A/CROSS] — THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
           </Text>
         </View>
 
@@ -259,6 +259,24 @@ export default function JourneyTab({
               ))}
               {/* lit path up to the current node */}
               <LitPathPulse d={litPath} />
+              {/* connecting dashed amber lines to side quests */}
+              {SEASON.stages.map((s) => (
+                <React.Fragment key={`lines-${s.n}`}>
+                  {s.sideQuests?.map((sq) => {
+                    const sqUnlocked = s.n <= CUR;
+                    return (
+                      <Path
+                        key={`line-${sq.id}`}
+                        d={`M ${s.at.x} ${s.at.y} L ${sq.at.x} ${sq.at.y}`}
+                        stroke={colors.accent}
+                        strokeWidth={1.4}
+                        strokeDasharray="3 4"
+                        opacity={sqUnlocked ? 0.8 : 0.3}
+                      />
+                    );
+                  })}
+                </React.Fragment>
+              ))}
               <Circle cx={current.at.x} cy={current.at.y} r={4} fill={colors.primary} />
             </Svg>
 
@@ -334,6 +352,78 @@ export default function JourneyTab({
                   >
                     {s.key}
                   </Text>
+
+                  {/* Side Quests branching from this stage */}
+                  {s.sideQuests?.map((sq) => {
+                    const sqUnlocked = s.n <= CUR;
+                    const sqDone = !!progress.completed[100 + s.n];
+                    const sqStage: JourneyStage = {
+                      n: 100 + s.n,
+                      key: sq.key,
+                      name: sq.name,
+                      tagline: sq.tagline,
+                      at: sq.at,
+                      chapter: s.chapter,
+                      objectives: sq.objectives,
+                      rewardXp: sq.rewardXp,
+                      rewardBadge: sq.rewardBadge,
+                      quote: sq.quote,
+                      duration: sq.duration,
+                      isSideQuest: true,
+                      parentStageN: s.n,
+                      internalSource: sq.internalSource,
+                      internalPatchVersion: sq.internalPatchVersion,
+                      coachExplanation: sq.coachExplanation,
+                      rule: sq.rule,
+                      why: sq.why,
+                      tiles: sq.tiles,
+                      clip: sq.clip,
+                    };
+                    return (
+                      <React.Fragment key={sq.id}>
+                        <Pressable
+                          onPress={() => {
+                            if (!sqUnlocked) {
+                              sfx('fail');
+                            } else {
+                              setSelected(sqStage);
+                              zoomIntoStage(sqStage);
+                            }
+                          }}
+                          hitSlop={8}
+                        >
+                          <View
+                            style={[
+                              styles.node,
+                              { left: sq.at.x - 13, top: sq.at.y - 13, width: 26, height: 26, borderRadius: 13 },
+                              sqDone ? styles.sqNodeDone : sqUnlocked ? styles.sqNodeUnlocked : styles.sqNodeLocked,
+                              selected.n === sqStage.n && { borderColor: 'rgba(238,242,236,0.9)', borderWidth: 1.5 },
+                            ]}
+                          >
+                            {!sqUnlocked ? (
+                              <LockIcon size={8} color="rgba(242,192,120,0.5)" />
+                            ) : sqDone ? (
+                              <CheckIcon size={9} color="#05130a" />
+                            ) : (
+                              <Text style={styles.sqNodeNum}>Q</Text>
+                            )}
+                          </View>
+                        </Pressable>
+                        {/* side quest name beside the node */}
+                        <Text
+                          style={[
+                            styles.stageKey,
+                            sq.at.x > MAP_W / 2
+                              ? { left: sq.at.x + 18, textAlign: 'left' }
+                              : { left: sq.at.x - 118, textAlign: 'right' },
+                            { top: sq.at.y + 14, width: 100, fontSize: 5.6, letterSpacing: 1.5, color: sqDone ? colors.accent : sqUnlocked ? colors.fg : 'rgba(143,184,155,0.4)' },
+                          ]}
+                        >
+                          {sq.key}
+                        </Text>
+                      </React.Fragment>
+                    );
+                  })}
                 </React.Fragment>
               );
             })}
@@ -384,7 +474,11 @@ export default function JourneyTab({
         {/* ── stage detail card ── */}
         <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, isLocked && styles.stageCardLocked]}>
           <View style={styles.stageTop}>
-            <Text style={styles.stageSelPill}>STAGE {selected.n} · SELECTED</Text>
+            {selected.isSideQuest ? (
+              <Text style={[styles.stageSelPill, { borderColor: 'rgba(242,192,120,0.5)', color: colors.accent }]}>SIDE QUEST · SELECTED</Text>
+            ) : (
+              <Text style={styles.stageSelPill}>STAGE {selected.n} · SELECTED</Text>
+            )}
             {isLocked ? (
               <View style={styles.statusPill}>
                 <LockIcon size={9} color="rgba(143,184,155,0.7)" />
@@ -447,12 +541,8 @@ export default function JourneyTab({
                 })}
               </View>
 
-              {/* progress — LIVE evidence meter (replaces the author-set bar) */}
-              <View style={styles.progRow}>
-                <Text style={styles.progLbl}>STAGE PROGRESS · LIVE</Text>
-                <Text style={styles.progPct}>{stageLiveProgress}%</Text>
-              </View>
-              <EvidenceMeter value={stageLiveProgress} height={6} delay={120} />
+              {/* progress — FUT 26 Rivals Rank Ladder Progress */}
+              <RivalsRankLadder progressPct={stageLiveProgress} totalSteps={(selected.objectives ?? []).length + 1} />
 
               {/* reward — the badge as a real sealed/unsealed medallion + XP */}
               <View style={styles.rewardRow}>
@@ -483,13 +573,13 @@ export default function JourneyTab({
               )}
 
               {/* CTA — free stages open; paid ones ask once, then open forever */}
-              {needsUnlock(selected.n) ? (
+              {needsUnlock(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) ? (
                 <View style={styles.payWall}>
                   <Text style={styles.payTag}>
-                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.n))}
+                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n))}
                   </Text>
                   <Text style={styles.payBody}>
-                    {tierFor(selected.n) >= 2
+                    {tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) >= 2
                       ? 'The summit stages are PRO. One pass opens every stage, every trick and the film room — for the whole period, not per item.'
                       : 'ACADEMY opens the full journey for the period you pick. Same tier, same access, wherever you are — only the currency changes.'}
                   </Text>
@@ -501,7 +591,7 @@ export default function JourneyTab({
                 </View>
               ) : (
                 <ContinueButton
-                  label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'}
+                  label={cleared ? 'REPLAY FILM ROOM ›' : selected.isSideQuest ? 'START SIDE QUEST ›' : 'CONTINUE STAGE ›'}
                   onPress={() => zoomIntoStage(selected)}
                 />
               )}
@@ -564,6 +654,50 @@ export default function JourneyTab({
 // ── THE STANDARD — the parallel benchmark journey. Not a second
 // progression track: it moves beside YOUR JOURNEY and reveals the
 // chapter that matches your current stage. Read it. Walk your own road.
+function RivalsRankLadder({ progressPct, totalSteps = 4 }: { progressPct: number; totalSteps?: number }) {
+  const activeStep = Math.min(totalSteps - 1, Math.floor((progressPct / 100) * totalSteps));
+  return (
+    <View style={styles.rivalsTrack}>
+      <Text style={styles.rivalsTrackTitle}>FUT 26 DIV RIVALS LADDER PROGRESS</Text>
+      <View style={styles.rivalsLineRow}>
+        <View style={styles.rivalsBgLine} />
+        <View style={[styles.rivalsActiveLine, { width: `${progressPct}%` }]} />
+        {Array.from({ length: totalSteps }).map((_, i) => {
+          const stepPct = (i / (totalSteps - 1)) * 100;
+          const isCompleted = progressPct >= stepPct || (i === 0);
+          const isActive = i === activeStep;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.rivalsStepNode,
+                { left: `${stepPct}%` },
+                isCompleted && styles.rivalsStepCompleted,
+                isActive && styles.rivalsStepActive,
+              ]}
+            >
+              {i === totalSteps - 1 ? (
+                <Text style={[styles.rivalsStepGlyph, isCompleted && { color: '#05130a' }]}>★</Text>
+              ) : (
+                <View style={[styles.rivalsStepInnerDot, isCompleted && { backgroundColor: '#05130a' }]} />
+              )}
+              <Text
+                style={[
+                  styles.rivalsStepLabel,
+                  isCompleted ? { color: colors.primary } : { color: colors.muted },
+                  isActive && { color: colors.accent, fontWeight: '900' },
+                ]}
+              >
+                {i === 0 ? 'START' : i === totalSteps - 1 ? 'RANK UP' : `STEP ${i}`}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
   return (
     <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
@@ -806,6 +940,115 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(57,255,106,0.35)',
   },
   nodeNum: { fontFamily: monoFont, fontSize: 14, fontWeight: '900', color: colors.fg },
+
+  // Side Quest Node Styles
+  sqNodeDone: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.85,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  sqNodeUnlocked: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(242,192,120,0.12)',
+  },
+  sqNodeLocked: {
+    borderColor: 'rgba(242,192,120,0.25)',
+    backgroundColor: 'rgba(10,17,12,0.95)',
+  },
+  sqNodeNum: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.accent,
+  },
+  rivalsTrack: {
+    marginTop: 14,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,13,0.72)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  rivalsTrackTitle: {
+    fontFamily: monoFont,
+    fontSize: 6.4,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    color: colors.muted,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  rivalsLineRow: {
+    height: 28,
+    position: 'relative',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  rivalsBgLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#172f21',
+    borderRadius: 2,
+  },
+  rivalsActiveLine: {
+    position: 'absolute',
+    left: 0,
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  rivalsStepNode: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.8,
+    borderColor: '#1f3826',
+    backgroundColor: '#0a0f0a',
+    top: 6,
+    marginLeft: -8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rivalsStepCompleted: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  rivalsStepActive: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(242,192,120,0.3)',
+    transform: [{ scale: 1.25 }],
+  },
+  rivalsStepGlyph: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.accent,
+  },
+  rivalsStepInnerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1f3826',
+  },
+  rivalsStepLabel: {
+    position: 'absolute',
+    top: 20,
+    width: 80,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginLeft: -40,
+    left: 8,
+  },
   currentPill: {
     position: 'absolute',
     backgroundColor: 'rgba(8,13,9,0.95)',
