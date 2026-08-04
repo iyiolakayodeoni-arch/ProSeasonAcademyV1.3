@@ -24,7 +24,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'start',
     eyebrow: 'START HERE',
     title: 'YOUR NEXT MOVE',
-    body: 'Your Baseline Week is sealed — the honest part is done. Open JOURNEY and tap Stage 1. Your coach is waiting. Nothing unlocks by tapping; every stage is cleared by evidence.',
+    body: 'Your Baseline Week is sealed — the honest part is done. Open JOURNEY and press Stage 1. Your coach is waiting. Nothing unlocks by pressing buttons; every stage is cleared by evidence.',
     tone: 'green',
   },
   {

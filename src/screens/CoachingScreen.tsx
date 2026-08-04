@@ -48,11 +48,25 @@ import MirrorSessionScreen from './MirrorSessionScreen';
 import StageClearedSheet from './StageClearedSheet';
 import { PLAYER_CARD } from '../data/playerCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
+import InputCombo, { ControllerButton } from '../components/ButtonGlyph';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const VOICE_LEN = 42; // fallback seconds — the real clip reports its own length
+
+const COMBO_MAP: Record<string, ControllerButton[]> = {
+  'controlled-sprint': ['R1', 'LS'],
+  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'driven-pass': ['R1', 'CROSS'],
+  'second-ball': ['LS', 'CIRCLE'],
+  'lane-change': ['L1', 'RS_FLICK'],
+  'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
+  'sq-1': ['L2'],
+  'sq-2': ['R1', 'CROSS'],
+  'sq-3': ['Y'],
+  'sq-4': ['L2', 'CIRCLE'],
+};
 
 function hhmm(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -174,24 +188,68 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   // the earned reveal — fires once on a genuine stage pass (P3)
   const [showReveal, setShowReveal] = useState(false);
 
-  // ── resolve TODAY'S MECHANIC from the live bot feed ──
-  const lessonResult = useMemo(
-    () => resolveStageLesson(stage.n, prog.lessonRefs),
-    [stage.n, prog.lessonRefs],
-  );
+  // ── resolve TODAY'S MECHANIC from the live bot feed (skip for Side Quests) ──
+  const lessonResult = useMemo(() => {
+    if (stage.isSideQuest) {
+      return { status: 'empty' as const };
+    }
+    return resolveStageLesson(stage.n, prog.lessonRefs);
+  }, [stage.isSideQuest, stage.n, prog.lessonRefs]);
+
   useEffect(() => {
-    if (lessonResult.status === 'ok' && !lessonResult.fromRef) {
+    if (!stage.isSideQuest && lessonResult.status === 'ok' && !lessonResult.fromRef) {
       // claim this live item for the stage — stored so a future patch
       // flagging it stale routes the coach to swap in a fresh one
       assignLessonRef(stage.n, lessonResult.plan.contentId);
     }
-  }, [lessonResult, stage.n]);
+  }, [lessonResult, stage.isSideQuest, stage.n]);
 
-  const plan: LessonPlan | null = lessonResult.status === 'ok' ? lessonResult.plan : null;
-  const staleName = lessonResult.status === 'stale' ? lessonResult.mechanicName : undefined;
-  const chat = plan ? buildCoachChat(coach, plan) : buildPrepChat(coach, staleName);
-  const planContentId = plan?.contentId ?? (lessonResult.status === 'stale' ? lessonResult.contentId : null);
-  const cleared = prog.completed[stage.n];
+  const plan: LessonPlan | null = useMemo(() => {
+    if (stage.isSideQuest) {
+      return {
+        contentId: `sq-content-${stage.n}`,
+        kind: 'SKILL_MOVE',
+        patchVersion: stage.internalPatchVersion ?? 'FC 26 Launch Meta',
+        discoveredAt: '2025-09-26',
+        sourceName: stage.internalSource ?? 'EA Sports FC 26 Official Source',
+        sourceUrl: 'https://www.ea.com/games/ea-sports-fc/fc-26',
+        mechanicName: stage.key,
+        shortName: stage.name.toLowerCase().replace(/^the /, ''),
+        headline: stage.tagline,
+        why: stage.why ?? '',
+        tiles: stage.tiles ?? [],
+        rule: stage.rule ?? '',
+        clip: stage.clip ?? { variant: 'pitchRun', duration: '03:00', caption: 'DRILL', subcaption: 'DRILL' },
+        scanTargets: [],
+      };
+    }
+    return lessonResult.status === 'ok' ? lessonResult.plan : null;
+  }, [stage, lessonResult]);
+
+  const staleName = !stage.isSideQuest && lessonResult.status === 'stale' ? lessonResult.mechanicName : undefined;
+
+  const chat = useMemo(() => {
+    if (stage.isSideQuest) {
+      const coachFirst = coach.name.split(' ')[0];
+      const checkRule = stage.rule ?? '';
+      return {
+        greeting: `Welcome back, little ${coach.id === 'obinna' ? 'one' : 'bro'}. Today we are tackling our Side Quest: **${stage.name}**. Let's refine your game on a tactical level.`,
+        voiceCaption: `VOICE NOTE · ${coachFirst.toUpperCase()} EXPLAINS THE MECHANIC`,
+        mechanic: stage.coachExplanation ?? '',
+        quip: `This is a precise professional habit. Study it slowly, then take it into the arena. No button-spamming here.`,
+        closer: `That is the plan. Run a **Mirror Session** or log a match inside the Match Vault to put this technique to work. Remember the rule: **${checkRule}**.`,
+        scanIntro: `THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.`,
+        footer: `THIS SIDE QUEST CONTENT IS INTERNALLY SOURCED FROM ${stage.internalSource?.toUpperCase()} FOR ${stage.internalPatchVersion?.toUpperCase()}.`,
+      };
+    }
+    return plan ? buildCoachChat(coach, plan) : buildPrepChat(coach, staleName);
+  }, [stage, coach, plan, staleName]);
+
+  const planContentId = stage.isSideQuest
+    ? `sq-content-${stage.n}`
+    : plan?.contentId ?? (lessonResult.status === 'stale' ? lessonResult.contentId : null);
+
+  const cleared = !!prog.completed[stage.n];
 
   // ── session clock (timestamps track when the room opened) ──
   const sessionStart = useMemo(() => Date.now(), []);
@@ -447,6 +505,17 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
               </Text>
 
               <Text style={styles.lessonHeadline}>{plan.headline}</Text>
+              {(() => {
+                const key = stage.isSideQuest ? stage.id : plan.topic;
+                const combo = COMBO_MAP[key];
+                if (!combo) return null;
+                return (
+                  <View style={styles.comboRow}>
+                    <Text style={styles.comboLabel}>CONTROLLER INPUT: </Text>
+                    <InputCombo combo={combo} size={18} />
+                  </View>
+                );
+              })()}
               <Text style={styles.lessonWhy}>{plan.why}</Text>
 
               {/* 3-step breakdown — structured fields from the bot item */}
@@ -994,6 +1063,8 @@ const styles = StyleSheet.create({
   },
   blogBtnTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
   lessonHeadline: { marginTop: 12, fontSize: 20, lineHeight: 23, fontWeight: '900', letterSpacing: 0.2, color: colors.fg },
+  comboRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  comboLabel: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   lessonWhy: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
 
   tilesRow: { marginTop: 13, flexDirection: 'row', gap: 7 },

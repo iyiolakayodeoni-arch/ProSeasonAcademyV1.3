@@ -508,7 +508,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     intro: [
       'Sit down. My name is Chinedu. They call me THE DISCIPLINARIAN and I earned every letter of it.',
       'I was never the best player on any pitch. Too slow, too small, take your pick. So I became the most honest one instead — and honest players are the ones still standing in April.',
-      'I have watched a hundred careers die from one disease: lying to yourself after a match. “The game is rigged.” “My phone lagged.” Maybe. Usually it was your head, and we both know it.',
+      'I have watched a hundred careers die from one disease: lying to yourself after a match. “The game is rigged.” “My controller lagged.” Maybe. Usually it was your head, and we both know it.',
       'You picked my path. Good. I do not do comfort — I do receipts. And for the record: I am glad you are here. Now let us find out the truth about you.',
     ],
     introSignoff: 'Enough about me. Now you.',

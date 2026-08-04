@@ -277,7 +277,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               </View>
               <View style={styles.privacyBox}>
                 <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: RECORD AS USUAL ON YOUR CONSOLE OR PHONE. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
+                  DEFAULT RULE: RECORD AS USUAL ON YOUR PS5/XBOX CONSOLE OR CAPTURE CARD. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
                 </Text>
               </View>
             </Animated.View>

@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
 import UpdateBanner from '../../components/UpdateBanner';
+import InputCombo, { ControllerButton, ButtonGlyph } from '../../components/ButtonGlyph';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
@@ -33,6 +34,15 @@ import StoreSheet from '../StoreSheet';
 import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+
+const COMBO_MAP: Record<string, ControllerButton[]> = {
+  'controlled-sprint': ['R1', 'LS'],
+  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'driven-pass': ['R1', 'CROSS'],
+  'second-ball': ['LS', 'CIRCLE'],
+  'lane-change': ['L1', 'RS_FLICK'],
+  'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
+};
 
 const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'COACH & GROUP'] as const;
 type Chip = (typeof CHIPS)[number];
@@ -242,6 +252,12 @@ export default function HomeTab({ coach }: { coach: Coach }) {
               <Text style={styles.heroHeadline}>
                 {hero?.headline ?? HERO_FALLBACK.headline}
               </Text>
+              {hero?.sideLesson?.topic && COMBO_MAP[hero.sideLesson.topic] && (
+                <View style={styles.heroComboRow}>
+                  <Text style={styles.heroComboLabel}>CONTROLLER INPUT: </Text>
+                  <InputCombo combo={COMBO_MAP[hero.sideLesson.topic]} size={18} />
+                </View>
+              )}
               <Text style={styles.heroBody}>
                 {hero?.body ?? HERO_FALLBACK.body}
               </Text>
@@ -440,6 +456,11 @@ function FeedCard({
         <View style={styles.cardBody}>
           {card.authorHandle && <Text style={styles.cardHandle}>{card.authorHandle}</Text>}
           <Text style={styles.cardHeadline}>{card.headline}</Text>
+          {card.sideLesson?.topic && COMBO_MAP[card.sideLesson.topic] && !locked && (
+            <View style={styles.cardComboRow}>
+              <InputCombo combo={COMBO_MAP[card.sideLesson.topic]} size={16} />
+            </View>
+          )}
           {card.body && !locked && (
             <Text style={styles.cardText} numberOfLines={3}>
               {card.body}
@@ -744,6 +765,8 @@ const styles = StyleSheet.create({
   },
   heroDurationTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '700', letterSpacing: 1, color: colors.fg },
   heroHeadline: { marginTop: 11, fontSize: 16.5, fontWeight: '800', letterSpacing: 0.2, color: colors.fg },
+  heroComboRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  heroComboLabel: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   heroBody: { marginTop: 7, fontSize: 10.5, lineHeight: 15.5, color: '#b9cabe' },
   heroFoot: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroCta: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
@@ -791,6 +814,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1 },
   cardHandle: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
   cardHeadline: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, color: colors.fg },
+  cardComboRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   cardText: { marginTop: 5, fontSize: 9.5, lineHeight: 13.5, color: '#a9bbae' },
   lockBox: {
     marginTop: 7,

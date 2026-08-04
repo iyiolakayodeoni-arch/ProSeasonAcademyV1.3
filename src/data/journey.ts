@@ -39,6 +39,29 @@ export interface JourneyObjective {
   check?: ObjectiveCheck;
 }
 
+export interface SideQuest {
+  id: string;
+  n: number; // side quest index within parent stage
+  parentStageN: number;
+  key: string; // short map label, e.g. "SHIELD TRAP"
+  name: string; // full name
+  tagline: string;
+  at: MapPoint; // position on map canvas
+  objectives: JourneyObjective[];
+  rewardXp: number;
+  rewardBadge?: string;
+  quote?: string;
+  duration?: string;
+  // Sourced internally (verification, patching, maintenance):
+  internalSource: string; // e.g. "EA Sports FC 26 Pitch Notes (Physicality & Shielding Rework)"
+  internalPatchVersion: string; // e.g. "FC 26 Launch Meta v1.0"
+  coachExplanation: string; // coach audio transcription
+  rule: string; // core gameplay rule
+  why: string; // tactical reason why it works
+  tiles: { icon: 'target' | 'waves' | 'arrow'; title: string; desc: string }[];
+  clip: { variant: 'pitchRun' | 'pitchFade' | 'kickoff'; duration: string; caption: string; subcaption: string };
+}
+
 export interface JourneyStage {
   n: number;
   key: string; // short map label
@@ -53,6 +76,7 @@ export interface JourneyStage {
   rewardBadge?: string;
   quote?: string;
   duration?: string; // how long this stage takes to be completed
+  sideQuests?: SideQuest[];
 }
 
 export interface SeasonDef {
@@ -109,6 +133,41 @@ const UNIVERSAL: SeasonDef = {
       quote:
         'Before one tactic, before one mechanic — the truth about what you actually do. Nobody else can see into your matches the way you can, and nobody else can walk this road for you. Log the matches. Write the line. Look first.',
       duration: '2-3 DAYS',
+      sideQuests: [
+        {
+          id: 'sq-1',
+          n: 1,
+          parentStageN: 1,
+          key: 'SHIELD TRAP',
+          name: 'The Shield Trap',
+          tagline: 'PROTECT THE BALL ON RECEIPT. STAND YOUR GROUND AND KEEP DEFENDERS AT BAY.',
+          at: { x: 310, y: 450 },
+          rewardXp: 60,
+          rewardBadge: 'SHIELD MASTER BADGE',
+          quote: 'L2/LT is your shield. Let the opponent bring the force; you provide the wall.',
+          duration: '1 DAY',
+          internalSource: 'EA Sports FC 26 Pitch Notes — Physicality & Shielding Rework (Shield Trapping)',
+          internalPatchVersion: 'v1.0 Launch Meta',
+          coachExplanation: 'Look, little bro. In FC 26, shielding has been completely reworked. Don\'t receive the ball and immediately try to run. If a defender is breathing down your neck, hold L2/LT the moment the ball arrives. This triggers the new Shield Trapping animation where your player gets their body in the way of the defender, prioritizing protection over a perfect touch. Let them bounce off your strength.',
+          rule: 'Press and hold L2/LT as the ball arrives to trigger Shield Trapping and secure your ground.',
+          why: 'FC 26 REWORKED SHIELDING TO DELIVER EXTRA PHYSICALITY. BY STANDING YOUR GROUND INSTEAD OF IMMEDIATELY TURNING, YOU FORCE AN INCOMING DEFENDER TO COLLIDE WITH YOUR BACK. THE STRENGTH-BASED CALCULATION SEALS THEM OUT, BUYING YOU AN EXTRA SECOND TO DRIBBLE OR PROGRESS THE BALL.',
+          tiles: [
+            { icon: 'target', title: 'HOLD L2/LT', desc: 'PRESS BEFORE THE BALL ARRIVES TO POSITION YOUR BODY' },
+            { icon: 'waves', title: 'ABSORB FORCE', desc: 'LET THE PRESSER BUMP YOUR BACK; THE STRENGTH MODEL STABILISES YOU' },
+            { icon: 'arrow', title: 'EXIT CLEAN', desc: 'ACCELERATE OR PASS ONCE THEY STUMBLE BACK' }
+          ],
+          clip: {
+            variant: 'pitchFade',
+            duration: '04:15',
+            caption: 'SHIELD TRAPPING BREAKDOWN',
+            subcaption: 'See how holding L2/LT on receipt creates instant separation under heavy pressure.'
+          },
+          objectives: [
+            { label: 'Win 1 match using Shield Trapping (Hold L2/LT on receipt)', target: 1, done: 0, check: { kind: 'win_with_mechanics', mechanics: 1, count: 1 } },
+            { label: 'Rate composure in 1 match after physical contests', target: 1, done: 0, check: { kind: 'composure', count: 1 } }
+          ]
+        }
+      ]
     },
     {
       n: 2,
@@ -126,6 +185,41 @@ const UNIVERSAL: SeasonDef = {
       quote:
         'The first goal is never the problem. The second is the problem — the one you concede to your own head. Rate how you felt in the match. Then defend like the pressure is the opponent, because it is.',
       duration: '3-4 DAYS',
+      sideQuests: [
+        {
+          id: 'sq-2',
+          n: 1,
+          parentStageN: 2,
+          key: 'INVERT OVERLOAD',
+          name: 'The Inverted Overload',
+          tagline: 'OVERLOAD THE MIDFIELD FROM FULLBACK. TRIGGER CENTRAL CREATION CHANNELS.',
+          at: { x: 50, y: 370 },
+          rewardXp: 75,
+          rewardBadge: 'TACTICAL MASTER BADGE',
+          quote: 'Overload the centre to release the flanks. The space is where they are not.',
+          duration: '1 DAY',
+          internalSource: 'EA Sports FC 26 Pitch Notes — FC IQ Tactical Overhaul (Inverted Wingback positional role)',
+          internalPatchVersion: 'v1.0 Launch Meta',
+          coachExplanation: 'Midfield density is the secret of the elite. With FC IQ\'s new Inverted Wingback role, your fullbacks don\'t just stay wide. They drift central when in possession, acting as deep playmaker overloads. By using Theo Hernandez or Cancelo with this role assigned, you draw their wingers inward and open up massive channels for diagonal runs. Play with your head, not just your fingers.',
+          rule: 'Assign Inverted Wingback in Team Tactics. Use R1/RB and pass to trigger central overloads.',
+          why: 'THE INVERTED WINGBACK ROLE CONVERTS A DEFENSIVE FULLBACK INTO AN ACTIVE DEEP PLAYMAKER ON THE BALL. IN COMBINATION WITH R1/RB CLOSE CONTROL AND QUICK STEP PLAYSTYLE+, THEY CREATE RAPID 3v2 MIDFIELD OVERLOADS THAT CRIPPLE THE DEFENSIVE AI\'S COHERENCE.',
+          tiles: [
+            { icon: 'target', title: 'ROLE ASSIGN', desc: 'SET YOUR RB/LB ROLE TO INVERTED WINGBACK IN SQUAD TACTICS' },
+            { icon: 'waves', title: 'R1 BUILD-UP', desc: 'CARRY WITH CLOSE CONTROL TO DRAW DEFENDERS INSIDE' },
+            { icon: 'arrow', title: 'DIAGONAL PASS', desc: 'RELEASE THE WIDE RUNNERS THROUGH THE OPEN FLANK CHANNEL' }
+          ],
+          clip: {
+            variant: 'pitchRun',
+            duration: '05:30',
+            caption: 'INVERTED OVERLOAD TACTICS',
+            subcaption: 'See how the inverted fullback creates a 3-man midfield pivot for easy transitions.'
+          },
+          objectives: [
+            { label: 'Win 1 match with Inverted Wingback overloads (R1 + pass build-ups)', target: 1, done: 0, check: { kind: 'win', count: 1, rankedOnly: true } },
+            { label: 'Maintain 70%+ pass accuracy in 1 match', target: 1, done: 0, check: { kind: 'pass_acc', min: 70, count: 1 } }
+          ]
+        }
+      ]
     },
     {
       n: 3,
@@ -143,6 +237,41 @@ const UNIVERSAL: SeasonDef = {
       quote:
         'Stop playing the ball. Play the picture. The best read the game three seconds before everyone else sees it — and they got there by counting what repeated. Pass the pattern open. Break the parked bus with patience, not panic.',
       duration: '4-5 DAYS',
+      sideQuests: [
+        {
+          id: 'sq-3',
+          n: 1,
+          parentStageN: 3,
+          key: 'BOX CRASH RUN',
+          name: 'The Box Crash Run',
+          tagline: 'TIME TRAILING MIDFIELDER RUNS INTO THE BOX. SURPRISE HIGH DEFENSIVE LINES.',
+          at: { x: 310, y: 290 },
+          rewardXp: 90,
+          rewardBadge: 'CRASH MASTER BADGE',
+          quote: 'Bait the front line, trigger the back. The unmarked runner is the killer.',
+          duration: '1 DAY',
+          internalSource: 'EA Sports FC 26 Pitch Notes — FC IQ Player Roles (Box Crasher Midfielder)',
+          internalPatchVersion: 'v1.0 Launch Meta',
+          coachExplanation: 'When the opponent parks a massive low block, standard strikers get swallowed alive. That\'s why FC 26 introduced the Box Crasher CDM role. While the defence is busy wrestling Haaland, your CDM (like Rodri) ghosts into the box from deep, completely unmarked. Time your pass to his trailing run and smash it home.',
+          rule: 'Use Box Crasher role on a CDM. Hold ball with your striker, then play trailing runs.',
+          why: 'THE BOX CRASHER ROLE TRIGGERS TRAILING MIDFIELD RUNS INTO THE 18-YARD BOX WHEN THE STRIKER IS CONTESTED. THE DEFENSIVE AI PREFERS MAN-MARKING CLOSE INSIDE THE BOX, CAUSING THEM TO COMPLETELY MISS LATE SECOND-WAVE RUNS FROM DEEP MIDFIELD.',
+          tiles: [
+            { icon: 'target', title: 'BAIT THE CBs', desc: 'HOLD THE BALL WITH YOUR STRIKER TO FORCE MAN-MARKING' },
+            { icon: 'waves', title: 'TIME THE RUN', desc: 'WAIT FOR THE BOX CRASHER CDM TO ENTER THE BOX UNMARKED' },
+            { icon: 'arrow', title: 'LOFTED PASS', desc: 'DOUBLE-TAP Y/TRIANGLE FOR A LOFTED THROUGH BALL, FINISH ONE-TOUCH' }
+          ],
+          clip: {
+            variant: 'kickoff',
+            duration: '03:48',
+            caption: 'BOX CRASHER WALKTHROUGH',
+            subcaption: 'Watch how Rodri cuts through a parked bus with an unmarked late box entry.'
+          },
+          objectives: [
+            { label: 'Score 1 goal against a low block with midfield runs', target: 1, done: 0, check: { kind: 'goals_vs_style', style: 'LOW BLOCK', count: 1 } },
+            { label: 'Complete 1 match with a self-rated head state', target: 1, done: 0, check: { kind: 'composure', count: 1 } }
+          ]
+        }
+      ]
     },
     {
       n: 4,
@@ -161,6 +290,41 @@ const UNIVERSAL: SeasonDef = {
       quote:
         'Awareness without repetition is a mood. Discipline is what you do on the night you do not feel like it — the same routine, the same standards, the same honest ledger. Win with the work. Log the losses. Repeat.',
       duration: '4-5 DAYS',
+      sideQuests: [
+        {
+          id: 'sq-4',
+          n: 1,
+          parentStageN: 4,
+          key: 'TACKLE INTENT',
+          name: 'Tackle Personality',
+          tagline: 'LEVERAGE DEFENSIVE ATTRIBUTES. EXECUTE PREMIUM ANIMATIONS WITH 85+ STAND TACKLE.',
+          at: { x: 50, y: 210 },
+          rewardXp: 100,
+          rewardBadge: 'DEFENSIVE LOCK BADGE',
+          quote: 'Wait for the heavy touch. One clean tackle is worth ten desperate lunges.',
+          duration: '1 DAY',
+          internalSource: 'EA Sports FC 26 Pitch Notes — Defending & Tackle Personality Overhaul',
+          internalPatchVersion: 'v1.0 Launch Meta',
+          coachExplanation: 'Stop spamming the tackle button! In FC 26, missed tackles have a severe recovery delay, and the game introduces Tackle Personality. Players with Stand Tackle attributes below 71 only have basic animations, while elite defenders with 85+ (like Virgil van Dijk) unlock premium tackle animations that stop attackers dead. Jockey patiently, and only strike when the gap is certain.',
+          rule: 'Jockey with L2/LT. Use a CB with 85+ Stand Tackle, and only press B/Circle on heavy touches.',
+          why: 'TACKLE SPAM LOGIC NOW TRIGGERS A SEVERE SPEED PENALTY AFTER A MISSED LUNGE. DEFENDERS WITH 85+ STAND TACKLE HAVE UNIQUE REACH AND EXTENSION ANIMATIONS THAT RESPECT POSITIONING, MAKING TACKLING PATIENCE EXTREMELY REWARDING.',
+          tiles: [
+            { icon: 'target', title: 'JOCKEY AND WAIT', desc: 'HOLD L2/LT TO TRACK ATTACKER; DO NOT PRESS TACKLE YET' },
+            { icon: 'waves', title: 'CHECK STATS', desc: 'ENSURE YOUR CB HAS 85+ STAND TACKLE FOR PREMIUM ANIMATIONS' },
+            { icon: 'arrow', title: 'STRIKE PRECISELY', desc: 'PRESS STAND TACKLE ONLY WHEN THE ATTACKER TAKES A HEAVY TOUCH' }
+          ],
+          clip: {
+            variant: 'pitchFade',
+            duration: '04:50',
+            caption: 'TACKLE PERSONALITY ANALYSIS',
+            subcaption: 'See the difference between low-rated tackle lunges vs elite 85+ premium animations.'
+          },
+          objectives: [
+            { label: 'Keep 1 clean sheet with structured defending (No Tackle Spam)', target: 1, done: 0, check: { kind: 'clean_sheet', count: 1 } },
+            { label: 'Win 1 match keeping goals conceded to 1 or fewer', target: 1, done: 0, check: { kind: 'concede_max', max: 1, count: 1, rankedOnly: true } }
+          ]
+        }
+      ]
     },
     {
       n: 5,
