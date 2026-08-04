@@ -347,7 +347,14 @@ class MatchWatcherService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> handler.post { startCapture(intent) }
+            // The foreground service MUST call startForeground() from the MAIN
+            // thread — doing it on the capture HandlerThread throws
+            // ForegroundServiceDidNotStartInTimeException and the whole app
+            // crashes. So: go foreground on main, THEN do the capture setup.
+            ACTION_START -> {
+                startAsForeground()          // main thread — safe
+                handler.post { startCapture(intent) }
+            }
             ACTION_BEGIN_RECORDING -> handler.post { startRecorder() }
             ACTION_STOP -> handler.post { stopAll() }
         }
@@ -357,47 +364,57 @@ class MatchWatcherService : Service() {
     // ── capture ──────────────────────────────────────────────
 
     private fun startCapture(intent: Intent) {
-        startAsForeground()
-        val code = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
-        val data = if (Build.VERSION.SDK_INT >= 33) {
-            intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(EXTRA_RESULT_DATA)
+        try {
+            val code = intent.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
+            val data = if (Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(EXTRA_RESULT_DATA)
+            }
+            if (code != Activity.RESULT_OK || data == null) {
+                stopAll()
+                return
+            }
+            val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            projection = mpm.getMediaProjection(code, data)
+            startFrames()
+        } catch (e: Exception) {
+            // never crash the app on a broken capture session — report + unwind
+            try { emit("mw-error", Arguments.createMap().apply { putString("message", e.message ?: "capture failed") }) } catch (_: Exception) {}
+            stopAll()
         }
-        if (code != Activity.RESULT_OK || data == null) {
-            stopSelf()
-            return
-        }
-        val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        projection = mpm.getMediaProjection(code, data)
-        startFrames()
     }
 
     private fun startFrames() {
-        // Format 1 == ImageFormat.RGBA_8888 (stable since API 1). We pass the
-        // literal instead of the named constant because some toolchains fail
-        // to resolve ImageFormat.RGBA_8888 during :app:compileReleaseKotlin —
-        // the literal is immune to that and behaves identically.
-        val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, 1 /* ImageFormat.RGBA_8888 */, 2)
-        frameReader = reader
-        reader.setOnImageAvailableListener({ r -> onFrame(r) }, handler)
-        frameDisplay = projection?.createVirtualDisplay(
-            "mw-frames",
-            OUTPUT_W,
-            OUTPUT_H,
-            resources.displayMetrics.densityDpi,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            reader.surface,
-            null,
-            handler
-        )
+        try {
+            // Format 1 == ImageFormat.RGBA_8888 (stable since API 1). We pass the
+            // literal instead of the named constant because some toolchains fail
+            // to resolve ImageFormat.RGBA_8888 during :app:compileReleaseKotlin —
+            // the literal is immune to that and behaves identically.
+            val reader = ImageReader.newInstance(OUTPUT_W, OUTPUT_H, 1 /* ImageFormat.RGBA_8888 */, 2)
+            frameReader = reader
+            reader.setOnImageAvailableListener({ r -> onFrame(r) }, handler)
+            frameDisplay = projection?.createVirtualDisplay(
+                "mw-frames",
+                OUTPUT_W,
+                OUTPUT_H,
+                resources.displayMetrics.densityDpi,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                reader.surface,
+                null,
+                handler
+            )
+        } catch (e: Exception) {
+            try { emit("mw-error", Arguments.createMap().apply { putString("message", e.message ?: "frames failed") }) } catch (_: Exception) {}
+            stopAll()
+        }
     }
 
     private fun onFrame(reader: ImageReader) {
         val image = reader.acquireLatestImage() ?: return
         try {
-            val b64 = grayB64(image)
+            val b64 = try { grayB64(image) } catch (_: Exception) { null }
             if (b64 != null) {
                 emit("mw-frame", Arguments.createMap().apply {
                     putInt("w", OUTPUT_W)
@@ -406,7 +423,7 @@ class MatchWatcherService : Service() {
                 })
             }
         } finally {
-            image.close()
+            try { image.close() } catch (_: Exception) {}
         }
         if (recording && matchStartMs > 0) {
             val elapsed = System.currentTimeMillis() - matchStartMs
@@ -448,7 +465,7 @@ class MatchWatcherService : Service() {
         if (recording || recorder != null) return
         val proj = projection ?: return
         val dir = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir, "match-watcher").apply { mkdirs() }
-        val file = File(dir, "session-\${System.currentTimeMillis()}.mp4")
+        val file = File(dir, "session-${System.currentTimeMillis()}.mp4")
         val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val display = dm.getDisplay(Display.DEFAULT_DISPLAY)
         val size = Point().also { display.getRealSize(it) }
