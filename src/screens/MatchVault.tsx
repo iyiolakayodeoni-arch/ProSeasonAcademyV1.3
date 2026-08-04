@@ -20,6 +20,8 @@ import {
 } from '../data/matches';
 import { dayLabel } from '../data/journal';
 import { useMatchWatcher } from '../data/matchWatcher';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 
 const hhmmss = (ts: number) => {
   const d = new Date(ts);
@@ -418,10 +420,23 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
               multiline
               maxLength={140}
             />
-            <Text style={styles.mindCount}>{note.length}/140 · THIS LINE IS YOURS — THE EYE NEVER SEES IT</Text>
+            <HonestyBadge
+              text={note}
+              options={{ minLength: 3, minWords: 2 }}
+              defaultNote="THIS LINE IS YOURS — THE EYE NEVER SEES IT"
+              coachId={coach.id}
+            />
           </View>
 
-          <Pressable onPress={logMatch} style={({ pressed }) => [styles.logBtn, pressed && { opacity: 0.85 }]}>
+          <Pressable
+            onPress={logMatch}
+            disabled={!!(note.trim() && !isValidReflection(note, { minLength: 3, minWords: 2 }))}
+            style={({ pressed }) => [
+              styles.logBtn,
+              !!(note.trim() && !isValidReflection(note, { minLength: 3, minWords: 2 })) && { opacity: 0.4 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
             <CheckIcon size={10} color="#0a0f0a" />
             <Text style={styles.logBtnTxt}>LOG MATCH — {result} {gf}–{ga}</Text>
           </Pressable>

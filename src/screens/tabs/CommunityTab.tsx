@@ -52,6 +52,7 @@ import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
 import PricingTable from '../PricingTable';
 import { colors, monoFont } from '../../theme';
+import { isValidReflection } from '../../data/honestyGuard';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
 
@@ -260,8 +261,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   // ── actions ──
   const submit = () => {
-    if (!draft.trim()) return;
-    sendText(st.activeThreadId, draft);
+    const text = draft.trim();
+    if (!text || !isValidReflection(text, { minLength: 2, minWords: 1 })) return;
+    sendText(st.activeThreadId, text);
     setDraft('');
   };
 

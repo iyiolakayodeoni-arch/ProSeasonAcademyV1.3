@@ -1,3 +1,5 @@
+import { isValidReflection } from './honestyGuard';
+
 // ─────────────────────────────────────────────────────────────
 // SCAN MOMENTS — the key-moment vocabulary of the MATCH SCAN.
 //
@@ -56,7 +58,7 @@ export const MOMENT_MIN_ANSWER = 8;
 
 export function momentsComplete(moments: TaggedMoment[]): boolean {
   if (!moments.length) return false;
-  return moments.every((m) => m.when != null && m.answer.trim().length >= MOMENT_MIN_ANSWER);
+  return moments.every((m) => m.when != null && isValidReflection(m.answer, { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
 }
 
 /** top moment kinds across a set of tagged moments — the "tendencies" read */

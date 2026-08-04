@@ -43,9 +43,9 @@ export function getSeasonGate(): SeasonGate | null {
  */
 /** resolve when the promise does, or reject after ms — used so a dead
  *  network never hangs the UI forever */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(p: Promise<T> | PromiseLike<T>, ms: number): Promise<T> {
   return Promise.race([
-    p,
+    Promise.resolve(p),
     new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
   ]);
 }

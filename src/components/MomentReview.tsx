@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { EyeIcon, XMarkIcon } from './Icons';
+import HonestyBadge from './HonestyBadge';
 import { Coach } from '../data/coaches';
 import {
   KeyMomentKind,
@@ -143,11 +144,12 @@ export default function MomentReview({ coach, moments, onChange, cue }: Props) {
               multiline
               maxLength={160}
             />
-            <Text style={[styles.count, m.answer.trim().length >= MOMENT_MIN_ANSWER && { color: colors.primary }]}>
-              {m.answer.trim().length < MOMENT_MIN_ANSWER
-                ? `${m.answer.trim().length}/${MOMENT_MIN_ANSWER} TO ANSWER MOMENT ${i + 1}`
-                : `MOMENT ${i + 1} ANSWERED`}
-            </Text>
+            <HonestyBadge
+              text={m.answer}
+              options={{ minLength: MOMENT_MIN_ANSWER, minWords: 2 }}
+              defaultNote={`MOMENT ${i + 1} · SPEAK TRUTH, NOT EXCUSES`}
+              coachId={coach.id}
+            />
           </Animated.View>
         );
       })}
