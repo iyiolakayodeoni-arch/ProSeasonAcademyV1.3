@@ -84,6 +84,10 @@ function withMatchWatcher(config) {
       'android.permission.FOREGROUND_SERVICE',
       'android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION',
       'android.permission.POST_NOTIFICATIONS',
+      // Required for the small “THE EYE · LIVE” chip that remains visible
+      // while FC Mobile is in front. Android presents this as the separate
+      // “Display over other apps” special-access page.
+      'android.permission.SYSTEM_ALERT_WINDOW',
     ];
     for (const n of needed) {
       if (!perms.has(n)) {
@@ -211,6 +215,19 @@ class MatchWatcherModule(reactContext: ReactApplicationContext) :
         }
         try {
             val mpm = activity.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            // The live status chip shown over FC Mobile needs Android's separate
+            // “Display over other apps” grant. We ask before the protected
+            // MediaProjection prompt; after enabling it, the player returns and
+            // taps ARM once more to approve screen capture.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !android.provider.Settings.canDrawOverlays(reactApplicationContext)) {
+                val overlayIntent = Intent(
+                    android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    android.net.Uri.parse("package:" + PACKAGE)
+                )
+                activity.startActivity(overlayIntent)
+                promise.reject("MW_OVERLAY_PERMISSION", "Allow Display over other apps, return to ProSeason Academy, then tap ARM THE EYE again.")
+                return
+            }
             pendingStart = promise
             activity.startActivityForResult(mpm.createScreenCaptureIntent(), CONSENT_REQUEST)
         } catch (e: Exception) {
@@ -287,7 +304,12 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Base64
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.Display
+import android.view.Gravity
+import android.view.WindowManager
+import android.widget.TextView
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.WritableMap
 import java.io.File
@@ -336,6 +358,7 @@ class MatchWatcherService : Service() {
     private var halfFired = false
     private var fullFired = false
     private var currentPath: String? = null
+    private var statusOverlay: TextView? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -372,6 +395,7 @@ class MatchWatcherService : Service() {
         val mpm = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         projection = mpm.getMediaProjection(code, data)
         startFrames()
+        showLiveOverlay()
     }
 
     private fun startFrames() {
@@ -440,6 +464,47 @@ class MatchWatcherService : Service() {
             }
         }
         return Base64.encodeToString(out, Base64.NO_WRAP)
+    }
+
+    // ── persistent in-game status ────────────────────────────
+
+    /** A deliberately small, non-interactive chip. It is native, so it remains
+     * visible when FC Mobile is foregrounded; React UI cannot do that. */
+    private fun showLiveOverlay() {
+        if (statusOverlay != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M || !android.provider.Settings.canDrawOverlays(this)) return
+        try {
+            val density = resources.displayMetrics.density
+            val chip = TextView(this).apply {
+                text = "  ●  THE EYE · LIVE  "
+                setTextColor(Color.rgb(57, 255, 106))
+                textSize = 11f
+                setPadding((10 * density).toInt(), (7 * density).toInt(), (10 * density).toInt(), (7 * density).toInt())
+                background = GradientDrawable().apply {
+                    setColor(Color.argb(222, 6, 18, 10))
+                    setStroke((1 * density).toInt(), Color.rgb(57, 255, 106))
+                    cornerRadius = 18 * density
+                }
+            }
+            val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
+            val params = WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                overlayType,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                android.graphics.PixelFormat.TRANSLUCENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                y = (42 * density).toInt()
+            }
+            (getSystemService(WINDOW_SERVICE) as WindowManager).addView(chip, params)
+            statusOverlay = chip
+        } catch (_: Exception) { /* capture still works if an OEM blocks the chip */ }
+    }
+
+    private fun removeLiveOverlay() {
+        val chip = statusOverlay ?: return
+        try { (getSystemService(WINDOW_SERVICE) as WindowManager).removeView(chip) } catch (_: Exception) {}
+        statusOverlay = null
     }
 
     // ── recording ────────────────────────────────────────────
@@ -521,6 +586,7 @@ class MatchWatcherService : Service() {
             }
             emit("mw-state", state)
             MatchWatcherModule.resolveStop(state)
+            removeLiveOverlay()
             stopForegroundCompat()
             stopSelf()
         }
@@ -563,6 +629,7 @@ class MatchWatcherService : Service() {
     }
 
     override fun onDestroy() {
+        removeLiveOverlay()
         try { projection?.stop() } catch (_: Exception) {}
         projection = null
         thread.quitSafely()
