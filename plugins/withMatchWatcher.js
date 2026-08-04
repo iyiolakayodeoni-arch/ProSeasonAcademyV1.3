@@ -43,6 +43,13 @@ function withMatchWatcher(config) {
     fs.writeFileSync(path.join(srcDir, 'MatchWatcherService.kt'), MATCH_WATCHER_SERVICE_KT);
     fs.writeFileSync(path.join(srcDir, 'MatchWatcherPackage.kt'), MATCH_WATCHER_PACKAGE_KT);
 
+    // The floating in-game indicator uses the real Academy mark, not a
+    // generic eye/text badge. Copy it into Android resources at prebuild so
+    // the foreground service can draw it while FC Mobile has focus.
+    const drawableDir = path.join(projectRoot, 'android', 'app', 'src', 'main', 'res', 'drawable');
+    fs.mkdirSync(drawableDir, { recursive: true });
+    fs.copyFileSync(path.join(projectRoot, 'assets', 'android-icon-foreground.png'), path.join(drawableDir, 'psa_eye.png'));
+
     // Register the package in MainApplication.kt. The modern Expo
     // template uses `PackageList(this).packages.apply { ... }`; RN
     // classic uses `val packages = PackageList(this).packages` +
@@ -309,7 +316,7 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Display
 import android.view.Gravity
 import android.view.WindowManager
-import android.widget.TextView
+import android.widget.ImageView
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.WritableMap
 import java.io.File
@@ -358,7 +365,7 @@ class MatchWatcherService : Service() {
     private var halfFired = false
     private var fullFired = false
     private var currentPath: String? = null
-    private var statusOverlay: TextView? = null
+    private var statusOverlay: ImageView? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -474,21 +481,23 @@ class MatchWatcherService : Service() {
         if (statusOverlay != null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M || !android.provider.Settings.canDrawOverlays(this)) return
         try {
             val density = resources.displayMetrics.density
-            val chip = TextView(this).apply {
-                text = "  ●  THE EYE · LIVE  "
-                setTextColor(Color.rgb(57, 255, 106))
-                textSize = 11f
-                setPadding((10 * density).toInt(), (7 * density).toInt(), (10 * density).toInt(), (7 * density).toInt())
+            val size = (58 * density).toInt()
+            val chip = ImageView(this).apply {
+                // The actual ProSeason Academy mark — deliberately no generic
+                // eye glyph or text. It reads as the Academy watching live.
+                setImageResource(resources.getIdentifier("psa_eye", "drawable", packageName))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setPadding((5 * density).toInt(), (5 * density).toInt(), (5 * density).toInt(), (5 * density).toInt())
                 background = GradientDrawable().apply {
-                    setColor(Color.argb(222, 6, 18, 10))
+                    shape = GradientDrawable.OVAL
+                    setColor(Color.argb(228, 6, 18, 10))
                     setStroke((1 * density).toInt(), Color.rgb(57, 255, 106))
-                    cornerRadius = 18 * density
                 }
             }
             val overlayType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
             val params = WindowManager.LayoutParams(
-                WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.WRAP_CONTENT,
+                size,
+                size,
                 overlayType,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 android.graphics.PixelFormat.TRANSLUCENT
