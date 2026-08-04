@@ -7,7 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  useWindowDimensions,
+  Image,
 } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
@@ -18,7 +18,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import CoachCard from '../components/CoachCard';
 import NeonInput from '../components/NeonInput';
 import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
@@ -30,7 +29,6 @@ import * as backend from '../data/backend';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const HEADER_TRAIL_LENGTH = 260;
-const CARD_GAP = 12;
 const PAGE_PAD = 22;
 
 type Mode = 'register' | 'login' | 'reset' | 'token';
@@ -40,8 +38,10 @@ type Props = {
 };
 
 export default function SignInScreen({ onSignedIn }: Props) {
-  const { width } = useWindowDimensions();
-  const cardWidth = Math.min((width - PAGE_PAD * 2 - CARD_GAP) / 2, 190);
+  // ONE COACH — the academy has a single voice (Chinedu Okafor).
+  // There is no selection and no choice to make; the only decision
+  // that matters is the one that moves the player forward.
+  const coach = COACHES[0];
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -247,16 +247,23 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
           </View>
 
-          <Text style={styles.headline}>YOUR COACHES ARE WAITING</Text>
+          <Text style={styles.headline}>ONE COACH · ONE VOICE</Text>
 
-          <View style={styles.cardsRow}>
-            {COACHES.map((c, i) => (
-              <React.Fragment key={c.id}>
-                {i > 0 && <View style={{ width: CARD_GAP }} />}
-                <CoachCard coach={c} width={cardWidth} />
-              </React.Fragment>
-            ))}
+          <View style={styles.coachStrip}>
+            <Image source={coach.portrait} style={styles.coachPortrait} />
+            <View style={styles.coachCol}>
+              <Text style={styles.coachName}>{coach.name}</Text>
+              <Text style={[styles.coachTitle, { color: coach.cardAccent }]}>
+                {coach.title} · {coach.rating} RATED
+              </Text>
+              <Text style={styles.coachMeta}>{coach.metaLine}</Text>
+              <Text style={styles.coachOneLiner}>“{coach.oneLiner}”</Text>
+            </View>
           </View>
+          <Text style={styles.coachNote}>
+            NO CHOICE TO MAKE. AFTER YOU TAKE YOUR SEAT, CHINEDU INTRODUCES HIMSELF — THE GAME, THE
+            MIRROR METHOD AND THE PHILOSOPHY OF THIS ACADEMY. ONE VOICE, ONE PATH.
+          </Text>
 
           {/* mode tabs */}
           <View style={styles.modeRow}>
@@ -463,10 +470,53 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(57,255,106,0.6)',
     textShadowRadius: 12,
   },
-  cardsRow: {
+  coachStrip: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.45)',
+    backgroundColor: 'rgba(15,26,19,0.9)',
+    borderRadius: 14,
+    padding: 12,
+  },
+  coachPortrait: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: 'rgba(242,192,120,0.8)',
+    backgroundColor: colors.surface,
+  },
+  coachCol: { flex: 1, marginLeft: 12 },
+  coachName: {
+    color: colors.fg,
+    fontFamily: monoFont,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.4,
+  },
+  coachTitle: { fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.6, marginTop: 3, fontWeight: '700' },
+  coachMeta: { color: colors.muted, fontFamily: monoFont, fontSize: 8, letterSpacing: 1.3, marginTop: 3 },
+  coachOneLiner: {
+    color: 'rgba(238,242,236,0.85)',
+    fontFamily: monoFont,
+    fontSize: 8.6,
+    lineHeight: 13,
+    letterSpacing: 0.3,
+    marginTop: 6,
+    fontStyle: 'italic',
+  },
+  coachNote: {
+    color: colors.muted,
+    fontFamily: monoFont,
+    fontSize: 8,
+    lineHeight: 13,
+    letterSpacing: 0.7,
+    textAlign: 'center',
     marginBottom: 18,
+    paddingHorizontal: 10,
   },
   modeRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
   modeChip: {

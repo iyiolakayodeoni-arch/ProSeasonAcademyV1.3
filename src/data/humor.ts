@@ -122,14 +122,8 @@ const QUIPS: Record<string, string[]> = {
     'I once explained this at a wedding. The couple is still married. The guests are all better players.',
     "Read it twice. I'll know. I have a sense for these things. (It's the scan. It's always the scan.)",
   ],
-  obinna: [
-    'I practised saying all that in one breath. The steering wheel was very impressed.',
-    "Even the rain can't interrupt us today — mostly because we're indoors, but let me have this.",
-    'If you smile once while drilling, the rep counts double. Academy rule. I just made it up, but it works.',
-    'Somewhere right now a rival is skipping this exact lesson. Grand. More ladder for us.',
-    'I told this mechanic to my nephew. He beat his dad 4–0. The family is healing. Slowly.',
-  ],
 };
+
 
 function hash(s: string): number {
   let h = 5381;
@@ -139,6 +133,6 @@ function hash(s: string): number {
 
 /** the coach's single wink for this briefing — stable per mechanic/prep state */
 export function coachQuip(coachId: string, seedKey: string): string {
-  const pool = QUIPS[coachId] ?? QUIPS.obinna;
+  const pool = QUIPS[coachId] ?? QUIPS.chinedu;
   return pool[hash(seedKey) % pool.length];
 }

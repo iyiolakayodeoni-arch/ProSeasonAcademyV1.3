@@ -9,8 +9,9 @@ enforces it.
 function (`supabase/functions/founder-desk/index.ts`).
 
 Once deployed you run the academy from inside the app — Settings → tap VERSION ×5 →
-Founder Desk gives you the inbox, replies, the till and moderation. No SQL needed for
-day-to-day work; the queries in this file are the manual fallback.
+sign in with the founder account → Founder Desk gives you the inbox, replies, the till
+and moderation. No SQL needed for day-to-day work; the queries in this file are the
+manual fallback.
 
 ---
 
@@ -73,8 +74,7 @@ select set_member_status('PSA-ABC123', 'active');   -- back in
 |---|---|---|
 | **anon key** | `.env`, `eas.json` | ✅ yes — public by design, RLS protects everything |
 | **`service_role`** | Supabase → Edge Function Secrets | 🔴 **never** |
-| **`FOUNDER_KEY`** | Supabase → Edge Function Secrets | 🔴 never — typed by you, verified server-side |
-| Founder key on device | AsyncStorage, only after the server confirms it | stored post-verification |
+| Founder access | `profiles.is_founder` on the founder's Supabase account | 🔴 no key exists — the functions verify the session against the flag server-side |
 
 Verify any build before distributing:
 
@@ -82,8 +82,9 @@ Verify any build before distributing:
 grep -c 'service_role' dist/_expo/static/js/web/index-*.js   # must be 0
 ```
 
-**Rotate the founder key** if a device holding it is lost: change `FOUNDER_KEY` in the
-dashboard. Every stored copy stops working immediately.
+**Founder access is the founder account.** If a device holding that session is lost,
+sign the account out / rotate its password — every admin action stops working
+immediately. There is no key to rotate.
 
 ---
 

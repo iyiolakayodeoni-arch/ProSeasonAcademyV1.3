@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import SplashScreen from './src/screens/SplashScreen';
 import SignInScreen from './src/screens/SignInScreen';
-import CoachSelectScreen from './src/screens/CoachSelectScreen';
 import HearAboutScreen from './src/screens/HearAboutScreen';
 import CoachIntroScreen from './src/screens/CoachIntroScreen';
 import WeekOrientationScreen from './src/screens/WeekOrientationScreen';
@@ -33,6 +32,7 @@ import {
   markIntroDone,
   markOrientationDone,
   markSignedIn,
+  migrateCoachId,
   setReferral as persistReferral,
 } from './src/data/session';
 import { restoreSession, signOutRemote } from './src/data/authApi';
@@ -77,9 +77,13 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
   });
 }
 
-// SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → WEEK ORIENTATION
-//        → BASELINE SCAN → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
-type Route = 'signin' | 'coach' | 'intro' | 'orientation' | 'scan' | 'hear' | 'setup' | 'hub';
+// SPLASH → SIGN IN → COACH INTRO (one coach — Chinedu speaks first)
+//        → WEEK ORIENTATION → BASELINE SCAN → HOW DID YOU HEAR
+//        → COACH SETUP LOADER → SEASON HUB
+// There is no coach selection: one voice, one path. The only choice
+// a player carries is the one that moves them forward — the work.
+const ONE_COACH_ID = 'chinedu';
+type Route = 'signin' | 'intro' | 'orientation' | 'scan' | 'hear' | 'setup' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
@@ -96,11 +100,9 @@ export default function App() {
     ? 'splash'
     : route === 'signin'
       ? 'seat'
-      : route === 'coach'
-        ? 'coach-select'
-        : route === 'hub'
-          ? 'home'
-          : 'seat';
+      : route === 'hub'
+        ? 'home'
+        : 'seat';
   // MainScreen owns the home/film-room bed so only one loop is active.
   useAmbientAudio(audioScene, route !== 'hub');
 
@@ -143,18 +145,21 @@ export default function App() {
       }
       if (!alive) return;
       const s = getSession();
-      if (s.coachId) {
+      // ONE COACH — an old build's 'obinna' lock (or any other id)
+      // migrates to Chinedu; the academy has a single voice now.
+      const coachId = s.coachId && s.coachId !== ONE_COACH_ID ? ONE_COACH_ID : s.coachId;
+      if (coachId !== s.coachId) migrateCoachId(ONE_COACH_ID);
+      if (coachId) {
         // the lock is permanent — his ledger AND his lesson thread load
         // before the map renders; a bad file must not block the boot
-        await hydrateProgress(s.coachId).catch(() => {});
-        await hydrateThread(s.coachId).catch(() => {});
-        await hydrateMirror(s.coachId).catch(() => {});
+        await hydrateProgress(coachId).catch(() => {});
+        await hydrateThread(coachId).catch(() => {});
+        await hydrateMirror(coachId).catch(() => {});
         if (!alive) return;
-        setCoachId(s.coachId);
+        setCoachId(coachId);
       }
       const signedIn = s.signedIn || !!cloud;
       if (!signedIn) setRoute('signin');
-      else if (!s.coachId) setRoute('coach');
       else if (!s.introDone) setRoute('intro');
       else if (!s.orientationDone) setRoute('orientation');
       else if (!s.baselineDone) setRoute('scan');
@@ -221,22 +226,21 @@ export default function App() {
   const handleSignedIn = useCallback(() => {
     markSignedIn();
     const s = getSession();
-    // a returning player who already locked in skips straight to his floor
-    if (s.coachId && s.baselineDone) setRoute('hub');
-    else if (s.coachId && s.orientationDone) setRoute('scan');
-    else if (s.coachId && s.introDone) setRoute('orientation');
-    else if (s.coachId) setRoute('intro');
-    else setRoute('coach');
-  }, []);
-
-  /** coach lock is PERMANENT — from here onboarding only moves forward */
-  const handleLocked = useCallback((id: string) => {
-    lockCoach(id); // persisted; a second call can never overwrite it
-    setCoachId(id);
-    void hydrateProgress(id);
-    void hydrateThread(id);
-    void hydrateMirror(id);
-    setRoute('intro'); // coach speaks first, then the Baseline Scan gate
+    // The one coach locks at the front door — no selection exists.
+    // A returning player skips straight to the floor he reached.
+    if (!s.coachId) {
+      lockCoach(ONE_COACH_ID);
+      setCoachId(ONE_COACH_ID);
+      void hydrateProgress(ONE_COACH_ID);
+      void hydrateThread(ONE_COACH_ID);
+      void hydrateMirror(ONE_COACH_ID);
+    }
+    if (s.coachId && s.coachId !== ONE_COACH_ID) migrateCoachId(ONE_COACH_ID);
+    const s2 = getSession();
+    if (s2.baselineDone) setRoute('hub');
+    else if (s2.orientationDone) setRoute('scan');
+    else if (s2.introDone) setRoute('orientation');
+    else setRoute('intro'); // coach speaks first, then the Baseline Scan gate
   }, []);
 
   const handleIntroDone = useCallback(() => {
@@ -278,9 +282,6 @@ export default function App() {
           {restored && (
             <>
               {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
-              {route === 'coach' && (
-                <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
-              )}
               {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
               {route === 'orientation' && <WeekOrientationScreen coach={lockedCoach} onDone={handleOrientationDone} />}
               {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}

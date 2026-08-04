@@ -167,7 +167,6 @@ export default function SettingsTab({
   const [founderPassword, setFounderPassword] = useState('');
   const [keyChecking, setKeyChecking] = useState(false);
   const [keyError, setKeyError] = useState<string | null>(null);
-  const [founderKey, setFounderKey] = useState<string | null>(null);
   const [founderAllowed, setFounderAllowed] = useState(false);
   const [deskOpen, setDeskOpen] = useState(false);
   const [tillOpen, setTillOpen] = useState(false);
@@ -189,7 +188,6 @@ export default function SettingsTab({
   useEffect(() => {
     void isFounder().then((ok) => {
       setFounderAllowed(ok);
-      if (ok) setFounderKey('authenticated-founder');
     });
   }, []);
 
@@ -210,10 +208,10 @@ export default function SettingsTab({
     const profile = await signInWithEmail(founderEmail, founderPassword);
     setKeyChecking(false);
     if (!profile) { setKeyError('FOUNDER ACCOUNT NOT VERIFIED. CHECK YOUR EMAIL AND PASSWORD.'); return; }
-    setFounderAllowed(true); setFounderKey('authenticated-founder'); setFounderPassword(''); setSheet(null); setDeskOpen(true);
+    setFounderAllowed(true); setFounderPassword(''); setSheet(null); setDeskOpen(true);
   };
 
-  const forgetFounderKey = () => { setFounderAllowed(false); setFounderKey(null); setDeskOpen(false); };
+  const closeDesk = () => setDeskOpen(false);
 
   const SEASON = journeySeasonFor(coach.id);
   const coachShort = coach.name.split(' ')[0].toUpperCase();
@@ -579,7 +577,7 @@ export default function SettingsTab({
         <Pressable onPress={tapVersion} hitSlop={10}>
           <Text style={styles.footVersion}>
             PROSEASONACADEMY · VERSION {APP_VERSION}
-            {founderKey ? ' · ★' : ''}
+            {founderAllowed ? ' · ★' : ''}
           </Text>
         </Pressable>
         <Text style={styles.footNote}>BUILD 24.07 · MADE FOR THE PLAYERS WHO STAY AFTER FULL-TIME</Text>
@@ -794,14 +792,10 @@ export default function SettingsTab({
         </View>
       )}
 
-      {/* ── FOUNDER DESK — full-screen, key-gated ── */}
-      {deskOpen && founderKey && (
+      {/* ── FOUNDER DESK — full-screen, founder-account-gated ── */}
+      {deskOpen && founderAllowed && (
         <View style={StyleSheet.absoluteFill}>
-          <FounderDesk
-            founderKey={founderKey}
-            onForgetKey={forgetFounderKey}
-            onClose={() => setDeskOpen(false)}
-          />
+          <FounderDesk onClose={closeDesk} />
         </View>
       )}
 

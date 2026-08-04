@@ -2,21 +2,21 @@ import { useSyncExternalStore } from 'react';
 import { useJourneyProgress } from './progress';
 
 // ─────────────────────────────────────────────────────────────
-// THE STANDARD — the parallel benchmark journey.
+// HIS ROAD — the benchmark journey.
 //
-// MIRROR DIRECTION §4.2: a visible, authored journey based on the
-// behaviours, decisions, discipline and development habits of the
-// best people in the player's chosen field or path. For Pro
-// Season that is an elite FC Mobile professional — a FICTIONAL
-// COMPOSITE Role Model, never a copy of one real person.
+// THE BENCHMARK IS ONE MAN: CHINEDU OKAFOR. Not a fictional
+// composite — the road the academy's single coach actually
+// walked, season after season, at the top of the game. His
+// journey is the benchmark; the player's own journey is the
+// evidence. Same six chapters, his receipts vs the player's.
 //
-// The Standard is NOT a second progression track: no player
+// His road is NOT a second progression track: no player
 // objectives, no XP, no badges, no second route to complete. It
 // moves alongside the player's Journey and reveals the chapter
 // that matches the player's current stage.
 //
-//   "Your Journey is the evidence. The Standard is the benchmark."
-//   "Read the Standard. Walk your own road."
+//   "Your Journey is the evidence. His road is the benchmark."
+//   "Read his road. Walk your own."
 // ─────────────────────────────────────────────────────────────
 
 export interface StandardChapter {
@@ -45,14 +45,14 @@ export interface StandardModel {
 }
 
 export const STANDARD: StandardModel = {
-  name: 'THE STANDARD',
-  title: 'A COMPOSITE OF THE BEST IN THE PATH',
+  name: 'CHINEDU OKAFOR',
+  title: 'HIS ROAD — TOP OF THE GAME, SEASON AFTER SEASON',
   credo: [
-    'Deliberate practice over volume.',
-    'Honest match review over comfortable stories.',
-    'Emotional control under pressure.',
-    'Preparation before talent.',
-    'Consistency when nobody is watching.',
+    'The honest review came before the highlight reel.',
+    'The head was trained before the thumbs were fast.',
+    'The routine outlasted every excuse I ever had.',
+    'The receipts mattered more than the scoreline.',
+    'I stayed at the top because I stayed coachable.',
   ],
   pillars: [
     'DELIBERATE PRACTICE',
@@ -71,84 +71,84 @@ export const STANDARD: StandardModel = {
       stageKey: 'SEE YOURSELF',
       chapterTitle: 'SEE YOURSELF',
       whatTheyLearn:
-        'Elite players keep a truthful baseline before they try to improve. They log the match, the score, the head state and the moments — including the embarrassing ones. The record is written in the moment, not reconstructed from memory at the end of the week.',
+        'Before any tactic, I kept a truthful baseline. I logged every match — the score, my head state, the moments, including the embarrassing ones — written in the moment, never reconstructed from memory at the end of the week. The record did not flatter me. That was the point.',
       behaviourToStudy: [
         'Log every match, win or loss, while it is fresh.',
         'Write the honest line about the loss, not the excuse.',
         'Name their own repeated behaviour before blaming the game.',
       ],
       benchmark: 'They can look at their own record without flinching — and they do, daily.',
-      voice: 'The Standard does not feel the loss and then forget it. It feels it, writes it down, and studies it tomorrow.',
+      voice: 'I did not feel the loss and forget it. I felt it, wrote it down, and studied it the next morning.',
     },
     {
       n: 2,
       stageKey: 'CONTROL YOURSELF',
       chapterTitle: 'CONTROL YOURSELF',
       whatTheyLearn:
-        'Elite players know exactly what pressure does to their decisions. They do not pretend the second goal is bad luck — they study the sequence, the emotion and the rushed input that created it. The head is the first game they learn to win.',
+        'I learned exactly what pressure does to decisions. I stopped calling the second goal bad luck and started studying the sequence, the emotion and the rushed input that created it. The head is the first game — I won it before I won any other.',
       behaviourToStudy: [
         'Rate their own head state, honestly, mid-match.',
         'Find the minute the discipline blinked before the scoreline did.',
         'Defend the next three actions, not the last mistake.',
       ],
       benchmark: 'One mistake is an event, not an emergency. They study the next three actions instead of tilting.',
-      voice: 'The Standard concedes. Then it does not concede twice to the same emotion.',
+      voice: 'I concede. Then I refuse to concede twice to the same emotion.',
     },
     {
       n: 3,
       stageKey: 'READ THE GAME',
       chapterTitle: 'READ THE GAME',
       whatTheyLearn:
-        'The best read patterns, danger, space, tempo and decision context — and act before the picture changes. They play the picture, not the ball, and they build that vision by counting what repeats.',
+        'I read patterns, danger, space and tempo — and acted before the picture changed. I played the picture, not the ball, and I built that vision by counting what repeated, until reading the game was faster than reacting to it.',
       behaviourToStudy: [
         'Notice the run before it starts, the danger before it arrives.',
         'Break the low block with patience, not panic.',
         'Choose the pass that serves the next three seconds.',
       ],
       benchmark: 'They see the game three seconds ahead, because they studied the two seconds behind.',
-      voice: 'The Standard does not react to the game. It reads it, and the game does what it expects.',
+      voice: 'I do not react to the game. I read it — and the game does what I expect.',
     },
     {
       n: 4,
       stageKey: 'BUILD DISCIPLINE',
       chapterTitle: 'BUILD DISCIPLINE',
       whatTheyLearn:
-        'Elite players turn awareness into repeatable behaviour. The routine is the talent: the same preparation, the same standards, the same honest ledger — on the nights they feel like it and on the nights they do not.',
+        'I turned awareness into repeatable behaviour. The routine is the talent: the same preparation, the same standards, the same honest ledger — on the nights I felt like it and on the nights I did not. Boring wins.',
       behaviourToStudy: [
         'Do the work on the night they do not feel like it.',
         'Keep the ledger honest even after a win.',
         'Repeat the process until it is boring — boring wins.',
       ],
       benchmark: 'They do not rely on motivation. They rely on the routine that makes motivation unnecessary.',
-      voice: 'The Standard trains when nobody is watching. That is exactly when it is built.',
+      voice: 'I train when nobody is watching. That is exactly when it gets built.',
     },
     {
       n: 5,
       stageKey: 'PERFORM UNDER PRESSURE',
       chapterTitle: 'PERFORM UNDER PRESSURE',
       whatTheyLearn:
-        'Under pressure, players do not rise to the occasion — they sink to their highest level of preparation. The best test their work in real competitive situations, close out leads, and decide games in the minutes that break others.',
+        'Under pressure you do not rise to the occasion — you sink to your highest level of preparation. I tested my work in ranked, closed out leads at 75’, and decided games in the minutes that broke other players. Pressure never made me calm. Preparation did.',
       behaviourToStudy: [
         'Take ranked seriously — it is the exam, not a warm-up.',
         'Close out the lead at 75’ with discipline, not panic.',
         'Decide the game in the late minutes, deliberately.',
       ],
       benchmark: 'When the pressure arrives, the Standard is already prepared — so it looks calm.',
-      voice: 'The Standard does not get more nervous in the big moments. It gets more prepared.',
+      voice: 'I do not get more nervous in the big moments. I get more prepared.',
     },
     {
       n: 6,
       stageKey: 'PROVE IT',
       chapterTitle: 'PROVE IT',
       whatTheyLearn:
-        'The best review the accumulated evidence of a whole period and set the next professional standard. They prove it with receipts — matches, lessons held and broken, clean sheets — and then they raise the bar again.',
+        'I reviewed the whole record — the matches, the lessons held and broken, the clean sheets — and set the next standard. Then I raised the bar again. I never graduated; I re-enrolled. That is how you stay at the top for a long time.',
       behaviourToStudy: [
         'Look at the whole record, not the last match.',
         'Count the lessons that held against the ones that broke.',
         'Define the next standard with the evidence in hand.',
       ],
       benchmark: 'They never graduate. They set the next standard and walk toward it.',
-      voice: 'The Standard is not a destination. It is the way the work is done, every single day.',
+      voice: 'The top is not a destination. It is the way the work is done, every single day.',
     },
   ],
 };
@@ -167,7 +167,7 @@ export interface StandardView {
   clearedCount: number;
 }
 
-/** live view — The Standard moves with the player's own progress */
+/** live view — His Road moves with the player's own progress */
 export function useStandard(): StandardView {
   const progress = useJourneyProgress();
   return {

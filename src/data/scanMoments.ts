@@ -121,57 +121,11 @@ const BANKS: Record<string, Record<string, string[]>> = {
       'Repeat it exactly: what did you check before you chose?',
     ],
   },
-  obinna: {
-    'GOAL FOR': [
-      'Walk me to two actions before your goal, little one — where was your head?',
-      'What did that goal quietly cost you — shape, patience, focus?',
-    ],
-    'GOAL AGAINST': [
-      'Before it went in, little one — were you defending the ball or the next pass?',
-      'What did you give them for free in that sequence?',
-    ],
-    'LOST BALL': [
-      'What did you see before you played it, little one?',
-      'Was the calmer option already on the pitch?',
-    ],
-    'COUNTER AGAINST': [
-      'When they broke, what did you protect first — the ball, or the space it wanted?',
-      'Where did your legs go before your head had decided?',
-    ],
-    'BAD DEFENDING': [
-      'Did your shape break before your tackle did, little one?',
-      'Were you defending the danger — or defending your pride after the mistake before?',
-    ],
-    'MISSED CHANCE': [
-      'Was the keeper moved before you hit it, little one?',
-      'Did you rush the finish because the moment felt loud?',
-    ],
-    'PANIC PASS': [
-      'Was that pass a plan — or a hand asking the game to leave you alone?',
-      'Where in your body did you feel the panic start?',
-    ],
-    'TILT MOMENT': [
-      'What did the voice in your head say in that minute — the real one? I have heard them all.',
-      'Which touch came from anger instead of from the match? Point at it.',
-    ],
-    'CARD / FOUL': [
-      'Were you stopping danger, little one — or paying back a grudge?',
-      'What did the foul cost your shape — not just the free kick?',
-    ],
-    'MECHANIC USED': [
-      'Did the mechanic appear on its own, little one — or did you chase it like a trick?',
-      'What did using it cost the NEXT pass?',
-    ],
-    'GOOD DECISION': [
-      'Name the calm inside that moment, little one — where did it come from?',
-      'What made you sure? Write it down so we can call on it again.',
-    ],
-  },
 };
 
 /** the question the coach asks for the (index-th) tag of this kind */
 export function momentQuestion(coachId: string, kind: string, index = 0): string {
-  const bank = BANKS[coachId] ?? BANKS.obinna;
-  const list = bank[kind] ?? BANKS.obinna[kind] ?? ['What was your head doing in that moment?'];
+  const bank = BANKS[coachId] ?? BANKS.chinedu;
+  const list = bank[kind] ?? BANKS.chinedu[kind] ?? ['What was your head doing in that moment?'];
   return list[index % list.length];
 }

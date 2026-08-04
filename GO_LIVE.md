@@ -83,11 +83,12 @@ Supabase → **Edge Functions** → **Secrets** (or Project Settings → Edge Fu
 
 | Name | Value | Needed for |
 |---|---|---|
-| `FOUNDER_KEY` | your admin word | Founder Desk, broadcasts, money moves |
 | `PAYSTACK_SECRET` | from Paystack dashboard | automatic ₦ payments |
 | `FLW_SECRET_HASH` | from Flutterwave dashboard | automatic $ payments |
 
-`FOUNDER_KEY` is required now. The two payment secrets can wait until those merchant
+There is **no founder key**. The Founder Desk is opened by your founder account —
+sign in with the email/password of the Supabase user whose `profiles.is_founder`
+is `true` (the SQL marks it). The two payment secrets can wait until those merchant
 accounts exist — the Founder Desk's manual grant works in the meantime.
 
 ---
@@ -149,7 +150,7 @@ it up. Lose it and members cannot install updates over the top.
 
 ## First things to do in the app afterwards
 
-Settings → tap **VERSION ×5** → paste your `FOUNDER_KEY` → Founder Desk.
+Settings → tap **VERSION ×5** → sign in with your founder account → Founder Desk.
 
 1. **THE FREE WEEK** → when you are ready to launch, grant the trial to everyone.
 2. **THE INBOX** → your private line from members.

@@ -215,7 +215,7 @@ async function main() {
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     }).then(async (res) => ({ status: res.status, body: await res.json().catch(() => ({})) }));
   };
-  const g = await j2('POST', '/auth/guest', { body: { handle: 'gamma', coachId: 'obinna', region: 'world' } });
+  const g = await j2('POST', '/auth/guest', { body: { handle: 'gamma', coachId: 'chinedu', region: 'world' } });
   const cat2 = await j2('GET', '/store/catalog', { token: g.body.token });
   assert.equal(cat2.body.live, true, 'same code, till open after go-live');
   assert.equal(cat2.body.region, 'world', 'catalog follows the signed-in region');

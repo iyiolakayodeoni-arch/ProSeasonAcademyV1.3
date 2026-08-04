@@ -39,8 +39,9 @@ supabase functions deploy pay-start
 supabase functions deploy pay-webhook
 supabase functions deploy founder-desk
 
-# Set the secrets (ONE of these is the founder key YOU choose)
-supabase secrets set FOUNDER_KEY=your-chosen-key-here
+# Set the secrets
+# (No founder key exists — the Founder Desk is gated by profiles.is_founder
+#  on the founder account, see SETUP.md.)
 ```
 
 ### Option B: Dashboard (copy-paste, one at a time)
@@ -69,9 +70,10 @@ signature-checked inside the code itself.
 
 After all are deployed, set the secret:
 
-Dashboard → Edge Functions → Secrets → Add secret →
-**`FOUNDER_KEY`** = whatever you choose (treat it like a password — your phone
-will cache it once validated, and every admin action behind it proves this key)
+There is no founder key to set. Access to the Founder Desk is the Supabase
+session of the founder account — the account whose `profiles.is_founder` is
+`true` (set by SQL, see SETUP.md). Every admin action is checked against that
+flag server-side.
 
 ---
 

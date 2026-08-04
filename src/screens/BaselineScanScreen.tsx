@@ -122,7 +122,7 @@ function hms(ms: number): string {
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
+  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const watcher = useMatchWatcher();
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
@@ -388,7 +388,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {day > 1 && (
                 <View style={styles.dayIntro}>
                   <Image source={coach.portrait} style={styles.beatFace} />
-                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.obinna?.[day]}</Text>
+                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.chinedu?.[day]}</Text>
                 </View>
               )}
 
@@ -651,7 +651,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <LockIcon size={16} color={colors.accent} />
               </View>
               <Text style={styles.restTitle}>REST. THE WORK NEEDS TONIGHT.</Text>
-              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.obinna}</Text>
+              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.chinedu}</Text>
               {unlockAt != null && (
                 <View style={styles.countdownBox}>
                   <Text style={styles.countdownLabel}>DAY {day} UNLOCKS IN</Text>
@@ -687,7 +687,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <WeekStrip session={session} now={now} />
               <Text style={styles.heroLine}>THE WEEK HAS BEEN SPEAKING. LISTEN TO IT TOGETHER.</Text>
               <Text style={styles.heroSub}>
-                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.obinna[6]} Here is what you named, across all five matches — your own words, back in front of you.
+                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.chinedu[6]} Here is what you named, across all five matches — your own words, back in front of you.
               </Text>
 
               <View style={styles.receiptBox}>

@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
 
-export type AudioScene = 'splash' | 'seat' | 'coach-select' | 'home' | 'community' | 'film-room';
+export type AudioScene = 'splash' | 'seat' | 'home' | 'community' | 'film-room';
 
 const TRACKS: Record<AudioScene, any> = {
   splash: require('../../assets/audio/splash-suspense.wav'),
   seat: require('../../assets/audio/seat-ambience.wav'),
-  'coach-select': require('../../assets/audio/coach-typing.wav'),
   home: require('../../assets/audio/home-focus.wav'),
   community: [
     require('../../assets/audio/community-gbedu-upbeat.wav'),

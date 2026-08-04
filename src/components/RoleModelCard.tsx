@@ -28,7 +28,7 @@ import { colors, monoFont } from '../theme';
 // or game templates): shield outline, nested hairline, charcoal→
 // accent gradient, diagonal foil sheen on a slow sweep, bust
 // portrait, foiled name plate, ProSeasonAcademy's own 6-stat row,
-// footer strip. Accent per coach (Chinedu gold / Obinna green).
+// footer strip. One accent — Chinedu's gold.
 // ─────────────────────────────────────────────────────────────
 
 export const CARD_W = 168;

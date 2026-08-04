@@ -10,11 +10,12 @@ import { fetchPendingNews, reviewNews, NewsItem } from '../data/newsFeed';
 
 // ─────────────────────────────────────────────────────────────
 // FOUNDER DESK — the owner's private admin GUI, inside the app.
-// One person (you) holds the founder key; this screen turns it
-// into real power: live academy numbers, the regional price split,
-// and FOUNDER broadcasts into any room (they wear the FOUNDER
-// badge and fan out live to every phone in the room).
-// The key never leaves the device except as a request header.
+// One person (you) holds the founder account; this screen turns
+// it into real power: live academy numbers, the regional price
+// split, and FOUNDER broadcasts into any room (they wear the
+// FOUNDER badge and fan out live to every phone in the room).
+// Access is the Supabase session + profiles.is_founder — the
+// functions verify it server-side, no key is ever typed here.
 // ─────────────────────────────────────────────────────────────
 
 const HALLS = [
@@ -27,7 +28,7 @@ const HALLS = [
 
 const HEAD_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 
-export default function FounderDesk({ founderKey, onForgetKey, onClose }: { founderKey: string; onForgetKey: () => void; onClose: () => void }) {
+export default function FounderDesk({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<backend.AdminSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [hall, setHall] = useState('division-africa');
@@ -65,28 +66,28 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const [trialNote, setTrialNote] = useState<string | null>(null);
   const [lapsed, setLapsed] = useState<backend.LapsedRow[] | null>(null);
 
-  const loadLapsed = async () => setLapsed(await backend.founderLapsed(founderKey));
+  const loadLapsed = async () => setLapsed(await backend.founderLapsed());
 
   const [consult, setConsult] = useState<any[] | null>(null);
   const [closeArmed, setCloseArmed] = useState(false);
-  const loadConsult = async () => setConsult(await backend.founderConsultResults(founderKey));
+  const loadConsult = async () => setConsult(await backend.founderConsultResults());
 
   const [flags, setFlags] = useState<backend.FlagRow[] | null>(null);
   const [sweepArmed, setSweepArmed] = useState(false);
   const [sweepNote, setSweepNote] = useState<string | null>(null);
-  const loadFlags = async () => setFlags(await backend.founderFlags(founderKey));
+  const loadFlags = async () => setFlags(await backend.founderFlags());
 
   const [claims, setClaims] = useState<backend.ClaimRow[] | null>(null);
   const [claimBusy, setClaimBusy] = useState<number | null>(null);
-  const loadClaims = async () => setClaims(await backend.founderClaims(founderKey));
+  const loadClaims = async () => setClaims(await backend.founderClaims());
 
   /** people whose card was refused — a sale you still have if you answer */
   const [stuck, setStuck] = useState<backend.StuckRow[] | null>(null);
-  const loadStuck = async () => setStuck(await backend.founderStuck(founderKey));
+  const loadStuck = async () => setStuck(await backend.founderStuck());
 
   const decide = async (id: number, approve: boolean) => {
     setClaimBusy(id);
-    const r = await backend.founderDecideClaim(founderKey, id, approve);
+    const r = await backend.founderDecideClaim(id, approve);
     setClaimBusy(null);
     if (!r.ok) setErr(r.error ?? 'CLAIM FAILED');
     void loadClaims();
@@ -96,17 +97,17 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const runSweep = async () => {
     if (!sweepArmed) { setSweepArmed(true); return; }
     setSweepArmed(false);
-    const r = await backend.founderSweep(founderKey);
+    const r = await backend.founderSweep();
     setSweepNote(r == null ? 'SWEEP FAILED' : r.length === 0 ? 'NOBODY WAS DUE — NOTHING CHANGED' : `${r.length} SEAT(S) RELEASED`);
     void loadLapsed();
   };
 
   const strike = async (academyId: string, reason: string, id: number) => {
-    const n = await backend.founderStrike(founderKey, academyId, reason, 'warning');
-    if (n != null) { await backend.founderReviewFlag(founderKey, id, `warned (${n})`); void loadFlags(); }
+    const n = await backend.founderStrike(academyId, reason, 'warning');
+    if (n != null) { await backend.founderReviewFlag(id, `warned (${n})`); void loadFlags(); }
   };
   const dismissFlag = async (id: number) => {
-    await backend.founderReviewFlag(founderKey, id, 'dismissed');
+    await backend.founderReviewFlag(id, 'dismissed');
     void loadFlags();
     void loadClaims();
     void loadStuck();
@@ -114,21 +115,21 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   const closeConsult = async () => {
     if (!closeArmed) { setCloseArmed(true); return; }
     setCloseArmed(false);
-    if (await backend.founderCloseConsult(founderKey)) void loadConsult();
+    if (await backend.founderCloseConsult()) void loadConsult();
   };
 
   /** open the free window to everyone holding a seat */
   const openTrial = async () => {
     if (!trialArmed) { setTrialArmed(true); return; }
     setTrialArmed(false);
-    const n = await backend.founderGrantTrial(founderKey);
+    const n = await backend.founderGrantTrial();
     setTrialNote(n == null ? 'THAT DID NOT GO THROUGH' : `${n} MEMBER(S) NOW ON THE TRIAL PASS`);
   };
 
   // ── packs: credits + the tricks inside ──
   const [packs, setPacks] = useState<backend.PackRow[] | null>(null);
   const [packPick, setPackPick] = useState<string>('NG-MID-30');
-  const loadPacks = async () => setPacks(await backend.founderPacks(founderKey));
+  const loadPacks = async () => setPacks(await backend.founderPacks());
 
   /** sell a timed pass — time stacks, upgrades carry days over */
   const givePack = async () => {
@@ -136,7 +137,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     if (!id || tillBusy) return;
     setTillBusy(true);
     setTillNote(null);
-    const r = await backend.founderGrantTier(founderKey, id, packPick, topRef.trim() || undefined);
+    const r = await backend.founderGrantTier(id, packPick, topRef.trim() || undefined);
     setTillBusy(false);
     if (r.ok) {
       const until = r.expiresAt ? new Date(r.expiresAt).toLocaleDateString() : '';
@@ -160,7 +161,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   };
 
   const loadInbox = async () => {
-    const r = await backend.founderInbox(founderKey);
+    const r = await backend.founderInbox();
     if (r) { setInbox(r.messages); setUnread(r.unread); }
   };
 
@@ -168,7 +169,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     const t = replyTxt.trim();
     if (!t || inboxBusy) return;
     setInboxBusy(true);
-    const ok = await backend.founderReply(founderKey, id, t);
+    const ok = await backend.founderReply(id, t);
     setInboxBusy(false);
     if (ok) { setReplyTo(null); setReplyTxt(''); void loadInbox(); }
     else setErr('REPLY FAILED');
@@ -211,10 +212,10 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadFlags();
     void loadStuck();
     void loadNews();
-    const s = await backend.adminSummary(founderKey);
+    const s = await backend.adminSummary();
     if (s) setData(s);
     else setErr('SERVER UNREACHABLE OR FOUNDER SESSION REJECTED — SIGN IN AS FOUNDER AGAIN');
-  }, [founderKey]);
+  }, []);
 
   useEffect(() => {
     void refresh();
@@ -227,7 +228,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     setTillBusy(true);
     setTillNote(null);
     setErr(null);
-    const r = await backend.tillTopUp(founderKey, id, credits, topRef.trim() || undefined);
+    const r = await backend.tillTopUp(id, credits, topRef.trim() || undefined);
     setTillBusy(false);
     if (r.ok) {
       setTillNote(`+${credits} → ${id} · WALLET NOW ${r.balance} CREDITS`);
@@ -246,7 +247,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     setTillNote(null);
     setErr(null);
     const renews = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    const ok = await backend.tillSubscribe(founderKey, id, 'pro', renews);
+    const ok = await backend.tillSubscribe(id, 'pro', renews);
     setTillBusy(false);
     if (ok) {
       setTillNote(`PRO ACTIVE → ${id} · RENEWS ${renews}`);
@@ -260,7 +261,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     const text = msg.trim().slice(0, 500);
     if (!text || busy) return;
     setBusy(true);
-    const ok = await backend.postFounderMessage(founderKey, hall, text);
+    const ok = await backend.postFounderMessage(hall, text);
     setBusy(false);
     if (ok) {
       setMsg('');
@@ -840,7 +841,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             <RefreshGlyphIcon size={11} color={colors.primary} />
             <Text style={styles.toolBtnTxt}>REFRESH</Text>
           </Pressable>
-          <Pressable onPress={onForgetKey} style={[styles.toolBtn, styles.toolBtnDanger]} hitSlop={6}>
+          <Pressable onPress={onClose} style={[styles.toolBtn, styles.toolBtnDanger]} hitSlop={6}>
             <Text style={[styles.toolBtnTxt, { color: colors.loss }]}>CLOSE FOUNDER SESSION</Text>
           </Pressable>
         </View>

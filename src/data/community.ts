@@ -407,9 +407,20 @@ export function isLive(): boolean {
 
 // ── mock live traffic — scripted presence + inbound messages ──
 let engineStop: (() => void) | null = null;
+let mockRunning = false;
+
+/**
+ * True while the SCRIPTED demo engine is filling the halls.
+ * The UI shows an explicit banner when this is on, so nobody
+ * mistakes scripted members for real people.
+ */
+export function isMockTrafficRunning(): boolean {
+  return mockRunning;
+}
 
 export function startMockTraffic(coach: Coach) {
   if (engineStop) return engineStop;
+  mockRunning = true;
   const timers: ReturnType<typeof setTimeout>[] = [];
   const L = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
   const coachHandle = 'coach';
@@ -456,6 +467,7 @@ export function startMockTraffic(coach: Coach) {
     timers.forEach(clearTimeout);
     clearInterval(iv);
     engineStop = null;
+    mockRunning = false;
   };
   return engineStop;
 }

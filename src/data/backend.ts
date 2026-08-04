@@ -53,7 +53,9 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 export async function liveSeatCount(): Promise<SeasonGate | null> {
   if (!supabase) return null;
   try {
-    const { data, error } = await withTimeout(supabase.rpc('season_seats'), 12_000);
+    // Promise.resolve() assimilates the supabase-js builder (it is thenable,
+    // not a native Promise) so withTimeout's typing stays honest.
+    const { data, error } = await withTimeout(Promise.resolve(supabase.rpc('season_seats')), 12_000);
     if (error) return null;
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) return null;
@@ -325,7 +327,7 @@ export interface AdminSummary {
   generatedAt: number;
 }
 
-async function founderFn(name: string, _key: string, body?: unknown): Promise<any | null> {
+async function founderFn(name: string, body?: unknown): Promise<any | null> {
   if (!supabase) return null;
   try {
     const { data: session } = await supabase.auth.getSession();
@@ -333,7 +335,8 @@ async function founderFn(name: string, _key: string, body?: unknown): Promise<an
     const resp = await supabase.functions.invoke(name, {
       body: body ?? {},
       // Supabase attaches the current bearer session to the request.
-      // FOUNDER_KEY is deliberately never shipped to the app.
+      // The functions authorize via profiles.is_founder — no key is
+      // shipped to the app and none is ever typed in it.
     });
     if (resp.error) return null;
     return resp.data;
@@ -343,13 +346,13 @@ async function founderFn(name: string, _key: string, body?: unknown): Promise<an
 }
 
 /** null = wrong key or backend unreachable (caller stays locked) */
-export async function adminSummary(key: string): Promise<AdminSummary | null> {
-  return (await founderFn('admin-summary', key)) as AdminSummary | null;
+export async function adminSummary(): Promise<AdminSummary | null> {
+  return (await founderFn('admin-summary')) as AdminSummary | null;
 }
 
 /** broadcast as FOUNDER into any channel — kind:'founder', fans out live */
-export async function postFounderMessage(key: string, slug: string, text: string): Promise<boolean> {
-  const r = await founderFn('founder-broadcast', key, { slug, text });
+export async function postFounderMessage(slug: string, text: string): Promise<boolean> {
+  const r = await founderFn('founder-broadcast', { slug, text });
   return r?.ok === true;
 }
 
@@ -448,14 +451,14 @@ export async function tillSpend(amount: number, reason: string): Promise<{ ok: b
 }
 
 /** credits the player after a payment alert; founder key on this device only */
-export async function tillTopUp(key: string, academyId: string, credits: number, ref?: string): Promise<{ ok: boolean; balance?: number }> {
-  const r = await founderFn('till-topup', key, { academyId, credits, reason: 'FOUNDER TOP-UP', ref });
+export async function tillTopUp(academyId: string, credits: number, ref?: string): Promise<{ ok: boolean; balance?: number }> {
+  const r = await founderFn('till-topup', { academyId, credits, reason: 'FOUNDER TOP-UP', ref });
   return { ok: r?.ok === true, balance: r?.balance };
 }
 
 /** marks a WORLD-track player PRO after their sub payment lands */
-export async function tillSubscribe(key: string, academyId: string, plan: 'pro' | 'free', renews?: string): Promise<boolean> {
-  const r = await founderFn('till-subscribe', key, { academyId, plan, renews });
+export async function tillSubscribe(academyId: string, plan: 'pro' | 'free', renews?: string): Promise<boolean> {
+  const r = await founderFn('till-subscribe', { academyId, plan, renews });
   return r?.ok === true;
 }
 
@@ -663,26 +666,26 @@ export interface InboxRow {
   reply: string | null;
 }
 
-async function deskFn(_key: string, body: Record<string, unknown>): Promise<any | null> {
+async function deskFn(body: Record<string, unknown>): Promise<any | null> {
   // Founder authorization is the Supabase session (is_founder), not a client key.
-  return founderFn('founder-desk', _key, body);
+  return founderFn('founder-desk', body);
 }
 
-export async function founderInbox(key: string, unread = false):
+export async function founderInbox(unread = false):
   Promise<{ messages: InboxRow[]; unread: number } | null> {
-  const r = await deskFn(key, { action: 'inbox', unread });
+  const r = await deskFn({ action: 'inbox', unread });
   return r?.ok ? { messages: r.messages ?? [], unread: r.unread ?? 0 } : null;
 }
 
-export async function founderReply(key: string, id: number, reply: string): Promise<boolean> {
-  const r = await deskFn(key, { action: 'reply', id, reply });
+export async function founderReply(id: number, reply: string): Promise<boolean> {
+  const r = await deskFn({ action: 'reply', id, reply });
   return r?.ok === true;
 }
 
 export async function founderSetStatus(
-  key: string, academyId: string, status: 'active' | 'muted' | 'removed',
+  academyId: string, status: 'active' | 'muted' | 'removed',
 ): Promise<boolean> {
-  const r = await deskFn(key, { action: 'set_status', academyId, status });
+  const r = await deskFn({ action: 'set_status', academyId, status });
   return r?.ok === true;
 }
 
@@ -697,8 +700,8 @@ export interface PackRow {
 }
 
 /** every pack with the tricks/stages bundled inside it */
-export async function founderPacks(key: string): Promise<PackRow[] | null> {
-  const r = await deskFn(key, { action: 'packs' });
+export async function founderPacks(): Promise<PackRow[] | null> {
+  const r = await deskFn({ action: 'packs' });
   return r?.ok ? (r.packs ?? []) : null;
 }
 
@@ -707,18 +710,18 @@ export async function founderPacks(key: string): Promise<PackRow[] | null> {
  * inside it, atomically. Replaces the credits-only top-up for packs.
  */
 export async function founderGrantPack(
-  key: string, academyId: string, pack: string, ref?: string,
+  academyId: string, pack: string, ref?: string,
 ): Promise<{ ok: boolean; balance?: number; error?: string }> {
-  const r = await deskFn(key, { action: 'grant_pack', academyId, pack, ref });
+  const r = await deskFn({ action: 'grant_pack', academyId, pack, ref });
   if (!r) return { ok: false, error: 'UNREACHABLE' };
   return r.ok ? { ok: true, balance: r.balance } : { ok: false, error: String(r.error ?? 'FAILED') };
 }
 
 /** re-cut what a pack contains (season to season, as the meta moves) */
 export async function founderSetPackItems(
-  key: string, pack: string, items: string[],
+  pack: string, items: string[],
 ): Promise<boolean> {
-  const r = await deskFn(key, { action: 'pack_set_items', pack, items });
+  const r = await deskFn({ action: 'pack_set_items', pack, items });
   return r?.ok === true;
 }
 
@@ -774,8 +777,8 @@ export async function acceptTos(version: number): Promise<boolean> {
 }
 
 // ── FOUNDER: enforcement ─────────────────────────────────────
-export async function founderSweep(key: string): Promise<{ academy_id: string; handle: string; reason: string }[] | null> {
-  const r = await deskFn(key, { action: 'sweep' });
+export async function founderSweep(): Promise<{ academy_id: string; handle: string; reason: string }[] | null> {
+  const r = await deskFn({ action: 'sweep' });
   return r?.ok ? (r.removed ?? []) : null;
 }
 
@@ -784,28 +787,28 @@ export interface FlagRow {
   channel: string | null; text: string; matched: string; at: string; reviewed: boolean;
 }
 
-export async function founderFlags(key: string): Promise<FlagRow[] | null> {
-  const r = await deskFn(key, { action: 'flags' });
+export async function founderFlags(): Promise<FlagRow[] | null> {
+  const r = await deskFn({ action: 'flags' });
   return r?.ok ? (r.flags ?? []) : null;
 }
 
 export async function founderStrike(
-  key: string, academyId: string, reason: string, severity: 'warning' | 'severe' = 'warning',
+  academyId: string, reason: string, severity: 'warning' | 'severe' = 'warning',
 ): Promise<number | null> {
-  const r = await deskFn(key, { action: 'strike', academyId, reason, severity });
+  const r = await deskFn({ action: 'strike', academyId, reason, severity });
   return r?.ok ? Number(r.strikes ?? 0) : null;
 }
 
 export async function founderRemove(
-  key: string, academyId: string, reason: string,
+  academyId: string, reason: string,
 ): Promise<{ ok: boolean; refundDays?: number; error?: string }> {
-  const r = await deskFn(key, { action: 'remove', academyId, reason });
+  const r = await deskFn({ action: 'remove', academyId, reason });
   if (!r) return { ok: false, error: 'UNREACHABLE' };
   return r.ok ? { ok: true, refundDays: r.refundDays } : { ok: false, error: String(r.error) };
 }
 
-export async function founderReviewFlag(key: string, id: number, action: string): Promise<boolean> {
-  const r = await deskFn(key, { action: 'flag_review', id, decision: action });
+export async function founderReviewFlag(id: number, action: string): Promise<boolean> {
+  const r = await deskFn({ action: 'flag_review', id, decision: action });
   return r?.ok === true;
 }
 
@@ -864,13 +867,13 @@ export async function answerConsult(
 }
 
 /** founder: the counts, the medians and the quotes */
-export async function founderConsultResults(key: string): Promise<any[] | null> {
-  const r = await deskFn(key, { action: 'consult_results' });
+export async function founderConsultResults(): Promise<any[] | null> {
+  const r = await deskFn({ action: 'consult_results' });
   return r?.ok ? (r.results ?? []) : null;
 }
 
-export async function founderCloseConsult(key: string): Promise<boolean> {
-  const r = await deskFn(key, { action: 'consult_close' });
+export async function founderCloseConsult(): Promise<boolean> {
+  const r = await deskFn({ action: 'consult_close' });
   return r?.ok === true;
 }
 
@@ -1035,8 +1038,8 @@ export interface ClaimRow {
   sender_note: string | null; status: string; at: string;
 }
 
-export async function founderClaims(key: string): Promise<ClaimRow[] | null> {
-  const r = await deskFn(key, { action: 'claims' });
+export async function founderClaims(): Promise<ClaimRow[] | null> {
+  const r = await deskFn({ action: 'claims' });
   return r?.ok ? (r.claims ?? []) : null;
 }
 
@@ -1054,15 +1057,15 @@ export interface StuckRow {
  * Members who tried to pay and could not. Above the general inbox on
  * purpose: each one is a sale you still have if you answer today.
  */
-export async function founderStuck(key: string): Promise<StuckRow[] | null> {
-  const r = await deskFn(key, { action: 'stuck' });
+export async function founderStuck(): Promise<StuckRow[] | null> {
+  const r = await deskFn({ action: 'stuck' });
   return r?.ok ? (r.stuck ?? []) : null;
 }
 
 export async function founderDecideClaim(
-  key: string, id: number, approve: boolean, note?: string,
+  id: number, approve: boolean, note?: string,
 ): Promise<{ ok: boolean; tier?: string; error?: string }> {
-  const r = await deskFn(key, { action: 'decide_claim', id, approve, note });
+  const r = await deskFn({ action: 'decide_claim', id, approve, note });
   if (!r) return { ok: false, error: 'UNREACHABLE' };
   return r.ok ? { ok: true, tier: r.tier } : { ok: false, error: String(r.error) };
 }
@@ -1140,23 +1143,23 @@ export interface LapsedRow {
 
 /** founder: open the free window to every seated member at once */
 export async function founderGrantTrial(
-  key: string, days?: number, tier?: string,
+  days?: number, tier?: string,
 ): Promise<number | null> {
-  const r = await deskFn(key, { action: 'grant_trial', days, tier });
+  const r = await deskFn({ action: 'grant_trial', days, tier });
   return r?.ok ? Number(r.granted ?? 0) : null;
 }
 
 /** founder: who has been lapsed long enough to reclaim their seat */
-export async function founderLapsed(key: string): Promise<LapsedRow[] | null> {
-  const r = await deskFn(key, { action: 'lapsed' });
+export async function founderLapsed(): Promise<LapsedRow[] | null> {
+  const r = await deskFn({ action: 'lapsed' });
   return r?.ok ? (r.lapsed ?? []) : null;
 }
 
 /** founder: sell a timed pass (time stacks; upgrades carry days over) */
 export async function founderGrantTier(
-  key: string, academyId: string, product: string, ref?: string,
+  academyId: string, product: string, ref?: string,
 ): Promise<{ ok: boolean; tier?: string; expiresAt?: string; error?: string }> {
-  const r = await deskFn(key, { action: 'grant_tier', academyId, product, ref });
+  const r = await deskFn({ action: 'grant_tier', academyId, product, ref });
   if (!r) return { ok: false, error: 'UNREACHABLE' };
   return r.ok
     ? { ok: true, tier: r.tier, expiresAt: r.expiresAt }

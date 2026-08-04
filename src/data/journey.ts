@@ -8,7 +8,7 @@ import { ObjectiveCheck } from './matches';
 // six development chapters (SEE YOURSELF → PROVE IT) — the coach
 // stays a voice, guide and accountability presence, but the
 // curriculum is no longer a game-world choice. "Your Journey is
-// the evidence. The Standard is the benchmark."
+// the evidence. His road is the benchmark."
 //
 // Every objective is machine-checkable against the Match Vault,
 // the Loss Journal and the Thread (matches.ts ObjectiveCheck).
@@ -192,10 +192,9 @@ const UNIVERSAL: SeasonDef = {
 };
 
 export const JOURNEYS: Record<string, SeasonDef> = {
-  // the same universal road for every coach — the coach is the
-  // voice on it, never a different curriculum
+  // the one universal road — Chinedu is the voice on it. The
+  // player's journey and his road are the same six chapters.
   chinedu: UNIVERSAL,
-  obinna: UNIVERSAL,
 };
 
 /** this player's road — one universal journey, whoever the guide is */

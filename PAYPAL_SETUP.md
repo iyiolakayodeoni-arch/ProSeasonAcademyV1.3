@@ -201,7 +201,8 @@ Add these four:
 That last one puts you in test mode. **You delete it in step 7** to go
 live — that single deletion is the switch.
 
-While you are here, add `FOUNDER_KEY` too if you have not — any long
+There is no founder key. The Founder Desk is gated by `profiles.is_founder` on
+your founder account — set it in SQL once (see SETUP.md). For reference, the old
 random string. It is what unlocks your Founder Desk.
 
 ---

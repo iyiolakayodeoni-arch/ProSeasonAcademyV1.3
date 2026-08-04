@@ -3,9 +3,10 @@ import { useEffect, useSyncExternalStore } from 'react';
 
 // ─────────────────────────────────────────────────────────────
 // SESSION STORE — what the academy remembers about YOU between
-// launches: that you signed in, which coach you locked (that
-// lock is PERMANENT — the app never offers a way back), whether
-// the Baseline Scan gate was cleared, and how you found us.
+// launches: that you signed in, that the one coach (Chinedu) is
+// locked (that lock is PERMANENT — the app never offers a way
+// back), whether the Baseline Scan gate was cleared, and how you
+// found us.
 //
 // Without this the app booted to the sign-in screen every cold
 // start and made a returning player re-lock a coach and re-sit
@@ -105,6 +106,12 @@ export function markSignedIn() {
 export function lockCoach(coachId: string) {
   if (state.coachId) return; // permanent by design
   set({ coachId });
+}
+
+/** migrate an old build's lock to the one coach — the single-voice
+ *  decision supersedes the old permanent lock, so it never splits */
+export function migrateCoachId(to: string) {
+  if (state.coachId && state.coachId !== to) set({ coachId: to });
 }
 
 export const markIntroDone = () => set({ introDone: true });

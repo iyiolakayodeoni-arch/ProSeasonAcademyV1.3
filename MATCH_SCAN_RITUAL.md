@@ -247,10 +247,10 @@ No unapproved bot lesson should reach players.
 
 ## Coach path rule
 
-Chinedu and Obinna are not random skins. Each path should teach through its coach’s style:
+The academy has one coach: Chinedu Okafor. He is not a skin — the path teaches
+through his style:
 
 - Chinedu: discipline, pressure, winning habits, ruthless correction
-- Obinna: calm, control, composure, patient correction
 
 The curriculum can be inspired by public play-style research, but it must not use real player names/likenesses inside the app.
 

@@ -32,8 +32,6 @@ const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 const MIND_FRAME: Record<string, string> = {
   chinedu:
     'The machine counts goals. It cannot read your head — I once tried guessing from the score alone. Guessed wrong. Twice. Same minute. So this part is yours, and that is not a flaw. That is the point.',
-  obinna:
-    'The watcher counts goals, little one. It cannot count heart — and between me and you, I would not trust a machine with yours anyway. Tell me the truth yourself.',
 };
 import {
   CheckIcon,
@@ -393,7 +391,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
           {/* ── THE MIND — yours by design ── */}
           <View style={styles.mindBox}>
             <Text style={styles.mindTitle}>THE MIND — THE PART THE MACHINE CANNOT SCAN</Text>
-            <Text style={styles.mindFrame}>{MIND_FRAME[coach.id] ?? MIND_FRAME.obinna}</Text>
+            <Text style={styles.mindFrame}>{MIND_FRAME[coach.id] ?? MIND_FRAME.chinedu}</Text>
 
             <Text style={styles.fieldLabel}>YOUR HEAD, FULL 90 — HOW WAS IT?</Text>
             <View style={styles.chipRow}>

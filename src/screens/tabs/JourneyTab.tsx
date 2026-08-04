@@ -88,7 +88,7 @@ export default function JourneyTab({
   // THE THREAD — settled lessons count toward PROVE IT (the objective engine)
   const thread = useLessonThread();
   const threadSettled = thread.heldCount + thread.brokeCount;
-  // THE STANDARD — the parallel benchmark journey, revealed by progress
+  // HIS ROAD — the benchmark journey, revealed by progress
   const standard = useStandard();
   const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
 
@@ -168,7 +168,7 @@ export default function JourneyTab({
         </View>
 
         <Text style={styles.headline}>YOUR JOURNEY</Text>
-        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
+        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · HIS ROAD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
           <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
@@ -286,7 +286,7 @@ export default function JourneyTab({
           </View>
         </View>
 
-        {/* ── THE STANDARD — the parallel benchmark journey ── */}
+        {/* ── HIS ROAD — the benchmark journey (Chinedu's own) ── */}
         <StandardPanel
           chapter={standard.current}
           clearedCount={standard.clearedCount}
@@ -457,23 +457,24 @@ export default function JourneyTab({
   );
 }
 
-// ── THE STANDARD — the parallel benchmark journey. Not a second
-// progression track: it moves beside YOUR JOURNEY and reveals the
-// chapter that matches your current stage. Read it. Walk your own road.
+// ── HIS ROAD — the benchmark journey. Not a second progression
+// track: it moves beside YOUR JOURNEY and reveals the chapter of
+// Chinedu's own road that matches your current stage. Read his
+// road. Walk your own.
 function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
   return (
     <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
       <View style={styles.standardHead}>
         <View style={styles.standardTitleBlock}>
-          <Text style={styles.standardName}>THE STANDARD</Text>
-          <Text style={styles.standardSub}>A COMPOSITE OF THE BEST IN THE PATH</Text>
+          <Text style={styles.standardName}>CHINEDU OKAFOR</Text>
+          <Text style={styles.standardSub}>HIS ROAD — TOP OF THE GAME, SEASON AFTER SEASON</Text>
         </View>
         <View style={styles.standardStagePill}>
           <Text style={styles.standardStageTxt}>STAGE {stageN}</Text>
         </View>
       </View>
 
-      {/* the dual line — YOUR JOURNEY vs THE STANDARD at the same point */}
+      {/* the dual line — YOUR JOURNEY vs HIS ROAD at the same point */}
       <View style={styles.standardDual}>
         <View style={styles.standardDualCol}>
           <Text style={styles.standardDualTag}>YOUR JOURNEY</Text>
@@ -483,12 +484,12 @@ function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardCha
           <Text style={styles.standardDualArrowTxt}>‖</Text>
         </View>
         <View style={[styles.standardDualCol, styles.standardDualColRight]}>
-          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>THE STANDARD</Text>
+          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>HIS ROAD</Text>
           <Text style={styles.standardDualName}>{chapter.chapterTitle}</Text>
         </View>
       </View>
 
-      <Text style={styles.standardLearnTitle}>WHAT ELITE PLAYERS LEARN HERE</Text>
+      <Text style={styles.standardLearnTitle}>WHAT CHINEDU LEARNED HERE</Text>
       <Text style={styles.standardLearnBody}>{chapter.whatTheyLearn}</Text>
 
       <Text style={styles.standardLearnTitle}>THE PROFESSIONAL BEHAVIOUR TO STUDY</Text>
@@ -503,11 +504,11 @@ function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardCha
 
       <View style={styles.standardBenchmark}>
         <Text style={styles.standardBenchmarkTxt}>“{chapter.benchmark}”</Text>
-        <Text style={styles.standardBenchmarkBy}>— THE STANDARD · {chapter.chapterTitle}</Text>
+        <Text style={styles.standardBenchmarkBy}>— CHINEDU OKAFOR · {chapter.chapterTitle}</Text>
       </View>
 
       <Text style={styles.standardMotto}>
-        YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
+        YOUR JOURNEY IS THE EVIDENCE · HIS ROAD IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
       </Text>
     </Animated.View>
   );
@@ -806,7 +807,7 @@ const styles = StyleSheet.create({
   ledgerSub: { marginTop: 1, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.72)' },
   ledgerCta: { marginTop: 9, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
 
-  // ── THE STANDARD ──
+  // ── HIS ROAD ──
   standardCard: {
     marginTop: 14,
     borderWidth: 1.2,

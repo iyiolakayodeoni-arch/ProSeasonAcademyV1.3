@@ -382,8 +382,7 @@ export async function resetBaselineForDev(): Promise<void> {
 }
 
 // ═════════════════════════════════════════════════════════════
-// CONTENT — the fiction. Coach voices per coaches.ts canon:
-// Chinedu = blunt, hates losing. Obinna = calm, "little one".
+// CONTENT — the fiction. One voice: Chinedu — blunt, hates losing.
 // ═════════════════════════════════════════════════════════════
 
 export interface CoachScript {
@@ -467,63 +466,6 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     ambitionAsk:
       'Last question of the baseline, and I want the real one, not the polite one. Where are you going with this? Not “up a division.” Where. I will hold you to it.',
   },
-
-  obinna: {
-    intro: [
-      'Come in, come in, little one. I am Obinna — THE MOTIVATOR, though between us, I mostly hate watching good players quit on themselves.',
-      'I played academy football until my knee ended it at nineteen. For two years I was angry at the world. Then a coach sat me down and asked questions I did not want to answer. That conversation is why I am standing here.',
-      'Somebody has to ask you the real questions too — gently, but actually ask them. That is me. For the record: you choosing this path genuinely made my day.',
-      'So before tactics, before mechanics — we find out who you are when the goals are going in against you. That player, the one under pressure, is the one I coach.',
-    ],
-    introSignoff: 'My story is told. Yours starts now, little one.',
-    talk: [
-      'Here is how we begin: five matches. Just five. Play them exactly as you always do — no performing for me.',
-      'After each one, come back here. The score is the easy part; a machine can watch a scoreboard. The important part is what was happening between your ears — and I ask, you answer, because that is how a mind gets strong.',
-      'Why not let AI do all this? Because AI can summarise your match, but it cannot grow your mentality, and it will never sit with you after a bad loss and mean it. You grow by thinking for yourself. Free thinkers win real games. So we do this properly — the old way, on purpose.',
-      'And hear me well, little one: this gate is real. The academy is serious about what we do — a player who cannot face five honest debriefs is not ready for a season. That is not harshness. That is respect for your time AND mine.',
-    ],
-    bluff:
-      'And little one — be honest with me. I have heard every excuse ever built; I can hear the difference between a player telling the truth and a player performing it. Honest answers make you better and make me better for you. Win-win.',
-    questions: {
-      W: [
-        'Little one, tell me the honest version: which part of that win was YOURS, and which part was the game being kind?',
-        'When you went ahead, what did your body do — relax or tighten? Why do you think that is?',
-        'What did you do well today that nobody watching would ever notice?',
-        'If this win has a lesson you might ignore, what is it?',
-        'Who were you in the last ten minutes — the closer or the survivor? What does that tell us?',
-      ],
-      D: [
-        'A draw, little one. Where did you feel the balance tip — and what did you do with that feeling?',
-        'What did you give them for free today? Not what they earned — what you gave.',
-        'If this draw were a final, where did you leave the trophy?',
-        'Was there a moment you played not to lose instead of playing to win? Tell me about it honestly.',
-        'What would your teammate say you should have done differently? Answer for them.',
-      ],
-      L: [
-        'Little one, walk me to the first goal — before it went in, where was your attention? Start there.',
-        'After they scored, what did the voice in your head say? The real one. I have heard them all.',
-        'If I watched only your last fifteen minutes, what would I believe about your heart? Tell me true.',
-        'What is the kindest excuse you are telling yourself right now? Now tell me the truth under it.',
-        'Losses are tuition, they say. What exactly did this one teach you — in one sentence you would sign?',
-      ],
-    },
-    beats: {
-      winBig:
-        'A big win, little one! My first ever “big win” was 4–0… in a friendly… against a team that arrived with nine men. I still count it. We do not speak of it. Enjoy yours — THEN we audit it.',
-      winTight:
-        'A one-goal win — my favourite kind, honestly? You know why? Because somewhere in those minutes, you chose to suffer correctly, and nobody claps for that. I clap for that.',
-      drawGoals:
-        'A scoring draw! My first draw like that, I sprinted to celebrate OUR equaliser and pulled my hamstring. Missed two weeks. The lesson, little one: celebrate after the debrief.',
-      drawNill:
-        'Zero-zero — the scoreline that puts crowds to sleep and coaches to work. My old gaffer called it “a chess match where nobody moved.” Prove him wrong with your answers today.',
-      lossBig:
-        'A heavy loss, little one. My worst was 7–1. My coach bought me dinner after and said, “good — now you know exactly how much work you have.” I never forgot. Neither will you.',
-      lossTight:
-        'A narrow one. I once lost 1–0 to a goal that came off a man fixing his sock. True story, little one. But we never talk about the bounce — we talk about the ninety minutes before it.',
-    },
-    ambitionAsk:
-      'One more thing, little one, and this stays between us until we need it: where do you want your game to BE when we look back a year from now? Tell me the real dream — I will hold it for you.',
-  },
 };
 
 // ── THE WEEK — short day-to-day lines (match days 2–5, rest, reflection) ──
@@ -538,17 +480,9 @@ export const BASELINE_DAY_INTRO: Record<string, Record<number, string>> = {
     5: 'Last trial match. Leave yourself nothing to hide behind — the card you get is built from these five days.',
     6: 'No match today. Sit with the week — I will show you what you keep doing; you tell me what it means.',
   },
-  obinna: {
-    2: 'Match two, little one. Let yesterday’s review sit inside you before you play — calm carries over.',
-    3: 'Halfway. The water remembers every ripple — and so do I. I have your week in front of me.',
-    4: 'Match four. Notice how you start. Notice when the calm goes. That noticing IS the training.',
-    5: 'The last trial match, little one. Play it like the mirror is kind — because it is, and it does not forget.',
-    6: 'Rest today. The week has been speaking to you — today we listen to it together.',
-  },
 };
 
 /** what the coach says on the REST day (the 24h gap between tasks) */
 export const BASELINE_REST_LINES: Record<string, string> = {
   chinedu: 'Rest is part of the work. The match will be here tomorrow — your review needs tonight.',
-  obinna: 'Sit with today’s review, little one. The match will still be here tomorrow — and so will I.',
 };

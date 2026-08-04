@@ -2,7 +2,7 @@
 // ACADEMY TOUR — one idea per card. Shown once after first hub
 // entry (skip anytime), and replayable from Settings → Help.
 // Every card teaches the CURRENT product: the universal Journey,
-// The Standard, the Mirror Session, The Thread, the receipts.
+// His Road, the Mirror Session, The Thread, the receipts.
 // ─────────────────────────────────────────────────────────────
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -35,9 +35,9 @@ export const ONBOARD_CARDS: OnboardCard[] = [
   },
   {
     id: 'standard',
-    eyebrow: 'THE STANDARD',
+    eyebrow: 'HIS ROAD',
     title: 'THE BENCHMARK',
-    body: 'Beside your map runs The Standard — what the best in this path learned at each stage. It is not a second track to complete. Read it, then walk your own road.',
+    body: 'Beside your map runs Chinedu’s own road — what the top of the game actually learned at each stage, season after season. It is not a second track to complete. Read it, then walk your own road.',
     tone: 'gold',
   },
   {

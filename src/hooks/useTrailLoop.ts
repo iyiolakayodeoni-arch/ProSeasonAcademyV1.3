@@ -35,7 +35,7 @@ type Options = {
 /**
  * The winding-journey-trail loop: a path draws itself in, then erases itself
  * out, forever. Shared by the splash crest, the sign-in header logo and the
- * per-coach trail inside each CoachCard.
+ * the brand trail under the crest and hero card.
  */
 export function useTrailLoop({
   pathLength,

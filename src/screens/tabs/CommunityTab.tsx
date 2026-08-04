@@ -185,11 +185,15 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   // LIVE first: if the academy cloud answers, the public channels mirror
   // real Supabase rooms. Only a genuinely offline hall gets the scripted
   // engine, so the room never looks abandoned on a dead network.
+  const [simulated, setSimulated] = useState(false);
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       const live = await startLiveRooms(backend.getMe());
-      if (!cancelled && !live) startMockTraffic(coach);
+      if (!cancelled && !live) {
+        startMockTraffic(coach);
+        setSimulated(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -367,6 +371,16 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </Pressable>
       </View>
       <View style={styles.headerRule} />
+
+      {/* ── honest banner: offline hall runs on scripted demo traffic ── */}
+      {simulated && (
+        <View style={styles.simulatedBar}>
+          <Text style={styles.simulatedTag}>OFFLINE HALL</Text>
+          <Text style={styles.simulatedTxt}>
+            THE ROOMS BELOW ARE A SCRIPTED DEMO — REAL MEMBERS RETURN WHEN YOUR SIGNAL DOES.
+          </Text>
+        </View>
+      )}
 
       {/* ── season gate: sold-out season → you train solo until your seat opens ── */}
       {consultLeft !== null && consultLeft > 0 && (
@@ -845,6 +859,14 @@ const styles = StyleSheet.create({
   },
   consultTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
   consultTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+
+  simulatedBar: {
+    marginHorizontal: 12, marginTop: 8, borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.55)', backgroundColor: 'rgba(40,32,14,0.75)',
+    borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11,
+  },
+  simulatedTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078' },
+  simulatedTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
 
   founderWeek: {
     marginHorizontal: 12,

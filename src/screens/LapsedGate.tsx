@@ -77,9 +77,7 @@ export default function LapsedGate({
           <Image source={coach.portrait} style={styles.coachImg} />
           <View style={styles.coachBubble}>
             <Text style={styles.coachTxt}>
-              {coach.id === 'obinna'
-                ? '“The seat is still yours for now. But this academy is small on purpose — I can only work properly with people who are actually in it. Come back and we pick up where we stopped.”'
-                : '“I am not chasing you. The seats are counted and there are people waiting. When you are serious, the door opens and we go again — same node, no excuses.”'}
+              {'“I am not chasing you. The seats are counted and there are people waiting. When you are serious, the door opens and we go again — same node, no excuses.”'}
             </Text>
             <Text style={styles.coachWho}>— {coach.name.toUpperCase()}</Text>
           </View>

@@ -28,8 +28,8 @@ const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'g
   },
   {
     eyebrow: 'WHAT FOLLOWS',
-    title: 'YOUR ROAD + THE STANDARD',
-    body: 'The week builds your profile. Then the Journey opens: six stages graded by your receipts, The Standard as the benchmark beside you, and the Till when you are ready — first stages free, the pass opens the full road.',
+    title: 'YOUR ROAD + HIS ROAD',
+    body: 'The week builds your profile. Then the Journey opens: six stages graded by your receipts, Chinedu\'s own road as the benchmark beside you, and the Till when you are ready — first stages free, the pass opens the full road.',
     tone: 'gold',
   },
 ];

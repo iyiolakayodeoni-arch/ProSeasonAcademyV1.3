@@ -16,14 +16,14 @@ export interface Coach {
   oneLiner: string;
   rating: number;
   journeyTag: string; // e.g. "PRO JOURNEY"
-  metaLine: string; // e.g. "12 STAGES · CONSOLE PRO"
+  metaLine: string; // e.g. "TOP OF THE GAME · 10+ SEASONS · CONSOLE PRO"
   /** local require(...) or { uri } — swap freely */
   portrait: ImageSourcePropType;
   /** transparent cut-out bust for the Role Model card (falls back to arch-masked portrait) */
   cutout?: ImageSourcePropType;
   /** reframed, headroom-rich bust used on the Role Model card arch */
   cardPortrait?: ImageSourcePropType;
-  /** collectible-card accent (Chinedu gold / Obinna green — set by the approved direction) */
+  /** collectible-card accent (Chinedu gold — the one accent) */
   cardAccent: string;
   /** the academy's own 6-stat system shown on the Role Model card */
   cardStats: CardStat[];
@@ -34,9 +34,17 @@ export interface Coach {
 }
 
 // ─────────────────────────────────────────────────────────────
-// PLACEHOLDER COACH DATA — edit everything from this one file.
-// Add more coaches by appending objects; every screen that lists
-// coaches renders however many are present.
+// THE COACH — one voice, on purpose.
+//
+// THE ACADEMY HAS ONE COACH: CHINEDU OKAFOR. The decision to run
+// a single voice is a product decision, not a lack of options —
+// the only choice a player should carry is the one that moves
+// them forward (their training, their thinking, the programme),
+// never "which coach do I use". One voice, one path: his road is
+// the benchmark, the player's own journey is the evidence.
+//
+// Edit his data here only — every screen that lists coaches
+// renders however many are present.
 // ─────────────────────────────────────────────────────────────
 export const COACHES: Coach[] = [
   {
@@ -46,7 +54,7 @@ export const COACHES: Coach[] = [
     oneLiner: 'Comfort is the enemy. We train until losing hurts more than the work.',
     rating: 92,
     journeyTag: 'PRO JOURNEY',
-    metaLine: '12 STAGES · CONSOLE PRO',
+    metaLine: 'TOP OF THE GAME · 10+ SEASONS · CONSOLE PRO',
     portrait: require('../../assets/coaches/chinedu.jpg'),
     cardPortrait: require('../../assets/coaches/chinedu-card.png'),
     cardAccent: '#f2c078',
@@ -60,27 +68,5 @@ export const COACHES: Coach[] = [
     ],
     trailVariant: 'a',
     trailPhaseMs: 0,
-  },
-  {
-    id: 'obinna',
-    name: 'OBINNA',
-    title: 'THE MOTIVATOR',
-    oneLiner: 'Calm is trained, not soft. We finish the un-fun parts — together.',
-    rating: 88,
-    journeyTag: 'PRO JOURNEY',
-    metaLine: '10 STAGES · CONSOLE PRO',
-    portrait: require('../../assets/coaches/obinna.png'),
-    cardPortrait: require('../../assets/coaches/obinna-card.png'),
-    cardAccent: '#39FF6A',
-    cardStats: [
-      { label: 'PACE', value: 84 },
-      { label: 'FINISH', value: 86 },
-      { label: 'VISION', value: 91 },
-      { label: 'WORKRATE', value: 95 },
-      { label: 'CLUTCH', value: 89 },
-      { label: 'IQ', value: 93 },
-    ],
-    trailVariant: 'b',
-    trailPhaseMs: 1100,
   },
 ];

@@ -122,7 +122,7 @@ if (token) {
   const r = await fetch(`${URL_}/functions/v1/ensure-profile`, {
     method: 'POST',
     headers: { apikey: KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ handle: 'BATTERY_BOT', coachId: 'obinna', platform: 'CI', region: 'world' }),
+    body: JSON.stringify({ handle: 'BATTERY_BOT', coachId: 'chinedu', platform: 'CI', region: 'world' }),
   });
   const j = await r.json();
   profile = j.profile ?? null;
@@ -133,7 +133,7 @@ if (token) {
   const r2 = await fetch(`${URL_}/functions/v1/ensure-profile`, {
     method: 'POST',
     headers: { apikey: KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ handle: 'BATTERY_BOT', coachId: 'obinna', platform: 'CI', region: 'world' }),
+    body: JSON.stringify({ handle: 'BATTERY_BOT', coachId: 'chinedu', platform: 'CI', region: 'world' }),
   });
   const j2 = await r2.json();
   ok('re-entry reuses the same seat', j2.profile?.academy_id === profile?.academy_id, j2.profile?.academy_id);

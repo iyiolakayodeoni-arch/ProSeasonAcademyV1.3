@@ -32,7 +32,7 @@ Then **Edge Functions** — paste each file's contents into a function of the sa
 | `founder-desk` | `supabase/functions/founder-desk/index.ts` | **new** — inbox, packs, moderation |
 | `pay-webhook` | `supabase/functions/pay-webhook/index.ts` | **new** — payments grant access automatically |
 
-Confirm `FOUNDER_KEY` is set under **Edge Functions → Secrets**.
+Mark your founder account in the database: `update profiles set is_founder = true where auth_user_id = '<your-supabase-user-id>';` — that flag, not a key, is what opens the Founder Desk.
 
 ---
 
@@ -60,7 +60,7 @@ data is untouched. Expect `ALL SEAT GATE TESTS PASS`.
 
 ## Your first day running it
 
-Everything below is in the app: **Settings → tap VERSION ×5 → Founder Desk.**
+Everything below is in the app: **Settings → tap VERSION ×5 → sign in with the founder account → Founder Desk.**
 
 **1. Test sign-up yourself.** Anyone with the app can take a seat up to the 1,000-seat
 cap — there are no invite codes. Create an account, confirm your academy token, and

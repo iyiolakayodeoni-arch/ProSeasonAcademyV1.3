@@ -20,7 +20,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 |---|--------|----------------|
 | 1 | **Splash** | Animated logo crest with the looping "trail" animation, brand grid background, version footer |
 | 2 | **Sign In** | Clean neon form (email/username/password + create account + forgot). Runs on a local session today; the real server hook is marked for later (`TODO(real-auth)`) |
-| 3 | **Coach Selection** | The courtroom: both coaches pitch you in a one-way chat (you only read, they talk), banter lines per coach, scout file cards, then **"I'M WITH COACH X" → LOCK IT IN**. The lock is **permanent by design** — the app never offers a way back |
+| 3 | **Coach Intro** | No coach selection exists — the academy has **one coach** (Chinedu Okafor). After sign-in he speaks first: his introduction, the game, **the Mirror Method** and **the philosophy** (one voice, one path; his road is the benchmark, your journey is the evidence). The lock is **permanent by design** — the app never offers a way back |
 | 4 | **How Did You Hear** | Source picker (YouTube/TikTok/IG/friend/other) with icons |
 | 5 | **Setup Loader** | Short animated "building your academy" boot into the main app |
 
@@ -33,12 +33,10 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 - Marquee ticker + pull of the freshest approved finds
 - Anything stale gets flagged instead of silently breaking
 
-### 2.4 Journey tab — the map (TWO different odysseys)
-- **Each coach walks a different path through a different fictional world** — inspired by research on the world's top console players (see `uploads/role-model-player-research.md`), distilled into archetypes with zero real names/likenesses on screen:
-  - **CHINEDU — "THE ASHFAULT ASCENT"** (Ruthless Winner × Dominant Prodigy): Cinder Row → The Lean-To → The Saltpits → Long Corridor → Red Lantern End → The Iron Whistle. Mentors: Mama Ukae, Drummer Ezra, Foreman Baba Salt, Locksmith Venn, Night-Watch Kettle, Old Whistle Onye
-  - **OBINNA — "THE MEREHAVEN WAY"** (Iceman × Unlikely Champion): Tide Flats → Lantern Canal → Stillwater Docks → The Fog Gate → Harbour Lights → Calm Water. Mentors: Fisher-Boy Idri, Boatman Sola, Dockmaster Yew, Fogwatcher Nne, Light-Keeper Ama, Elder Mere
-  - Obinna's map even winds in the **opposite direction** (mirrored layout)
-- **Six stages** per path, same mechanical arc (First Touch → … → Showtime), full data per stage: objectives, progress, XP ramp (120 → 400), **place-named badges** (e.g. CINDER ROW BADGE), stage quotes spoken by the fictional mentor who shaped that place
+### 2.4 Journey tab — the map (ONE journey, one voice)
+- **ONE universal six-stage journey** — SEE YOURSELF → CONTROL YOURSELF → READ THE GAME → BUILD DISCIPLINE → PERFORM UNDER PRESSURE → PROVE IT. The same road for every member; Chinedu is the single voice on it. No coach-specific worlds: the only decision a player carries is the one that moves them forward.
+- His fictional backstory (the Ashfault Ascent: Cinder Row → The Iron Whistle, mentors Mama Ukae, Drummer Ezra, Foreman Baba Salt, Locksmith Venn, Night-Watch Kettle, Old Whistle Onye) survives as story, never as a path choice
+- **Six stages**, full data per stage: objectives, progress, XP ramp (120 → 300), **chapter badges** (e.g. SEE YOURSELF BADGE), coach quotes per stage
 - Winding dotted path with footprint pips; the path to your current node stays **lit**
 - Player card (OVR rises as you pass stages: 61 → 62…) with "YOU — STAGE n"
 - Tap any reachable node → **stage details panel** (objectives with progress, live progress bar, XP + badge reward, coach quote, CTA)
@@ -47,7 +45,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 
 ### 2.5 The Role Model card (your coach as a collectible)
 - Full SVG football-card design: shield silhouette, double border, halo, **foil sheen that physically sweeps** across the card every few seconds
-- Rating + title (**92 DISCIPLINARIAN** Chinedu, gold accent · **88 MOTIVATOR** Obinna, green accent — your chosen direction)
+- Rating + title (**92 DISCIPLINARIAN** Chinedu, gold accent — the one coach)
 - Full-face portrait busts, foiled name plate, 6-stat row, "ROLE MODEL · STAGE MENTOR" footer
 - Sitting above the map as the hero; **tap it → zooms straight into today's stage room**
 
@@ -210,7 +208,7 @@ Post-lock flow: CoachSelect → LOCK → CoachIntro (his fictional backstory in 
 enforced) → ambition ask (stored, coach references later) → sealed profile card
 (tier from avg composure, coach read, ambition quote) → journey unlocks. Baseline
 matches land in the real vault (source manual, note prefix BASELINE Mn). Data:
-`src/data/baselineScan.ts` (both coaches' scripts, beats, tiers) — E2E full-pass green.
+`src/data/baselineScan.ts` (Chinedu's scripts, beats, tiers) — E2E full-pass green.
 
 ## 2.20 · STAGE MATCH SCAN v2 (the new scan system INSIDE the coaching stages)
 The full scan ritual now lives inside every stage room, not just the vault/baseline.
@@ -296,22 +294,21 @@ The product direction (see `MIRROR_DIRECTION.md`) is implemented with the names
 preserved — **Onliversity · ProSeasonAcademy** stay; "Mirror" is the method, "Pro
 Season" the programme, "FC Mobile Pro" the first specialist path.
 
-- **ONE universal Journey** (`src/data/journey.ts`): the two coach-specific
-  fictional roads (Ashfault Ascent / Merehaven Way) are retired as *curriculum*.
-  Every member now walks the same six development chapters — SEE YOURSELF,
-  CONTROL YOURSELF, READ THE GAME, BUILD DISCIPLINE, PERFORM UNDER PRESSURE,
-  PROVE IT — with their own evidence inside each. Coaches remain the voice,
-  guide and accountability presence (lock-in, film room, banter intact), but no
-  longer decide which curriculum a player receives. Fictional geography survives
-  only inside coach backstory, never as a path decision.
-- **THE STANDARD** (`src/data/standard.ts`, NEW): the parallel benchmark journey
-  — a fictional composite elite Role Model with the professional pillars
+- **ONE universal Journey** (`src/data/journey.ts`): every member walks the
+  same six development chapters — SEE YOURSELF, CONTROL YOURSELF, READ THE GAME,
+  BUILD DISCIPLINE, PERFORM UNDER PRESSURE, PROVE IT — with their own evidence
+  inside each. The coach (Chinedu Okafor) is the single voice, guide and
+  accountability presence, but the curriculum never varies: the only decision a
+  player carries is the one that moves them forward.
+- **HIS ROAD** (`src/data/standard.ts`): the benchmark journey is Chinedu's own
+  — not a fictional composite. What he learned at each chapter, season after
+  season at the top of the game, with the professional pillars
   (deliberate practice, honest review, emotional control, preparation,
   consistency, decisions under pressure, recovery, disciplined repetition,
   professional conduct). Six chapters mirror the Journey and reveal as the
   player advances. **Not a second progression track** — no objectives/XP/badges.
-  JourneyTab renders the dual panel: `YOUR JOURNEY — <stage>` ‖ `THE STANDARD —
-  <stage>` with what elite players learn here + behaviour to study + benchmark.
+  JourneyTab renders the dual panel: `YOUR JOURNEY — <stage>` ‖ `HIS ROAD —
+  <stage>` (Chinedu's own road) with what he learned here + behaviour to study + benchmark.
 - **THE MIRROR SESSION** (`src/data/mirrorSession.ts` + `MirrorSessionScreen.tsx`,
   both NEW): the full session replaces the scan as the MAIN QUEST ritual.
   Sequence: THREAD CHECK (carried lesson answered HELD/BROKE first) → INTENTION
@@ -409,7 +406,7 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 - **The tutorial is now the current product.** The old first-run tour still taught
   "MATCH SCAN", "THE GRADE" and a dressing-room community. Rewritten
   (`src/data/onboarding.ts`) to one idea per card: START HERE (your next move),
-  YOUR ROAD (the universal journey), THE STANDARD (the benchmark — not a second
+  YOUR ROAD (the universal journey), HIS ROAD (the benchmark — not a second
   track), MIRROR SESSION (the main ritual), THE THREAD (the held/broke loop),
   VAULT + LOSS JOURNAL (the receipts), COMMUNITY, and THE TILL (your seat, the
   cap). Gold/green card accents match the product's visual language.
