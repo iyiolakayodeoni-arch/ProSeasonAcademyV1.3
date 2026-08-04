@@ -26,7 +26,7 @@
 
 This is the intended direction for ProSeasonAcademy’s match scan.
 
-The academy is **not** trying to become a fake automatic coach that pretends it understands a full FC Mobile match. The product should attract serious players who are willing to watch themselves, write honestly, and learn from their own decisions.
+The academy is **not** trying to become a fake automatic coach that pretends it understands a full EA SPORTS FC 26/27 Console match. The product should attract serious players who are willing to watch themselves, write honestly, and learn from their own decisions.
 
 ## The principle
 
@@ -57,7 +57,7 @@ When the player taps `START MATCH SCAN`:
 - the app starts a scan session
 - the app explains what will be recorded and why
 - Android asks for screen-record permission if the native recorder is available
-- the player switches to FC Mobile and plays the match
+- the player starts their console match in EA SPORTS FC 26/27 and plays
 
 If native recording is unavailable, the flow falls back to manual logging and written reflection.
 
@@ -228,7 +228,7 @@ This should remain Android-first. iOS cannot support the same overlay/recording 
 
 The bot should study public real-player material:
 
-- FC Mobile YouTube tutorials
+- EA SPORTS FC 26/27 Console YouTube tutorials
 - real H2H gameplay videos
 - patch notes
 - guide posts

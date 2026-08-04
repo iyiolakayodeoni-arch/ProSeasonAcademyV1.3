@@ -1,6 +1,6 @@
 # MIRROR DIRECTION — applied to ProSeasonAcademy (v1.3+)
 
-**Status:** APPLIED (data layer + primary UI paths + docs). Names preserved: **Onliversity · ProSeasonAcademy** remain the product names; "Mirror" is the method, "Pro Season" the programme, "FC Mobile Pro" the first specialist path.
+**Status:** APPLIED (data layer + primary UI paths + docs). Names preserved: **Onliversity · ProSeasonAcademy** remain the product names; "Mirror" is the method, "Pro Season" the programme, "EA SPORTS FC 26/27 Console Pro" the first specialist path.
 
 This file records how the product direction ("Mirror — Pro Season") was implemented in this repository, what is honest today, and what remains for later.
 
@@ -132,7 +132,7 @@ is needed):
 - **Auto-start on match detection:** the first goal event from the ScoreTracker
   calls `beginRecording()` automatically; the player's MATCH STARTED tap does it too.
 - **Checkpoints:** `mw-checkpoint {kind: half|full}` at ~5.5 min / ~11.5 min of
-  recording (FC Mobile halves run ~6 real minutes). The Mirror Session auto-advances
+  recording (FC 26/27 console halves run ~6 real minutes). The Mirror Session auto-advances
   on these; the manual buttons always remain.
 - **Stop:** `stop()` tears down recorder + displays + projection, resolves
   `{path, durationMs}`, emits `mw-state {state:"stopped", path}`, and stops the
@@ -140,7 +140,7 @@ is needed):
   never uploaded by default.
 - **Playback:** `expo-video` in the Mirror Session's DIVISION and REVIEW phases —
   MARK START / MARK END from the timeline, per-moment seek, `≈8 recording-seconds
-  per match-minute` mapping (FC Mobile ~12 real min per 90 match-min).
+  per match-minute` mapping (FC 26/27 console ~12 real min per 90 match-min).
 
 **Build note:** the native module + expo-video require a **development build**
 (`npx expo run:android` or an EAS build) — they are not present in Expo Go. The
@@ -177,7 +177,7 @@ applied to the gate itself:
 
 ## 4. The product line, as applied
 
-> **MIRROR / PRO SEASON — FC MOBILE PRO DEVELOPMENT PROGRAMME**
+> **MIRROR / PRO SEASON — EA SPORTS FC 26/27 CONSOLE PRO DEVELOPMENT PROGRAMME**
 > *"Mirror helps you see what you actually do — not what you wish you did — then gives you the structure to change it."*
 > *"Your Journey is yours. The Standard shows what the best in your path have learned. Mirror gives you the structure to compare your intentions with your evidence and do the work honestly."*
 >

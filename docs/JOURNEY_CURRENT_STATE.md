@@ -485,7 +485,7 @@ A stage passes only when **every objective** is met. The scan does not require t
 
 ### Honest-system boundary: "The Chinedu Way"
 
-The application does not have an official FC Mobile match feed. Match data and key moments are entered manually by the player following **The Chinedu Way**:
+The application does not have an official EA SPORTS FC 26/27 Console match feed. Match data and key moments are entered manually by the player following **The Chinedu Way**:
 1. **Pen to Paper:** *"There is a special connection a biro has to a book that cannot be typed."* Players screen record their match, watch their tape back, and pen the unusual and key make-or-break moments on paper with a biro first.
 2. **24–30 Minute Cool-Down:** Players let their thoughts settle for 24–30 minutes after the match before typing their written answers into the Academy database.
 3. **The 7-Day Cadence (3 Matches → Rest 1 → Match 4 → Rest 2 → Match 5 Finale):**
@@ -553,7 +553,7 @@ The side-quest card can include:
 - an in-app blog/lesson sheet;
 - mechanic-specific scan targets.
 
-The current checked-in feed is marked `FC Mobile 26` and includes fresh items such as **THE LANE CHANGE**, **THE TACTIC WINDOW**, **THE SECOND BALL**, and **THE DRIVEN PASS**. The stage claims the newest eligible fresh item not already assigned to another stage. Once claimed, that stage keeps the item until it becomes stale. If the source is patched out, the UI explicitly flags it and waits for a fresh approved replacement rather than silently teaching outdated material.
+The current checked-in feed is marked `FC 26/27 Console` and includes fresh items such as **THE LANE CHANGE**, **THE TACTIC WINDOW**, **THE SECOND BALL**, and **THE DRIVEN PASS**. The stage claims the newest eligible fresh item not already assigned to another stage. Once claimed, that stage keeps the item until it becomes stale. If the source is patched out, the UI explicitly flags it and waits for a fresh approved replacement rather than silently teaching outdated material.
 
 The side mechanic's own scan targets are shown as coach watch-list items, but they do not replace the stage objective checks in the Journey data.
 

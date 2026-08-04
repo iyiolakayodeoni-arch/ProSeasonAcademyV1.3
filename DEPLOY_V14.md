@@ -99,7 +99,7 @@ EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY=...
 - [ ] Reset email request
 - [ ] Founder Desk opens only for `is_founder`
 - [ ] Publish Home announcement → appears on Home
-- [ ] Approve news draft → appears under FC MOBILE NEWS
+- [ ] Approve news draft → appears under FC 26/27 CONSOLE NEWS
 - [ ] Nigeria country → africa pricing region; non-NG Africa → world shelf
 - [ ] Till still closed until Desk opens `go_live` / `till_closed`
 - [ ] Delete account wipes remote + local

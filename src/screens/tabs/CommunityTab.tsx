@@ -401,7 +401,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           THE CHINEDU WAY · PEN TO PAPER BEFORE YOU TYPE
         </Text>
         <Text style={{ marginTop: 3, fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, color: 'rgba(143,184,155,0.8)', textAlign: 'center' }}>
-          Screen record & watch · Pen your moments on paper · 24–30m cool-down · Type your truth into your database. The hard way is the easy way.
+          Record & watch · Pen your moments on paper · 24–30m cool-down · Type your truth into your database. The hard way is the easy way.
         </Text>
       </View>
 

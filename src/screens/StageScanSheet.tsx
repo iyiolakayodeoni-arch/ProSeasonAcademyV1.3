@@ -254,7 +254,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>1</Text>
                 <Text style={styles.briefTxt}>
-                  THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE: There is a special connection a biro has to a book that cannot be typed. Screen record your match, watch your tape back, and write the key moments and unusual things on paper.
+                  THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE: There is a special connection a biro has to a book that cannot be typed. Record your match as usual, watch your tape back, and write the key moments and unusual things on paper.
                 </Text>
               </View>
               <View style={styles.briefStep}>
@@ -277,7 +277,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               </View>
               <View style={styles.privacyBox}>
                 <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: YOUR SCREEN RECORDING STAYS ON YOUR PHONE. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
+                  DEFAULT RULE: RECORD AS USUAL ON YOUR CONSOLE OR PHONE. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
                 </Text>
               </View>
             </Animated.View>

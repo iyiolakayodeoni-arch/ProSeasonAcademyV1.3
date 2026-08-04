@@ -24,7 +24,7 @@ const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'g
   {
     eyebrow: 'THE CHINEDU WAY',
     title: 'PEN TO PAPER BEFORE YOU TYPE',
-    body: 'For every match: screen record and watch your tape, write your moments on paper with a biro, cool down for 24–30 mins, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
+    body: 'For every match: record as usual and watch your tape, write your moments on paper with a biro, cool down for 24–30 mins, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
   },
   {
     eyebrow: 'WHAT FOLLOWS',

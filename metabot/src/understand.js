@@ -25,7 +25,7 @@ export function violatesIdentityGuard(text) {
 }
 
 // ── build a stable topic key from a headline-ish string ───────
-const STOP = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'on', 'for', 'with', 'is', 'are', 'how', 'you', 'your', 'our', 'new', 'fc', 'mobile', 'fifa', 'ea', 'sports', 'best', 'top']);
+const STOP = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'on', 'for', 'with', 'is', 'are', 'how', 'you', 'your', 'our', 'new', 'fc', 'mobile', 'console', '26', '27', 'fifa', 'ea', 'sports', 'best', 'top']);
 
 export function topicKeyFrom(title) {
   const words = cleanOutside(title)

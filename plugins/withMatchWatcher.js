@@ -304,7 +304,7 @@ import java.io.File
  * Raw video is written to the app-private external files dir and
  * never uploaded by default. Half-time / full-time checkpoints are
  * time-based heuristics from the recording start (~6-min halves in
- * FC Mobile) — the player can always override the checkpoint in the
+ * FC 26/27 Console) — the player can always override the checkpoint in the
  * Mirror Session UI.
  */
 class MatchWatcherService : Service() {
@@ -319,7 +319,7 @@ class MatchWatcherService : Service() {
         const val CHANNEL_ID = "match_watcher"
         const val OUTPUT_W = 96
         const val OUTPUT_H = 54
-        /** FC Mobile halves run ~6 real minutes — heuristic checkpoints */
+        /** FC 26/27 console halves run ~6 real minutes — heuristic checkpoints */
         const val HALF_MS = 330_000L
         const val FULL_MS = 690_000L
     }

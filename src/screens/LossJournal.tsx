@@ -89,7 +89,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
           THE CHINEDU WAY · HOW YOU LOG A LOSS
         </Text>
         <Text style={[styles.ruleTxt, { marginTop: 4, fontSize: 9.5, lineHeight: 14.5 }]}>
-          1. SCREEN RECORD & WATCH: Watch your match tape back. Don't look away from what went wrong.
+          1. RECORD & WATCH: Watch your match tape back. Don't look away from what went wrong.
           {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen the unusual things and mistake patterns on paper first.
           {'\n'}3. 24–30 MIN COOL-DOWN: Never log while tilted. Let your mind cool down for 24–30 minutes after full time.
           {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your one honest line into your database.

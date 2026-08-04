@@ -9,7 +9,7 @@ This document is the single place to check **what the app already does**, **what
 
 ## 1. What the app is (30-second version)
 
-ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach — permanently**. Your coach walks you up a **6-stage journey**. Each stage he teaches you **one mechanic that is actually working in the game right now** (found by your own scouting bot, MetaBot — no third-party apps involved), then a **Match Scan** grades whether you used it in a real match. Pass → XP + badge → next node unlocks. Around that: a Home feed, a Community clubhouse, film-room sessions, and a Role Model collectible card of your coach.
+ProSeasonAcademy is your coaching academy for EA SPORTS FC 26/27 Console. You pick **one coach — permanently**. Your coach walks you up a **6-stage journey**. Each stage he teaches you **one mechanic that is actually working in the game right now** (found by your own scouting bot, MetaBot — no third-party apps involved), then a **Match Scan** grades whether you used it in a real match. Pass → XP + badge → next node unlocks. Around that: a Home feed, a Community clubhouse, film-room sessions, and a Role Model collectible card of your coach.
 
 ---
 
@@ -107,7 +107,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 
 ### 2.14 Match Vault + the REAL Match Scan — *the scan tells the truth now*
 - **Match Vault** (`src/data/matches.ts`): every match you play, logged in ~15 seconds — score, mode (RANKED/CASUAL/TOURNAMENT), their style (LOW BLOCK/HIGH PRESS/COUNTERS/POSSESSION/LONG BALL/HARD TO TELL), pass accuracy off the post-match screen, and honor chips (no-sprint kept · taught mechanics used · winner's minute · led at 75')
-- **Honor-system ingest, by design**: FC Mobile exposes no official match feed (and we ship zero third-party services). The `source` field is the seam — rows are `'manual'` today, `'scan'` the day automatic ingest exists; nothing else in the app changes
+- **Honor-system ingest, by design**: EA SPORTS FC 26/27 Console exposes no official match feed (and we ship zero third-party services). The `source` field is the seam — rows are `'manual'` today, `'scan'` the day automatic ingest exists; nothing else in the app changes
 - **Objectives are machine-readable now**: every match-provable journey objective carries a `check` spec (26 wired across both journeys — wins, ranked wins, no-sprint wins, pass accuracy, concede-max, goals-vs-style, late winners, close-outs, clean sheets, taught-mechanics wins, journal lines). `objectiveCount()` grades them against the vault *live*
 - **MATCH SCAN reads the vault** (no more scripted resolves): scan card shows THE COACH'S EYE (the live mechanic's watch-items — judged by the coach, not the vault) above THE VAULT SAYS (graded rows: HIT/MISSED with real counts). Pass = every gradable objective genuinely met → stage clears, XP + badge celebration
 - **Auto-read setting honored**: with `matchScanAutoRead` on, opening a room with matches in the vault starts the scan by itself; off → manual START THE SCAN
@@ -131,7 +131,7 @@ These are real, finished UIs wired to a **marked seam** instead of a server. Not
 | Feature | Status today | Why | What makes it 100% real |
 |---------|--------------|-----|------------------------|
 | Accounts / sign-in | Local session | No server yet | Auth service (Supabase/Firebase) plugs into the marked seam — UI won't change |
-| Match Scan result | **REAL — graded from the Match Vault** (§2.14) | Match entry is honor-system because FC Mobile has no official feed | Automatic ingest (on-device post-match read) writes the same vault as `source:'scan'` — UI won't change |
+| Match Scan result | **REAL — graded from the Match Vault** (§2.14) | Match entry is honor-system because EA SPORTS FC 26/27 Console has no official feed | Automatic ingest (on-device post-match read) writes the same vault as `source:'scan'` — UI won't change |
 | Community live traffic & DM replies | Scripted engine (bot members) | Real humans need a realtime chat server | Swap engine for WebSocket feed — UI won't change |
 | Coach voice notes | Player UI + waveform + countdown, no audio | **CUT from v1 by owner decision (26 Jul)** — may return post-launch | Drop-in audio file later; UI already wired |
 | Lesson clip replay | Countdown placeholder + source link | No video pipeline yet | Host the clip → feeds into the in-app player |
@@ -294,7 +294,7 @@ live E2E battery vs real project (incl. forced SEASON_FULL); v1.3 APK/AAB cut
 
 The product direction (see `MIRROR_DIRECTION.md`) is implemented with the names
 preserved — **Onliversity · ProSeasonAcademy** stay; "Mirror" is the method, "Pro
-Season" the programme, "FC Mobile Pro" the first specialist path.
+Season" the programme, "EA SPORTS FC 26/27 Console Pro" the first specialist path.
 
 - **ONE universal Journey** (`src/data/journey.ts`): the two coach-specific
   fictional roads (Ashfault Ascent / Merehaven Way) are retired as *curriculum*.

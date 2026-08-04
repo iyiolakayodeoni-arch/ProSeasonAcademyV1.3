@@ -393,7 +393,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Animated.View entering={FadeInUp.duration(300)}>
                   <Text style={styles.heroLine}>THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE.</Text>
                   <Text style={styles.heroSub}>
-                    1. SCREEN RECORD & WATCH: Start your screen recording before kick-off, play your match, then watch your tape back.
+                    1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
                     {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Write down your key moments, unusual things that happened, and answer the guiding questions on paper first.
                     {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after the match.
                     {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your written answers into your database.

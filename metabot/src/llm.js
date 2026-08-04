@@ -85,15 +85,15 @@ export function makeLlm({ demoDate } = {}) {
     provider: 'anthropic',
     async detectCurrentPatch() {
       const rows = await anthropicJson(
-        `What is the latest EA SPORTS FC Mobile season/update version (e.g. "FC Mobile 26", or a specific patch like "26.1")? ` +
-          `Search the web. Reply with ONLY a JSON array like: [{"currentPatch":"FC Mobile 26"}]`,
+        `What is the latest EA SPORTS FC Console season/update version (e.g. "FC 26/27 Console", or a specific patch like "Title Update 5")? ` +
+          `Search the web. Reply with ONLY a JSON array like: [{"currentPatch":"FC 26/27 Console"}]`,
         2,
       );
       return rows?.[0]?.currentPatch ?? 'unknown';
     },
     async searchBucket(bucketId, queries) {
       return anthropicJson(
-        `You are a research bot for a FC Mobile coaching app. Search the web RIGHT NOW for fresh, specific FC Mobile findings for the "${bucketId}" bucket. Today is ${new Date().toISOString().slice(0, 10)}.\n` +
+        `You are a research bot for an EA SPORTS FC 26/27 Console coaching app. Search the web RIGHT NOW for fresh, specific FC Console findings for the "${bucketId}" bucket. Today is ${new Date().toISOString().slice(0, 10)}.\n` +
           `Run these searches (and reasonable variations):\n- ${queries.join('\n- ')}\n\n` +
           `Return ONLY a JSON array of genuinely new/current findings, each:\n` +
           `[{"topicKey":"short-kebab-id", "kind":"EXPLOIT|SKILL_MOVE|TRICK_OF_THE_WEEK|PATCH_NOTE|META_SHIFT", "patchVersion":"...", "summary":"2-4 factual sentences in your own words", "whyItMatters":"1 sentence", "sourceUrl":"...", "sourceName":"..."}]\n` +
@@ -102,7 +102,7 @@ export function makeLlm({ demoDate } = {}) {
     },
     async rewriteFinding(finding) {
       const rows = await anthropicJson(
-        `Rewrite this FC Mobile finding as a ProSeasonAcademy feed post.\n\n` +
+        `Rewrite this EA SPORTS FC 26/27 Console finding as a ProSeasonAcademy feed post.\n\n` +
           `FINDING: ${JSON.stringify(finding, null, 2)}\n\n` +
           `VOICE + SAFETY RULES (all mandatory):\n` +
           `- Paraphrase, never copy: no sentence may closely mirror the source's wording or structure. Full rewrite, our own voice.\n` +

@@ -199,7 +199,7 @@ git commit -m "ci: enable metabot daily scout"
 git push
 ```
 
-The MetaBot runs daily at 08:00 UTC, finds new FC Mobile mechanics from
+The MetaBot runs daily at 08:00 UTC, finds new EA SPORTS FC 26/27 Console mechanics from
 YouTube/EA news/RSS, and writes them as **pending** findings. Nothing reaches
 a player until you approve it.
 

@@ -373,7 +373,7 @@ export default function MirrorSessionScreen({
 
           {mirror.phase === 'intention' && mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>INTENTION SEALED. SCREEN RECORD AND PLAY FOR REAL.</Text>
+              <Text style={styles.heroLine}>INTENTION SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>YOUR INTENTION — READ IT BEFORE YOU PLAY</Text>
                 <Text style={styles.receiptLine}>PRACTISE: {mirror.intention.practice.toUpperCase()}</Text>
@@ -382,7 +382,7 @@ export default function MirrorSessionScreen({
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  THE CHINEDU WAY: Screen record your match, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
+                  THE CHINEDU WAY: Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
                 </Text>
               </View>
               <StepButton
@@ -398,13 +398,13 @@ export default function MirrorSessionScreen({
           {/* ══ ARMED / READY ══ */}
           {mirror.phase === 'armed' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>MIRROR READY. SCREEN RECORD YOUR MATCH.</Text>
+              <Text style={styles.heroLine}>MIRROR READY. RECORD YOUR CONSOLE MATCH AS USUAL.</Text>
               <Text style={styles.heroSub}>
-                Start your phone's built-in screen recorder, then open FC Mobile and play your ranked match. Watch your own tape back attentively — note your key moments and decisions yourself.
+                Start your console recording as usual (PS Share / Xbox Capture / capture card or clips), then play your ranked match in EA SPORTS FC 26/27. Watch your own tape back attentively — note your key moments and decisions yourself.
               </Text>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  MANUAL MODE BY DESIGN — SCREEN RECORD YOUR MATCH AND WATCH IT YOURSELF. WE DO NOT WATCH OR TAG IT FOR YOU.
+                  MANUAL MODE BY DESIGN — RECORD YOUR CONSOLE MATCH AS USUAL AND WATCH IT YOURSELF. WE DO NOT WATCH OR TAG IT FOR YOU.
                 </Text>
               </View>
               <StepButton
@@ -501,7 +501,7 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'full-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>BEFORE YOU WATCH ANYTHING — WHAT DO YOU BELIEVE?</Text>
-              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your screen recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
+              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>THE RECEIPT</Text>
                 <Text style={styles.receiptLine}>FINAL SCORE: {mirror.gf} – {mirror.ga}</Text>
@@ -576,7 +576,7 @@ export default function MirrorSessionScreen({
                 </>
               ) : (
                 <View style={styles.armNote}>
-                  <Text style={styles.armNoteTxt}>OPEN YOUR SCREEN RECORDING — WATCH YOUR OWN TAPE AND NAME YOUR MOMENTS USING THE TIMELINE BELOW.</Text>
+                  <Text style={styles.armNoteTxt}>OPEN YOUR RECORDING — WATCH YOUR OWN TAPE AND NAME YOUR MOMENTS USING THE TIMELINE BELOW.</Text>
                 </View>
               )}
               <View style={styles.divCard}>

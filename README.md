@@ -1,6 +1,6 @@
 # ⚽ ProSeasonAcademy
 
-**Onliversity's ProSeasonAcademy — Pro Season, the FC Mobile Pro development programme.**
+**Onliversity's ProSeasonAcademy — Pro Season, the EA SPORTS FC 26/27 Console Pro development programme.**
 
 You lock in **one coach — permanently** — as your voice, guide and accountability presence on a
 **universal six-stage development journey** (See Yourself → Control Yourself → Read the Game →
@@ -16,7 +16,7 @@ records the evidence; **it never does your thinking for you.** Each session ends
 you swear into **The Thread**, which the next session opens by asking how it held — or broke.
 
 Across the entire application — from **The Baseline Week** to **The Journey (Our Own Path)**, **Loss Journal**, and **Side Quests** — every player trains under **The Chinedu Way**:
-1. **Screen Record & Watch:** Record your match using your phone's built-in recorder and watch your tape back.
+1. **Record & Watch:** Record your console match as usual (PS Share / Xbox Capture / capture card or phone recording) and watch your tape back.
 2. **Pen to Paper Before You Type:** *"There is a special connection a biro has to a book that cannot be typed."* Write down your key moments, unusual events, and answers on paper with a biro first.
 3. **24–30 Minute Cool-Down:** Let your head settle and cool down for 24–30 minutes after full time before opening the app.
 4. **Log to Database:** Type your penned truth into the Academy database.
@@ -97,7 +97,7 @@ service, ~1fps grayscale frames for the on-device ScoreTracker (goals), and a
 MATCH STARTED tap). The MP4 is written to app-private storage and never uploaded by
 default; the session plays it back with MARK START / MARK END from the timeline.
 ⚠️ Requires a development build (`npx expo run:android` / EAS) — not in Expo Go; on
-other platforms the session runs in manual mode.
+other platforms or when training for EA SPORTS FC 26/27 Console, the session runs in manual mode where you record your console match as usual (PS Share / Xbox Capture / capture card or clips) and watch your tape back.
 
 ---
 

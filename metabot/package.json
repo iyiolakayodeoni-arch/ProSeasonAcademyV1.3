@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Server-side pipeline: live FC Mobile meta -> ProSeasonAcademy feed posts (fetch -> dedupe -> rewrite -> store -> approve -> export).",
+  "description": "Server-side pipeline: live EA SPORTS FC 26/27 Console meta -> ProSeasonAcademy feed posts (fetch -> dedupe -> rewrite -> store -> approve -> export).",
   "scripts": {
     "run": "node src/run.js",
     "pending": "node src/approve.js pending",

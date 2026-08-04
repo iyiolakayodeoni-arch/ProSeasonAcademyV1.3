@@ -2,7 +2,7 @@
 
 Everything below is written to be pasted straight into the Onliversity website.
 It reflects the current product exactly: **Mirror** is the method/company,
-**Pro Season** is the first programme, **FC Mobile Pro** is its first specialist
+**Pro Season** is the first programme, **EA SPORTS FC 26/27 Console Pro** is its first specialist
 path — and **ProSeasonAcademy is the template every future Onliversity course is
 built from.**
 
@@ -26,8 +26,8 @@ SEE YOURSELF. DO THE WORK.
 
 **Subhead (choose one):**
 ```
-Pro Season is Mirror's professional development programme for FC Mobile players
-who want their behaviour to match their ambition. One coach. One road. One
+Pro Season is Mirror's professional development programme for EA SPORTS FC 26/27 console
+players who want their behaviour to match their ambition. One coach. One road. One
 standard. No excuses.
 ```
 
@@ -123,16 +123,16 @@ the evidence says the work was done.
 
 ---
 
-## 4. THE FIRST PROGRAMME — PRO SEASON · FC MOBILE PRO
+## 4. THE FIRST PROGRAMME — PRO SEASON · EA SPORTS FC 26/27 CONSOLE PRO
 
 **Section header:**
 ```
-THE FIRST PROGRAMME: FC MOBILE PRO
+THE FIRST PROGRAMME: EA SPORTS FC 26/27 CONSOLE PRO
 ```
 
 **Body:**
 ```
-Pro Season is Mirror's professional development programme for FC Mobile
+Pro Season is Mirror's professional development programme for EA SPORTS FC 26/27 console
 players. It is the first course built on the Mirror method — and the template
 for every course Onliversity will ever run. If you can take your game this
 seriously, you can take anything seriously.
@@ -315,13 +315,13 @@ runs on the same engine: record the evidence, preserve your own thinking,
 place intention beside outcome, and make self-deception difficult to
 maintain. The coach changes. The craft changes. The structure stays.
 
-If Pro Season can make FC Mobile players behave like professionals, imagine
+If Pro Season can make EA SPORTS FC 26/27 console players behave like professionals, imagine
 what it does for the rest of your ambitions.
 ```
 
 **Cards:**
 ```
-PRO SEASON · FC MOBILE PRO        THE FIRST PROGRAMME — LIVE NOW
+PRO SEASON · EA SPORTS FC 26/27 CONSOLE PRO        THE FIRST PROGRAMME — LIVE NOW
 NEXT PATH · COMING SOON            Every future course walks the same road:
                                    baseline week → your journey → the mirror
                                    session → the thread → proof.
@@ -340,7 +340,7 @@ When it's full, it's full. That's the point.
 CAN I SWITCH COACHES?
 No. The path lock is permanent — by design. Commitment is the product.
 
-DO I NEED TO BE GOOD AT FC MOBILE?
+DO I NEED TO BE GOOD AT EA SPORTS FC 26/27 CONSOLE?
 No. The baseline week doesn't grade your skill. It maps your behaviour under
 pressure. That's what we train.
 
@@ -349,8 +349,7 @@ The opposite. The Mirror records the evidence; you do the seeing. No AI
 verdicts, no automatic lessons, no reading your head.
 
 WHERE IS MY MATCH RECORDING STORED?
-On your phone. Screen capture runs only with your consent, starts only when
-your match starts, and raw video is never uploaded.
+You record your console match as usual (PS Share / Xbox Capture / capture card or clips) and watch your tape back. When using the optional on-device recorder, raw video stays on your phone and is never uploaded.
 
 WHAT HAPPENS IF I MISS A DAY?
 Nothing. The next day unlocks 24 hours after the last one seals — lateness
@@ -372,7 +371,7 @@ whether you're doing the work to get there.
 
 ```
 MIRROR · PRO SEASON — AN ONLIVERSITY PROGRAMME
-FC MOBILE PRO · THE FIRST PATH
+EA SPORTS FC 26/27 CONSOLE PRO · THE FIRST PATH
 
 YOUR ROAD. THE STANDARD. NO EXCUSES.
 SEE YOURSELF. DO THE WORK.
@@ -380,7 +379,7 @@ THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.
 MIRROR DOES NOT THINK FOR YOU.
 
 © 2026 Onliversity. Pro Season is a development programme, not a gaming
-service, and is not affiliated with or endorsed by EA Sports or FC Mobile.
+service, and is not affiliated with or endorsed by EA Sports or EA SPORTS FC 26/27.
 ```
 
 ---

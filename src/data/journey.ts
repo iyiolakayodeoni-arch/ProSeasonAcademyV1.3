@@ -12,7 +12,7 @@ import { ObjectiveCheck } from './matches';
 //
 // OUR OWN PATH · THE CHINEDU WAY:
 // Every stage of our own path in the Journey follows The Chinedu Way:
-//   1. Screen record and watch your match tape.
+//   1. Record as usual and watch your match tape.
 //   2. Pen to Paper: write key moments and answers on paper with a biro.
 //      "There is a special connection a biro has to a book that
 //       cannot be typed."

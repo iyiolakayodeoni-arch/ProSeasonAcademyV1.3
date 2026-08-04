@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // ─────────────────────────────────────────────────────────────
 // THE MATCH VAULT — every match you play, logged and graded.
 //
-// This is the MATCH SCAN backend. FC Mobile exposes no official
+// This is the MATCH SCAN backend. EA SPORTS FC 26/27 Console exposes no official
 // match feed (and we ship no third-party services), so the vault
 // is HONOR-SYSTEM INGEST: you play, you log the truth in under
 // 15 seconds, and the scan grades the vault — objectives, scores,

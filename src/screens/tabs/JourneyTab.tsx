@@ -219,7 +219,7 @@ export default function JourneyTab({
           <Text style={styles.chineduTag}>THE CHINEDU WAY · HOW YOU WALK OUR PATH</Text>
           <Text style={styles.chineduTitle}>PEN TO PAPER BEFORE YOU TYPE · THE HARD WAY IS THE EASY WAY</Text>
           <Text style={styles.chineduText}>
-            1. SCREEN RECORD & WATCH: Start your screen recording before kick-off, play your match, then watch your tape back.
+            1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
             {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
             {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
             {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.

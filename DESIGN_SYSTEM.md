@@ -35,13 +35,13 @@ earned it is off the table by definition.
 
 ---
 
-## STEP 1 — Research (FC Mobile + eFootball, real sources)
+## STEP 1 — Research (EA SPORTS FC 26/27 Console + eFootball, real sources)
 
 Studied across multiple sources, not memory. Findings I am willing to stand
 behind, each cross-checked; gaps flagged honestly at the end.
 
 ### 1a. The collectible card is the unit of identity
-In both FC Mobile/FUT and eFootball Dream Team, the **player card is the
+In both EA SPORTS FC 26/27 Console FUT and eFootball Dream Team, the **player card is the
 central object** — the thing you collect, upgrade, show off, and identify
 with. Third-party ecosystems exist almost entirely around it: a popular FC
 Mobile companion app ships a "Pack Opener" and a "Card Generator" so players
@@ -118,15 +118,15 @@ forbids it; the research explains *why the market does too*.
 
 ### Honest gaps in my research
 - I could **not** find a clean, current, multi-source visual walkthrough of
-  FC Mobile's *exact present home-tab structure* (tab names, nav order). My
+  EA SPORTS FC 26/27 Console's *exact present home-tab structure* (tab names, nav order). My
   sources are strong on cards, reveals, and *sentiment*, weaker on a
-  screen-by-screen map of the current FC Mobile home. Treat any specific
-  claim about FC Mobile's current tab bar as not directly verified by me.
+  screen-by-screen map of the current FC 26/27 home. Treat any specific
+  claim about FC 26/27's current tab bar as not directly verified by me.
 - App-store screenshot galleries are images; I could not OCR them through the
   text fetcher, so I am not making pixel-level claims about either game's
   exact current composition.
 - "Holographic Player Items / FUT Gallery" is from FC **27** pitch notes — a
-  *forward* signal, not a current FC Mobile feature. Framed as direction, not
+  *forward* signal, not a current FC 26/27 feature. Framed as direction, not
   fact.
 
 [r1]: https://mwm.ai/apps/renderz-fc-mobile-25-database/6472486745
@@ -149,7 +149,7 @@ forbids it; the research explains *why the market does too*.
 Think Linear / Vercel / a well-made instrument panel: confident, quiet,
 everything earning its place — *then* layer the football-card identity, the
 earned reveal, and the receipt-driven readout on top. It must read as
-intentional to someone who has never played FC Mobile, and as *legit* to
+intentional to someone who has never played EA SPORTS FC 26/27 Console, and as *legit* to
 someone who has. Crucially: **game-inspired, but never lootbox-coded.** A
 reveal here means "your receipts cleared a stage," not "you pulled a shiny."
 
