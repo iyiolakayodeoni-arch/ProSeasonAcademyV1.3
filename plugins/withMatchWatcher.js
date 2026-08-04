@@ -465,7 +465,7 @@ class MatchWatcherService : Service() {
         if (recording || recorder != null) return
         val proj = projection ?: return
         val dir = File(getExternalFilesDir(Environment.DIRECTORY_MOVIES) ?: filesDir, "match-watcher").apply { mkdirs() }
-        val file = File(dir, "session-${System.currentTimeMillis()}.mp4")
+        val file = File(dir, "session-\${System.currentTimeMillis()}.mp4")
         val dm = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
         val display = dm.getDisplay(Display.DEFAULT_DISPLAY)
         val size = Point().also { display.getRealSize(it) }
