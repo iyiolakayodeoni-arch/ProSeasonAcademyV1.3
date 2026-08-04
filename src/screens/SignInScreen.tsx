@@ -198,10 +198,11 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </View>
           <Text style={styles.headline}>YOUR SEAT IS LIVE</Text>
           <View style={styles.tokenCard}>
-            <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
+            <Text style={styles.tokenTag}>SEASON ONE · YOUR SEAT NUMBER</Text>
             <Text style={styles.tokenHint}>
-              SAVE THIS. IT IS YOUR SEAT ID — SHOWN ONCE AT SIGN-UP. YOU SIGN IN WITH EMAIL + PASSWORD;
-              THIS TOKEN IS HOW THE FOUNDER FINDS YOU.
+              WELCOME IN. THIS IS YOUR SEAT NUMBER — SHOWN ONCE, SO WRITE IT DOWN. IT IS HOW THE
+              FOUNDER FINDS YOU AND HOW YOUR SEAT FOLLOWS YOU IF YOU EVER REJOIN. YOU SIGN IN WITH
+              EMAIL + PASSWORD; THE NUMBER IS YOURS TO KEEP.
             </Text>
             <Pressable onPress={() => setTokenRevealed(true)} hitSlop={6}>
               <View style={styles.tokenBox}>
@@ -222,7 +223,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             }}
           >
             <Animated.View style={[styles.cta, btnStyle]}>
-              <Text style={styles.ctaText}>I SAVED IT — ENTER THE ACADEMY ›</Text>
+              <Text style={styles.ctaText}>I'VE GOT MY SEAT NUMBER — ENTER THE ACADEMY ›</Text>
             </Animated.View>
           </Pressable>
         </ScrollView>
@@ -261,8 +262,18 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </View>
           </View>
           <Text style={styles.coachNote}>
-            NO CHOICE TO MAKE. AFTER YOU TAKE YOUR SEAT, CHINEDU INTRODUCES HIMSELF — THE GAME, THE
-            MIRROR METHOD AND THE PHILOSOPHY OF THIS ACADEMY. ONE VOICE, ONE PATH.
+            NO COACH CHOICES. NO RIDDLES. TAKE YOUR SEAT AND CHINEDU INTRODUCES HIMSELF — THE GAME,
+            THE MIRROR METHOD, THE PROGRAMME. ONE VOICE, ONE PATH.
+          </Text>
+
+          {/* ceremony → form hand-off */}
+          <View style={styles.dividerRow}>
+            <View style={styles.divLine} />
+            <Text style={styles.dividerTxt}>CLAIM YOUR SEAT</Text>
+            <View style={styles.divLine} />
+          </View>
+          <Text style={styles.formLead}>
+            THREE FIELDS, SIXTY SECONDS. YOUR SEAT NUMBER IS GENERATED FOR YOU — YOU'LL SEE IT ONCE, SO SAVE IT.
           </Text>
 
           {/* mode tabs */}
@@ -306,8 +317,8 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 })}
               </View>
               <Text style={styles.geoNote}>
-                NIGERIA → NAIRA SHELF · EVERYWHERE ELSE → WORLD SHELF. THE TILL STAYS CLOSED UNTIL
-                THE FOUNDER OPENS PAYMENTS. LOCATION IS CHECKED SOFTLY AFTER SIGN-IN.
+                YOUR COUNTRY ONLY SETS YOUR PRICING — NIGERIA → NAIRA SHELF · EVERYWHERE ELSE →
+                WORLD SHELF. NOTHING ELSE CHANGES. THE TILL STAYS CLOSED UNTIL THE FOUNDER OPENS PAYMENTS.
               </Text>
 
               <View style={styles.form}>
@@ -336,7 +347,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 />
               </View>
               <Text style={styles.geoNote}>
-                YOUR ACADEMY REFERENCE TOKEN IS GENERATED AUTOMATICALLY.
+                YOUR SEAT NUMBER IS GENERATED AUTOMATICALLY — SHOWN ONCE, RIGHT AFTER YOU CLAIM YOUR SEAT.
               </Text>
             </>
           )}
@@ -437,7 +448,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           )}
 
           <Text style={styles.seatNote}>
-            SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · AUTO ACADEMY TOKEN
+            SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · SEAT NUMBER AUTO-GENERATED
           </Text>
 
           <View style={styles.footerRow}>
@@ -507,6 +518,19 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     marginTop: 6,
     fontStyle: 'italic',
+  },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 2 },
+  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.22)' },
+  dividerTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 2.4, color: colors.primary },
+  formLead: {
+    fontFamily: monoFont,
+    fontSize: 7.5,
+    lineHeight: 12,
+    letterSpacing: 0.8,
+    color: colors.muted,
+    textAlign: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 14,
   },
   coachNote: {
     color: colors.muted,

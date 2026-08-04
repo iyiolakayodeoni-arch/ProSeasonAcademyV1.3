@@ -2,25 +2,33 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import { ONBOARD_CARDS } from '../data/onboarding';
+import { ONBOARD_CARDS, ONBOARD_SECTIONS } from '../data/onboarding';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
-type Props = { onDone: () => void };
+type Props = {
+  onDone: () => void;
+  /** start the tour at a specific card index (Settings quick links) */
+  startAt?: number;
+};
 
-export default function OnboardingScreen({ onDone }: Props) {
-  const [i, setI] = useState(0);
+export default function OnboardingScreen({ onDone, startAt = 0 }: Props) {
+  const [i, setI] = useState(startAt);
   const card = ONBOARD_CARDS[i];
   const last = i >= ONBOARD_CARDS.length - 1;
+  const part = Math.max(0, ONBOARD_SECTIONS.indexOf(card.section)) + 1;
 
   return (
     <View style={styles.root}>
       <GridBackground />
       <View style={styles.inner}>
         <Text style={styles.brand}>PROSEASONACADEMY</Text>
-        <Text style={styles.kicker}>ACADEMY TOUR · {i + 1} / {ONBOARD_CARDS.length}</Text>
+        <Text style={styles.kicker}>
+          ACADEMY TOUR · PART {part} — {card.section} · {i + 1} / {ONBOARD_CARDS.length}
+        </Text>
 
         <Animated.View key={card.id} entering={FadeInRight.duration(280)} style={[styles.card, card.tone === 'gold' && styles.cardGold]}>
+          <Text style={styles.sectionTag}>{card.section}</Text>
           <Text style={[styles.eyebrow, card.tone === 'gold' && { color: colors.warm }]}>{card.eyebrow}</Text>
           <Text style={styles.title}>{card.title}</Text>
           <Text style={styles.body}>{card.body}</Text>
@@ -85,6 +93,14 @@ const styles = StyleSheet.create({
   cardGold: {
     borderColor: 'rgba(242,192,120,0.5)',
     backgroundColor: 'rgba(20,16,8,0.92)',
+  },
+  sectionTag: {
+    fontFamily: monoFont,
+    fontSize: 6,
+    fontWeight: '900',
+    letterSpacing: 2.4,
+    color: colors.muted,
+    marginBottom: 10,
   },
   eyebrow: {
     fontFamily: monoFont,

@@ -88,7 +88,25 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
             </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInUp.delay(base + 700).duration(320)}>
+          {/* ── THE PROGRAMME — what this academy actually is ── */}
+          <Animated.View entering={FadeInUp.delay(base + 700).duration(320)} style={styles.doctrine}>
+            <Text style={[styles.doctrineTag, { color: coach.cardAccent }]}>THE PROGRAMME — SIX CHAPTERS, ONE SEASON</Text>
+            <Text style={styles.doctrineLine}>
+              WHAT THIS ACADEMY ACTUALLY IS
+            </Text>
+            <Text style={styles.doctrineBody}>
+              We are not a tips page. This is a private programme, and here is the whole of it: six
+              chapters — See Yourself, Control Yourself, Read the Game, Build Discipline, Perform
+              Under Pressure, Prove It. Each one is cleared by evidence, never by tapping. Every day
+              the scouts hand me what is working in the game right now, and I teach it to you in the
+              film room. Around it: the Mirror Session before every match, the Thread that carries
+              your lesson forward, the clubhouse where your people are, and the Till that keeps the
+              academy running. First stages are free; the pass opens the full road. A thousand seats,
+              one coach, one programme — and one of those seats is yours.
+            </Text>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.delay(base + 920).duration(320)}>
             <Pressable onPress={onDone} style={styles.cta}>
               <Text style={styles.ctaTxt}>CONTINUE TO THE BASELINE GATE</Text>
               <ChevronRightIcon size={14} color="#0a0f0a" />

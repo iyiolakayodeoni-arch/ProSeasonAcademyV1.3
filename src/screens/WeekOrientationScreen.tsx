@@ -16,6 +16,12 @@ import { colors, monoFont } from '../theme';
 
 const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'gold' }[] = [
   {
+    eyebrow: 'THE ACADEMY',
+    title: 'ONE VOICE, ONE PROGRAMME',
+    body: 'Chinedu Okafor — THE DISCIPLINARIAN, top of the game for 10+ seasons. One universal six-chapter journey, one season at a time, 1,000 seats. The film room, the clubhouse and the Till all serve one thing: your evidence. Nothing else moves the map.',
+    tone: 'gold',
+  },
+  {
     eyebrow: 'THE NEXT 7 DAYS',
     title: 'ONE MATCH A DAY',
     body: 'Five matches, one per day. After each one you watch the recording, name the moments where you failed, and analyse each moment in your own words. Day 6 is the week’s reflection. Day 7 seals your profile.',

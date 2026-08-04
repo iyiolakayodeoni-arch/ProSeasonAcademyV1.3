@@ -13,7 +13,7 @@ import { wipeMirror } from '../../data/mirrorSession';
 import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
-import { resetOnboarding } from '../../data/onboarding';
+import { resetOnboarding, onboardingStartIndex } from '../../data/onboarding';
 import OnboardingScreen from '../OnboardingScreen';
 import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
@@ -54,8 +54,10 @@ import {
   PersonIcon,
   PinIcon,
   PlanIcon,
+  PlayIcon,
   RouteIcon,
   ScanGlyphIcon,
+  TillIcon,
   TrashIcon,
   WavesGlyphIcon,
 } from '../../components/Icons';
@@ -159,6 +161,7 @@ export default function SettingsTab({
   const [nameDraft, setNameDraft] = useState('');
   const [ticketOpen, setTicketOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
+  const [tourAt, setTourAt] = useState(0);
   const [deleteArmed, setDeleteArmed] = useState(false);
 
   // ── THE FOUNDER'S DOOR — tap the version line 5× ──
@@ -212,6 +215,11 @@ export default function SettingsTab({
   };
 
   const closeDesk = () => setDeskOpen(false);
+
+  const openTour = (cardId: string) => {
+    setTourAt(onboardingStartIndex(cardId));
+    setTourOpen(true);
+  };
 
   const SEASON = journeySeasonFor(coach.id);
   const coachShort = coach.name.split(' ')[0].toUpperCase();
@@ -373,6 +381,42 @@ export default function SettingsTab({
               title="Loss Journal"
               sub={`${coachShort}'S RULE — LOG ONE LINE PER LOSS`}
               right={<Toggle on={s.toggles.lossJournal} onFlip={() => flip('lossJournal')} />}
+              last
+            />
+          </View>
+        </Animated.View>
+
+        {/* ── tutorial — the whole academy, again, any time ── */}
+        <Animated.View entering={FadeInUp.delay(170).duration(340)}>
+          <Text style={[styles.sectionLabel, { color: '#f2c078' }]}>TUTORIAL — RELEARN THE ACADEMY ANY TIME</Text>
+          <View style={styles.card}>
+            <Row
+              icon={<PlayIcon size={15} color="#f2c078" />}
+              title="The Academy Tour"
+              sub="FULL WALKTHROUGH · 17 CARDS · 2 MINUTES"
+              right={<Chevron />}
+              onPress={() => openTour('start')}
+            />
+            <Row
+              icon={<WavesGlyphIcon size={15} color="#57d07c" />}
+              title="Mirror Session"
+              sub="REPLAY THE MAIN RITUAL — INTENTION TO LESSON"
+              right={<Chevron />}
+              onPress={() => openTour('mirror')}
+            />
+            <Row
+              icon={<ScanGlyphIcon size={15} color="#57d07c" />}
+              title="Match Scan"
+              sub="REPLAY THE EYE + THE MIND — HOW STAGES PASS"
+              right={<Chevron />}
+              onPress={() => openTour('scan')}
+            />
+            <Row
+              icon={<TillIcon size={15} color="#57d07c" />}
+              title="The Till"
+              sub="REPLAY YOUR SEAT — TRIAL, PASS, REFUNDS"
+              right={<Chevron />}
+              onPress={() => openTour('till')}
               last
             />
           </View>
@@ -717,13 +761,6 @@ export default function SettingsTab({
                 <FaqRow q="CAN I SWITCH COACHES?" a="NO — THE PATH LOCK IS PERMANENT. THAT'S THE ACADEMY." />
                 <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE, AND MIRRORED TO YOUR ACADEMY SEAT WHEN YOU HAVE SIGNAL." />
                 <SheetButton
-                  label="TOUR THE ACADEMY"
-                  onPress={() => {
-                    close();
-                    setTourOpen(true);
-                  }}
-                />
-                <SheetButton
                   label={ticketOpen ? 'TICKET OPENED — WE REPLY IN-APP' : 'TALK TO A HUMAN'}
                   onPress={() => {
                     // TODO(real-support): open a support ticket against the player profile
@@ -816,7 +853,7 @@ export default function SettingsTab({
       {/* ── ACADEMY TOUR — replayable from Help & support ── */}
       {tourOpen && (
         <View style={StyleSheet.absoluteFill}>
-          <OnboardingScreen onDone={() => setTourOpen(false)} />
+          <OnboardingScreen key={tourAt} startAt={tourAt} onDone={() => setTourOpen(false)} />
         </View>
       )}
     </View>
