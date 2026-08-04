@@ -15,12 +15,13 @@ review them in your own words, and watch the versions of your thinking sit besid
 records the evidence; **it never does your thinking for you.** Each session ends with one lesson
 you swear into **The Thread**, which the next session opens by asking how it held — or broke.
 
-Before the Journey runs **The Baseline Week** — the same discipline as the gate: one ranked
-match a day for seven days. Each day you watch the recording, name the moments where you
-failed, and analyse each one (how you were thinking, what made you fail, what you could have
-done differently). The next day unlocks 24 hours after the previous one seals — a forced gap
-so the thinking has time to land. Nothing is bombarded, nothing is forced, lateness is never
-punished. Day 6 is the week's reflection, day 7 seals your profile card.
+Across the entire application — from **The Baseline Week** to **The Journey (Our Own Path)**, **Loss Journal**, and **Side Quests** — every player trains under **The Chinedu Way**:
+1. **Screen Record & Watch:** Record your match using your phone's built-in recorder and watch your tape back.
+2. **Pen to Paper Before You Type:** *"There is a special connection a biro has to a book that cannot be typed."* Write down your key moments, unusual events, and answers on paper with a biro first.
+3. **24–30 Minute Cool-Down:** Let your head settle and cool down for 24–30 minutes after full time before opening the app.
+4. **Log to Database:** Type your penned truth into the Academy database.
+5. **The 7-Day Cadence:** Days 1–3 build momentum with Matches 1, 2, and 3; Day 4 is Rest Day 1 (mid-week rest & reflection, no match played); Day 5 is Match 4; Day 6 is Rest Day 2 (pre-finale rest & preparation, no match played); Day 7 is Match 5 (The Finale) & Profile Card seal.
+6. **The Philosophy:** *"In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way."*
 
 **Private enterprise software.** Distributed inside the Onliversity ecosystem — not on any
 app store. **Season One is capped at 1,000 seats**, enforced in the database, so coaching

@@ -10,6 +10,16 @@ import { ObjectiveCheck } from './matches';
 // curriculum is no longer a game-world choice. "Your Journey is
 // the evidence. The Standard is the benchmark."
 //
+// OUR OWN PATH · THE CHINEDU WAY:
+// Every stage of our own path in the Journey follows The Chinedu Way:
+//   1. Screen record and watch your match tape.
+//   2. Pen to Paper: write key moments and answers on paper with a biro.
+//      "There is a special connection a biro has to a book that
+//       cannot be typed."
+//   3. Let your mind cool down for 24–30 minutes.
+//   4. Type your written truth into the Academy database.
+//   "The hard way is the easy way, and tech is meant to elevate."
+//
 // Every objective is machine-checkable against the Match Vault,
 // the Loss Journal and the Thread (matches.ts ObjectiveCheck).
 // Map geometry is shared: the same S-curve for every player,

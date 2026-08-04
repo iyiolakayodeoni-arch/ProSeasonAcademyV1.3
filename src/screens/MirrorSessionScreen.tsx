@@ -20,7 +20,6 @@ import {
   addMoment,
   answerCarriedLesson,
   answerMoment,
-  armMirrorSession,
   atFullTime,
   atHalfTime,
   beginMatch,
@@ -43,7 +42,6 @@ import {
   useMirrorSession,
   VersionKey,
 } from '../data/mirrorSession';
-import { useMatchWatcher } from '../data/matchWatcher';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
@@ -206,7 +204,6 @@ export default function MirrorSessionScreen({
   onClose: (completed: boolean) => void;
 }) {
   const mirror = useMirrorSession();
-  const watcher = useMatchWatcher();
   const thread = useLessonThread();
   const [ready, setReady] = useState(false);
 
@@ -240,19 +237,6 @@ export default function MirrorSessionScreen({
 
   const carried = thread.current;
   const completed = mirror.phase === 'done';
-
-  // auto-advance when the native watcher detects half/full time
-  // (time-based heuristic — the manual buttons always stay visible)
-  useEffect(() => {
-    const s = watcher.session;
-    if (s?.halfDetectedAt && mirror.phase === 'live') atHalfTime();
-    if (s?.fullDetectedAt && mirror.phase === 'second-half') openScorePhase();
-  }, [watcher.session?.halfDetectedAt, watcher.session?.fullDetectedAt, mirror.phase]);
-
-  // live watcher score when the capture is running
-  const liveScore = watcher.status === 'running' && watcher.session
-    ? `${watcher.session.scoreL} – ${watcher.session.scoreR}`
-    : null;
 
   // answers already on the store win on resume — local drafts take over while typing
   const effHalf = (k: string) => {
@@ -389,7 +373,7 @@ export default function MirrorSessionScreen({
 
           {mirror.phase === 'intention' && mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>INTENTION SEALED. NOW ARM THE MIRROR.</Text>
+              <Text style={styles.heroLine}>INTENTION SEALED. SCREEN RECORD AND PLAY FOR REAL.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>YOUR INTENTION — READ IT BEFORE YOU PLAY</Text>
                 <Text style={styles.receiptLine}>PRACTISE: {mirror.intention.practice.toUpperCase()}</Text>
@@ -398,46 +382,36 @@ export default function MirrorSessionScreen({
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  ARMING requests the official screen-capture consent — recording never starts silently. On devices without the native watcher, the session still runs fully in manual mode.
+                  THE CHINEDU WAY: Screen record your match, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
                 </Text>
               </View>
               <StepButton
-                label="ARM THE MIRROR ›"
-                onPress={async () => {
-                  sfx('whoosh');
-                  await armMirrorSession();
-                }}
-              />
-              <StepButton
-                label="SKIP CAPTURE — MANUAL SESSION ›"
-                subtle
+                label="INTENTION SWORN — BEGIN MATCH ›"
                 onPress={() => {
-                  sfx('tap');
+                  sfx('whoosh');
                   beginMatch();
                 }}
               />
             </Animated.View>
           )}
 
-          {/* ══ ARMED ══ */}
+          {/* ══ ARMED / READY ══ */}
           {mirror.phase === 'armed' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>MIRROR ARMED. GET INTO THE MATCH.</Text>
+              <Text style={styles.heroLine}>MIRROR READY. SCREEN RECORD YOUR MATCH.</Text>
               <Text style={styles.heroSub}>
-                Open FC Mobile and start your ranked match. The watcher looks for the match screen — it records locally and never uploads raw video by default.
+                Start your phone's built-in screen recorder, then open FC Mobile and play your ranked match. Watch your own tape back attentively — note your key moments and decisions yourself.
               </Text>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  {watcher.available ? 'SCREEN CAPTURE: LIVE' : 'SCREEN CAPTURE: NOT AVAILABLE ON THIS DEVICE — MANUAL MODE'}
-                  {watcher.lastError ? `\n${watcher.lastError}` : ''}
+                  MANUAL MODE BY DESIGN — SCREEN RECORD YOUR MATCH AND WATCH IT YOURSELF. WE DO NOT WATCH OR TAG IT FOR YOU.
                 </Text>
               </View>
               <StepButton
-                label="MATCH STARTED — BEGIN THE SESSION + RECORDING"
+                label="MATCH STARTED — BEGIN THE SESSION"
                 onPress={() => {
                   sfx('whoosh');
                   beginMatch();
-                  watcher.beginRecording();
                 }}
               />
               <StepButton label="CANCEL THE SESSION" subtle onPress={handleLeave} />
@@ -449,10 +423,10 @@ export default function MirrorSessionScreen({
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>{mirror.phase === 'live' ? 'FIRST HALF — PLAY THE MATCH.' : 'SECOND HALF — PLAY YOUR STATED ADJUSTMENT.'}</Text>
               <View style={styles.liveCard}>
-                <MiniStat label="LIVE SCORE" value={liveScore ?? `${gf} – ${ga}`} />
+                <MiniStat label="SCORE" value={`${gf} – ${ga}`} />
                 <MiniStat
-                  label="CAPTURE"
-                  value={watcher.session?.recording ? 'REC ✓' : watcher.status === 'running' ? 'ARMED' : 'MANUAL'}
+                  label="MODE"
+                  value="MANUAL"
                 />
                 <MiniStat label="PHASE" value={mirror.phase === 'live' ? '1ST HALF' : '2ND HALF'} />
               </View>
@@ -527,7 +501,7 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'full-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>BEFORE YOU WATCH ANYTHING — WHAT DO YOU BELIEVE?</Text>
-              <Text style={styles.heroSub}>This captures your memory while it is still yours. The recording will get its own vote later. Answer first.</Text>
+              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your screen recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>THE RECEIPT</Text>
                 <Text style={styles.receiptLine}>FINAL SCORE: {mirror.gf} – {mirror.ga}</Text>
@@ -602,7 +576,7 @@ export default function MirrorSessionScreen({
                 </>
               ) : (
                 <View style={styles.armNote}>
-                  <Text style={styles.armNoteTxt}>NO RECORDING ON THIS DEVICE — USE THE TIMELINE MINUTES BELOW.</Text>
+                  <Text style={styles.armNoteTxt}>OPEN YOUR SCREEN RECORDING — WATCH YOUR OWN TAPE AND NAME YOUR MOMENTS USING THE TIMELINE BELOW.</Text>
                 </View>
               )}
               <View style={styles.divCard}>

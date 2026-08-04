@@ -19,8 +19,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // a painted one.
 // ─────────────────────────────────────────────────────────────
 
-/** THE MIND's 1..5 head-state ladder (index 0 = composure 1). Semi-automatic
- *  by design: THE EYE counts goals, only the player reports the psychology. */
+/** THE MIND's 1..5 head-state ladder (index 0 = composure 1). Manual by
+ *  design: we do not watch or tag your match for you — manual observation
+ *  and self-reporting is where mental resilience is forged. */
 export const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'] as const;
 
 export const MATCH_MODES = ['RANKED', 'CASUAL', 'TOURNAMENT'] as const;

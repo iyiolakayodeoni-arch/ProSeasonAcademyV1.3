@@ -132,6 +132,12 @@ export default function StageClearedSheet({
           </Text>
         </Animated.View>
 
+        <Animated.View entering={FadeIn.delay(420).duration(420)} style={[styles.attest, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)', marginTop: 8 }]}>
+          <Text style={[styles.attestTxt, { color: colors.primary, textAlign: 'center' }]}>
+            THE CHINEDU WAY · PEN TO PAPER: You screen recorded your tape, penned your moments on paper, cooled down for 24–30 mins, and typed your truth into your database. The hard way is the easy way, and tech is meant to elevate.
+          </Text>
+        </Animated.View>
+
         {/* the receipts — every line that cleared, with its real count */}
         <View style={styles.receiptsCard}>
           <Text style={styles.receiptsTitle}>THE RECEIPTS THAT CLEARED IT</Text>

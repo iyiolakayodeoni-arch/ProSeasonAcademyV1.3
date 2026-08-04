@@ -594,6 +594,19 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </View>
           )}
 
+          {/* ── THE CHINEDU WAY — our own path ritual & philosophy ── */}
+          <View style={[styles.threadBox, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
+            <Text style={styles.threadBoxTag}>THE CHINEDU WAY · HOW YOU WORK IN OUR PATH</Text>
+            <Text style={[styles.scanHeadline, { marginTop: 4, marginBottom: 4, fontSize: 13 }]}>PEN TO PAPER BEFORE YOU TYPE.</Text>
+            <Text style={styles.threadEmpty}>
+              1. SCREEN RECORD & WATCH: Start your screen recording before kick-off, play your match, then watch your tape back.
+              {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
+              {'\n'}3. 24–30 MIN COOL-DOWN: Let your head cool for 24–30 minutes after full time.
+              {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
+              {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+            </Text>
+          </View>
+
           <Text style={styles.scanHeadline}>Prove it in a Mirror Session.</Text>
           <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
 

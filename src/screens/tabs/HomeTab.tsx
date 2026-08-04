@@ -306,8 +306,16 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           )
         )}
 
+        {/* ── THE CHINEDU WAY: HOME TAB RITUAL REMINDER ── */}
+        <View style={{ padding: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)', marginTop: 16, marginBottom: 8 }}>
+          <Text style={{ fontFamily: monoFont, fontWeight: '900', letterSpacing: 1.4, textAlign: 'center', color: colors.primary, fontSize: 10 }}>THE CHINEDU WAY · PEN TO PAPER</Text>
+          <Text style={{ marginTop: 4, fontFamily: monoFont, fontSize: 9.5, lineHeight: 14.5, color: 'rgba(143,184,155,0.85)', textAlign: 'center' }}>
+            Screen record your match, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your results into your database. The hard way is the easy way, and tech is meant to elevate.
+          </Text>
+        </View>
+
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
-        <Text style={styles.footTag}>BUILT BY PLAYERS · NO FULLBACKS WERE HARMED</Text>
+        <Text style={styles.footTag}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
       </ScrollView>
 
       {tillOpen && (
