@@ -52,7 +52,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 ### 2.6 Coaching Screen (the film room) — *the heart of the app*
 - **One-way session**: the coach talks to you, you cannot type back (by design)
 - Header: coach identity, photo, live "ONLINE" pulse, "ONE-WAY SESSION · TODAY {time}"
-- Message sequence: greeting in his own voice → **voice note bubble** with working play/pause, animated waveform and 0:42 countdown → the mechanic message with **green highlights** → closer ("the scan will know.")
+- Message sequence: greeting in his own voice (text) → the mechanic message with **green highlights** → closer ("the scan will know.") — **no voice notes, by owner decision**
 - **TODAY'S MECHANIC lesson card**, fed live from MetaBot: tags + name + headline + *why it works after the update* + 3 step tiles (icons) + coach's rule strip + clip block with play countdown + a real SOURCE link to the original video/post + traceability line (`TRACKING FEED ITEM mb-…`)
 - **Safe empty states**: if MetaBot approved nothing new, the room shows a clearly-marked "coach is prepping today's mechanic" placeholder; if a mechanic got patched out, a gold "PATCHED OUT" banner appears instead of stale teaching
 - **MATCH SCAN** state machine: armed → scanning → passed/failed, checklist fills with HIT x/y or MISSED per target; fail → "RUN IT BACK"
@@ -131,7 +131,7 @@ These are real, finished UIs wired to a **marked seam** instead of a server. Not
 | Accounts / sign-in | Local session | No server yet | Auth service (Supabase/Firebase) plugs into the marked seam — UI won't change |
 | Match Scan result | **REAL — graded from the Match Vault** (§2.14) | Match entry is honor-system because FC Mobile has no official feed | Automatic ingest (on-device post-match read) writes the same vault as `source:'scan'` — UI won't change |
 | Community live traffic & DM replies | Scripted engine (bot members) | Real humans need a realtime chat server | Swap engine for WebSocket feed — UI won't change |
-| Coach voice notes | Player UI + waveform + countdown, no audio | **CUT from v1 by owner decision (26 Jul)** — may return post-launch | Drop-in audio file later; UI already wired |
+| Coach voice notes | — | **CUT — no voice notes in the app** (owner decision) | Removed entirely: asset, player, waveform, caption |
 | Lesson clip replay | Countdown placeholder + source link | No video pipeline yet | Host the clip → feeds into the in-app player |
 | Acadademy plan purchase | Instant local switch | No store billing yet | Play Billing receipt flow |
 | Push notifications | Preferences saved & real | Delivery needs FCM + server | Plug device token into notification service |
@@ -142,7 +142,7 @@ These are real, finished UIs wired to a **marked seam** instead of a server. Not
 
 ## 4. 📋 Remaining roadmap (in order)
 
-1. ~~Real coach voice notes~~ — ✗ **CUT from v1** (owner decision, 26 Jul). Film room stays text + typed lessons
+1. ~~Real coach voice notes~~ — ✗ **CUT** (owner decision). Film room stays text + typed lessons
 2. ✅ **Loss Journal screen** — DONE 26 Jul (§2.13): one line per loss, persisted, feeds objectives
 3. ✅ **Journey objectives → journal wiring** — "Log N lines…" objectives read the journal store live (26 Jul)
 4. ✅ **Real match-stat objectives + Match Scan backend** — DONE 26 Jul (§2.14): Match Vault (honor-ingest, persisted), 26 machine-readable objective checks, scan grades the vault live, auto-read, loss-journal nudge

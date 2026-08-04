@@ -141,7 +141,6 @@ export function resolveStageLesson(stageN: number, refs: Record<number, string>)
 
 export interface CoachChat {
   greeting: string;
-  voiceCaption: string;
   mechanic: string;
   /** the single wink — one line of humour between the lesson and the closer.
    *  Seeded by the mechanic so it's stable for the day, and it always sits
@@ -165,7 +164,6 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
   return {
     greeting:
       'You’re here. Good. Pull up, little bro — today is just **me talking.** No essays, no quizzes. All you owe me is one match at the end. And no, shouting at the referee is not a mechanic.',
-    voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
     closer: `That’s the whole side note. Now the real work — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, mark your own moments, swear the next lesson. **The mirror does not think for you.** It just makes sure you cannot forget what you believed.`,
@@ -184,7 +182,6 @@ export function buildPrepChat(_coach: Coach, staleName?: string): CoachChat {
   if (staleName) {
     return {
       greeting: 'You’re here. Good. Quick one today — the game moved under us.',
-      voiceCaption: 'VOICE NOTE · QUICK ROOM UPDATE — THE PATCH MOVED FIRST',
       mechanic: `**${staleName.toLowerCase()}** got patched out. Do not drill the old tape — I’m cutting the new one now. Your stage objectives are untouched though, and the scan still grades them off the vault.`,
       quip: 'Yes, the patch ruined my weekend as well. No, I don’t want to talk about it. The scan already knows.',
       closer: `When the fresh tape lands, same rule — **the scan will know.** It always knows.`,
@@ -194,7 +191,6 @@ export function buildPrepChat(_coach: Coach, staleName?: string): CoachChat {
   }
   return {
     greeting: 'You’re here. Good. Pull up, little bro — today is just **me talking.**',
-    voiceCaption: 'VOICE NOTE · ROOM SETUP — THE SCAN STILL COUNTS',
     mechanic:
       'Today’s extra mechanic isn’t cleared for the room yet — the scouts are still checking the tape. That changes nothing about your job: **the stage objectives below are live**, and the scan reads them straight off your vault. Go and play.',
     quip: "The scouts are arguing about the tape right now. I've seen friendlier derbies. It lands soon.",

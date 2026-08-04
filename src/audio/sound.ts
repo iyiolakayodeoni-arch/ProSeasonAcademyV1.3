@@ -5,16 +5,13 @@
 //                   lazily created, fire-and-forget, and silent
 //                   when the player turns SOUND FX off.
 //   · MUSIC ....... the dark 24s ambient pad that loops under
-//                   the home tab — ducks under voice notes,
-//                   pauses in the background, obeys the toggle.
-//   · VOICE ....... per-coach assets for the briefing room's
-//                   voice note (played by the screen itself via
-//                   expo-audio's useAudioPlayer hook).
+//                   the home tab — pauses in the background,
+//                   obeys the toggle.
 //
+// No voice notes by design — the coach speaks in text.
 // The assets are generated, not licensed: scripts/make-sounds.py
-// synthesises every wav, and the coach voice notes ship in the
-// same folder. Never let a sound crash the app — every entry
-// point is wrapped.
+// synthesises every wav. Never let a sound crash the app — every
+// entry point is wrapped.
 // ─────────────────────────────────────────────────────────────
 import { AppState } from 'react-native';
 import { AudioPlayer, createAudioPlayer, setAudioModeAsync } from 'expo-audio';
@@ -47,19 +44,12 @@ const SFX_SOURCE: Record<SfxName, number> = {
 
 const MUSIC_SOURCE = require('../../assets/sounds/music-home.wav');
 
-/** the briefing-room voice note — one coach, one voice (real audio, his words) */
-export function voiceNoteSource(_coachId: string): number {
-  return require('../../assets/sounds/voice-chinedu.mp3');
-}
-
 let ready = false;
 const players = new Map<SfxName, AudioPlayer>();
 let music: AudioPlayer | null = null;
 let musicWanted = false; // the screen's wish (toggle + foreground)
-let musicDucked = false; // a voice note is talking
 
 const MUSIC_VOLUME = 0.32;
-const MUSIC_DUCKED_VOLUME = 0.1;
 
 /** call once at app start — sets the audio session policy */
 export function initAudio(): void {
@@ -107,7 +97,7 @@ function safeMusicPlay() {
       music = createAudioPlayer(MUSIC_SOURCE);
       music.loop = true;
     }
-    music.volume = musicDucked ? MUSIC_DUCKED_VOLUME : MUSIC_VOLUME;
+    music.volume = MUSIC_VOLUME;
     if (!music.playing) music.play();
   } catch {
     /* ambient is optional by definition */
@@ -139,14 +129,3 @@ export function syncMusicToSettings(): void {
   }
 }
 
-/** a coach is talking — pull the bed down; call with false to restore */
-export function duckMusic(on: boolean): void {
-  musicDucked = on;
-  try {
-    if (music && (music.playing || musicWanted)) {
-      music.volume = on ? MUSIC_DUCKED_VOLUME : MUSIC_VOLUME;
-    }
-  } catch {
-    /* noop */
-  }
-}
