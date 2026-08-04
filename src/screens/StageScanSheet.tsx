@@ -107,7 +107,7 @@ type Props = {
 };
 
 export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
-  const copy = STAGE_SCAN_COPY[coach.id] ?? STAGE_SCAN_COPY.obinna;
+  const copy = STAGE_SCAN_COPY[coach.id] ?? STAGE_SCAN_COPY.chinedu;
   const coachFirst = coach.name.split(' ')[0];
   const stern = coach.id === 'chinedu';
   const mechShort = plan?.shortName ?? null;

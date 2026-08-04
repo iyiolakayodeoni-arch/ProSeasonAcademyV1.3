@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { EyeIcon, XMarkIcon } from './Icons';
-import HonestyBadge from './HonestyBadge';
+import HonestyMeter from './HonestyMeter';
 import { Coach } from '../data/coaches';
 import {
   KeyMomentKind,
@@ -144,7 +144,7 @@ export default function MomentReview({ coach, moments, onChange, cue }: Props) {
               multiline
               maxLength={160}
             />
-            <HonestyBadge
+            <HonestyMeter
               text={m.answer}
               options={{ minLength: MOMENT_MIN_ANSWER, minWords: 2 }}
               defaultNote={`MOMENT ${i + 1} · SPEAK TRUTH, NOT EXCUSES`}

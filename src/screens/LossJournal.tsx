@@ -14,7 +14,7 @@ import {
   useJournal,
 } from '../data/journal';
 import { ChevronLeftIcon, FlameIcon, JournalIcon, SendIcon, XMarkIcon } from '../components/Icons';
-import HonestyBadge from '../components/HonestyBadge';
+import HonestyMeter from '../components/HonestyMeter';
 import { isValidReflection } from '../data/honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
             <Text style={styles.logBtnTxt}>LOG IT</Text>
           </Pressable>
         </View>
-        <HonestyBadge
+        <HonestyMeter
           text={text}
           options={{ minLength: 4, minWords: 2 }}
           defaultNote="NO ESSAYS · ONE HONEST LINE PER LOSS"

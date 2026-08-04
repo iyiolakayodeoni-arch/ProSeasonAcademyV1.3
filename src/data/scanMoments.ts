@@ -173,7 +173,7 @@ const BANKS: Record<string, Record<string, string[]>> = {
 
 /** the question the coach asks for the (index-th) tag of this kind */
 export function momentQuestion(coachId: string, kind: string, index = 0): string {
-  const bank = BANKS[coachId] ?? BANKS.obinna;
-  const list = bank[kind] ?? BANKS.obinna[kind] ?? ['What was your head doing in that moment?'];
+  const bank = BANKS[coachId] ?? BANKS.chinedu;
+  const list = bank[kind] ?? BANKS.chinedu[kind] ?? ['What was your head doing in that moment?'];
   return list[index % list.length];
 }

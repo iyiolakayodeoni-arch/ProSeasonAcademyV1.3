@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-08-04T12:00:00Z",
+  "apps": [
+    {
+      "id": "proseasonacademy",
+      "name": "ProSeason Academy",
+      "package": "com.onliversity.proseasonacademy",
+      "version": "1.3.0",
+      "versionCode": 3,
+      "apkUrl": "https://ymnkphqgjxexsnbgtqvk.supabase.co/storage/v1/object/public/onliversity/proseasonacademy/proseasonacademy-1.3.0.apk",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "sizeBytes": 38210432,
+      "status": "live",
+      "tagline": "Pro Season — the FC Mobile Pro development programme.",
+      "description": "One coach. One road. The Mirror Session, the Match Vault, the Thread. The first programme built on the Onliversity method.",
+      "releaseNotes": "Mirror Session timeline marks, single-coach reveal, the Package Manager.",
+      "releasedAt": "2026-08-04T12:00:00Z",
+      "accent": "#39FF6A"
+    },
+    {
+      "id": "onliversity-music",
+      "name": "Onliversity: Practice",
+      "package": "com.onliversity.music",
+      "status": "coming_soon",
+      "tagline": "The same method, aimed at a different craft.",
+      "description": "Record the evidence. Preserve your own thinking. Place intention beside outcome. The Mirror method was built to travel — this is the next path it walks.",
+      "eta": "SEASON TWO"
+    },
+    {
+      "id": "onliversity-writing",
+      "name": "Onliversity: The Page",
+      "package": "com.onliversity.writing",
+      "status": "coming_soon",
+      "tagline": "Baseline week → your journey → the thread → proof, for writers.",
+      "description": "Any serious pursuit runs on the same engine. The craft changes; the structure stays.",
+      "eta": "LATER"
+    }
+  ]
+}

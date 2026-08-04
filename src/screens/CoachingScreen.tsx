@@ -28,7 +28,7 @@ import {
   XMarkIcon,
 } from '../components/Icons';
 import { Coach } from '../data/coaches';
-import { JourneyStage } from '../data/journey';
+import { JourneyStage, JOURNEY_SEASON } from '../data/journey';
 import {
   buildCoachChat,
   buildPrepChat,
@@ -45,6 +45,8 @@ import { sideLessonFromPlan } from '../data/sideLesson';
 import StageScanSheet from './StageScanSheet';
 import SideLessonSheet from './SideLessonSheet';
 import MirrorSessionScreen from './MirrorSessionScreen';
+import StageClearedSheet from './StageClearedSheet';
+import { PLAYER_CARD } from '../data/playerCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
@@ -169,6 +171,8 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const [scanSheet, setScanSheet] = useState(false);
   const [mirrorOpen, setMirrorOpen] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
+  // the earned reveal — fires once on a genuine stage pass (P3)
+  const [showReveal, setShowReveal] = useState(false);
 
   // ── resolve TODAY'S MECHANIC from the live bot feed ──
   const lessonResult = useMemo(
@@ -294,10 +298,12 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
     return () => timers.forEach(clearTimeout);
   }, [stage.n]);
 
-  // the verdict has a sound: a pass gets the full referee treatment
+  // the verdict has a sound: a pass gets the full referee treatment.
+  // a genuine pass also fires the earned reveal (Principle P3).
   useEffect(() => {
     if (status === 'passed') {
       sfx('success');
+      setShowReveal(true);
       const w = setTimeout(() => sfx('whistle'), 320);
       return () => clearTimeout(w);
     }
@@ -727,6 +733,30 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             onClose={() => {
               sfx('tap');
               setSideOpen(false);
+            }}
+          />
+        </View>
+      )}
+
+      {/* ── THE EARNED REVEAL — stage cleared from evidence (Principle P3).
+            The rating the card held *before* this clear is reconstructed from
+            the ledger (completedCount now includes this stage), so the step-up
+            shown is the honest delta, not a cosmetic number. ── */}
+      {showReveal && result && (
+        <View style={StyleSheet.absoluteFill}>
+          <StageClearedSheet
+            coach={coach}
+            stage={stage}
+            result={result}
+            prevRating={
+              PLAYER_CARD.BASE_RATING +
+              Math.max(0, prog.completedCount - 1) * PLAYER_CARD.RATING_STEP
+            }
+            isFinal={stage.n >= PLAYER_CARD.TOTAL_STAGES}
+            nextStageName={JOURNEY_SEASON.stages[stage.n]?.name}
+            onContinue={() => {
+              setShowReveal(false);
+              onClose();
             }}
           />
         </View>

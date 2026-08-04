@@ -16,7 +16,7 @@ import { colors, monoFont } from '../theme';
 // ─────────────────────────────────────────────────────────────
 
 export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
+  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const first = coach.name.split(' ')[0].toUpperCase();
 
   // each line of his speech lands with a soft pop, on its animation beat
