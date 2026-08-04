@@ -19,7 +19,7 @@ type Props = {
 
 /**
  * Post-onboarding boot loader. Same cinematic shell as the intro splash,
- * but the status line makes clear what it's doing: setting up the coaches
+ * but the status line makes clear what it's doing: setting up the academy
  * and the season hub before the main app opens.
  */
 export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
@@ -27,7 +27,7 @@ export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
 
   const statuses = useMemo(
     () => [
-      'Setting up your coaches…',
+      'Setting up the academy…',
       `Waking up ${coachFirstName}…`,
       'Preparing your season hub…',
       'Almost there, Player…',
