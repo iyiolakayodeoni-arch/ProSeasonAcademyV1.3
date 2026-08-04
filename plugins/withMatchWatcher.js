@@ -493,7 +493,10 @@ class MatchWatcherService : Service() {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 android.graphics.PixelFormat.TRANSLUCENT
             ).apply {
-                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                // Keep the game HUD clear: status belongs in the top-right,
+                // away from FC Mobile's centre score/time display.
+                gravity = Gravity.TOP or Gravity.END
+                x = (12 * density).toInt()
                 y = (42 * density).toInt()
             }
             (getSystemService(WINDOW_SERVICE) as WindowManager).addView(chip, params)
