@@ -13,6 +13,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch } from './matches';
+import { isValidReflection } from './honestyGuard';
 
 const KEY = 'psa.baseline.v1';
 
@@ -96,7 +97,7 @@ export interface BaselineMoment {
 
 export function baselineMomentComplete(m: BaselineMoment): boolean {
   return BASELINE_MOMENT_QUESTIONS.every(
-    (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
+    (q) => isValidReflection(m.analysis[q.key] ?? '', { minLength: BASELINE_MOMENT_MIN_ANSWER, minWords: 2 }),
   );
 }
 

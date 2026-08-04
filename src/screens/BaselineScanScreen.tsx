@@ -37,6 +37,8 @@ import { getSettings } from '../data/settings';
 import { COMPOSURE_LABELS, resultOf } from '../data/matches';
 import { scheduleBaselineUnlock } from '../data/notifications';
 import { CheckIcon, EyeIcon, LockIcon } from '../components/Icons';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
@@ -122,7 +124,7 @@ function hms(ms: number): string {
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
+  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const watcher = useMatchWatcher();
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
@@ -185,7 +187,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const beat = played ? script.beats[beatKey(gf, ga)] : null;
   const allMomentsDone = moments.length > 0 && moments.every(momentComplete);
   const canSealDay =
-    composure !== null && allMomentsDone && dayAnswer.trim().length >= MIN_ANSWER;
+    composure !== null && allMomentsDone && isValidReflection(dayAnswer, { minLength: MIN_ANSWER, minWords: 2, prompt: question });
   const unlockAt = nextUnlockAt(session);
   const lastEntry = session?.entries[session.entries.length - 1] ?? null;
 
@@ -253,7 +255,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   /** day 6 — seal the week's reflection, day 7 unlocks tomorrow */
   const sealReflection = () => {
-    if (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER || !session) return;
+    if (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 }) || !session) return;
     sfx('whoosh');
     saveBaselineReflection(reflection.repeated, reflection.changed);
     sealBaselineDay(6);
@@ -267,7 +269,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   /** day 7 — the ambition question, then the card seals */
   const seal = async () => {
-    if (ambition.trim().length < MIN_ANSWER || sealing) return;
+    if (!isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) || sealing) return;
     setSealing(true);
     const card = await sealBaseline(getSettings().displayName, coach.id, ambition.trim());
     sfx('success');
@@ -388,7 +390,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {day > 1 && (
                 <View style={styles.dayIntro}>
                   <Image source={coach.portrait} style={styles.beatFace} />
-                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.obinna?.[day]}</Text>
+                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.chinedu?.[day]}</Text>
                 </View>
               )}
 
@@ -627,7 +629,12 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     multiline
                     maxLength={500}
                   />
-                  <Text style={styles.countTxt}>{dayAnswer.trim().length}/{MIN_ANSWER}+ · THE EYE NEVER READS THIS — {first} DOES</Text>
+                  <HonestyBadge
+                    text={dayAnswer}
+                    options={{ minLength: MIN_ANSWER, minWords: 2, prompt: question }}
+                    defaultNote={`THE EYE NEVER READS THIS — ${first} DOES`}
+                    coachId={coach.id}
+                  />
                   <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}>
                     <Text style={styles.ctaTxt}>
                       {day >= BASELINE_MATCHES ? 'SEAL DAY 5 — THE WEEK SO FAR UNLOCKS TOMORROW' : `SEAL DAY ${day} — MATCH ${day + 1} UNLOCKS TOMORROW`}
@@ -651,7 +658,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <LockIcon size={16} color={colors.accent} />
               </View>
               <Text style={styles.restTitle}>REST. THE WORK NEEDS TONIGHT.</Text>
-              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.obinna}</Text>
+              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.chinedu}</Text>
               {unlockAt != null && (
                 <View style={styles.countdownBox}>
                   <Text style={styles.countdownLabel}>DAY {day} UNLOCKS IN</Text>
@@ -687,7 +694,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <WeekStrip session={session} now={now} />
               <Text style={styles.heroLine}>THE WEEK HAS BEEN SPEAKING. LISTEN TO IT TOGETHER.</Text>
               <Text style={styles.heroSub}>
-                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.obinna[6]} Here is what you named, across all five matches — your own words, back in front of you.
+                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.chinedu[6]} Here is what you named, across all five matches — your own words, back in front of you.
               </Text>
 
               <View style={styles.receiptBox}>
@@ -727,7 +734,12 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 style={styles.input}
                 multiline
               />
-              <Text style={styles.countTxt}>{reflection.repeated.trim().length}/{MIN_ANSWER}+</Text>
+              <HonestyBadge
+                text={reflection.repeated}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="NAMING THE REPETITION IS THE FIRST STEP TO CLOSING IT"
+                coachId={coach.id}
+              />
 
               <Text style={styles.fieldLabel}>WHAT HAS ACTUALLY CHANGED SINCE DAY 1?</Text>
               <TextInput
@@ -738,11 +750,16 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 style={styles.input}
                 multiline
               />
-              <Text style={styles.countTxt}>{reflection.changed.trim().length}/{MIN_ANSWER}+</Text>
+              <HonestyBadge
+                text={reflection.changed}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="IN YOUR DECISIONS, NOT YOUR RESULTS — BE HONEST"
+                coachId={coach.id}
+              />
 
               <Pressable
                 onPress={sealReflection}
-                style={[styles.cta, (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER) && { opacity: 0.35 }]}
+                style={[styles.cta, (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 })) && { opacity: 0.35 }]}
               >
                 <Text style={styles.ctaTxt}>SEAL THE WEEK'S REFLECTION — DAY 7 UNLOCKS TOMORROW</Text>
               </Pressable>
@@ -767,8 +784,13 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 multiline
                 maxLength={240}
               />
-              <Text style={styles.countTxt}>{ambition.trim().length}/{MIN_ANSWER}+ · HE WILL BRING THIS BACK UP — COUNT ON IT</Text>
-              <Pressable onPress={() => void seal()} style={[styles.cta, ambition.trim().length < MIN_ANSWER && { opacity: 0.35 }]}>
+              <HonestyBadge
+                text={ambition}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="HE WILL BRING THIS BACK UP — COUNT ON IT"
+                coachId={coach.id}
+              />
+              <Pressable onPress={() => void seal()} style={[styles.cta, !isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) && { opacity: 0.35 }]}>
                 <Text style={styles.ctaTxt}>{sealing ? 'SEALING…' : 'SEAL MY BASELINE CARD'}</Text>
               </Pressable>
             </>

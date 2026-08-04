@@ -139,6 +139,6 @@ function hash(s: string): number {
 
 /** the coach's single wink for this briefing — stable per mechanic/prep state */
 export function coachQuip(coachId: string, seedKey: string): string {
-  const pool = QUIPS[coachId] ?? QUIPS.obinna;
+  const pool = QUIPS[coachId] ?? QUIPS.chinedu;
   return pool[hash(seedKey) % pool.length];
 }

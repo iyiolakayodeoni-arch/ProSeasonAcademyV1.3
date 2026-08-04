@@ -14,6 +14,8 @@ import {
   useJournal,
 } from '../data/journal';
 import { ChevronLeftIcon, FlameIcon, JournalIcon, SendIcon, XMarkIcon } from '../components/Icons';
+import HonestyMeter from '../components/HonestyMeter';
+import { isValidReflection } from '../data/honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
 // LOSS JOURNAL SCREEN — one line per loss. Composer at top,
@@ -102,12 +104,22 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
             onSubmitEditing={logLine}
             returnKeyType="send"
           />
-          <Pressable onPress={logLine} disabled={!text.trim()} style={[styles.logBtn, !text.trim() && { opacity: 0.4 }]} hitSlop={6}>
+          <Pressable
+            onPress={logLine}
+            disabled={!isValidReflection(text, { minLength: 4, minWords: 2 })}
+            style={[styles.logBtn, !isValidReflection(text, { minLength: 4, minWords: 2 }) && { opacity: 0.4 }]}
+            hitSlop={6}
+          >
             <SendIcon size={14} color="#0a0f0a" />
             <Text style={styles.logBtnTxt}>LOG IT</Text>
           </Pressable>
         </View>
-        <Text style={styles.limit}>{text.length}/{LOSS_LINE_LIMIT} — NO ESSAYS</Text>
+        <HonestyMeter
+          text={text}
+          options={{ minLength: 4, minWords: 2 }}
+          defaultNote="NO ESSAYS · ONE HONEST LINE PER LOSS"
+          coachId={coach.id}
+        />
       </View>
 
       {/* coach acknowledgement after logging */}

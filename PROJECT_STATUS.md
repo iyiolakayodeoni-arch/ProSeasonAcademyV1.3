@@ -438,3 +438,18 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
   fails soft when denied/unavailable (the REST countdown is the fallback).
   `cancelBaselineUnlocks()` runs on Delete Account so a dead account gets no nags.
 - Verified: typecheck clean · 18/18 tests · web export bundles.
+
+## 2.29 — 2026-08-04 · THE HONESTY GUARD & COACH AUDIT (v1.3)
+
+In ProSeasonAcademy, "The app records the evidence; it never does your thinking for you." Because AI is intentionally refused for the player's psychology and we cannot read minds to detect a lie, we ensure players stay honest when typing by detecting and rejecting nonsense, keyboard mashing, repeated spam, evasive shortcuts, and copy-pasted prompts:
+- **Honesty Guard Engine** (`src/data/honestyGuard.ts`): provides robust, coach-voiced validation (`checkHonesty`, `isValidReflection`, `getHonestyFeedback`) checking against:
+  - **Too short** (`too_short`): enforces minimum character lengths and word counts.
+  - **Keyboard mash** (`keyboard_mash`): detects home-row runs (`qwerty`, `asdfgh`, `zxcvbn`), 6+ consecutive consonants (`/[bcdfghjklmnpqrstvwxz]{6,}/i`), and 4+ identical repeated characters.
+  - **Gibberish** (`gibberish`): flags vowel/consonant imbalance (`< 12%` or `> 88%` vowels in alphabetic strings >= 6 chars) and symbol/number-only input.
+  - **Evasive filler phrases** (`filler_phrase`): blocks lazy dismissals (`"idk"`, `"nothing"`, `"nothing happened"`, `"no idea"`, `"same"`, `"test"`, `"n/a"`) while allowing valid sentences that contain those words.
+  - **Repetitive spam** (`repetitive`): catches triple word repeats (`"test test test"`) and low word diversity (`< 38%` unique words).
+  - **Copied prompt** (`copied_prompt`): detects when a user copies the question/prompt verbatim into their reflection box.
+- **Visual Assurance & Live Feedback** (`src/components/HonestyBadge.tsx`): rendered below typed reflections across `StageScanSheet`, `MirrorSessionScreen`, `BaselineScanScreen`, `LossJournal`, `MatchVault`, `MomentReview`, and `ContactSheet`. Displays coach audit warnings in amber/gold (`⚠️ [HONESTY CHECK] I KNOW WHAT A KEYBOARD MASH SOUNDS LIKE...`) or verification confirmation in bright green (`✓ [HONEST LEDGER] SUBSTANTIVE REFLECTION VERIFIED`).
+- **Enforced at submission gates**: forms in `StageScanSheet`, `MirrorSessionScreen`, `BaselineScanScreen`, `LossJournal` (`addEntry`), `MatchVault`, `CommunityTab` (`submit`), and `ContactSheet` block submission of any text that fails `isValidReflection`.
+- **Unit tested**: 8/8 new tests in `tests/honestyGuard.test.js` integrated into `npm test` (22/22 tests passing across all suites).
+

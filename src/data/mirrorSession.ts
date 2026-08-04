@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch, setMatchComposure } from './matches';
 import { getThread, settleCarried, swearLesson, ThreadVerdict } from './lessonThread';
 import { armWatcher, finishWatcher } from './matchWatcher';
+import { isValidReflection } from './honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
 // THE MIRROR SESSION — the structured match-development session.
@@ -138,7 +139,7 @@ export interface MirrorMoment {
 }
 
 export function momentComplete(m: MirrorMoment): boolean {
-  return MOMENT_QUESTIONS.every((q) => (m.answers[q.key] ?? '').trim().length >= MOMENT_MIN_ANSWER);
+  return MOMENT_QUESTIONS.every((q) => isValidReflection(m.answers[q.key] ?? '', { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
 }
 
 /** the versions beside one another (MIRROR DIRECTION §6.8) */
@@ -456,7 +457,7 @@ export function buildVersions(): { key: VersionKey; label: string; text: string 
   const f = state.full;
   const reviewed = state.moments
     .map((m) => m.answers.differently)
-    .find((d) => d && d.trim().length >= MOMENT_MIN_ANSWER);
+    .find((d) => d && isValidReflection(d, { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
   return [
     { key: 'before', label: 'BEFORE THE MATCH', text: i ? i.pressure || i.attention || '—' : '—' },
     { key: 'half', label: 'HALF-TIME', text: h ? h.emotion || h.following || '—' : '—' },

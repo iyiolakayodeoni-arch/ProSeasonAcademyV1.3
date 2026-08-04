@@ -47,6 +47,8 @@ import { useMatchWatcher } from '../data/matchWatcher';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 
 const MIN_ANSWER = 2;
 
@@ -261,12 +263,12 @@ export default function MirrorSessionScreen({
     const v = (mirror.full as Record<string, unknown> | null)?.[k] ?? full[k];
     return typeof v === 'string' ? v : '';
   };
-  const allIntentionAnswered = INTENTION_QUESTIONS.every((q) => (intention[q.key] ?? '').trim().length >= MIN_ANSWER);
-  const allHalfAnswered = HALF_TIME_QUESTIONS.every((q) => effHalf(q.key).trim().length >= MIN_ANSWER);
-  const allFullAnswered = FULL_TIME_QUESTIONS.every((q) => effFull(q.key).trim().length >= MIN_ANSWER);
+  const allIntentionAnswered = INTENTION_QUESTIONS.every((q) => isValidReflection(intention[q.key] ?? '', { minLength: MIN_ANSWER, minWords: 1 }));
+  const allHalfAnswered = HALF_TIME_QUESTIONS.every((q) => isValidReflection(effHalf(q.key), { minLength: MIN_ANSWER, minWords: 1 }));
+  const allFullAnswered = FULL_TIME_QUESTIONS.every((q) => isValidReflection(effFull(q.key), { minLength: MIN_ANSWER, minWords: 1 }));
 
   const momentsAllAnswered = mirror.moments.length > 0 && mirror.moments.every((m) =>
-    MOMENT_QUESTIONS.every((q) => (((momentDrafts[m.id] ?? m.answers ?? {})[q.key] ?? '').trim().length >= MIN_ANSWER)),
+    MOMENT_QUESTIONS.every((q) => isValidReflection((momentDrafts[m.id] ?? m.answers ?? {})[q.key] ?? '', { minLength: MIN_ANSWER, minWords: 1 })),
   );
 
   const handleLeave = () => {
@@ -333,9 +335,15 @@ export default function MirrorSessionScreen({
                 onChange={setVerdictNote}
                 hint="the minute, the situation, the trigger"
               />
+              <HonestyBadge
+                text={verdictNote}
+                options={{ minLength: MIN_ANSWER, minWords: 1 }}
+                defaultNote="ONE HONEST LINE — WHERE DID IT HOLD OR SNAP?"
+                coachId={coach.id}
+              />
               <StepButton
                 label="ANSWER FOR THE THREAD · CONTINUE ›"
-                disabled={!verdict || verdictNote.trim().length < MIN_ANSWER}
+                disabled={!verdict || !isValidReflection(verdictNote, { minLength: MIN_ANSWER, minWords: 1 })}
                 onPress={() => {
                   sfx('whoosh');
                   answerCarriedLesson(verdict!, verdictNote);
@@ -753,9 +761,15 @@ export default function MirrorSessionScreen({
                 onChange={setLessonDraft}
                 hint="one thing. specific. yours."
               />
+              <HonestyBadge
+                text={lessonDraft}
+                options={{ minLength: 4, minWords: 2 }}
+                defaultNote="ONE LINE YOU WOULD SIGN · YOUR THREAD"
+                coachId={coach.id}
+              />
               <StepButton
                 label="SWEAR THE LESSON · SEAL THE SESSION ›"
-                disabled={lessonDraft.trim().length < 4}
+                disabled={!isValidReflection(lessonDraft, { minLength: 4, minWords: 2 })}
                 onPress={() => {
                   sfx('success');
                   finishMirrorLesson(lessonDraft);
