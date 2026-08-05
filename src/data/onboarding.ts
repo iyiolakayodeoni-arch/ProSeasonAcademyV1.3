@@ -24,20 +24,20 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'start',
     eyebrow: 'START HERE',
     title: 'YOUR NEXT MOVE',
-    body: 'Your Baseline Week is sealed — the honest part is done. Open JOURNEY and press Stage 1. Your coach is waiting. Nothing unlocks by pressing buttons; every stage is cleared by evidence.',
+    body: 'Your Baseline Week is sealed — the honest part is done. Open TRACKING and build your first seven-match checkpoint. This product now tracks the player backward from evidence, not forward from stages.',
     tone: 'green',
   },
   {
     id: 'journey',
-    eyebrow: 'JOURNEY',
-    title: 'YOUR ROAD',
-    body: 'One universal six-stage journey: See Yourself → Control Yourself → Read the Game → Build Discipline → Perform Under Pressure → Prove It. Your coach walks it with you — only your matches move it forward.',
+    eyebrow: 'TRACKING',
+    title: 'YOUR RECORD',
+    body: 'There is no forward stage map for the player. The academy builds a six-month record from seven-match checkpoints, each one formed from post-match stats screens and the numbers you confirm.',
   },
   {
     id: 'standard',
     eyebrow: 'THE STANDARD',
     title: 'THE BENCHMARK',
-    body: 'Beside your map runs The Standard — what the best in this path learned at each stage. It is not a second track to complete. Read it, then walk your own road.',
+    body: 'The benchmark keeps the reference story because that road has already been walked. You do not chase labels. You track your own evidence, compare it to the benchmark, and adjust from what the screenshots prove.',
     tone: 'gold',
   },
   {
@@ -49,9 +49,9 @@ export const ONBOARD_CARDS: OnboardCard[] = [
   },
   {
     id: 'mirror',
-    eyebrow: 'MIRROR SESSION',
+    eyebrow: 'MATCH REVIEW',
     title: 'THE MAIN RITUAL',
-    body: 'Before a match you set an intention. You record your match as usual, watch your tape, and write your moments on paper. After your 24–30 minute cool-down, you type your review into your database. The app never thinks for you.',
+    body: 'Before a match you set an intention. After the match you review honestly, capture the stats screen, and log what happened. The app can organise the evidence, but it never thinks for you.',
   },
   {
     id: 'thread',
@@ -62,8 +62,8 @@ export const ONBOARD_CARDS: OnboardCard[] = [
   {
     id: 'record',
     eyebrow: 'THE RECORD',
-    title: 'VAULT + LOSS JOURNAL',
-    body: 'Every match logs to your Match Vault; every loss earns an honest line in the Loss Journal. These receipts are what your stages are graded from. No shortcuts, no painted percentages.',
+    title: 'VAULT + CHECKPOINT CARD',
+    body: 'Every match logs to your Match Vault; every checkpoint turns seven stats screens into a player card and a possible playing-style read. No shortcuts, no painted percentages — just the trend the receipts support.',
   },
   {
     id: 'community',
@@ -75,7 +75,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'till',
     eyebrow: 'THE TILL',
     title: 'YOUR SEAT',
-    body: 'The first stages are free; a pass opens the full journey. 14-day trial, 3-day grace, refunds for unused time. Season One is capped at 1,000 seats — enforced by the database, not by a button.',
+    body: 'A pass opens the full tracking system, the archive and the benchmark record. 14-day trial, 3-day grace, refunds for unused time. Season One is capped at 1,000 seats — enforced by the database, not by a button.',
     tone: 'gold',
   },
 ];

@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
+import { BenchmarkMatchRecord, BenchmarkSnapshot, checkpointMetaFor } from './benchmarkTracker';
 
 const LEGACY_TOKEN_KEY = 'psa.cloud.token.v1';
 
@@ -212,6 +213,179 @@ export async function pullMatches(): Promise<ServerMatchRow[] | null> {
       composure: m.composure,
       note: m.note,
     })) as ServerMatchRow[];
+  } catch {
+    return null;
+  }
+}
+
+// ── benchmark tracker sync ───────────────────────────────────
+export interface CloudBenchmarkShot {
+  matchId: string;
+  fileName: string | null;
+  path: string | null;
+}
+
+export interface CloudBenchmarkRow {
+  id: string;
+  clientId: string;
+  checkpoint: number;
+  cycle: number;
+  month: number;
+  title: string;
+  label: string;
+  createdAt: number;
+  syncedAt: number;
+  academyId: string;
+  handle: string;
+  coachId: string | null;
+  matches: BenchmarkMatchRecord[];
+  summary: BenchmarkSnapshot['summary'];
+  screenshots: CloudBenchmarkShot[];
+}
+
+export interface FounderBenchmarkCard extends CloudBenchmarkRow {
+  region: string | null;
+}
+
+const BENCHMARK_BUCKET = 'benchmark-screens';
+
+function safeFileName(raw: string): string {
+  return raw.replace(/[^a-z0-9._-]+/gi, '-').replace(/-+/g, '-').slice(0, 80) || 'stats-screen.jpg';
+}
+
+function mimeOf(fileName: string | null, uri: string | null): string {
+  const ref = `${fileName ?? ''} ${uri ?? ''}`.toLowerCase();
+  if (ref.includes('.png')) return 'image/png';
+  if (ref.includes('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
+async function uploadBenchmarkShot(uri: string, objectPath: string, contentType: string): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const { error } = await supabase.storage.from(BENCHMARK_BUCKET).upload(objectPath, blob, {
+      upsert: true,
+      contentType,
+    });
+    if (error) return null;
+    return objectPath;
+  } catch {
+    return null;
+  }
+}
+
+function mapBenchmarkRow(row: any): CloudBenchmarkRow {
+  const checkpoint = Number(row.checkpoint_no ?? row.checkpoint ?? 1);
+  const meta = checkpointMetaFor(checkpoint);
+  return {
+    id: String(row.id ?? row.client_id ?? checkpoint),
+    clientId: String(row.client_id ?? row.clientId ?? checkpoint),
+    checkpoint: meta.checkpoint,
+    cycle: Number(row.cycle_no ?? row.cycle ?? meta.cycle),
+    month: Number(row.month_no ?? row.month ?? meta.month),
+    title: String(row.title ?? meta.title),
+    label: String(row.label ?? meta.label),
+    createdAt: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+    syncedAt: row.synced_at ? new Date(row.synced_at).getTime() : Date.now(),
+    academyId: String(row.academy_id ?? ''),
+    handle: String(row.handle ?? 'PLAYER'),
+    coachId: row.coach_id ? String(row.coach_id) : null,
+    matches: Array.isArray(row.matches) ? row.matches as BenchmarkMatchRecord[] : [],
+    summary: (row.summary ?? {}) as BenchmarkSnapshot['summary'],
+    screenshots: Array.isArray(row.screenshots) ? row.screenshots as CloudBenchmarkShot[] : [],
+  };
+}
+
+export async function pushBenchmarkCheckpoint(snapshot: BenchmarkSnapshot, coachId?: string | null): Promise<CloudBenchmarkRow | null> {
+  if (!supabase || !me) return null;
+  try {
+    const screenshots: CloudBenchmarkShot[] = [];
+    for (let i = 0; i < snapshot.matches.length; i += 1) {
+      const match = snapshot.matches[i];
+      const uri = match.screenshotUri;
+      const fileName = safeFileName(match.screenshotName ?? `match-${i + 1}.jpg`);
+      let path: string | null = null;
+      if (uri) {
+        const objectPath = `${me.academyId}/${snapshot.id}/${String(i + 1).padStart(2, '0')}-${fileName}`;
+        path = await uploadBenchmarkShot(uri, objectPath, mimeOf(fileName, uri));
+      }
+      screenshots.push({ matchId: match.id, fileName, path });
+    }
+
+    const payload = {
+      user_id: me.id,
+      academy_id: me.academyId,
+      handle: me.handle,
+      coach_id: coachId ?? null,
+      client_id: snapshot.id,
+      checkpoint_no: snapshot.checkpoint,
+      cycle_no: snapshot.cycle,
+      month_no: snapshot.month,
+      title: snapshot.title,
+      label: snapshot.label,
+      created_at: new Date(snapshot.createdAt).toISOString(),
+      synced_at: new Date().toISOString(),
+      summary: snapshot.summary,
+      matches: snapshot.matches.map(({ screenshotUri, ...match }) => ({ ...match, screenshotUri: null })),
+      screenshots,
+    };
+
+    const { data, error } = await supabase
+      .from('benchmark_checkpoints')
+      .upsert(payload, { onConflict: 'user_id,client_id' })
+      .select('*')
+      .single();
+    if (error || !data) return null;
+    return mapBenchmarkRow(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function pullBenchmarkCheckpoints(): Promise<CloudBenchmarkRow[] | null> {
+  if (!supabase || !me) return null;
+  try {
+    const { data, error } = await supabase
+      .from('benchmark_checkpoints')
+      .select('*')
+      .eq('user_id', me.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) return null;
+    return (data ?? []).map(mapBenchmarkRow);
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteBenchmarkCheckpoint(clientId: string): Promise<boolean> {
+  if (!supabase || !me) return false;
+  try {
+    const { error } = await supabase
+      .from('benchmark_checkpoints')
+      .delete()
+      .eq('user_id', me.id)
+      .eq('client_id', clientId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function founderBenchmarkCards(_key: string, limit = 24): Promise<FounderBenchmarkCard[] | null> {
+  if (!supabase) return null;
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) return null;
+    const resp = await supabase.functions.invoke('founder-desk', {
+      body: { action: 'benchmark_cards', limit },
+    });
+    if (resp.error) return null;
+    return Array.isArray(resp.data?.cards)
+      ? resp.data.cards.map((row: any) => ({ ...mapBenchmarkRow(row), region: row.region ?? null }))
+      : null;
   } catch {
     return null;
   }

@@ -11,6 +11,7 @@ const http = require('node:http');
 const db = require('./db');
 const realtime = require('./realtime');
 const products = require('./products');
+const { ocrStatsScreen } = require('./ocr');
 
 const PORT = Number(process.env.PORT) || 8788;
 const ADMIN_KEY = process.env.ADMIN_KEY || 'change-me-in-production';
@@ -33,12 +34,12 @@ function json(res, code, obj) {
   });
   res.end(body);
 }
-function readBody(req) {
+function readBody(req, maxBytes = 1e6) {
   return new Promise((resolve) => {
     let data = '';
     req.on('data', (c) => {
       data += c;
-      if (data.length > 1e6) req.destroy();
+      if (data.length > maxBytes) req.destroy();
     });
     req.on('end', () => {
       try { resolve(JSON.parse(data || '{}')); } catch { resolve({}); }
@@ -73,6 +74,15 @@ const server = http.createServer(async (req, res) => {
 
     // ── health ──
     if (path === '/health') return json(res, 200, { ok: true, at: Date.now() });
+
+    // ── OCR (server-side screenshot reading for mobile/native) ──
+    if (path === '/ocr/stats-screen' && req.method === 'POST') {
+      const body = await readBody(req, 12e6);
+      const imageBase64 = String(body.imageBase64 || '').trim();
+      if (!imageBase64) return json(res, 400, { ok: false, error: 'imageBase64 required' });
+      const out = await ocrStatsScreen(imageBase64);
+      return json(res, 200, { ok: true, passes: out.passes, at: Date.now() });
+    }
 
     // ── auth ──
     if (path === '/auth/guest' && req.method === 'POST') {

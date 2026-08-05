@@ -189,6 +189,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    case 'benchmark_cards': {
+      const limit = Math.min(Math.max(Number(body.limit) || 24, 1), 100);
+      const { data, error } = await sb.rpc('founder_benchmark_cards', { p_limit: limit });
+      if (error) return json({ ok: false, error: error.message }, 500);
+      return json({ ok: true, cards: data ?? [] });
+    }
+
     // ── THE FREE WEEK + LAPSED SEATS ─────────────────────────
     case 'grant_trial': {
       const { data, error } = await sb.rpc('grant_trial', {

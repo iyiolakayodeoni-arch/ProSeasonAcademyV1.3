@@ -150,7 +150,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             <Text style={[styles.wordmark, { marginTop: 14 }]}>PROSEASON</Text>
             <Text style={[styles.wordmark, styles.wordmarkAccent]}>ACADEMY</Text>
             <View style={styles.rule} />
-            <Text style={styles.tagline}>SEE YOURSELF CLEARLY. DO THE WORK.</Text>
+            <Text style={styles.tagline}>TRACK IT HONESTLY. DO THE WORK.</Text>
           </Animated.View>
 
           <View style={styles.spacer} />
