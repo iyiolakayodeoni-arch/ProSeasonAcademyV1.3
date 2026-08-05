@@ -4,10 +4,11 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { colors } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
-// SCREEN FLASH — a one-beat neon-blue wipe on entering a full-screen
-// surface, matching how current console FC 26 flashes its transition
-// colour as you move between menus (docs/FC26_UI_RESEARCH.md §5).
-// Pure cosmetic cue; it fades in and out immediately and never blocks.
+// SCREEN FLASH — a one-beat live wipe on entering a full-screen surface.
+// A nod to how current console menus flash a transition colour when you
+// move between screens (docs/FC26_UI_RESEARCH.md §5) — but it is a brief,
+// cosmetic moment in the app's own neon language, never a resting wash.
+// Fades in and out immediately and never blocks.
 // ─────────────────────────────────────────────────────────────
 export default function ScreenFlash() {
   return (

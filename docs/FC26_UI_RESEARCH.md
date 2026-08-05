@@ -64,11 +64,12 @@ ground the execution further by adding an **animated gradient hairline border** 
   the **vibrant gradient card colourways** (gold, pink/purple, black-gold) used as accent states
   ([realsport101][rs101-ui], [thexboxhub][review-tx], [moviesgamesandtech][review-mgt]).
 
-**Application:** keep the neon-green primary as the "live/earned" brand accent (per the brief),
-but ground the **resting** grading in teal/blue-steel: structural chrome, section labels, borders
-and background tints shift toward a muted teal/steel while neon green remains the active/earned
-highlight. A neon-blue token is added for transition flashes. This is the single biggest "belongs
-in that world" cue.
+**Application — INSPIRED, NOT A PHOTOCOPY:** we do **not** shift the app's resting palette toward
+teal/blue-steel. Neon green + gold stay the hero (per the brief). What we take from this finding
+is the *feel* — that the world is a dark, moody, instrument-grade surface where a neon colour is
+reserved for live/transition moments. We express that through treatment: a subtle cool `steel`
+neutral on a couple of fine card hairlines, and a one-beat neon `flash` on screen transitions.
+The result "belongs in that world" through how it behaves, not by copying its colours.
 
 ## 4. Typography
 
@@ -138,14 +139,20 @@ standard, so the app's competitive layer speaks the same ranked language as the 
 ---
 
 ## Traceability map (finding → change)
+The guiding rule for applying all of this: **inspired, never a photocopy.** The nod to the
+current console FC world comes through *treatment* (gradient-edged cards, a live transition
+flash, condensed display type, ranked-ladder structures) — rendered in **ProSeasonAcademy's own
+neon-green + gold identity**, not by adopting FC 26's palette. So the teal/blue-steel described
+in §3 is *not* used as a wash; only a whisper of cool steel appears on fine card hairlines.
+
 | Finding (§) | Change in this pass |
 |---|---|
-| §3 Muted teal/blue-steel resting theme + neon-blue flash | `theme.ts`: steel/teal/flash tokens; resting chrome tinted steel, green kept for live/earned |
-| §4 Condensed heavy uppercase headers + data face | Header typography tightened (weight/tracking) across Home/Journey/Feed |
-| §4/§2 Multicolour gradient border animation (Siri-like) | `RoleModelCard`: animated gradient hairline border |
-| §5 Sliding transitions + neon flash | Full-screen sheets + feed: slide + flash entrance |
-| §6 Rivals Stages / Win Streak / Checkpoint + 15-rank Champs | `RivalsRankLadder` + a 15-rank Champions ladder in JourneyTab |
-| §2 Rating count-up reveal (Country→…→Rating) | Already present in `StageClearedSheet`; kept, with steel/flash finishing |
+| §3 FC 26 rests on a muted teal/blue-steel + neon accents | Reframed: the app keeps its own green-family resting chrome. A single `steel` neutral is used only on the RoleModelCard gradient edge + inset hairline; a neon `flash` is a one-beat live transition cue. No teal wash. |
+| §4 Condensed heavy uppercase headers + data face | Shared display-header `type` tokens applied to major headers; monospace kept for data readouts (Home/Journey/Feed) |
+| §4/§2 Multicolour gradient border animation (Siri-like) | `RoleModelCard` outer hairline is a gradient border — but in OUR palette (cool steel → brand green → coach gold), so it's the *treatment* inspired by the cue, not a colour copy |
+| §5 Sliding transitions + neon flash | Full-screen sheets + feed get a brief `ScreenFlash` live cue on entry |
+| §6 Rivals Stages / Win Streak / Checkpoint + 15-rank Champs | `RivalsRankLadder` + a 15-rank Champions ladder in JourneyTab — the STRUCTURE mirrors the real ranked format; colours stay ProSeasonAcademy green/gold |
+| §2 Rating count-up reveal (Country→…→Rating) | Already present in `StageClearedSheet`; kept, with the flash finish |
 
 [rs101-ui]: https://realsport101.com/article/fc-26s-new-ui-a-deep-dive-into-the-redesigned-ultimate-team-menu
 [vocal-ui]: https://vocal.media/gamers/fc-26-ea-fc-26-s-new-user-interface-a-deep-dive-into-the-redesigned-ultimate-team-menu

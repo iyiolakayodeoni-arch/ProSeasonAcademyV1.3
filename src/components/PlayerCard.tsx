@@ -197,11 +197,10 @@ export default function PlayerCard({
               </G>
             </G>
 
-            {/* frame + hairline — outer stays brand-green (the player's LIVE,
-                earned accent); the inset hairline takes the FC 26-grounded
-                steel resting tone (docs/FC26_UI_RESEARCH.md §3/§4) */}
+            {/* frame + hairline — both the brand's green; the player card stays
+                firmly in the app's own identity */}
             <Path d={SHIELD} fill="none" stroke={colors.primary} strokeWidth="1.5" strokeOpacity="0.9" />
-            <Path d={SHIELD_INNER} fill="none" stroke="#9fc2cf" strokeWidth="0.7" strokeOpacity="0.4" />
+            <Path d={SHIELD_INNER} fill="none" stroke={colors.primary} strokeWidth="0.7" strokeOpacity="0.45" />
 
             {/* name plate */}
             <Rect x="12" y="142" width="144" height="22" rx="7" fill="rgba(57,255,106,0.92)" stroke={colors.primary} strokeWidth="0.9" />

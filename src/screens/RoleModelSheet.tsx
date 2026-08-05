@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16, paddingBottom: 26 },
 
   headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(159,194,207,0.8)' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
   title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
   subtitle: { marginTop: 5, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: colors.primary, textAlign: 'center' },
 

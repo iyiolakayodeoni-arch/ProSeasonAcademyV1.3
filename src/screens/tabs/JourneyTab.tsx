@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
     fontFamily: monoFont,
     fontSize: 7,
     letterSpacing: 2.4,
-    color: 'rgba(159,194,207,0.72)',
+    color: 'rgba(143,184,155,0.75)',
   },
 
   chineduCard: {
@@ -917,8 +917,8 @@ const styles = StyleSheet.create({
   },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingHorizontal: 8 },
-  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(111,179,168,0.3)' },
-  dividerTxt: { fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2, color: 'rgba(159,194,207,0.7)' },
+  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.22)' },
+  dividerTxt: { fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
 
   mapWrap: { marginTop: 2, alignItems: 'center' },
   mapCanvas: { width: MAP_W, height: MAP_H },
@@ -1052,7 +1052,8 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     textAlign: 'center',
   },
-  // steel-tinted resting sub-line — FC 26-grounded grading (docs/FC26_UI_RESEARCH.md §3)
+  // the app's own brand-green sub-line — the ladder STRUCTURE carries the
+  // console-ranked nod, the colour stays ProSeasonAcademy's identity
   rivalsTrackSub: {
     fontFamily: monoFont,
     fontSize: 5.2,
@@ -1060,7 +1061,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
     textAlign: 'center',
-    color: 'rgba(159,194,207,0.6)',
+    color: 'rgba(143,184,155,0.6)',
     marginBottom: 12,
     paddingHorizontal: 8,
   },
@@ -1072,13 +1073,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 5,
     borderWidth: 1,
-    borderColor: 'rgba(111,179,168,0.3)',
+    borderColor: 'rgba(57,255,106,0.25)',
     borderRadius: 7,
     paddingVertical: 5,
-    backgroundColor: 'rgba(22,49,58,0.35)',
+    backgroundColor: 'rgba(10,20,13,0.6)',
   },
   rivalsMetaStreak: { borderColor: 'rgba(255,207,122,0.5)', backgroundColor: 'rgba(242,192,120,0.07)' },
-  rivalsMetaTxt: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.1, color: 'rgba(159,194,207,0.75)' },
+  rivalsMetaTxt: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.1, color: 'rgba(143,184,155,0.8)' },
   rivalsLineRow: {
     height: 28,
     position: 'relative',
@@ -1146,22 +1147,23 @@ const styles = StyleSheet.create({
     left: 8,
   },
 
-  // ── FC 26-grounded Champions ladder (docs/FC26_UI_RESEARCH.md §6) ──
+  // ── 15-rank Champions ladder — the STRUCTURE mirrors the real ranked
+  //    format; the colour stays the app's own green/gold identity ──
   champsTrack: {
     marginTop: 12,
     borderWidth: 1.2,
-    borderColor: 'rgba(159,194,207,0.4)',
+    borderColor: 'rgba(242,192,120,0.35)',
     borderRadius: 12,
-    backgroundColor: 'rgba(22,49,58,0.4)',
+    backgroundColor: 'rgba(20,16,8,0.5)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
   },
   champsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  champsTitle: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgba(159,194,207,0.85)' },
+  champsTitle: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgba(242,192,120,0.8)' },
   champsWins: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.warm },
-  champsBarRow: { marginTop: 10, height: 5, borderRadius: 3, backgroundColor: 'rgba(22,49,58,0.6)', overflow: 'hidden' },
-  champsBgBar: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#16313a' },
+  champsBarRow: { marginTop: 10, height: 5, borderRadius: 3, backgroundColor: 'rgba(31,56,38,0.8)', overflow: 'hidden' },
+  champsBgBar: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#172f21' },
   champsFillBar: {
     height: '100%',
     borderRadius: 3,
@@ -1173,9 +1175,9 @@ const styles = StyleSheet.create({
   },
   champsRanksRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
   champsRank: { alignItems: 'center' },
-  champsRankDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: 'rgba(159,194,207,0.5)', backgroundColor: '#0a0f0a' },
+  champsRankDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: 'rgba(57,255,106,0.5)', backgroundColor: '#0a0f0a' },
   champsRankDotHit: { backgroundColor: colors.primary, borderColor: colors.primary },
-  champsRankTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgba(159,194,207,0.6)' },
+  champsRankTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
   champsNote: {
     marginTop: 10,
     fontFamily: monoFont,
@@ -1184,7 +1186,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
     textAlign: 'center',
-    color: 'rgba(159,194,207,0.5)',
+    color: 'rgba(143,184,155,0.55)',
   },
 
   currentPill: {

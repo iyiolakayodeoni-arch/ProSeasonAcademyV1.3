@@ -1,13 +1,12 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Defs, Pattern, Rect, Path } from 'react-native-svg';
+import { colors } from '../theme';
 
 // Full-screen faint grid — an SVG pattern, not an image asset.
-// Tinted toward the FC 26-grounded muted teal/steel resting grading
-// (docs/FC26_UI_RESEARCH.md §3) while neon green stays the brand's
-// live/earned accent on top of it.
-const GRID = 'rgba(111,179,168,0.05)';
-
+// The brand's own green-family grid, kept as the identity. The console-FC
+// feel is carried by treatment elsewhere (gradient card edges, the live
+// flash, condensed display type), never by adopting another game's palette.
 export default function GridBackground() {
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -16,7 +15,7 @@ export default function GridBackground() {
           <Path
             d="M 48 0 L 0 0 0 48"
             fill="none"
-            stroke={GRID}
+            stroke={colors.gridLine}
             strokeWidth="1"
           />
         </Pattern>
