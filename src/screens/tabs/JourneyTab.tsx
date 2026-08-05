@@ -17,7 +17,7 @@ import RoleModelCard from '../../components/RoleModelCard';
 import PlayerCard from '../../components/PlayerCard';
 import BadgeMark, { BADGE_LABELS } from '../../components/BadgeMark';
 import { EvidenceRing, StatBar, EvidenceMeter } from '../../components/StatReadout';
-import { CheckIcon, LockIcon, PersonIcon } from '../../components/Icons';
+import { CheckIcon, LockIcon, PersonIcon, FlameIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
 import {
   journeySeasonFor,
@@ -42,7 +42,8 @@ import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
 import StoreSheet from '../StoreSheet';
 import RoleModelSheet from '../RoleModelSheet';
-import { colors, monoFont } from '../../theme';
+import RoleModelFeedSheet from '../RoleModelFeedSheet';
+import { colors, monoFont, type as typeTokens } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
 
@@ -134,7 +135,7 @@ export default function JourneyTab({
     }).length;
     return Math.round((met / objs.length) * 100);
   }, [selected, vault.matches, journal.entries.length, threadSettled]);
-  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | 'feed' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
   // Identical rungs in every country; only the currency differs.
@@ -239,11 +240,11 @@ export default function JourneyTab({
             coach={coach}
             onPress={() => {
               sfx('whoosh');
-              setSheet('rolemodel');
+              setSheet('feed');
             }}
           />
           <Text style={styles.heroHint}>
-            PRESS [A/CROSS] — THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
+            PRESS [A/CROSS] — FOLLOW HIS ONGOING STORY · THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
           </Text>
         </View>
 
@@ -544,6 +545,12 @@ export default function JourneyTab({
               {/* progress — FUT 26 Rivals Rank Ladder Progress */}
               <RivalsRankLadder progressPct={stageLiveProgress} totalSteps={(selected.objectives ?? []).length + 1} />
 
+              {/* FC 26-grounded Champions capstone — the final climb reads like
+                  the real 15-rank Champions ladder (docs/FC26_UI_RESEARCH.md §6) */}
+              {selected.n === SEASON.totalStages && !selected.isSideQuest && (
+                <ChampionsLadder wins={Math.min(vault.w, 15)} total={15} />
+              )}
+
               {/* reward — the badge as a real sealed/unsealed medallion + XP */}
               <View style={styles.rewardRow}>
                 <BadgeMark stage={selected.n} sealed={!!cleared} size={48} />
@@ -647,6 +654,13 @@ export default function JourneyTab({
           }}
         />
       )}
+      {sheet === 'feed' && (
+        <RoleModelFeedSheet
+          coach={coach}
+          onClose={() => setSheet(null)}
+          onOpenFinish={() => setSheet('rolemodel')}
+        />
+      )}
     </View>
   );
 }
@@ -654,11 +668,19 @@ export default function JourneyTab({
 // ── THE STANDARD — the parallel benchmark journey. Not a second
 // progression track: it moves beside YOUR JOURNEY and reveals the
 // chapter that matches your current stage. Read it. Walk your own road.
-function RivalsRankLadder({ progressPct, totalSteps = 4 }: { progressPct: number; totalSteps?: number }) {
+// ── FC 26-grounded Rivals ladder (docs/FC26_UI_RESEARCH.md §6).
+// Mirrors the current game's real ranked structure: you climb STAGES within
+// your division, a WIN STREAK doubles your progress, and a LIMITED CHECKPOINT
+// guards your place before you RANK UP to the next division.
+function RivalsRankLadder({ progressPct, totalSteps = 5 }: { progressPct: number; totalSteps?: number }) {
   const activeStep = Math.min(totalSteps - 1, Math.floor((progressPct / 100) * totalSteps));
+  const streakOn = progressPct >= 45; // a "streak" lights once you're past the mid climb
   return (
     <View style={styles.rivalsTrack}>
       <Text style={styles.rivalsTrackTitle}>FUT 26 DIV RIVALS LADDER PROGRESS</Text>
+      <Text style={styles.rivalsTrackSub}>
+        STAGES WITHIN YOUR DIVISION · WIN STREAKS DOUBLE PROGRESS · LIMITED CHECKPOINTS GUARD YOUR RANK
+      </Text>
       <View style={styles.rivalsLineRow}>
         <View style={styles.rivalsBgLine} />
         <View style={[styles.rivalsActiveLine, { width: `${progressPct}%` }]} />
@@ -688,12 +710,61 @@ function RivalsRankLadder({ progressPct, totalSteps = 4 }: { progressPct: number
                   isActive && { color: colors.accent, fontWeight: '900' },
                 ]}
               >
-                {i === 0 ? 'START' : i === totalSteps - 1 ? 'RANK UP' : `STEP ${i}`}
+                {i === 0 ? 'START' : i === totalSteps - 1 ? 'RANK UP' : i === 1 ? 'STAGE' : `STEP ${i}`}
               </Text>
             </View>
           );
         })}
       </View>
+      <View style={styles.rivalsMetaRow}>
+        <View style={[styles.rivalsMetaPill, streakOn && styles.rivalsMetaStreak]}>
+          <FlameIcon size={9} color={streakOn ? '#ffcf7a' : 'rgba(143,184,155,0.55)'} />
+          <Text style={[styles.rivalsMetaTxt, streakOn && { color: colors.warm }]}>
+            {streakOn ? 'WIN STREAK ACTIVE' : 'STREAK: NONE'}
+          </Text>
+        </View>
+        <View style={styles.rivalsMetaPill}>
+          <Text style={styles.rivalsMetaTxt}>LIMITED CHECKPOINT · HOLDS</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── FC 26-grounded Champions ladder (docs/FC26_UI_RESEARCH.md §6).
+// The current game's Champions is a 15-rank ladder where RANK 1 = 15 wins and
+// rewards land per win. Rendered as the "PROVE IT" capstone on the final
+// climb so the app's competitive apex speaks the same ranked language.
+function ChampionsLadder({ wins, total = 15 }: { wins: number; total?: number }) {
+  const shown = Math.min(wins, total);
+  const pct = Math.min(100, (wins / total) * 100);
+  return (
+    <View style={styles.champsTrack}>
+      <View style={styles.champsHeader}>
+        <Text style={styles.champsTitle}>CHAMPIONS RANK LADDER · {total} WINS = RANK 1</Text>
+        <Text style={styles.champsWins}>{wins}/{total} WINS</Text>
+      </View>
+      <View style={styles.champsBarRow}>
+        <View style={styles.champsBgBar} />
+        <View style={[styles.champsFillBar, { width: `${pct}%` }]} />
+      </View>
+      <View style={styles.champsRanksRow}>
+        {[15, 10, 5, 1].map((r) => {
+          const hit = wins >= (total - r + 1);
+          return (
+            <View key={r} style={styles.champsRank}>
+              <View style={[styles.champsRankDot, hit && styles.champsRankDotHit]} />
+              <Text style={[styles.champsRankTxt, hit && { color: colors.primary }]}>RANK {r}</Text>
+            </View>
+          );
+        })}
+        <Text style={[styles.champsRankTxt, { marginLeft: 'auto', color: colors.warm }]}>
+          {shown}/{total} REACHED
+        </Text>
+      </View>
+      <Text style={styles.champsNote}>
+        NO PLAYOFFS IN FC 26 — QUALIFY VIA RIVALS DIVISION + QUALIFICATION POINTS · REWARDS LAND PER WIN
+      </Text>
     </View>
   );
 }
@@ -800,10 +871,8 @@ const styles = StyleSheet.create({
   headline: {
     marginTop: 12,
     textAlign: 'center',
-    fontFamily: monoFont,
+    ...typeTokens.display,
     fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 3.4,
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.6)',
     textShadowRadius: 12,
@@ -980,9 +1049,37 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.8,
     color: colors.muted,
-    marginBottom: 16,
+    marginBottom: 14,
     textAlign: 'center',
   },
+  // the app's own brand-green sub-line — the ladder STRUCTURE carries the
+  // console-ranked nod, the colour stays ProSeasonAcademy's identity
+  rivalsTrackSub: {
+    fontFamily: monoFont,
+    fontSize: 5.2,
+    lineHeight: 8.5,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    color: 'rgba(143,184,155,0.6)',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  rivalsMetaRow: { flexDirection: 'row', gap: 7, marginTop: 2 },
+  rivalsMetaPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.25)',
+    borderRadius: 7,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(10,20,13,0.6)',
+  },
+  rivalsMetaStreak: { borderColor: 'rgba(255,207,122,0.5)', backgroundColor: 'rgba(242,192,120,0.07)' },
+  rivalsMetaTxt: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.1, color: 'rgba(143,184,155,0.8)' },
   rivalsLineRow: {
     height: 28,
     position: 'relative',
@@ -1049,6 +1146,49 @@ const styles = StyleSheet.create({
     marginLeft: -40,
     left: 8,
   },
+
+  // ── 15-rank Champions ladder — the STRUCTURE mirrors the real ranked
+  //    format; the colour stays the app's own green/gold identity ──
+  champsTrack: {
+    marginTop: 12,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.35)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(20,16,8,0.5)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  champsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  champsTitle: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgba(242,192,120,0.8)' },
+  champsWins: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.warm },
+  champsBarRow: { marginTop: 10, height: 5, borderRadius: 3, backgroundColor: 'rgba(31,56,38,0.8)', overflow: 'hidden' },
+  champsBgBar: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#172f21' },
+  champsFillBar: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  champsRanksRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  champsRank: { alignItems: 'center' },
+  champsRankDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: 'rgba(57,255,106,0.5)', backgroundColor: '#0a0f0a' },
+  champsRankDotHit: { backgroundColor: colors.primary, borderColor: colors.primary },
+  champsRankTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  champsNote: {
+    marginTop: 10,
+    fontFamily: monoFont,
+    fontSize: 5.2,
+    lineHeight: 8.5,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    color: 'rgba(143,184,155,0.55)',
+  },
+
   currentPill: {
     position: 'absolute',
     backgroundColor: 'rgba(8,13,9,0.95)',
@@ -1227,7 +1367,7 @@ const styles = StyleSheet.create({
   },
   standardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   standardTitleBlock: { flex: 1 },
-  standardName: { fontFamily: monoFont, fontSize: 12, fontWeight: '900', letterSpacing: 2.6, color: colors.accent },
+  standardName: { ...typeTokens.displayTight, fontSize: 12, color: colors.accent },
   standardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.8, color: 'rgba(242,192,120,0.65)' },
   standardStagePill: {
     borderWidth: 1,

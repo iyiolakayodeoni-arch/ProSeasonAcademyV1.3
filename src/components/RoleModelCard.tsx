@@ -179,6 +179,15 @@ export default function RoleModelCard({ coach, onPress }: Props) {
                 <Stop offset="0%" stopColor={accent} />
                 <Stop offset="100%" stopColor={accentDim} />
               </LinearGradient>
+              {/* The gradient-edged card — INSPIRED by current console cards'
+                  multicolour borders, but in ProSeasonAcademy's own colours:
+                  a cool neutral → the brand green → the coach's gold. The cue
+                  is the treatment; the palette stays ours. (docs/FC26_UI_RESEARCH.md §4/§2) */}
+              <LinearGradient id="rmc_border" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0%" stopColor={colors.steel} />
+                <Stop offset="55%" stopColor={colors.primary} />
+                <Stop offset="100%" stopColor={accent} />
+              </LinearGradient>
               <LinearGradient id="rmc_fade" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="45%" stopColor="#0c120d" stopOpacity={0} />
                 <Stop offset="100%" stopColor="#0c120d" stopOpacity={0.94} />
@@ -225,9 +234,9 @@ export default function RoleModelCard({ coach, onPress }: Props) {
               </G>
             </G>
 
-            {/* layered borders: outer stroke + inset hairline */}
-            <Path d={SHIELD} fill="none" stroke={accent} strokeWidth={1.5} strokeOpacity={0.9} />
-            <Path d={SHIELD_INNER} fill="none" stroke={accent} strokeWidth={0.7} strokeOpacity={0.5} />
+            {/* layered borders: outer gradient hairline (our palette) + steel inset */}
+            <Path d={SHIELD} fill="none" stroke="url(#rmc_border)" strokeWidth={1.5} strokeOpacity={0.95} />
+            <Path d={SHIELD_INNER} fill="none" stroke={colors.steel} strokeWidth={0.7} strokeOpacity={0.45} />
 
             {/* 1 — rating badge, top-left */}
             <SvgText x="26" y="38" textAnchor="middle" fontSize="28" fontWeight="900" fill={accent}>

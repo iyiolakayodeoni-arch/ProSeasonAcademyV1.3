@@ -3,7 +3,10 @@ import { StyleSheet } from 'react-native';
 import Svg, { Defs, Pattern, Rect, Path } from 'react-native-svg';
 import { colors } from '../theme';
 
-// Full-screen faint green grid — an SVG pattern, not an image asset.
+// Full-screen faint grid — an SVG pattern, not an image asset.
+// The brand's own green-family grid, kept as the identity. The console-FC
+// feel is carried by treatment elsewhere (gradient card edges, the live
+// flash, condensed display type), never by adopting another game's palette.
 export default function GridBackground() {
   return (
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">

@@ -197,7 +197,8 @@ export default function PlayerCard({
               </G>
             </G>
 
-            {/* frame + hairline */}
+            {/* frame + hairline — both the brand's green; the player card stays
+                firmly in the app's own identity */}
             <Path d={SHIELD} fill="none" stroke={colors.primary} strokeWidth="1.5" strokeOpacity="0.9" />
             <Path d={SHIELD_INNER} fill="none" stroke={colors.primary} strokeWidth="0.7" strokeOpacity="0.45" />
 

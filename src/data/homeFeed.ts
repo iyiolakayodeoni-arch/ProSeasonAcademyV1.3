@@ -1,6 +1,7 @@
 import { Coach } from './coaches';
 import { tickerWit } from './humor';
 import { SideLesson, sideLessonFromPost } from './sideLesson';
+import { roleModelFeed, roleTimeLabel, ROLE_TYPE_LABEL } from './roleModelFeed';
 
 // ─────────────────────────────────────────────────────────────
 // HOME FEED DATA LAYER — CONSOLE FC 26 COMPETITIVE FOCUS
@@ -50,7 +51,8 @@ export type FeedKind =
   | 'META_SHIFT'
   | 'TRICK_OF_THE_WEEK'
   | 'COACH_UPDATE'
-  | 'ACADEMY_NEWS';
+  | 'ACADEMY_NEWS'
+  | 'ROLE_MODEL'; // the role model story stream — clearly distinct from real FC 26 intel
 
 export type FeedAccent = 'green' | 'gold' | 'red';
 
@@ -187,15 +189,44 @@ export function buildFeed(coach: Coach): FeedCardData[] {
   const bot = metabotPosts();
   const ordered: FeedCardData[] = [];
 
-  // Founder note first, then fresh bot/meta, then coach/group session.
+  // Founder note first, then fresh bot/meta, then the role model story
+  // cross-posts, then coach/group session.
   const founder = hands.find((c) => c.kind === 'ACADEMY_NEWS');
   if (founder) ordered.push(founder);
   ordered.push(...bot);
+  ordered.push(...roleModelCrossPosts(coach));
   const coachPost = hands.find((c) => c.kind === 'COACH_UPDATE');
   if (coachPost) ordered.push(coachPost);
 
   const seen = new Set<string>();
   return ordered.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
+}
+
+// ── ROLE MODEL STORY cross-posts — short highlights of Chinedu's ongoing
+// serialized feed, surfaced passively into Home so users who don't dig into
+// Journey still encounter the story. Distinct kind + gold accent so it reads
+// as "his ongoing story," never as coaching content aimed at the player.
+const ROLE_MODEL_CROSS_COUNT = 2;
+
+export function roleModelCrossPosts(coach: Coach): FeedCardData[] {
+  const first = coach.name.split(' ')[0];
+  return roleModelFeed(coach)
+    .slice(0, ROLE_MODEL_CROSS_COUNT)
+    .map((e) => ({
+      id: `rm-cross-${e.id}`,
+      kind: 'ROLE_MODEL' as FeedKind,
+      tag: `ROLE MODEL STORY · ${ROLE_TYPE_LABEL[e.type].split(' · ')[0]}`,
+      time: roleTimeLabel(e.daysAgo),
+      headline: e.headline,
+      body: e.body,
+      cta: 'FOLLOW HIS ONGOING STORY ›',
+      metaRight: e.statLine,
+      accent: e.type === 'trick' ? ('green' as FeedAccent) : ('gold' as FeedAccent),
+      authorHandle: `${first.toUpperCase()} · THE STANDARD`,
+      avatar: 'coach' as const,
+      live: e.daysAgo <= 0,
+      origin: 'coach' as const,
+    }));
 }
 
 // ticker line = coach notes first, then the freshest meta headlines,

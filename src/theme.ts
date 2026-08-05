@@ -19,6 +19,14 @@ export const colors = {
   warm: '#ffcf7a',
   loss: '#e0605c',
   gridLine: 'rgba(57,255,106,0.045)',
+  // ── Console-instrument support — INSPIRED BY, never copied from, FC 26.
+  // The nod to the current console game's world comes through TREATMENT
+  // (gradient-edged cards, a live transition flash, condensed display type,
+  // ranked-ladder structure) — not by adopting its teal/steel palette. So the
+  // brand's neon-green + gold stay the hero; steel is used only as a whisper
+  // on fine hairlines/gradient edges, and flash is a one-beat live cue.
+  steel: '#9fc2cf', // a cool neutral — fine hairlines + one gradient-edge stop
+  flash: '#35d7ff', // neon live/transition flash — a moment, never a wash
 } as const;
 
 export const monoFont = 'monospace';
@@ -30,6 +38,35 @@ export const role = {
   caution: colors.accent, // the Standard, locked, honest-but-thin
   danger: colors.loss, // missed objective, lapsed, broken thread
   info: '#6fd0c9', // a quiet teal for neutral data (used sparingly)
+  // Console-instrument support (inspired, not copied — see colors above):
+  steel: colors.steel, // fine hairline / gradient-edge stop
+  flash: colors.flash, // the live transition flash
+} as const;
+
+// ── TYPE — a shared display-header treatment, grounded in current console
+//    football-UI typography (condensed, heavy, uppercase display headers +
+//    a quieter data face; docs/FC26_UI_RESEARCH.md §4). Use on major section
+//    titles/eyebrows so headers carry the "athletic instrument panel" weight
+//    without touching the brand's monospace data readouts.
+export const type = {
+  display: {
+    fontFamily: monoFont,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 3,
+  } as const,
+  displayTight: {
+    fontFamily: monoFont,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
+  } as const,
+  eyebrow: {
+    fontFamily: monoFont,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+  } as const,
 } as const;
 
 // ── Motion. One vocabulary, used by every animated component so the whole
