@@ -14,6 +14,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle } from 'react-native-svg';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import BadgeMark, { BADGE_LABELS } from '../components/BadgeMark';
 import { CheckRingIcon, ChevronRightIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
@@ -100,6 +101,7 @@ export default function StageClearedSheet({
   return (
     <View style={styles.root}>
       <GridBackground />
+      <ScreenFlash />
       <LinearGradient
         colors={['rgba(10,15,10,0)', 'rgba(57,255,106,0.05)', 'rgba(10,15,10,0.9)']}
         style={StyleSheet.absoluteFill}

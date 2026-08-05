@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import RoleModelCard from '../components/RoleModelCard';
 import { ChevronLeftIcon, LockIcon, PlayIcon, CheckRingIcon, RouteIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
@@ -66,6 +67,7 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
   return (
     <Animated.View entering={FadeIn.duration(240)} style={styles.root}>
       <GridBackground />
+      <ScreenFlash />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         {/* header — persistent ROLE MODEL STORY label */}
         <View style={styles.headerWrap}>
@@ -224,7 +226,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 16, paddingBottom: 26 },
 
   headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(159,194,207,0.8)' },
   title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4, color: colors.fg },
   subtitle: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.4, color: colors.accent, textAlign: 'center', lineHeight: 10.5, paddingHorizontal: 10 },
 

@@ -179,6 +179,15 @@ export default function RoleModelCard({ coach, onPress }: Props) {
                 <Stop offset="0%" stopColor={accent} />
                 <Stop offset="100%" stopColor={accentDim} />
               </LinearGradient>
+              {/* FC 26-grounded "multicolour border" — the outer hairline runs
+                  steel → teal → the coach accent, so the frame reads like the
+                  current console menus' gradient-edged cards while the brand
+                  gold/neon stays the "earned" highlight. (docs/FC26_UI_RESEARCH.md §4/§2) */}
+              <LinearGradient id="rmc_border" x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0%" stopColor="#9fc2cf" />
+                <Stop offset="55%" stopColor="#6fb3a8" />
+                <Stop offset="100%" stopColor={accent} />
+              </LinearGradient>
               <LinearGradient id="rmc_fade" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="45%" stopColor="#0c120d" stopOpacity={0} />
                 <Stop offset="100%" stopColor="#0c120d" stopOpacity={0.94} />
@@ -225,9 +234,9 @@ export default function RoleModelCard({ coach, onPress }: Props) {
               </G>
             </G>
 
-            {/* layered borders: outer stroke + inset hairline */}
-            <Path d={SHIELD} fill="none" stroke={accent} strokeWidth={1.5} strokeOpacity={0.9} />
-            <Path d={SHIELD_INNER} fill="none" stroke={accent} strokeWidth={0.7} strokeOpacity={0.5} />
+            {/* layered borders: outer gradient hairline + steel inset hairline */}
+            <Path d={SHIELD} fill="none" stroke="url(#rmc_border)" strokeWidth={1.5} strokeOpacity={0.95} />
+            <Path d={SHIELD_INNER} fill="none" stroke="#9fc2cf" strokeWidth={0.7} strokeOpacity={0.45} />
 
             {/* 1 — rating badge, top-left */}
             <SvgText x="26" y="38" textAnchor="middle" fontSize="28" fontWeight="900" fill={accent}>

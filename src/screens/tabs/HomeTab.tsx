@@ -761,14 +761,14 @@ const styles = StyleSheet.create({
   ticker: {
     marginTop: 9,
     borderWidth: 1,
-    borderColor: 'rgba(31,56,38,0.8)',
+    borderColor: 'rgba(111,179,168,0.35)',
     borderRadius: 8,
-    backgroundColor: 'rgba(15,26,19,0.5)',
+    backgroundColor: 'rgba(22,49,58,0.35)',
     paddingVertical: 6,
   },
-  tickerTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.4, color: 'rgba(238,242,236,0.8)' },
+  tickerTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.4, color: 'rgba(238,242,236,0.85)' },
   tickerStar: { color: colors.primary },
-  tickerSep: { color: 'rgba(57,255,106,0.35)' },
+  tickerSep: { color: 'rgba(111,179,168,0.4)' },
 
   hero: {
     marginTop: 10,
@@ -829,11 +829,11 @@ const styles = StyleSheet.create({
   chipsRow: { flexDirection: 'row', gap: 7, paddingRight: 26 },
   chip: {
     borderWidth: 1,
-    borderColor: 'rgba(31,56,38,0.9)',
+    borderColor: 'rgba(111,179,168,0.35)',
     borderRadius: 14,
     paddingHorizontal: 11,
     paddingVertical: 7,
-    backgroundColor: 'rgba(15,26,19,0.55)',
+    backgroundColor: 'rgba(22,49,58,0.4)',
   },
   chipOn: {
     borderColor: colors.primary,
@@ -843,7 +843,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  chipTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 1.4, color: colors.muted },
+  chipTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 1.4, color: 'rgba(159,194,207,0.75)' },
   chipTxtOn: { color: colors.primary },
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 34 },
 

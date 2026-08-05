@@ -19,6 +19,18 @@ export const colors = {
   warm: '#ffcf7a',
   loss: '#e0605c',
   gridLine: 'rgba(57,255,106,0.045)',
+  // ── FC 26-grounded supporting grading — the RESTING chrome.
+  // Researched: current console FC 26 menus read as a muted teal / blue-steel
+  // theme, with neon used for live/transition states (docs/FC26_UI_RESEARCH.md §3).
+  // Neon green stays the brand's LIVE/EARNED accent; these tint the resting
+  // structural layer so a console FC 26 player feels the same world. Steel =
+  // blue-steel frame, teal = the muted teal wash, flash = the neon-blue slide.
+  steel: '#9fc2cf',
+  steelDim: '#4f7c8a',
+  steelDeep: '#16313a',
+  teal: '#6fb3a8',
+  tealDim: 'rgba(111,179,168,0.16)',
+  flash: '#35d7ff', // neon-blue — screen transition flash (FC 26)
 } as const;
 
 export const monoFont = 'monospace';
@@ -30,6 +42,36 @@ export const role = {
   caution: colors.accent, // the Standard, locked, honest-but-thin
   danger: colors.loss, // missed objective, lapsed, broken thread
   info: '#6fd0c9', // a quiet teal for neutral data (used sparingly)
+  // FC 26-grounded supporting roles (docs/FC26_UI_RESEARCH.md §3/§6):
+  steel: colors.steel, // the resting blue-steel frame — secondary/structural
+  teal: colors.teal, // the muted teal wash — neutral/accent-adjacent
+  flash: colors.flash, // neon-blue — the screen-transition flash
+} as const;
+
+// ── TYPE — a shared display-header treatment, grounded in current console
+//    football-UI typography (condensed, heavy, uppercase display headers +
+//    a quieter data face; docs/FC26_UI_RESEARCH.md §4). Use on major section
+//    titles/eyebrows so headers carry the "athletic instrument panel" weight
+//    without touching the brand's monospace data readouts.
+export const type = {
+  display: {
+    fontFamily: monoFont,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 3,
+  } as const,
+  displayTight: {
+    fontFamily: monoFont,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 1.6,
+  } as const,
+  eyebrow: {
+    fontFamily: monoFont,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+  } as const,
 } as const;
 
 // ── Motion. One vocabulary, used by every animated component so the whole
