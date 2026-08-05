@@ -430,7 +430,7 @@ export default function SettingsTab({
             <Row
               icon={<AtIcon size={15} color="#57d07c" />}
               title="Community mentions"
-              sub="@PINGS IN #GENERAL AND SQUAD CHANNELS"
+              sub="@PINGS IN YOUR ROOMS"
               right={<Toggle on={s.toggles.communityMentions} onFlip={() => flip('communityMentions')} />}
             />
             <Row

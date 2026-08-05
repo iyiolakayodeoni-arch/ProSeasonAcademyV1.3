@@ -69,7 +69,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'community',
     eyebrow: 'COMMUNITY',
     title: 'THE CLUBHOUSE',
-    body: 'Channels, direct messages, reactions and squads. Share your match receipts, read the founder’s official word, keep it real. The founder reads the serious stuff himself.',
+    body: 'Real rooms, real players — no bots, no scripts. Share your match receipts, read the founder’s official word, keep it real. The founder reads the serious stuff himself.',
   },
   {
     id: 'till',

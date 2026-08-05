@@ -25,7 +25,6 @@ import {
   PlusIcon,
   SearchIcon,
   SendIcon,
-  TargetGlyphIcon,
   XMarkIcon,
 } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
@@ -36,7 +35,6 @@ import {
   ChatMessage,
   ChatUser,
   hhmm,
-  joinSquad,
   ReactionIcon,
   sendText,
   setActiveThread,
@@ -220,9 +218,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const [searchMode, setSearchMode] = useState(false);
   const [query, setQuery] = useState('');
 
-  // ── squad action ── (a REAL call into the live room, posted as you)
-  const squadCooldown = useRef(0);
-
   // ── scroll management ──
   const scrollRef = useRef<ScrollView>(null);
   const atBottom = useRef(true);
@@ -232,7 +227,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const messages = useMemo(() => {
     if (!searchMode || !query.trim()) return rawMessages;
     const q = query.trim().toLowerCase();
-    return rawMessages.filter((m) => m.text.toLowerCase().includes(q) && m.kind !== 'squad');
+    return rawMessages.filter((m) => m.text.toLowerCase().includes(q));
   }, [rawMessages, searchMode, query]);
   const msgCount = messages.length;
 
@@ -261,19 +256,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
     if (!text || !isValidReflection(text, { minLength: 2, minWords: 1 })) return;
     sendText(st.activeThreadId, text);
     setDraft('');
-  };
-
-  // No "SEARCHING…" spinner ghost, no fake squad card by fake players:
-  // your squad call is a real message from you into the real room.
-  const callSquad = () => {
-    if (!st.live) return;
-    const now = Date.now();
-    if (now - squadCooldown.current < 90000) return; // one call a minute, no spam
-    squadCooldown.current = now;
-    sendText(
-      st.activeThreadId,
-      'squad up — got 2 slots open, mic optional, vibes mandatory. who’s in?',
-    );
   };
 
   const shareMyScan = () => {
@@ -306,7 +288,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const rows = messages.map((m, i) => {
     const prev = messages[i - 1];
     const author = users[m.authorId] ?? FALLBACK_USER;
-    const grouped = !!prev && prev.authorId === m.authorId && m.at - prev.at < 120000 && m.kind !== 'squad';
+    const grouped = !!prev && prev.authorId === m.authorId && m.at - prev.at < 120000;
     const isCoachMsg = author.role === 'coach';
     const showCoachDivider = isCoachMsg && !coachDividerShown;
     if (isCoachMsg) coachDividerShown = true;
@@ -472,17 +454,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
                 {m.kind === 'voice' ? (
                   <VoiceNote secs={m.voiceSecs ?? 0} accent={author.color} />
-                ) : m.kind === 'squad' && m.squad ? (
-                  <View style={styles.squadCard}>
-                    <Text style={styles.squadTitle}>
-                      SQUAD OPEN · {m.squad.slots} SLOTS — {m.squad.members.join(', ')}
-                    </Text>
-                    <Pressable onPress={() => joinSquad(st.activeThreadId)} disabled={!!st.joinedSquads[st.activeThreadId]}>
-                      <View style={[styles.squadJoin, st.joinedSquads[st.activeThreadId] && styles.squadJoined]}>
-                        <Text style={styles.squadJoinTxt}>{st.joinedSquads[st.activeThreadId] ? 'YOU’RE IN — READY UP SOON' : 'JOIN ›'}</Text>
-                      </View>
-                    </Pressable>
-                  </View>
                 ) : (
                   <MessageBody text={m.text} users={users} muted={st.muted.includes(author.id)} />
                 )}
@@ -532,18 +503,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         >
           <Text style={styles.newPillTxt}>{pendingNew} NEW ↓</Text>
         </Pressable>
-      )}
-
-      {/* SQUAD CALL — posts a real message from you into the live room */}
-      {st.live && (
-        <View style={styles.squidRow}>
-          <Pressable onPress={callSquad} hitSlop={6}>
-            <View style={styles.squadPill}>
-              <TargetGlyphIcon size={11} color={colors.primary} />
-              <Text style={styles.squadPillTxt}>SQUAD CALL</Text>
-            </View>
-          </Pressable>
-        </View>
       )}
 
       {/* ── composer — open only while the room is REAL. Offline there is
@@ -628,10 +587,10 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
             {/* DMs deliberately absent in v1: a private message that can
                 never reach the other person is just an echo in a costume.
-                They return when the plumbing is real. Until then you call
-                people out in the open room — where it's actually them. */}
+                Squad cards are benched too — a squad tool with nobody in
+                the seats is a toy. Both return when they're real. */}
             <Text style={styles.panelNote}>
-              DIRECT MESSAGES RETURN IN V2 — WITH REAL DELIVERY. UNTIL THEN, @ SOMEONE IN THE OPEN ROOM.
+              DIRECT MESSAGES RETURN IN V2 — WITH REAL DELIVERY. SQUADS RETURN WHEN REAL PLAYERS FILL THE SEATS. UNTIL THEN, @ SOMEONE IN THE OPEN ROOM.
             </Text>
           </Animated.View>
         </View>
@@ -925,7 +884,7 @@ const styles = StyleSheet.create({
   newPill: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 118,
+    bottom: 88,
     borderWidth: 1.1,
     borderColor: colors.primary,
     borderRadius: 12,
@@ -938,24 +897,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   newPillTxt: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
-
-  squidRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 13, paddingBottom: 6 },
-  squadPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1.2,
-    borderColor: colors.primary,
-    borderRadius: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(10,17,12,0.9)',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.55,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  squadPillTxt: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.8, color: colors.primary },
 
   composer: {
     marginHorizontal: 11,
@@ -1046,19 +987,6 @@ const styles = StyleSheet.create({
   voiceBars: { flexDirection: 'row', alignItems: 'center', gap: 2.2, height: 18 },
   voiceBar: { width: 2.2, borderRadius: 1.5 },
   voiceDur: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', color: 'rgba(143,184,155,0.85)' },
-
-  squadCard: {
-    borderWidth: 1.2,
-    borderColor: 'rgba(57,255,106,0.5)',
-    borderRadius: 13,
-    padding: 11,
-    backgroundColor: 'rgba(12,20,14,0.9)',
-    gap: 9,
-  },
-  squadTitle: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
-  squadJoin: { borderRadius: 9, backgroundColor: colors.primary, alignItems: 'center', paddingVertical: 8 },
-  squadJoined: { backgroundColor: 'rgba(31,122,61,1)' },
-  squadJoinTxt: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 2, color: '#05130a' },
 
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(4,8,5,0.72)' },
 

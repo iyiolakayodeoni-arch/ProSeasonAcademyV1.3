@@ -21,6 +21,8 @@ import * as backend from './backend';
 //   · Private DMs return in v2 with real per-pair plumbing. A local
 //     echo dressed as a delivered message is a lie, so v1 has none —
 //     you call people out in the open room, where it's real.
+//   · Squads return when the rooms have real players to fill them.
+//     A squad tool in an empty hall is a toy, so v1 ships without it.
 // ─────────────────────────────────────────────────────────────
 
 /** local channel id → the server room slug seeded in schema.sql */
@@ -49,9 +51,8 @@ export interface ChatMessage {
   authorId: string;
   at: number;
   text: string;
-  kind?: 'text' | 'voice' | 'squad';
+  kind?: 'text' | 'voice'; // 'voice' lands in v2 as REAL recorded audio
   voiceSecs?: number;
-  squad?: { members: string[]; slots: number };
   reactions?: { icon: ReactionIcon; count?: number }[];
 }
 
@@ -92,7 +93,6 @@ export interface CommunityState {
   toggled: Record<string, ReactionIcon[]>;
   muted: string[];
   presence: Record<string, number>;
-  joinedSquads: Record<string, boolean>;
   /** true once the public channels are mirroring real Supabase rooms */
   live: boolean;
 }
@@ -105,7 +105,6 @@ let state: CommunityState = {
   toggled: {},
   muted: [],
   presence: Object.fromEntries(CHANNELS.map((c) => [c.id, 0])),
-  joinedSquads: {},
   live: false,
 };
 
@@ -140,10 +139,6 @@ export function setTypingOf(threadId: string, userId: string, on: boolean) {
   if (on) cur.add(userId);
   else cur.delete(userId);
   set({ typing: { ...state.typing, [threadId]: [...cur] } });
-}
-
-export function joinSquad(threadId: string) {
-  set({ joinedSquads: { ...state.joinedSquads, [threadId]: true } });
 }
 
 export function toggleReaction(threadId: string, msgId: string, icon: ReactionIcon) {
