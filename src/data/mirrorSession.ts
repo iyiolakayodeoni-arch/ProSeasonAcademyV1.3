@@ -2,8 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch, setMatchComposure } from './matches';
 import { getThread, settleCarried, swearLesson, ThreadVerdict } from './lessonThread';
-import * as backend from './backend';
-import { isValidReflection } from './honestyGuard';
+import { armWatcher, finishWatcher, watcherNativeAvailable } from './matchWatcher';
 
 // ─────────────────────────────────────────────────────────────
 // THE MIRROR SESSION — the structured match-development session.
@@ -32,6 +31,7 @@ export type MirrorPhase =
   | 'idle'
   | 'thread-check' // the carried lesson must be answered: held or broke
   | 'intention'    // pre-match answers, before the score changes the emotions
+  | 'armed'        // consent + capture armed, waiting for the match
   | 'live'         // first half running
   | 'half-time'    // half-time checkpoint
   | 'second-half'  // second half running
@@ -138,7 +138,7 @@ export interface MirrorMoment {
 }
 
 export function momentComplete(m: MirrorMoment): boolean {
-  return MOMENT_QUESTIONS.every((q) => isValidReflection(m.answers[q.key] ?? '', { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
+  return MOMENT_QUESTIONS.every((q) => (m.answers[q.key] ?? '').trim().length >= MOMENT_MIN_ANSWER);
 }
 
 /** the versions beside one another (MIRROR DIRECTION §6.8) */
@@ -157,6 +157,7 @@ export interface MirrorReceipt {
   lessonId: string | null;
   closestVersion: VersionKey | null;
   threadVerdict: ThreadVerdict | null;
+  recordingPath: string | null; // local MP4 (never uploaded by default)
 }
 
 export interface MirrorSessionState {
@@ -183,16 +184,15 @@ export interface MirrorSessionState {
   lesson: string;
   lessonId: string | null;
   endedAt: number | null;
+  /** local recording path for this session (null in manual mode) */
+  recordingPath: string | null;
   // the record
   receipts: MirrorReceipt[];
 }
 
 const KEY_BASE = 'psa.mirror.v1';
 let coachKey = 'unset';
-const storageKey = () => {
-  const me = backend.getMe();
-  return me?.id ? `${KEY_BASE}.${me.id}.${coachKey}` : `${KEY_BASE}.${coachKey}`;
-};
+const storageKey = () => `${KEY_BASE}.${coachKey}`;
 
 const EMPTY: MirrorSessionState = {
   phase: 'idle',
@@ -212,6 +212,7 @@ const EMPTY: MirrorSessionState = {
   lesson: '',
   lessonId: null,
   endedAt: null,
+  recordingPath: null,
   receipts: [],
 };
 
@@ -257,6 +258,7 @@ function revive(raw: string): MirrorSessionState | null {
       lesson: typeof s.lesson === 'string' ? s.lesson : '',
       lessonId: typeof s.lessonId === 'string' ? s.lessonId : null,
       endedAt: typeof s.endedAt === 'number' ? s.endedAt : null,
+      recordingPath: typeof s.recordingPath === 'string' ? s.recordingPath : null,
       receipts: Array.isArray(s.receipts) ? (s.receipts as MirrorReceipt[]) : [],
     };
   } catch {
@@ -314,6 +316,7 @@ export function startMirrorSession(stageN: number): void {
       lesson: '',
       lessonId: null,
       endedAt: null,
+      recordingPath: null,
     });
   } else {
     set({
@@ -334,6 +337,7 @@ export function startMirrorSession(stageN: number): void {
       lesson: '',
       lessonId: null,
       endedAt: null,
+      recordingPath: null,
     });
   }
 }
@@ -350,7 +354,24 @@ export function saveIntention(a: IntentionAnswers): void {
   set({ intention: a });
 }
 
-/** the player confirms the console match has started */
+/** ARM THE MIRROR — official MediaProjection consent must be shown by the
+ *  OS; recording must never start silently. On Android we only call the
+ *  session armed *after* the player has answered that OS prompt. On builds
+ *  without the native watcher, manual mode remains a first-class route. */
+export async function armMirrorSession(): Promise<boolean> {
+  if (!watcherNativeAvailable) {
+    set({ phase: 'armed' });
+    return false;
+  }
+
+  const armed = await armWatcher().catch(() => false);
+  if (armed) set({ phase: 'armed' });
+  // A declined/failed request leaves the player on the intention screen,
+  // where they can retry or deliberately choose the manual session.
+  return armed;
+}
+
+/** the match has started — the watcher may detect it; the player confirms it */
 export function beginMatch(): void {
   set({ phase: 'live' });
 }
@@ -369,7 +390,7 @@ export function openScorePhase(): void {
 }
 
 /** full time — the score is logged to the REAL vault first (the receipt),
- *  then the player's memory is captured before the manual review. */
+ *  then the player's memory is captured BEFORE the recording is reviewed. */
 export function atFullTime(gf: number, ga: number): string {
   const intention = state.intention;
   const note = `MIRROR SESSION — ${intention?.practice ?? 'focus'}`.slice(0, 60);
@@ -389,6 +410,9 @@ export function atFullTime(gf: number, ga: number): string {
     },
     'scan',
   );
+  void finishWatcher().then((sess) => {
+    if (sess?.recordingPath) set({ recordingPath: sess.recordingPath });
+  }).catch(() => {});
   set({ gf, ga, matchId: entry.id, phase: 'full-time' });
   return entry.id;
 }
@@ -440,7 +464,7 @@ export function buildVersions(): { key: VersionKey; label: string; text: string 
   const f = state.full;
   const reviewed = state.moments
     .map((m) => m.answers.differently)
-    .find((d) => d && isValidReflection(d, { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
+    .find((d) => d && d.trim().length >= MOMENT_MIN_ANSWER);
   return [
     { key: 'before', label: 'BEFORE THE MATCH', text: i ? i.pressure || i.attention || '—' : '—' },
     { key: 'half', label: 'HALF-TIME', text: h ? h.emotion || h.following || '—' : '—' },
@@ -491,6 +515,7 @@ export function finishMirrorLesson(lesson: string): MirrorReceipt {
     lessonId: entry?.id ?? null,
     closestVersion: state.closestVersion,
     threadVerdict: state.threadVerdict,
+    recordingPath: state.recordingPath,
   };
   set({
     phase: 'done',
@@ -502,8 +527,12 @@ export function finishMirrorLesson(lesson: string): MirrorReceipt {
   return receipt;
 }
 
-/** leave the session without swearing a lesson — the match receipt stays. */
+/** leave the session without swearing a lesson — the match receipt stays.
+ *  Any running capture is stopped so a recording is never left dangling. */
 export function abandonMirrorSession(): void {
+  void finishWatcher().then((sess) => {
+    if (sess?.recordingPath) set({ recordingPath: sess.recordingPath });
+  }).catch(() => {});
   if (state.phase !== 'done' && state.phase !== 'idle') {
     const receipt: MirrorReceipt = {
       sessionId: newId('MS'),
@@ -518,6 +547,7 @@ export function abandonMirrorSession(): void {
       lessonId: state.lessonId,
       closestVersion: state.closestVersion,
       threadVerdict: state.threadVerdict,
+      recordingPath: state.recordingPath,
     };
     set({ phase: 'idle', receipts: [receipt, ...state.receipts].slice(0, 100) });
   } else {

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import { RecordingPlayer, SECONDS_PER_MATCH_MIN } from '../components/RecordingPlayer';
 import { CheckIcon, ChevronLeftIcon, XMarkIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
@@ -19,6 +20,7 @@ import {
   addMoment,
   answerCarriedLesson,
   answerMoment,
+  armMirrorSession,
   atFullTime,
   atHalfTime,
   beginMatch,
@@ -41,11 +43,10 @@ import {
   useMirrorSession,
   VersionKey,
 } from '../data/mirrorSession';
+import { useMatchWatcher } from '../data/matchWatcher';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
-import HonestyBadge from '../components/HonestyBadge';
-import { isValidReflection } from '../data/honestyGuard';
 
 const MIN_ANSWER = 2;
 
@@ -169,6 +170,10 @@ function ScoreRow({ gf, ga, onChange }: { gf: number; ga: number; onChange: (gf:
   );
 }
 
+// ── the recorded evidence — local MP4, never uploaded ────────
+// The timeline mapping for MARK lives in the shared
+// RecordingPlayer component (≈8 recording-seconds per match-minute).
+
 function PhaseHeader({ stage, onLeave, phaseLabel }: { stage: JourneyStage; onLeave: () => void; phaseLabel: string }) {
   return (
     <View style={styles.phaseHeader}>
@@ -199,6 +204,7 @@ export default function MirrorSessionScreen({
   onClose: (completed: boolean) => void;
 }) {
   const mirror = useMirrorSession();
+  const watcher = useMatchWatcher();
   const thread = useLessonThread();
   const [ready, setReady] = useState(false);
 
@@ -226,9 +232,25 @@ export default function MirrorSessionScreen({
   const [momentEnd, setMomentEnd] = useState(5);
   const [momentDrafts, setMomentDrafts] = useState<Record<string, Partial<MomentAnswers>>>({});
   const [lessonDraft, setLessonDraft] = useState('');
+  // recording playback controls
+  const [playbackSec, setPlaybackSec] = useState(0);
+  const [seekToSec, setSeekToSec] = useState<number | undefined>(undefined);
 
   const carried = thread.current;
   const completed = mirror.phase === 'done';
+
+  // auto-advance when the native watcher detects half/full time
+  // (time-based heuristic — the manual buttons always stay visible)
+  useEffect(() => {
+    const s = watcher.session;
+    if (s?.halfDetectedAt && mirror.phase === 'live') atHalfTime();
+    if (s?.fullDetectedAt && mirror.phase === 'second-half') openScorePhase();
+  }, [watcher.session?.halfDetectedAt, watcher.session?.fullDetectedAt, mirror.phase]);
+
+  // live watcher score when the capture is running
+  const liveScore = watcher.status === 'running' && watcher.session
+    ? `${watcher.session.scoreL} – ${watcher.session.scoreR}`
+    : null;
 
   // answers already on the store win on resume — local drafts take over while typing
   const effHalf = (k: string) => {
@@ -239,12 +261,12 @@ export default function MirrorSessionScreen({
     const v = (mirror.full as Record<string, unknown> | null)?.[k] ?? full[k];
     return typeof v === 'string' ? v : '';
   };
-  const allIntentionAnswered = INTENTION_QUESTIONS.every((q) => isValidReflection(intention[q.key] ?? '', { minLength: MIN_ANSWER, minWords: 1 }));
-  const allHalfAnswered = HALF_TIME_QUESTIONS.every((q) => isValidReflection(effHalf(q.key), { minLength: MIN_ANSWER, minWords: 1 }));
-  const allFullAnswered = FULL_TIME_QUESTIONS.every((q) => isValidReflection(effFull(q.key), { minLength: MIN_ANSWER, minWords: 1 }));
+  const allIntentionAnswered = INTENTION_QUESTIONS.every((q) => (intention[q.key] ?? '').trim().length >= MIN_ANSWER);
+  const allHalfAnswered = HALF_TIME_QUESTIONS.every((q) => effHalf(q.key).trim().length >= MIN_ANSWER);
+  const allFullAnswered = FULL_TIME_QUESTIONS.every((q) => effFull(q.key).trim().length >= MIN_ANSWER);
 
   const momentsAllAnswered = mirror.moments.length > 0 && mirror.moments.every((m) =>
-    MOMENT_QUESTIONS.every((q) => isValidReflection((momentDrafts[m.id] ?? m.answers ?? {})[q.key] ?? '', { minLength: MIN_ANSWER, minWords: 1 })),
+    MOMENT_QUESTIONS.every((q) => (((momentDrafts[m.id] ?? m.answers ?? {})[q.key] ?? '').trim().length >= MIN_ANSWER)),
   );
 
   const handleLeave = () => {
@@ -260,6 +282,7 @@ export default function MirrorSessionScreen({
   const phaseLabel: Record<string, string> = {
     'thread-check': 'THE THREAD',
     intention: 'INTENTION',
+    armed: 'ARMED',
     live: 'LIVE',
     'half-time': 'HALF-TIME',
     'second-half': '2ND HALF',
@@ -310,15 +333,9 @@ export default function MirrorSessionScreen({
                 onChange={setVerdictNote}
                 hint="the minute, the situation, the trigger"
               />
-              <HonestyBadge
-                text={verdictNote}
-                options={{ minLength: MIN_ANSWER, minWords: 1 }}
-                defaultNote="ONE HONEST LINE — WHERE DID IT HOLD OR SNAP?"
-                coachId={coach.id}
-              />
               <StepButton
                 label="ANSWER FOR THE THREAD · CONTINUE ›"
-                disabled={!verdict || !isValidReflection(verdictNote, { minLength: MIN_ANSWER, minWords: 1 })}
+                disabled={!verdict || verdictNote.trim().length < MIN_ANSWER}
                 onPress={() => {
                   sfx('whoosh');
                   answerCarriedLesson(verdict!, verdictNote);
@@ -364,7 +381,7 @@ export default function MirrorSessionScreen({
 
           {mirror.phase === 'intention' && mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>INTENTION SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
+              <Text style={styles.heroLine}>INTENTION SEALED. NOW ARM THE MIRROR.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>YOUR INTENTION — READ IT BEFORE YOU PLAY</Text>
                 <Text style={styles.receiptLine}>PRACTISE: {mirror.intention.practice.toUpperCase()}</Text>
@@ -373,16 +390,50 @@ export default function MirrorSessionScreen({
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  THE CHINEDU WAY: Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
+                  ARMING requests the official screen-capture consent — recording never starts silently. On devices without the native watcher, the session still runs fully in manual mode.
+                  {watcher.lastError ? `\n\nCAPTURE NOT ARMED: ${watcher.lastError}` : ''}
                 </Text>
               </View>
               <StepButton
-                label="INTENTION SWORN — BEGIN MATCH ›"
-                onPress={() => {
+                label="ARM THE MIRROR ›"
+                onPress={async () => {
                   sfx('whoosh');
+                  await armMirrorSession();
+                }}
+              />
+              <StepButton
+                label="SKIP CAPTURE — MANUAL SESSION ›"
+                subtle
+                onPress={() => {
+                  sfx('tap');
                   beginMatch();
                 }}
               />
+            </Animated.View>
+          )}
+
+          {/* ══ ARMED ══ */}
+          {mirror.phase === 'armed' && (
+            <Animated.View entering={FadeInUp.duration(320)}>
+              <Text style={styles.heroLine}>MIRROR ARMED. GET INTO THE MATCH.</Text>
+              <Text style={styles.heroSub}>
+                Open FC Mobile and start your ranked match. The watcher looks for the match screen — it records locally and never uploads raw video by default.
+              </Text>
+              <View style={styles.armNote}>
+                <Text style={styles.armNoteTxt}>
+                  {watcher.available ? 'SCREEN CAPTURE: LIVE' : 'SCREEN CAPTURE: NOT AVAILABLE ON THIS DEVICE — MANUAL MODE'}
+                  {watcher.lastError ? `\n${watcher.lastError}` : ''}
+                </Text>
+              </View>
+              <StepButton
+                label="MATCH STARTED — BEGIN THE SESSION + RECORDING"
+                onPress={() => {
+                  sfx('whoosh');
+                  beginMatch();
+                  watcher.beginRecording();
+                }}
+              />
+              <StepButton label="CANCEL THE SESSION" subtle onPress={handleLeave} />
             </Animated.View>
           )}
 
@@ -391,10 +442,10 @@ export default function MirrorSessionScreen({
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>{mirror.phase === 'live' ? 'FIRST HALF — PLAY THE MATCH.' : 'SECOND HALF — PLAY YOUR STATED ADJUSTMENT.'}</Text>
               <View style={styles.liveCard}>
-                <MiniStat label="SCORE" value={`${gf} – ${ga}`} />
+                <MiniStat label="LIVE SCORE" value={liveScore ?? `${gf} – ${ga}`} />
                 <MiniStat
-                  label="MODE"
-                  value="MANUAL"
+                  label="CAPTURE"
+                  value={watcher.session?.recording ? 'REC ✓' : watcher.status === 'running' ? 'ARMED' : 'MANUAL'}
                 />
                 <MiniStat label="PHASE" value={mirror.phase === 'live' ? '1ST HALF' : '2ND HALF'} />
               </View>
@@ -469,7 +520,7 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'full-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>BEFORE YOU WATCH ANYTHING — WHAT DO YOU BELIEVE?</Text>
-              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
+              <Text style={styles.heroSub}>This captures your memory while it is still yours. The recording will get its own vote later. Answer first.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>THE RECEIPT</Text>
                 <Text style={styles.receiptLine}>FINAL SCORE: {mirror.gf} – {mirror.ga}</Text>
@@ -513,9 +564,40 @@ export default function MirrorSessionScreen({
               <Text style={styles.heroSub}>
                 Divide the match into key moments YOURSELF — a rough in-app timeline or pen and paper, your call. The app does not choose your moments before you try.
               </Text>
-              <View style={styles.armNote}>
-                <Text style={styles.armNoteTxt}>WATCH YOUR CONSOLE RECORDING OR CLIPS YOURSELF, THEN NAME THE MOMENTS USING THE TIMELINE BELOW.</Text>
-              </View>
+              {/* the recorded evidence — local playback, mark from the timeline */}
+              {mirror.recordingPath ? (
+                <>
+                  <RecordingPlayer
+                    uri={mirror.recordingPath}
+                    seekToSeconds={seekToSec}
+                    onCurrentSecond={setPlaybackSec}
+                  />
+                  <View style={styles.markRow}>
+                    <Pressable
+                      style={styles.markBtn}
+                      onPress={() => {
+                        sfx('pop');
+                        setMomentStart(Math.min(44, Math.max(0, Math.round(playbackSec / SECONDS_PER_MATCH_MIN))));
+                      }}
+                    >
+                      <Text style={styles.markBtnTxt}>MARK START ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.markBtn}
+                      onPress={() => {
+                        sfx('pop');
+                        setMomentEnd(Math.max(momentStart + 1, Math.min(45, Math.round(playbackSec / SECONDS_PER_MATCH_MIN))));
+                      }}
+                    >
+                      <Text style={styles.markBtnTxt}>MARK END ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
+                    </Pressable>
+                  </View>
+                </>
+              ) : (
+                <View style={styles.armNote}>
+                  <Text style={styles.armNoteTxt}>NO RECORDING ON THIS DEVICE — USE THE TIMELINE MINUTES BELOW.</Text>
+                </View>
+              )}
               <View style={styles.divCard}>
                 <Text style={styles.qLabel}>NAME THE MOMENT</Text>
                 <TextInput
@@ -550,7 +632,11 @@ export default function MirrorSessionScreen({
                 <View key={m.id} style={styles.momentChip}>
                   <Text style={styles.momentChipTxt}>{i + 1}. {m.startMin}’–{m.endMin}’ · {m.label.toUpperCase()}</Text>
                   <View style={styles.momentChipActions}>
-
+                    {mirror.recordingPath && (
+                      <Pressable hitSlop={8} onPress={() => { sfx('pop'); setSeekToSec(m.startMin * SECONDS_PER_MATCH_MIN); }}>
+                        <Text style={styles.playTxt}>▶ {m.startMin}’</Text>
+                      </Pressable>
+                    )}
                     <Pressable hitSlop={8} onPress={() => removeMoment(m.id)}>
                       <XMarkIcon size={11} color={colors.loss} />
                     </Pressable>
@@ -572,7 +658,14 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'review' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>EVERY MOMENT, YOUR WORDS.</Text>
-              <Text style={styles.heroSub}>Use your console recording or clips as your evidence. The app never writes your explanation or diagnoses your psychology for you.</Text>
+              <Text style={styles.heroSub}>The app assists with playback and timing. It never writes your explanation or diagnoses your psychology for you.</Text>
+              {mirror.recordingPath && (
+                <RecordingPlayer
+                  uri={mirror.recordingPath}
+                  seekToSeconds={seekToSec}
+                  onCurrentSecond={setPlaybackSec}
+                />
+              )}
               {mirror.moments.map((m, mi) => {
                 // local draft wins while typing; the store answer is the source
                 // of truth after a resume, so a reopened session shows its text
@@ -582,7 +675,11 @@ export default function MirrorSessionScreen({
                     <View style={styles.momentBlockHead}>
                       <Text style={styles.momentBlockNum}>MOMENT {mi + 1}</Text>
                       <View style={styles.momentBlockHeadRight}>
-
+                        {mirror.recordingPath && (
+                          <Pressable hitSlop={8} onPress={() => { sfx('pop'); setSeekToSec(m.startMin * SECONDS_PER_MATCH_MIN); }}>
+                            <Text style={styles.playTxt}>▶ {m.startMin}’</Text>
+                          </Pressable>
+                        )}
                         <Text style={styles.momentBlockTxt}>{m.startMin}’–{m.endMin}’ · {m.label.toUpperCase()}</Text>
                       </View>
                     </View>
@@ -657,15 +754,9 @@ export default function MirrorSessionScreen({
                 onChange={setLessonDraft}
                 hint="one thing. specific. yours."
               />
-              <HonestyBadge
-                text={lessonDraft}
-                options={{ minLength: 4, minWords: 2 }}
-                defaultNote="ONE LINE YOU WOULD SIGN · YOUR THREAD"
-                coachId={coach.id}
-              />
               <StepButton
                 label="SWEAR THE LESSON · SEAL THE SESSION ›"
-                disabled={!isValidReflection(lessonDraft, { minLength: 4, minWords: 2 })}
+                disabled={lessonDraft.trim().length < 4}
                 onPress={() => {
                   sfx('success');
                   finishMirrorLesson(lessonDraft);
@@ -681,7 +772,7 @@ export default function MirrorSessionScreen({
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>SESSION RECEIPT</Text>
                 <Text style={styles.receiptLine}>SCORE: {mirror.gf} – {mirror.ga}</Text>
-
+                {mirror.recordingPath && <Text style={styles.receiptLine}>RECORDING: SAVED LOCALLY ✓</Text>}
                 <Text style={styles.receiptLine}>MOMENTS REVIEWED: {mirror.moments.length}</Text>
                 <Text style={styles.receiptLine}>CLOSEST TO THE EVIDENCE: {(mirror.closestVersion ?? '—').toUpperCase()}</Text>
                 {mirror.lessonId && <Text style={styles.receiptLine}>THREAD: SWORN · “{mirror.lesson.toUpperCase()}”</Text>}

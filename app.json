@@ -2,7 +2,7 @@
   "expo": {
     "name": "ProSeason Academy",
     "slug": "proseasonacademy",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "orientation": "portrait",
     "scheme": "proseasonacademy",
     "userInterfaceStyle": "dark",
@@ -17,11 +17,11 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.onliversity.proseasonacademy",
-      "buildNumber": "3"
+      "buildNumber": "4"
     },
     "android": {
       "package": "com.onliversity.proseasonacademy",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [],
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
