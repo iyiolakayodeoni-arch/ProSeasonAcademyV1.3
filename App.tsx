@@ -152,7 +152,10 @@ export default function App() {
         if (!alive) return;
         setCoachId(s.coachId);
       }
-      const signedIn = s.signedIn || !!cloud;
+      // Only a verified server session (restored from Supabase auth) allows
+      // the user to skip the sign-in door. The local `signedIn` boolean alone
+      // is no longer sufficient — this removes the local-only fallback path.
+      const signedIn = !!cloud;
       if (!signedIn) setRoute('signin');
       else if (!s.coachId) setRoute('coach');
       else if (!s.introDone) setRoute('intro');

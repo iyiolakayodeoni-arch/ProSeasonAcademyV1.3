@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
 // THE MATCH VAULT — every match you play, logged and graded.
@@ -78,6 +79,11 @@ export type ObjectiveCheck =
 const STORAGE_KEY = 'psa.match-vault.v1';
 const MAX_GOALS = 9; // stepper ceiling — nobody needs 10 in the vault
 
+function matchStorageKey(): string {
+  const me = backend.getMe();
+  return me?.id ? `${STORAGE_KEY}.${me.id}` : STORAGE_KEY;
+}
+
 let state: VaultState = { matches: [] };
 let hydrated = false;
 
@@ -92,13 +98,13 @@ function subscribe(l: () => void) {
 function set(next: Partial<VaultState>) {
   state = { ...state, ...next };
   listeners.forEach((l) => l());
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+  AsyncStorage.setItem(matchStorageKey(), JSON.stringify(state)).catch(() => {});
 }
 
 function ensureHydrated() {
   if (hydrated) return;
   hydrated = true;
-  AsyncStorage.getItem(STORAGE_KEY)
+  AsyncStorage.getItem(matchStorageKey())
     .then((raw: string | null) => {
       if (!raw) return;
       const saved = JSON.parse(raw) as Partial<VaultState>;

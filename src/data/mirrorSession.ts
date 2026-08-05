@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch, setMatchComposure } from './matches';
 import { getThread, settleCarried, swearLesson, ThreadVerdict } from './lessonThread';
+import * as backend from './backend';
 import { armWatcher, finishWatcher } from './matchWatcher';
 import { isValidReflection } from './honestyGuard';
 
@@ -193,7 +194,10 @@ export interface MirrorSessionState {
 
 const KEY_BASE = 'psa.mirror.v1';
 let coachKey = 'unset';
-const storageKey = () => `${KEY_BASE}.${coachKey}`;
+const storageKey = () => {
+  const me = backend.getMe();
+  return me?.id ? `${KEY_BASE}.${me.id}.${coachKey}` : `${KEY_BASE}.${coachKey}`;
+};
 
 const EMPTY: MirrorSessionState = {
   phase: 'idle',

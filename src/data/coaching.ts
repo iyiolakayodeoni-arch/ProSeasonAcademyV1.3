@@ -61,6 +61,7 @@ const LIVE: { updatedAt: string; currentPatch: string; posts: LivePost[] } = req
 export interface LessonPlan {
   contentId: string; // metabot id — stored on the stage for stale-swap tracking
   kind: string;
+  topic?: string; // mechanism key used for combo lookup (derived from LessonBlock.topic)
   patchVersion: string;
   discoveredAt: string;
   sourceName: string;
@@ -88,6 +89,7 @@ function toPlan(p: LivePost): LessonPlan {
   return {
     contentId: p.id,
     kind: p.kind,
+    topic: l.topic ?? l.name.toLowerCase().replace(/^the /, '').replace(/ /g, '-'),
     patchVersion: p.patchVersion,
     discoveredAt: p.discoveredAt,
     sourceName: p.sourceName,

@@ -77,6 +77,19 @@ export interface JourneyStage {
   quote?: string;
   duration?: string; // how long this stage takes to be completed
   sideQuests?: SideQuest[];
+  // Side-quest / synthetic stage fields (used when a stage represents
+  // a side quest from the journey, or a synthetic stage object):
+  isSideQuest?: boolean;
+  parentStageN?: number;
+  id?: string; // for synthetic stages derived from SideQuest.id
+  internalSource?: string;
+  internalPatchVersion?: string;
+  coachExplanation?: string;
+  rule?: string;
+  why?: string;
+  tiles?: { icon: 'target' | 'waves' | 'arrow'; title: string; desc: string }[];
+  clip?: { variant: 'pitchRun' | 'pitchFade' | 'kickoff'; duration: string; caption: string; subcaption: string };
+  topic?: string; // mechanism key used for combo lookup
 }
 
 export interface SeasonDef {

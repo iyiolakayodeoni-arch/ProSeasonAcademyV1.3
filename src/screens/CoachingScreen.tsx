@@ -48,7 +48,7 @@ import MirrorSessionScreen from './MirrorSessionScreen';
 import StageClearedSheet from './StageClearedSheet';
 import { PLAYER_CARD } from '../data/playerCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
-import InputCombo, { ControllerButton } from '../components/ButtonGlyph';
+import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
@@ -506,7 +506,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
 
               <Text style={styles.lessonHeadline}>{plan.headline}</Text>
               {(() => {
-                const key = stage.isSideQuest ? stage.id : plan.topic;
+                const key = stage.isSideQuest ? `sq-${stage.n - 100}` : plan.topic ?? stage.key ?? '';
                 const combo = COMBO_MAP[key];
                 if (!combo) return null;
                 return (
