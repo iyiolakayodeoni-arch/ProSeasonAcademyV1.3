@@ -15,7 +15,7 @@ export type MainTab = 'home' | 'journey' | 'community' | 'settings';
 
 const TABS: { id: MainTab; label: string; Icon: typeof HomeIcon }[] = [
   { id: 'home', label: 'HOME', Icon: HomeIcon },
-  { id: 'journey', label: 'JOURNEY', Icon: JourneyIcon },
+  { id: 'journey', label: 'TRACKING', Icon: JourneyIcon },
   { id: 'community', label: 'COMMUNITY', Icon: FriendsIcon },
   { id: 'settings', label: 'SETTINGS', Icon: GearIcon },
 ];

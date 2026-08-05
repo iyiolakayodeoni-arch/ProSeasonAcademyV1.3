@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Linking } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import MarketingShareCard from '../components/MarketingShareCard';
 import { ChevronLeftIcon, RefreshGlyphIcon, ScanGlyphIcon } from '../components/Icons';
 import { colors, monoFont } from '../theme';
+import { buildShareCardSvg } from '../data/shareCard';
 import * as backend from '../data/backend';
 import {
   triageMessage,
@@ -95,6 +97,10 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
   /** people whose card was refused — a sale you still have if you answer */
   const [stuck, setStuck] = useState<backend.StuckRow[] | null>(null);
   const loadStuck = async () => setStuck(await backend.founderStuck(founderKey));
+
+  // ── benchmark tracker cards ──
+  const [benchmarkCards, setBenchmarkCards] = useState<backend.FounderBenchmarkCard[] | null>(null);
+  const loadBenchmarkCards = async () => setBenchmarkCards(await backend.founderBenchmarkCards(founderKey, 60));
 
   const decide = async (id: number, approve: boolean) => {
     setClaimBusy(id);
@@ -229,6 +235,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadConsult();
     void loadFlags();
     void loadStuck();
+    void loadBenchmarkCards();
     void loadNews();
     const s = await backend.adminSummary(founderKey);
     if (s) setData(s);
@@ -965,6 +972,41 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           ))}
         </Animated.View>
 
+        {/* founder review mode — every saved player card in one place */}
+        <Animated.View entering={FadeInDown.delay(235).duration(320)} style={styles.card}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.cardTag}>PLAYER CARD REVIEW MODE</Text>
+            <Text style={[styles.cardTag, (benchmarkCards?.length ?? 0) > 0 && { color: colors.primary }]}>
+              {benchmarkCards?.length ?? 0} CARD{(benchmarkCards?.length ?? 0) === 1 ? '' : 'S'}
+            </Text>
+          </View>
+          <Text style={styles.emptyNote}>
+            EVERY SAVED CHECKPOINT CARD, ACROSS THE ACADEMY. THIS IS THE FOUNDER VIEW OF WHAT PLAYERS ARE REALLY BECOMING.
+          </Text>
+          {(benchmarkCards?.length ?? 0) === 0 && <Text style={styles.dim}>No player cards have been synced yet.</Text>}
+          {(benchmarkCards ?? []).map((card) => {
+            const previewSvg = buildShareCardSvg({
+              displayName: card.handle,
+              checkpointLabel: `CHECKPOINT ${card.checkpoint} · ${card.label}`,
+              summary: card.summary,
+              focus: card.summary.style.focus,
+              generatedAt: card.createdAt,
+            });
+            return (
+              <View key={card.id} style={styles.benchmarkCardRow}>
+                <MarketingShareCard svg={previewSvg} width={124} />
+                <View style={styles.benchmarkMeta}>
+                  <Text style={styles.benchmarkWho}>{card.handle} · {card.academyId}</Text>
+                  <Text style={styles.benchmarkSub}>{card.label} · {card.region?.toUpperCase() ?? 'UNSET'} · {card.coachId?.toUpperCase() ?? 'NO COACH'}</Text>
+                  <Text style={styles.benchmarkStyle}>{card.summary.style.label}</Text>
+                  <Text style={styles.benchmarkLine}>PPM {card.summary.pointsPerMatch.toFixed(1)} · PASS {card.summary.avgPassAccuracy.toFixed(1)}% · GF {card.summary.avgGoalsFor.toFixed(1)} · GA {card.summary.avgGoalsAgainst.toFixed(1)}</Text>
+                  <Text style={styles.benchmarkLine}>SCREENS {card.screenshots.length} · {new Date(card.createdAt).toLocaleDateString('en-GB')}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </Animated.View>
+
         <View style={styles.toolRow}>
           <Pressable onPress={() => void refresh()} style={styles.toolBtn} hitSlop={6}>
             <RefreshGlyphIcon size={11} color={colors.primary} />
@@ -1103,6 +1145,12 @@ const styles = StyleSheet.create({
   matchScore: { width: 42, fontSize: 13, fontWeight: '900', color: colors.fg },
   matchMeta: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1, color: colors.muted },
   matchNote: { marginTop: 3, fontSize: 9.5, lineHeight: 14, fontStyle: 'italic', color: '#d8e6da' },
+  benchmarkCardRow: { marginTop: 10, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 10 },
+  benchmarkMeta: { flex: 1, minWidth: 0 },
+  benchmarkWho: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.1, color: colors.accent },
+  benchmarkSub: { marginTop: 4, fontFamily: monoFont, fontSize: 5.6, lineHeight: 9, letterSpacing: 0.9, color: colors.muted },
+  benchmarkStyle: { marginTop: 6, fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
+  benchmarkLine: { marginTop: 4, fontFamily: monoFont, fontSize: 5.8, lineHeight: 9.5, letterSpacing: 0.8, color: '#d8e6da' },
 
   tillHelp: { marginTop: 11, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1, color: colors.muted, lineHeight: 11.5, textAlign: 'center' },
   tillInput: { marginTop: 9, borderWidth: 1, borderColor: 'rgba(242,192,120,0.35)', backgroundColor: '#0a0f0a', borderRadius: 10, color: colors.fg, fontFamily: monoFont, fontSize: 10, paddingHorizontal: 10, paddingVertical: 8 },

@@ -24,6 +24,11 @@
 export const PSA_SUPABASE_URL = process.env.EXPO_PUBLIC_PSA_SUPABASE_URL ?? '';
 export const PSA_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY ?? '';
 
+// Optional OCR backend for native/mobile screenshot reading. When blank, the app
+// falls back to web OCR or pasted-text assist. Point this at a deployed route
+// like https://api.proseasonacademy.app/ocr/stats-screen
+export const PSA_OCR_URL = process.env.EXPO_PUBLIC_PSA_OCR_URL ?? '';
+
 // The founder's own APK download link (sideloaded — no app store). Set via env
 // at build time; blank falls back to a placeholder so the install assistant
 // never shows a dead link. Used by the SideloadAssistant self-service screen.

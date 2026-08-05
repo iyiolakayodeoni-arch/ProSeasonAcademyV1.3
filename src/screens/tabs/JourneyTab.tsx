@@ -1,877 +1,1204 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, useWindowDimensions } from 'react-native';
-import Constants from 'expo-constants';
-import Svg, { Path, Circle } from 'react-native-svg';
-import Animated, {
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import GridBackground from '../../components/GridBackground';
-import MiniPitch from '../../components/MiniPitch';
-import RoleModelCard from '../../components/RoleModelCard';
-import PlayerCard from '../../components/PlayerCard';
-import BadgeMark, { BADGE_LABELS } from '../../components/BadgeMark';
-import { EvidenceRing, StatBar, EvidenceMeter } from '../../components/StatReadout';
-import { CheckIcon, LockIcon, PersonIcon, FlameIcon } from '../../components/Icons';
-import { Coach } from '../../data/coaches';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  journeySeasonFor,
-  MAP_W,
-  MAP_H,
-  buildMapPath,
-  buildLitPath,
-  footprintDots,
-  JourneyStage,
-} from '../../data/journey';
-import { useJourneyProgress } from '../../data/progress';
-import { isContentStale } from '../../data/coaching';
-import { objectiveCount, useMatches } from '../../data/matches';
-import { sfx } from '../../audio/sound';
-import { useJournal } from '../../data/journal';
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Image,
+  Platform,
+} from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import * as ImagePicker from 'expo-image-picker';
+import GridBackground from '../../components/GridBackground';
+import ArtBand from '../../components/ArtBand';
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  EyeIcon,
+  JournalIcon,
+  RefreshGlyphIcon,
+  RouteIcon,
+  ScanGlyphIcon,
+  TrashIcon,
+} from '../../components/Icons';
+import { Coach } from '../../data/coaches';
 import { useSettings } from '../../data/settings';
-import { useLessonThread } from '../../data/lessonThread';
-import { useStandard, StandardChapter } from '../../data/standard';
-import { playerCardData, evidenceFromVault, PLAYER_CARD } from '../../data/playerCard';
-import * as backend from '../../data/backend';
+import { useMatches } from '../../data/matches';
+import { useJournal } from '../../data/journal';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
-import StoreSheet from '../StoreSheet';
-import RoleModelSheet from '../RoleModelSheet';
-import RoleModelFeedSheet from '../RoleModelFeedSheet';
-import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy, type as typeTokens } from '../../theme';
-import EdgeGradient, { QUIET_STOPS } from '../../components/EdgeGradient';
-import ArtBand from '../../components/ArtBand';
-import CoachPresence from '../../components/CoachPresence';
+import MarketingShareCard from '../../components/MarketingShareCard';
+import { JourneyStage } from '../../data/journey';
+import { useCloud } from '../../data/cloudSync';
+import {
+  addBenchmarkCheckpoint,
+  benchmarkGap,
+  benchmarkIdentity,
+  benchmarkMatchComplete,
+  benchmarkProofStamp,
+  BENCHMARK_CYCLE_MONTHS,
+  BENCHMARK_MATCH_TARGET,
+  BenchmarkDraftMatch,
+  BenchmarkGap,
+  BenchmarkSnapshot,
+  compareBenchmarkSummaries,
+  createDraftBenchmarkMatches,
+  DEMO_BENCHMARK_SET,
+  removeBenchmarkCheckpoint,
+  summariseBenchmarkMatches,
+  useBenchmarkTracker,
+} from '../../data/benchmarkTracker';
+import {
+  bodyFont,
+  bodyFontBold,
+  bodyFontHeavy,
+  colors,
+  displayFont,
+  monoFont,
+} from '../../theme';
+import { PSA_OCR_URL } from '../../config';
+import { fieldsForOcrSide, OcrSide, parseStatsFromPastedText, scanStatsScreenshot, StatsScreenOcrResult } from '../../data/statsScreenOcr';
+import {
+  buildComparisonPosterSvg,
+  buildShareCardSvg,
+  downloadPngAsset,
+  downloadSvgAsset,
+} from '../../data/shareCard';
+import {
+  pullBenchmarkSnapshotsFromCloud,
+  removeBenchmarkSnapshotFromCloud,
+  syncBenchmarkSnapshot,
+  syncUnsyncedBenchmarkSnapshots,
+} from '../../data/benchmarkCloud';
 
-// the walkout tunnel — the journey's face: you step toward the light
+// the walkout tunnel stays — but the meaning changes: this is no longer a
+// forward stage map. It is the place where evidence is filed and read.
 const TUNNEL = require('../../../assets/art/journey-tunnel.jpg');
 
-type StageOrigin = { x: number; y: number };
+type Sheet = 'vault' | 'journal' | null;
+type NumericField = Exclude<
+  keyof BenchmarkDraftMatch,
+  'id' | 'screenshotName' | 'screenshotUri'
+>;
+type ScanStatus = 'idle' | 'scanning' | 'done' | 'error';
 
-const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const FIELD_ORDER: { key: NumericField; label: string; suffix?: string; max: number }[] = [
+  { key: 'gf', label: 'GF', max: 20 },
+  { key: 'ga', label: 'GA', max: 20 },
+  { key: 'possession', label: 'POSS', suffix: '%', max: 100 },
+  { key: 'shots', label: 'SHOTS', max: 50 },
+  { key: 'shotsOnTarget', label: 'ON TARGET', max: 50 },
+  { key: 'passAccuracy', label: 'PASS', suffix: '%', max: 100 },
+  { key: 'tacklesWon', label: 'TACKLES', max: 50 },
+  { key: 'saves', label: 'SAVES', max: 20 },
+];
 
-function PulseRing({ x, y }: { x: number; y: number }) {
-  const v = useSharedValue(0);
-  React.useEffect(() => {
-    v.value = withRepeat(withTiming(1, { duration: 1600 }), -1, false);
-  }, [v]);
-  const s = useAnimatedStyle(() => ({
-    opacity: 0.55 * (1 - v.value),
-    transform: [{ scale: 1 + v.value * 0.55 }],
-  }));
+const BENCHMARK_REFERENCE = [
+  'HONEST BASELINE',
+  'EMOTIONAL CONTROL',
+  'PATTERN READING',
+  'ROUTINE',
+  'COMPETITIVE CALM',
+  'PROOF',
+];
+
+function clampDraftValue(key: NumericField, raw: number): number {
+  const def = FIELD_ORDER.find((field) => field.key === key);
+  return Math.max(0, Math.min(def?.max ?? 100, Math.round(raw)));
+}
+
+function monthLabel(snapshot: Pick<BenchmarkSnapshot, 'cycle' | 'month'>): string {
+  return snapshot.cycle > 1
+    ? `CYCLE ${snapshot.cycle} · MONTH ${snapshot.month}`
+    : `MONTH ${snapshot.month}`;
+}
+
+function shortDate(at: number): string {
+  return new Date(at).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function signed(value: number, decimals = 1): string {
+  const shown = Math.abs(value) < 0.05 ? 0 : value;
+  return `${shown > 0 ? '+' : shown < 0 ? '−' : ''}${Math.abs(shown).toFixed(decimals)}`;
+}
+
+function StepTile({
+  label,
+  value,
+  suffix,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  suffix?: string;
+  onChange: (next: string) => void;
+}) {
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.pulseRing, { left: x - 24, top: y - 24 }, s]}
-    />
+    <View style={styles.inputTile}>
+      <Text style={styles.inputTileLabel}>{label}</Text>
+      <View style={styles.inputValueRow}>
+        <TextInput
+          keyboardType="numeric"
+          value={value == null ? '' : String(value)}
+          onChangeText={onChange}
+          placeholder="0"
+          placeholderTextColor="rgba(143,184,155,0.4)"
+          style={styles.inputTileValue}
+        />
+        {!!suffix && <Text style={styles.inputTileSuffix}>{suffix}</Text>}
+      </View>
+    </View>
   );
 }
 
-function LitPathPulse({ d }: { d: string }) {
-  const o = useSharedValue(0.55);
-  React.useEffect(() => {
-    o.value = withDelay(300, withRepeat(withTiming(1, { duration: 1400 }), -1, true));
-  }, [o]);
-  return <Path d={d} stroke={colors.primary} strokeWidth={2.4} strokeLinecap="round" fill="none" opacity={1} />;
+function MonthRail({ filled, total }: { filled: number; total: number }) {
+  return (
+    <View style={styles.monthRailRow}>
+      {Array.from({ length: total }).map((_, index) => {
+        const active = index < filled;
+        return (
+          <View key={index} style={[styles.monthRailPill, active && styles.monthRailPillOn]}>
+            <Text style={[styles.monthRailTxt, active && styles.monthRailTxtOn]}>{index + 1}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
 }
 
-export default function JourneyTab({
-  coach,
-  onOpenStage,
+function Kpi({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <View style={styles.kpiCell}>
+      <Text style={[styles.kpiValue, accent && { color: colors.accent }]}>{value}</Text>
+      <Text style={styles.kpiLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metricPill}>
+      <Text style={styles.metricPillLabel}>{label}</Text>
+      <Text style={styles.metricPillValue}>{value}</Text>
+    </View>
+  );
+}
+
+function DeltaPill({
+  label,
+  value,
+  betterWhenLower,
 }: {
-  coach: Coach;
-  onOpenStage: (stage: JourneyStage, origin: StageOrigin) => void;
+  label: string;
+  value: number;
+  betterWhenLower?: boolean;
 }) {
-  // live journey progress — the MATCH SCAN is the only thing that advances it
-  const progress = useJourneyProgress();
-  const CUR = progress.currentStage;
-  const SEASON = journeySeasonFor(coach.id);
-  const [selected, setSelected] = useState<JourneyStage>(SEASON.stages[0]);
-  // the vault + journal are what objectives are actually graded against
+  const improved = betterWhenLower ? value < 0 : value > 0;
+  const worse = betterWhenLower ? value > 0 : value < 0;
+  return (
+    <View
+      style={[
+        styles.deltaPill,
+        improved && styles.deltaPillGood,
+        worse && styles.deltaPillBad,
+      ]}
+    >
+      <Text style={styles.deltaLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.deltaValue,
+          improved && { color: colors.primary },
+          worse && { color: colors.loss },
+        ]}
+      >
+        {signed(value)}
+      </Text>
+    </View>
+  );
+}
+
+function TrendRow({ label, value, betterWhenLower }: { label: string; value: number; betterWhenLower?: boolean }) {
+  const improved = betterWhenLower ? value < 0 : value > 0;
+  const worse = betterWhenLower ? value > 0 : value < 0;
+  const arrow = improved ? '↑' : worse ? '↓' : '→';
+  return (
+    <View style={styles.trendRow}>
+      <Text style={styles.trendLabel}>{label}</Text>
+      <View style={styles.trendValueRow}>
+        <Text style={[styles.trendArrow, improved && { color: colors.primary }, worse && { color: colors.loss }]}>{arrow}</Text>
+        <Text style={[styles.trendValue, improved && { color: colors.primary }, worse && { color: colors.loss }]}>
+          {signed(value)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function GapBar({ item }: { item: BenchmarkGap }) {
+  const fill = `${Math.max(0, Math.min(100, item.player))}%`;
+  return (
+    <View style={styles.gapRow}>
+      <View style={styles.gapHead}>
+        <Text style={styles.gapLabel}>{item.label}</Text>
+        <Text style={styles.gapNums}>{item.player}/{item.benchmark}</Text>
+      </View>
+      <View style={styles.gapTrack}>
+        <View style={[styles.gapFill, { width: fill as any }]} />
+      </View>
+      <Text style={styles.gapNote}>{item.note} · GAP {Math.max(0, item.gap)}</Text>
+    </View>
+  );
+}
+
+function SnapshotCard({
+  snapshot,
+  compareTo,
+  onRemove,
+}: {
+  snapshot: BenchmarkSnapshot;
+  compareTo: BenchmarkSnapshot | null;
+  onRemove: () => void;
+}) {
+  const delta = compareBenchmarkSummaries(snapshot.summary, compareTo?.summary ?? null);
+  const identity = benchmarkIdentity(snapshot.summary);
+  const proof = benchmarkProofStamp(snapshot.summary);
+  return (
+    <Animated.View entering={FadeInUp.duration(260)} style={styles.snapshotCard}>
+      <View style={styles.snapshotTop}>
+        <View>
+          <Text style={styles.snapshotTag}>{snapshot.title}</Text>
+          <Text style={styles.snapshotDate}>{snapshot.label} · {shortDate(snapshot.createdAt)}</Text>
+          <Text style={[styles.snapshotSync, snapshot.syncedAt ? styles.snapshotSyncOn : null]}>
+            {snapshot.syncedAt ? `SYNCED · ${shortDate(snapshot.syncedAt)}` : 'LOCAL ONLY'}
+          </Text>
+        </View>
+        <Pressable onPress={onRemove} hitSlop={8} style={styles.iconBtn}>
+          <TrashIcon size={12} color="rgba(224,96,92,0.9)" />
+        </Pressable>
+      </View>
+
+      <View style={styles.snapshotProofRow}>
+        <Text style={styles.snapshotProof}>{proof.label}</Text>
+        <Text style={styles.snapshotProofSub}>{proof.evidenceLine}</Text>
+      </View>
+      <Text style={styles.snapshotStyle}>{snapshot.summary.style.label}</Text>
+      <Text style={styles.snapshotRead}>{snapshot.summary.style.read}</Text>
+      <View style={styles.snapshotIdentityRow}>
+        <Text style={styles.snapshotIdentityChip}>{identity.secondaryTendency}</Text>
+        <Text style={styles.snapshotIdentityChip}>{identity.temperament}</Text>
+      </View>
+
+      <View style={styles.snapshotKpis}>
+        <Kpi label="W·D·L" value={`${snapshot.summary.wins}-${snapshot.summary.draws}-${snapshot.summary.losses}`} />
+        <Kpi label="AVG GF" value={snapshot.summary.avgGoalsFor.toFixed(1)} />
+        <Kpi label="AVG GA" value={snapshot.summary.avgGoalsAgainst.toFixed(1)} />
+        <Kpi label="PASS" value={`${snapshot.summary.avgPassAccuracy.toFixed(1)}%`} accent />
+      </View>
+
+      <View style={styles.metricWrap}>
+        <MetricPill label="POSS" value={`${snapshot.summary.avgPossession.toFixed(1)}%`} />
+        <MetricPill label="ON TARGET" value={snapshot.summary.avgShotsOnTarget.toFixed(1)} />
+        <MetricPill label="SHOT ACC" value={`${snapshot.summary.shotAccuracy.toFixed(1)}%`} />
+        <MetricPill label="TACKLES" value={snapshot.summary.avgTacklesWon.toFixed(1)} />
+      </View>
+
+      {delta && (
+        <>
+          <Text style={styles.deltaTitle}>CHANGE VS PREVIOUS CHECKPOINT</Text>
+          <View style={styles.deltaRow}>
+            <DeltaPill label="PPM" value={delta.pointsPerMatch} />
+            <DeltaPill label="GF" value={delta.avgGoalsFor} />
+            <DeltaPill label="GA" value={delta.avgGoalsAgainst} betterWhenLower />
+            <DeltaPill label="PASS" value={delta.avgPassAccuracy} />
+          </View>
+        </>
+      )}
+
+      <Text style={styles.snapshotFocus}>NEXT FOCUS · {snapshot.summary.style.focus}</Text>
+    </Animated.View>
+  );
+}
+
+export default function JourneyTab({ coach }: { coach: Coach; onOpenStage: (_stage: JourneyStage, _origin: { x: number; y: number }) => void }) {
+  const tracker = useBenchmarkTracker();
+  const cloud = useCloud();
+  const settings = useSettings();
   const vault = useMatches();
   const journal = useJournal();
-  const settings = useSettings();
-  // THE THREAD — settled lessons count toward PROVE IT (the objective engine)
-  const thread = useLessonThread();
-  const threadSettled = thread.heldCount + thread.brokeCount;
-  // THE STANDARD — the parallel benchmark journey, revealed by progress
-  const standard = useStandard();
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const [draft, setDraft] = useState<BenchmarkDraftMatch[]>(() => createDraftBenchmarkMatches());
+  const [savedNotice, setSavedNotice] = useState<string | null>(null);
+  const [scanState, setScanState] = useState<Record<string, { status: ScanStatus; note: string }>>({});
+  const [ocrSummary, setOcrSummary] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [cloudNote, setCloudNote] = useState<string | null>(null);
+  const [playerSides, setPlayerSides] = useState<Record<string, OcrSide>>(() =>
+    Object.fromEntries(createDraftBenchmarkMatches().map((match) => [match.id, 'left' as OcrSide])),
+  );
+  const [ocrCache, setOcrCache] = useState<Record<string, StatsScreenOcrResult>>({});
+  const [ocrTextDrafts, setOcrTextDrafts] = useState<Record<string, string>>({});
 
-  // ── THE PLAYER CARD — derived honestly from the same ledgers every
-  //    objective is graded from. Rating is stage-gated (clears lift it);
-  //    the six stats are the live receipt readout. (Principles P1/P2)
-  const playerCard = React.useMemo(
-    () =>
-      playerCardData(
-        progress,
-        evidenceFromVault({
-          played: vault.played,
-          w: vault.w,
-          d: vault.d,
-          l: vault.l,
-          ga: vault.ga,
-          cleanSheets: vault.cleanSheets,
-          matches: vault.matches,
-          journalTotal: journal.total,
-          journalStreakDays: journal.streakDays,
-          threadSettled: threadSettled,
-          threadHeld: thread.heldCount,
-          threadBroke: thread.brokeCount,
-        }),
-      ),
-    [progress, vault, journal.total, journal.streakDays, threadSettled, thread.heldCount, thread.brokeCount],
+  const completeCount = draft.filter(benchmarkMatchComplete).length;
+  const liveSummary = useMemo(() => summariseBenchmarkMatches(draft), [draft]);
+  const liveIdentity = useMemo(() => benchmarkIdentity(liveSummary), [liveSummary]);
+  const liveGap = useMemo(() => benchmarkGap(liveSummary), [liveSummary]);
+  const liveProof = useMemo(() => benchmarkProofStamp(liveSummary), [liveSummary]);
+  const liveDelta = useMemo(
+    () => compareBenchmarkSummaries(liveSummary, tracker.latest?.summary ?? null),
+    [liveSummary, tracker.latest],
   );
 
-  // ── LIVE stage progress — the honest met-objective ratio, replacing the
-  //    author-set progressPct. A stage's bar fills only as the vault/journal
-  //    actually meet its objectives. (Principle P1)
-  const stageLiveProgress = React.useMemo(() => {
-    const objs = selected.objectives ?? [];
-    if (!objs.length) return 0;
-    const met = objs.filter((o) => {
-      const count = o.check
-        ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled)
-        : o.done;
-      return count >= o.target;
-    }).length;
-    return Math.round((met / objs.length) * 100);
-  }, [selected, vault.matches, journal.entries.length, threadSettled]);
-  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | 'feed' | null>(null);
+  const nextMonth = ((tracker.nextCheckpoint - 1) % BENCHMARK_CYCLE_MONTHS) + 1;
+  const coachFirst = coach.name.split(' ')[0].toUpperCase();
+  const canSave = completeCount === BENCHMARK_MATCH_TARGET;
+  const nativeOcrReady = !!PSA_OCR_URL;
+  const shareSummary = tracker.latest?.summary ?? liveSummary;
+  const shareCheckpointLabel = tracker.latest
+    ? `CHECKPOINT ${tracker.latest.checkpoint} · ${tracker.latest.label}`
+    : `LIVE DRAFT · MONTH ${nextMonth}`;
+  const shareSvg = useMemo(
+    () =>
+      buildShareCardSvg({
+        displayName: settings.displayName || 'PLAYER',
+        checkpointLabel: shareCheckpointLabel,
+        summary: shareSummary,
+        focus: shareSummary.style.focus,
+        generatedAt: tracker.latest?.createdAt ?? Date.now(),
+      }),
+    [settings.displayName, shareCheckpointLabel, shareSummary, tracker.latest?.createdAt],
+  );
 
-  // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
-  // Identical rungs in every country; only the currency differs.
-  const [access, setAccess] = useState<backend.MyAccess | null>(null);
-  const [rules, setRules] = useState<backend.AccessRules | null>(null);
-  const [unlocks, setUnlocks] = useState<string[]>([]);
+  const comparisonSource = useMemo(() => {
+    if (tracker.checkpoints.length >= 2) {
+      return {
+        before: tracker.checkpoints[tracker.checkpoints.length - 1],
+        after: tracker.checkpoints[0],
+      };
+    }
+    if (tracker.latest && liveSummary.matches > 0) {
+      return {
+        before: tracker.latest,
+        after: {
+          ...tracker.latest,
+          label: 'LIVE DRAFT',
+          title: 'LIVE DRAFT',
+          summary: liveSummary,
+          createdAt: Date.now(),
+        },
+      };
+    }
+    return null;
+  }, [tracker.checkpoints, tracker.latest, liveSummary]);
 
-  const refreshAccess = () => {
-    void backend.myAccess().then((a) => a && setAccess(a));
-    void backend.accessRules().then((r) => r && setRules(r));
-    void backend.myUnlocks().then((u) => u && setUnlocks(u));
+  const comparisonDelta = useMemo(
+    () => (comparisonSource ? compareBenchmarkSummaries(comparisonSource.after.summary, comparisonSource.before.summary) : null),
+    [comparisonSource],
+  );
+
+  const comparisonSvg = useMemo(() => {
+    if (!comparisonSource || !comparisonDelta) return null;
+    return buildComparisonPosterSvg({
+      displayName: settings.displayName || 'PLAYER',
+      beforeLabel: comparisonSource.before.label,
+      afterLabel: comparisonSource.after.label,
+      before: comparisonSource.before.summary,
+      after: comparisonSource.after.summary,
+      delta: comparisonDelta,
+      generatedAt: comparisonSource.after.createdAt,
+    });
+  }, [comparisonSource, comparisonDelta, settings.displayName]);
+
+  const liveMovementHeadline = useMemo(() => {
+    if (!liveDelta) return 'NO SAVED CHECKPOINT YET — THIS CARD IS BUILDING ITS FIRST REFERENCE.';
+    const movements = [
+      { label: 'POINTS PER MATCH', value: liveDelta.pointsPerMatch, betterWhenLower: false },
+      { label: 'GOALS FOR', value: liveDelta.avgGoalsFor, betterWhenLower: false },
+      { label: 'GOALS AGAINST', value: liveDelta.avgGoalsAgainst, betterWhenLower: true },
+      { label: 'PASS ACCURACY', value: liveDelta.avgPassAccuracy, betterWhenLower: false },
+      { label: 'SHOTS ON TARGET', value: liveDelta.avgShotsOnTarget, betterWhenLower: false },
+      { label: 'TACKLES WON', value: liveDelta.avgTacklesWon, betterWhenLower: false },
+    ];
+    const scored = movements.map((item) => ({
+      ...item,
+      score: item.betterWhenLower ? -item.value : item.value,
+    }));
+    const best = [...scored].sort((a, b) => Math.abs(b.score) - Math.abs(a.score))[0];
+    if (!best || Math.abs(best.score) < 0.05) return 'THIS DRAFT IS HOLDING CLOSE TO THE LAST CHECKPOINT — THE IDENTITY IS STABLE FOR NOW.';
+    if (best.score > 0) return `BIGGEST MOVE RIGHT NOW · ${best.label} IS TRENDING UP.`;
+    return `BIGGEST LEAK RIGHT NOW · ${best.label} HAS SLIPPED FROM THE LAST CHECKPOINT.`;
+  }, [liveDelta]);
+
+  useEffect(() => {
+    if (!cloud.online) return;
+    void pullBenchmarkSnapshotsFromCloud(true).then((ok) => {
+      if (ok) setCloudNote('CLOUD SYNC LIVE · PULLED CHECKPOINTS FROM SUPABASE.');
+    });
+    void syncUnsyncedBenchmarkSnapshots(coach.id).then((count) => {
+      if (count > 0) setCloudNote(`SYNCED ${count} UNSENT CHECKPOINT${count === 1 ? '' : 'S'} TO SUPABASE.`);
+    });
+  }, [cloud.online, coach.id]);
+
+  const sideOf = (matchId: string): OcrSide => playerSides[matchId] ?? 'left';
+
+  const updateField = (index: number, key: NumericField, raw: string) => {
+    const cleaned = raw.replace(/[^0-9]/g, '');
+    setDraft((previous) =>
+      previous.map((match, matchIndex) => {
+        if (matchIndex !== index) return match;
+        return {
+          ...match,
+          [key]: cleaned.length ? clampDraftValue(key, Number(cleaned)) : null,
+        };
+      }),
+    );
   };
-  useEffect(refreshAccess, []);
 
-  const freeStages = rules?.freeStages ?? 2;
-  const midStages = rules?.midStages ?? 6;
-  const level = access?.level ?? 0;
+  const applyScannedFields = (index: number, fields: Partial<Record<NumericField, number>>) => {
+    setDraft((previous) =>
+      previous.map((match, matchIndex) => {
+        if (matchIndex !== index) return match;
+        const next: BenchmarkDraftMatch = { ...match };
+        for (const key of FIELD_ORDER.map((field) => field.key)) {
+          const value = fields[key];
+          if (typeof value === 'number' && Number.isFinite(value)) {
+            next[key] = clampDraftValue(key, value);
+          }
+        }
+        return next;
+      }),
+    );
+  };
 
-  /** the tier a stage needs: 0 free · 1 academy · 2 pro */
-  const tierFor = (n: number) => (n <= freeStages ? 0 : n <= midStages ? 1 : 2);
-  const owned = (n: number) => unlocks.includes(`stage:${n}`);
-  const needsUnlock = (n: number) => !owned(n) && level < tierFor(n);
-  const tierName = (lvl: number) => (lvl >= 2 ? 'PRO' : 'ACADEMY');
-  const scrollRef = useRef<ScrollView>(null);
-  const canvasRef = useRef<View>(null);
-  const heroRef = useRef<View>(null);
-  const { width: winW } = useWindowDimensions();
-  const colW = Math.min(winW, 430); // App.tsx frames the column on wide screens
-  const bandW = colW - 32; // page padding is 16 a side
+  const reapplyCachedSide = (matchId: string, index: number, side: OcrSide) => {
+    const cached = ocrCache[matchId];
+    if (!cached) return;
+    applyScannedFields(index, fieldsForOcrSide(cached, side) as Partial<Record<NumericField, number>>);
+  };
 
-  const coachFirst = coach.name.split(' ')[0];
-  const dimPath = buildMapPath();
-  const litPath = buildLitPath(CUR);
-  const dots = footprintDots(CUR);
-  const current = SEASON.stages[CUR - 1] ?? SEASON.stages[SEASON.stages.length - 1];
-  const cleared = !!progress.completed[selected.n];
-  const isLocked = selected.isSideQuest ? (selected.parentStageN ?? 1) > CUR : selected.n > CUR;
+  const setSideForMatch = (matchId: string, index: number, side: OcrSide) => {
+    setPlayerSides((previous) => ({ ...previous, [matchId]: side }));
+    reapplyCachedSide(matchId, index, side);
+  };
 
-  // node tap → the node zooms open into the Coaching Screen
-  const zoomIntoStage = (s: JourneyStage) => {
-    setSelected(s);
-    const fallback: StageOrigin = { x: 195, y: 240 };
+  const parsePastedTextForMatch = (matchId: string, index: number) => {
+    const raw = (ocrTextDrafts[matchId] ?? '').trim();
+    if (!raw) {
+      setOcrSummary('PASTE OCR TEXT FIRST, THEN PARSE IT.');
+      return;
+    }
+    const result = parseStatsFromPastedText(raw);
+    setOcrCache((previous) => ({ ...previous, [matchId]: result }));
+    if (result.suggestedSide !== 'unknown') {
+      const suggested = result.suggestedSide as OcrSide;
+      setPlayerSides((previous) => ({ ...previous, [matchId]: suggested }));
+    }
+    applyScannedFields(index, fieldsForOcrSide(result, result.suggestedSide === 'unknown' ? sideOf(matchId) : result.suggestedSide) as Partial<Record<NumericField, number>>);
+    setScanState((previous) => ({
+      ...previous,
+      [matchId]: {
+        status: 'done',
+        note: `TEXT PARSE FOUND ${result.hitCount}/8 FIELDS${result.suggestedSide !== 'unknown' ? ` · SUGGESTED SIDE ${result.suggestedSide.toUpperCase()}` : ''}.`,
+      },
+    }));
+    setOcrSummary(`PASTED OCR TEXT PARSED FOR MATCH ${index + 1}.`);
+  };
+
+  const attachAssetBatch = (assets: Array<{ uri: string; fileName?: string | null }>) => {
+    setScanState({});
+    setOcrSummary(null);
+    setShareNotice(null);
+    setCloudNote(null);
+    setOcrCache({});
+    setOcrTextDrafts({});
+    const nextSides: Record<string, OcrSide> = {};
+    setDraft((previous) =>
+      previous.map((match, index) => {
+        const asset = assets[index];
+        nextSides[match.id] = 'left';
+        if (!asset) return { ...match, screenshotName: null, screenshotUri: null };
+        return {
+          ...match,
+          screenshotName: asset.fileName ?? `match-${index + 1}.png`,
+          screenshotUri: asset.uri,
+        };
+      }),
+    );
+    setPlayerSides(nextSides);
+  };
+
+  const scanOne = async (index: number) => {
+    const match = draft[index];
+    if (!match?.screenshotUri) return;
+    setScanState((previous) => ({
+      ...previous,
+      [match.id]: { status: 'scanning', note: 'READING SCREENSHOT…' },
+    }));
     try {
-      canvasRef.current?.measureInWindow((mx, my) => {
-        const ok = Number.isFinite(mx) && Number.isFinite(my);
-        onOpenStage(s, ok ? { x: mx + s.at.x, y: my + s.at.y } : fallback);
-      });
-    } catch {
-      onOpenStage(s, fallback);
+      const result = await scanStatsScreenshot(match.screenshotUri);
+      const resolvedSide = result.suggestedSide === 'unknown' ? sideOf(match.id) : result.suggestedSide;
+      setOcrCache((previous) => ({ ...previous, [match.id]: result }));
+      if (result.suggestedSide !== 'unknown') {
+        const suggested = result.suggestedSide as OcrSide;
+        setPlayerSides((previous) => ({ ...previous, [match.id]: suggested }));
+      }
+      applyScannedFields(index, fieldsForOcrSide(result, resolvedSide) as Partial<Record<NumericField, number>>);
+      setScanState((previous) => ({
+        ...previous,
+        [match.id]: {
+          status: 'done',
+          note: `OCR FOUND ${result.hitCount}/8 FIELDS — SIDE ${resolvedSide.toUpperCase()}${result.variantLabel ? ` · BEST PASS ${result.variantLabel}` : ''}.`,
+        },
+      }));
+      setOcrSummary(`MATCH ${index + 1} SCANNED · ${result.hitCount}/8 FIELDS PULLED FROM THE IMAGE`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'OCR could not read this screenshot.';
+      setScanState((previous) => ({
+        ...previous,
+        [match.id]: { status: 'error', note: message.toUpperCase() },
+      }));
+      setOcrSummary('OCR MISSED THIS SCREENSHOT — MANUAL CONFIRMATION STILL WORKS.');
     }
   };
 
-  // tapping the Role Model card zooms into the CURRENT stage's room
-  const zoomFromCard = () => {
-    const fallback: StageOrigin = { x: 195, y: 260 };
-    try {
-      heroRef.current?.measureInWindow((mx, my, w, h) => {
-        const ok = Number.isFinite(mx) && Number.isFinite(my);
-        onOpenStage(current, ok ? { x: mx + (w ?? 168) / 2, y: my + (h ?? 226) / 2 } : fallback);
-      });
-    } catch {
-      onOpenStage(current, fallback);
+  const scanAll = async () => {
+    const queued = draft
+      .map((match, index) => ({ match, index }))
+      .filter(({ match }) => !!match.screenshotUri);
+    if (!queued.length) {
+      setOcrSummary('ADD SCREENSHOTS FIRST, THEN RUN SCAN ALL.');
+      return;
     }
+    let totalHits = 0;
+    for (const { match, index } of queued) {
+      setScanState((previous) => ({
+        ...previous,
+        [match.id]: { status: 'scanning', note: 'READING SCREENSHOT…' },
+      }));
+      try {
+        const result = await scanStatsScreenshot(match.screenshotUri as string);
+        totalHits += result.hitCount;
+        const resolvedSide = result.suggestedSide === 'unknown' ? sideOf(match.id) : result.suggestedSide;
+        setOcrCache((previous) => ({ ...previous, [match.id]: result }));
+        if (result.suggestedSide !== 'unknown') {
+          const suggested = result.suggestedSide as OcrSide;
+          setPlayerSides((previous) => ({ ...previous, [match.id]: suggested }));
+        }
+        applyScannedFields(index, fieldsForOcrSide(result, resolvedSide) as Partial<Record<NumericField, number>>);
+        setScanState((previous) => ({
+          ...previous,
+          [match.id]: {
+            status: 'done',
+            note: `OCR FOUND ${result.hitCount}/8 FIELDS — SIDE ${resolvedSide.toUpperCase()}${result.variantLabel ? ` · ${result.variantLabel}` : ''}.`,
+          },
+        }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'OCR could not read this screenshot.';
+        setScanState((previous) => ({
+          ...previous,
+          [match.id]: { status: 'error', note: message.toUpperCase() },
+        }));
+      }
+    }
+    setOcrSummary(`SCAN ALL FINISHED · ${queued.length} SCREENSHOTS READ · ${totalHits} FIELD HITS TOTAL`);
+  };
+
+  const attachWebFiles = (event: any) => {
+    const list = Array.from(event?.target?.files ?? []).slice(0, BENCHMARK_MATCH_TARGET) as Array<{ name?: string }>;
+    const assets = list
+      .map((file, index) => ({
+        uri:
+          typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function'
+            ? URL.createObjectURL(file as any)
+            : '',
+        fileName: file.name ?? `match-${index + 1}.png`,
+      }))
+      .filter((item) => !!item.uri);
+    attachAssetBatch(assets);
+  };
+
+  const pickNativeShots = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      setOcrSummary('PHOTO LIBRARY PERMISSION IS NEEDED TO LOAD THE STATS SCREENSHOTS.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: BENCHMARK_MATCH_TARGET,
+      quality: 1,
+    });
+    if (result.canceled || !result.assets?.length) {
+      setOcrSummary('NO SCREENSHOTS SELECTED.');
+      return;
+    }
+    attachAssetBatch(
+      result.assets.slice(0, BENCHMARK_MATCH_TARGET).map((asset, index) => ({
+        uri: asset.uri,
+        fileName: asset.fileName ?? `match-${index + 1}.jpg`,
+      })),
+    );
+    setOcrSummary(`${Math.min(result.assets.length, BENCHMARK_MATCH_TARGET)} SCREENSHOTS LOADED FROM PHONE.`);
+  };
+
+  const exportShareSvg = () => {
+    if (Platform.OS !== 'web') {
+      setShareNotice('SHARE CARD PREVIEW IS LIVE HERE. FILE DOWNLOAD IS CURRENTLY ENABLED IN WEB PREVIEW.');
+      return;
+    }
+    const ok = downloadSvgAsset(shareSvg, `${(settings.displayName || 'player').toLowerCase()}-${tracker.latest ? `checkpoint-${tracker.latest.checkpoint}` : 'live-draft'}.svg`);
+    setShareNotice(ok ? 'SVG SHARE CARD DOWNLOADED.' : 'SVG EXPORT DID NOT START.');
+  };
+
+  const exportSharePng = async () => {
+    if (Platform.OS !== 'web') {
+      setShareNotice('PNG DOWNLOAD IS CURRENTLY ENABLED IN WEB PREVIEW.');
+      return;
+    }
+    const ok = await downloadPngAsset(shareSvg, `${(settings.displayName || 'player').toLowerCase()}-${tracker.latest ? `checkpoint-${tracker.latest.checkpoint}` : 'live-draft'}.png`);
+    setShareNotice(ok ? 'PNG SHARE CARD DOWNLOADED.' : 'PNG EXPORT DID NOT START.');
+  };
+
+  const exportComparisonSvg = () => {
+    if (!comparisonSvg) return;
+    if (Platform.OS !== 'web') {
+      setShareNotice('COMPARISON POSTER DOWNLOAD IS CURRENTLY ENABLED IN WEB PREVIEW.');
+      return;
+    }
+    const ok = downloadSvgAsset(comparisonSvg, `${(settings.displayName || 'player').toLowerCase()}-before-vs-after.svg`);
+    setShareNotice(ok ? 'SVG COMPARISON POSTER DOWNLOADED.' : 'COMPARISON SVG EXPORT DID NOT START.');
+  };
+
+  const exportComparisonPng = async () => {
+    if (!comparisonSvg) return;
+    if (Platform.OS !== 'web') {
+      setShareNotice('COMPARISON POSTER DOWNLOAD IS CURRENTLY ENABLED IN WEB PREVIEW.');
+      return;
+    }
+    const ok = await downloadPngAsset(comparisonSvg, `${(settings.displayName || 'player').toLowerCase()}-before-vs-after.png`);
+    setShareNotice(ok ? 'PNG COMPARISON POSTER DOWNLOADED.' : 'COMPARISON PNG EXPORT DID NOT START.');
+  };
+
+  const loadDemo = () => {
+    const nextDraft = DEMO_BENCHMARK_SET.map((match, index) => ({
+      ...match,
+      id: `draft-${index + 1}`,
+    }));
+    setPlayerSides(Object.fromEntries(nextDraft.map((match) => [match.id, 'left' as OcrSide])));
+    setOcrCache({});
+    setOcrTextDrafts({});
+    setScanState({});
+    setShareNotice(null);
+    setCloudNote(null);
+    setOcrSummary('DEMO DATA LOADED — THIS SHOWS HOW THE CARD WILL READ FROM A FULL CHECKPOINT.');
+    setDraft(nextDraft);
+  };
+
+  const clearDraft = () => {
+    const nextDraft = createDraftBenchmarkMatches();
+    setDraft(nextDraft);
+    setPlayerSides(Object.fromEntries(nextDraft.map((match) => [match.id, 'left' as OcrSide])));
+    setOcrCache({});
+    setOcrTextDrafts({});
+    setSavedNotice(null);
+    setScanState({});
+    setOcrSummary(null);
+    setShareNotice(null);
+    setCloudNote(null);
+  };
+
+  const saveCheckpoint = () => {
+    if (!canSave) return;
+    const snapshot = addBenchmarkCheckpoint(draft);
+    setSavedNotice(`CHECKPOINT ${snapshot.checkpoint} SAVED · ${snapshot.label}`);
+    setOcrSummary(null);
+    setScanState({});
+    setShareNotice('CHECKPOINT SAVED — THE MARKETING CARD BELOW NOW REFLECTS THE NEW ARCHIVED RECORD.');
+    setCloudNote(cloud.online ? 'SAVING TO SUPABASE…' : 'SAVED LOCALLY — CLOUD WILL PICK IT UP WHEN THE CONNECTION RETURNS.');
+    void syncBenchmarkSnapshot(snapshot, coach.id).then((ok) => {
+      setCloudNote(ok ? 'CHECKPOINT + SCREENSHOTS SYNCED TO SUPABASE.' : 'LOCAL SAVE HELD. CLOUD SYNC WILL RETRY WHEN ONLINE.');
+    });
+    const nextDraft = createDraftBenchmarkMatches();
+    setPlayerSides(Object.fromEntries(nextDraft.map((match) => [match.id, 'left' as OcrSide])));
+    setOcrCache({});
+    setOcrTextDrafts({});
+    setDraft(nextDraft);
+  };
+
+  const removeCheckpoint = (snapshot: BenchmarkSnapshot) => {
+    removeBenchmarkCheckpoint(snapshot.id);
+    setCloudNote('CHECKPOINT REMOVED LOCALLY.');
+    void removeBenchmarkSnapshotFromCloud(snapshot.id).then((ok) => {
+      if (ok) setCloudNote('CHECKPOINT REMOVED FROM SUPABASE TOO.');
+    });
   };
 
   return (
     <View style={styles.flex}>
       <GridBackground />
-      <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        {/* header row */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <View style={styles.headerRow}>
           <Text style={styles.brand}>PROSEASONACADEMY</Text>
-          <View style={styles.seasonPill}>
-            <Text style={styles.seasonTxt}>
-              SEASON {SEASON.seasonNo} · {CUR}/{SEASON.totalStages}
-            </Text>
+          <View style={styles.headerPill}>
+            <Text style={styles.headerPillTxt}>6-MONTH PLAYER DEVELOPMENT</Text>
           </View>
         </View>
 
-        {/* the walkout band — the journey's face: the tunnel photograph, the
-            headline in the display face, everything below stays instruments */}
-        <ArtBand source={TUNNEL} width={bandW} height={168} style={styles.journeyBand} warmAt={{ x: bandW * 0.5, y: 44, r: bandW * 0.6 }}>
-          <Text style={styles.headlineBand}>YOUR JOURNEY</Text>
-          <Text style={styles.sublineBand}>GUIDED BY {coach.name.toUpperCase()} · YOUR EVIDENCE MOVES YOU</Text>
+        <ArtBand
+          source={TUNNEL}
+          width={398}
+          height={170}
+          style={styles.heroBand}
+          warmAt={{ x: 198, y: 48, r: 220 }}
+        >
+          <Text style={styles.heroTitle}>TRACK THE PLAYER</Text>
+          <Text style={styles.heroSub}>NO FORWARD STAGES · ONLY CHECKPOINTS, RECEIPTS AND CHANGE OVER TIME</Text>
         </ArtBand>
 
-        {/* ── THE CHINEDU WAY: OUR OWN PATH PHILOSOPHY ── */}
-        <View style={styles.chineduCard}>
-          <Text style={styles.chineduTag}>THE CHINEDU WAY · HOW YOU WALK OUR PATH</Text>
-          <Text style={styles.chineduTitle}>PEN TO PAPER BEFORE YOU TYPE · THE HARD WAY IS THE EASY WAY</Text>
-          <Text style={styles.chineduText}>
-            1. RECORD & WATCH — film your match, then watch the tape back.
-            {'\n'}2. PEN TO PAPER — a biro holds what typing forgets. Write the moments down first.
-            {'\n'}3. COOL DOWN 24–30 MIN — let your head settle after full time.
-            {'\n'}4. LOG IT — type your penned truth into your database.
-            {'\n\n'}The hard way is the easy way. Tech should elevate you, never make you dormant.
+        <View style={styles.statementCard}>
+          <Text style={styles.statementTag}>THE NEW RULE</Text>
+          <Text style={styles.statementBody}>
+            The player does not need a forward-looking stage map. He plays, uploads the post-match stats screens,
+            and the academy builds the story backward from evidence. Seven stats screens make one checkpoint.
+            Six checkpoints make a six-month record.
+          </Text>
+          <Text style={styles.statementQuote}>
+            “You can only see the full story looking backward, not forward.”
           </Text>
         </View>
 
-        <View style={styles.dividerRow}>
-          <View style={styles.divLine} />
-          <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
-          <View style={styles.divLine} />
-        </View>
-
-        {/* ── the Role Model hero card — stage 7 opens his story, not a shortcut ── */}
-        <View style={styles.heroWrap} ref={heroRef} collapsable={false}>
-          <RoleModelCard
-            coach={coach}
-            onPress={() => {
-              sfx('whoosh');
-              setSheet('feed');
-            }}
-          />
-          <Text style={styles.heroHint}>
-            PRESS [A/CROSS] — FOLLOW HIS ONGOING STORY · THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
-          </Text>
-        </View>
-
-        {/* ── the map ── */}
-        <View style={styles.mapWrap}>
-          <View style={styles.mapCanvas} ref={canvasRef} collapsable={false}>
-            <Svg width={MAP_W} height={MAP_H} viewBox={`0 0 ${MAP_W} ${MAP_H}`} style={StyleSheet.absoluteFill}>
-              {/* dim dashed remainder */}
-              <Path d={dimPath} stroke="rgba(57,255,106,0.28)" strokeWidth={1.4} strokeDasharray="2.5 6" strokeLinecap="round" fill="none" />
-              {/* footprint dots on the locked stretch */}
-              {dots.map((p, i) => (
-                <Circle key={i} cx={p.x} cy={p.y} r={1.6} fill="rgba(57,255,106,0.35)" />
-              ))}
-              {/* lit path up to the current node */}
-              <LitPathPulse d={litPath} />
-              {/* connecting dashed amber lines to side quests */}
-              {SEASON.stages.map((s) => (
-                <React.Fragment key={`lines-${s.n}`}>
-                  {s.sideQuests?.map((sq) => {
-                    const sqUnlocked = s.n <= CUR;
-                    return (
-                      <Path
-                        key={`line-${sq.id}`}
-                        d={`M ${s.at.x} ${s.at.y} L ${sq.at.x} ${sq.at.y}`}
-                        stroke={colors.accent}
-                        strokeWidth={1.4}
-                        strokeDasharray="3 4"
-                        opacity={sqUnlocked ? 0.8 : 0.3}
-                      />
-                    );
-                  })}
-                </React.Fragment>
-              ))}
-              <Circle cx={current.at.x} cy={current.at.y} r={4} fill={colors.primary} />
-            </Svg>
-
-            {/* player position token — "YOU · here". The full identity card
-                lives just below the map, so the map only marks the spot. */}
-            <View style={[styles.youToken, { left: SEASON.playerCard.at.x - 30, top: SEASON.playerCard.at.y - 30 }]}>
-              <PersonIcon size={16} color={colors.primary} />
-              <Text style={styles.youTokenTxt}>YOU</Text>
+        <View style={styles.cycleCard}>
+          <View style={styles.cycleTop}>
+            <View>
+              <Text style={styles.cardEyebrow}>THE SIX-MONTH RUN</Text>
+              <Text style={styles.cardTitle}>CHECKPOINT {tracker.nextCheckpoint}</Text>
+              <Text style={styles.cardSub}>CURRENT SLOT · MONTH {nextMonth} OF {BENCHMARK_CYCLE_MONTHS}</Text>
             </View>
-            <Text style={[styles.playerLabel, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y + 36 }]}>
-              YOU · STAGE {playerCard.stageN} / {SEASON.totalStages}
-            </Text>
+            <View style={styles.cycleBadge}>
+              <Text style={styles.cycleBadgeValue}>{Math.min(tracker.checkpoints.length, BENCHMARK_CYCLE_MONTHS)}/{BENCHMARK_CYCLE_MONTHS}</Text>
+              <Text style={styles.cycleBadgeLabel}>MONTHS LOGGED</Text>
+            </View>
+          </View>
+          <MonthRail filled={tracker.completedInFirstCycle} total={BENCHMARK_CYCLE_MONTHS} />
+          <Text style={styles.cycleFoot}>
+            THE PLAYER KEEPS TIME. THE BENCHMARK KEEPS THE REFERENCE. YOUR JOB HERE IS TO BUILD THE RECORD.
+          </Text>
+          <Text style={styles.syncLine}>
+            CLOUD · {cloud.online ? 'ONLINE' : 'OFFLINE'}{cloud.syncedAt ? ` · LAST MATCH SYNC ${new Date(cloud.syncedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}` : ''}
+          </Text>
+          {cloudNote && <Text style={styles.cloudNote}>{cloudNote}</Text>}
+        </View>
 
-            {/* stage nodes */}
-            {SEASON.stages.map((s) => {
-              const isCurrent = s.n === CUR;
-              const locked = s.n > CUR;
-              const isSel = selected.n === s.n;
-              const done = !!progress.completed[s.n];
-              // completed stage whose live lesson got patched out → coach swap flag
-              const staleRef = !!progress.lessonRefs[s.n] && isContentStale(progress.lessonRefs[s.n]);
+        <View style={styles.referenceCard}>
+          <Text style={styles.referenceTitle}>BENCHMARK REFERENCE · THE PART THAT ALREADY HAPPENED</Text>
+          <View style={styles.referenceRow}>
+            {BENCHMARK_REFERENCE.map((item, index) => (
+              <View key={item} style={styles.referencePill}>
+                <Text style={styles.referenceIndex}>{index + 1}</Text>
+                <Text style={styles.referenceTxt}>{item}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.captureCard}>
+          <View style={styles.captureHead}>
+            <View>
+              <Text style={styles.cardEyebrow}>STATS SCREEN INGEST</Text>
+              <Text style={styles.cardTitle}>SEVEN-MATCH CHECKPOINT</Text>
+              <Text style={styles.cardSub}>UPLOAD THE POST-MATCH STATS SCREENS, THEN CONFIRM THE NUMBERS BELOW</Text>
+            </View>
+            <View style={styles.statusBox}>
+              <Text style={styles.statusBig}>{completeCount}/{BENCHMARK_MATCH_TARGET}</Text>
+              <Text style={styles.statusSmall}>MATCHES READY</Text>
+            </View>
+          </View>
+
+          <View style={styles.warningBox}>
+            <ScanGlyphIcon size={14} color={colors.accent} />
+            <Text style={styles.warningTxt}>
+              WEB PREVIEW NOW ATTEMPTS OCR ON THE STATS SCREEN. PICK WHETHER THE PLAYER IS ON THE LEFT OR RIGHT, LET OCR
+              PULL A DRAFT, THEN CONFIRM THE NUMBERS HONESTLY BEFORE SAVING THE CHECKPOINT.
+            </Text>
+          </View>
+
+          {Platform.OS === 'web' ? (
+            // Web-only prototype input: lets the founder drop the seven stats screenshots into the UI preview.
+            // @ts-ignore - intrinsic DOM element is valid in web builds.
+            <input
+              key={`uploader-${tracker.nextCheckpoint}`}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={attachWebFiles}
+              style={webInputStyle}
+            />
+          ) : (
+            <View style={styles.nativeNote}>
+              <Text style={styles.nativeNoteTxt}>
+                ON DEVICE, PICK THE SEVEN POST-MATCH STATS SCREENS STRAIGHT FROM THE PLAYER'S PHONE GALLERY.
+                {nativeOcrReady
+                  ? ' THIS BUILD ALSO HAS SERVER OCR READY — SCAN THE SHOTS AFTER PICKING THEM.'
+                  : ' IF SERVER OCR IS NOT CONFIGURED YET, USE THE PASTE OCR TEXT ASSIST UNDER EACH SCREENSHOT.'}
+              </Text>
+              <Pressable onPress={() => void pickNativeShots()} style={styles.nativePickBtn}>
+                <Text style={styles.nativePickBtnTxt}>PICK SCREENSHOTS FROM PHONE</Text>
+              </Pressable>
+            </View>
+          )}
+
+          <View style={styles.actionRow}>
+            <Pressable onPress={loadDemo} style={[styles.actionBtn, styles.actionBtnSolid]}>
+              <RefreshGlyphIcon size={12} color="#05130a" />
+              <Text style={styles.actionBtnSolidTxt}>LOAD DEMO CHECKPOINT</Text>
+            </Pressable>
+            <Pressable onPress={() => void scanAll()} style={styles.actionBtn}>
+              <ScanGlyphIcon size={12} color={colors.primary} />
+              <Text style={styles.actionBtnTxt}>SCAN ALL SHOTS</Text>
+            </Pressable>
+            <Pressable onPress={clearDraft} style={styles.actionBtn}>
+              <Text style={styles.actionBtnTxt}>CLEAR DRAFT</Text>
+            </Pressable>
+          </View>
+          {ocrSummary && <Text style={styles.ocrSummary}>{ocrSummary}</Text>}
+
+          <View style={styles.matchList}>
+            {draft.map((match, index) => {
+              const complete = benchmarkMatchComplete(match);
               return (
-                <React.Fragment key={s.n}>
-                  {isCurrent && <PulseRing x={s.at.x} y={s.at.y} />}
-                  <Pressable
-                    onPress={() => {
-                      if (locked) {
-                        setSelected(s);
-                        sfx('fail'); // a soft no — the map says not yet
-                      } else {
-                        zoomIntoStage(s);
-                      }
-                    }}
-                    hitSlop={12}
-                  >
-                    <View
+                <View key={match.id} style={[styles.matchCard, complete && styles.matchCardReady]}>
+                  <View style={styles.matchHead}>
+                    <View>
+                      <Text style={styles.matchTag}>MATCH {index + 1}</Text>
+                      <Text style={styles.matchFile} numberOfLines={1}>
+                        {match.screenshotName ?? 'NO SCREENSHOT ATTACHED YET'}
+                      </Text>
+                    </View>
+                    {complete ? (
+                      <View style={styles.readyBadge}>
+                        <CheckIcon size={10} color="#05130a" />
+                        <Text style={styles.readyBadgeTxt}>READY</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.pendingBadge}>
+                        <EyeIcon size={10} color={colors.accent} />
+                        <Text style={styles.pendingBadgeTxt}>PENDING</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {match.screenshotUri ? (
+                    <Image source={{ uri: match.screenshotUri }} style={styles.shotPreview} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.shotPlaceholder}>
+                      <Text style={styles.shotPlaceholderTxt}>POST-MATCH STATS SCREEN</Text>
+                    </View>
+                  )}
+
+                  <View style={styles.sideRow}>
+                    <Text style={styles.sideRowLabel}>PLAYER SIDE IN THIS SCREEN</Text>
+                    <View style={styles.sideChipRow}>
+                      {(['left', 'right'] as OcrSide[]).map((side) => {
+                        const active = sideOf(match.id) === side;
+                        return (
+                          <Pressable key={side} onPress={() => setSideForMatch(match.id, index, side)} style={[styles.sideChip, active && styles.sideChipOn]}>
+                            <Text style={[styles.sideChipTxt, active && styles.sideChipTxtOn]}>{side.toUpperCase()}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {match.screenshotUri && (
+                    <>
+                      <Pressable onPress={() => void scanOne(index)} style={styles.scanBtn}>
+                        <ScanGlyphIcon size={12} color={colors.accent} />
+                        <Text style={styles.scanBtnTxt}>
+                          {scanState[match.id]?.status === 'scanning' ? 'SCANNING…' : 'SCAN THIS SCREENSHOT'}
+                        </Text>
+                      </Pressable>
+                    </>
+                  )}
+
+                  <View style={styles.pasteWrap}>
+                    <Text style={styles.pasteLabel}>PASTE OCR TEXT ASSIST</Text>
+                    <TextInput
+                      value={ocrTextDrafts[match.id] ?? ''}
+                      onChangeText={(text) => setOcrTextDrafts((previous) => ({ ...previous, [match.id]: text }))}
+                      placeholder="PASTE TEXT FROM IOS/ANDROID LIVE TEXT OR ANY OCR TOOL HERE"
+                      placeholderTextColor="rgba(143,184,155,0.35)"
+                      style={styles.pasteInput}
+                      multiline
+                    />
+                    <Pressable onPress={() => parsePastedTextForMatch(match.id, index)} style={styles.pasteBtn}>
+                      <Text style={styles.pasteBtnTxt}>PARSE PASTED TEXT</Text>
+                    </Pressable>
+                  </View>
+
+                  {!!scanState[match.id]?.note && (
+                    <Text
                       style={[
-                        styles.node,
-                        { left: s.at.x - (isCurrent ? 24 : 18), top: s.at.y - (isCurrent ? 24 : 18) },
-                        isCurrent ? styles.nodeCurrent : done ? styles.nodeDone : styles.nodeLocked,
-                        isSel && !isCurrent && !done && { borderColor: 'rgba(238,242,236,0.8)' },
+                        styles.scanNote,
+                        scanState[match.id]?.status === 'error' && styles.scanNoteError,
+                        scanState[match.id]?.status === 'done' && styles.scanNoteDone,
                       ]}
                     >
-                      {locked ? (
-                        <LockIcon size={11} color="rgba(143,184,155,0.6)" />
-                      ) : done ? (
-                        <CheckIcon size={11} color={colors.primary} />
-                      ) : (
-                        <Text style={[styles.nodeNum, isCurrent && { color: '#05130a' }]}>{s.n}</Text>
-                      )}
-                    </View>
-                  </Pressable>
-                  {/* stale mechanics flag — gold dot above a cleared node */}
-                  {done && staleRef && (
-                    <View style={[styles.staleDot, { left: s.at.x + 12, top: s.at.y - 21 }]} />
+                      {scanState[match.id]?.note}
+                    </Text>
                   )}
-                  {/* CURRENT pill */}
-                  {isCurrent && (
-                    <View style={[styles.currentPill, { left: s.at.x - 20, top: s.at.y - 46 }]}>
-                      <Text style={styles.currentPillTxt}>CURRENT</Text>
-                    </View>
-                  )}
-                  {/* stage name beside the node */}
-                  <Text
-                    style={[
-                      styles.stageKey,
-                      s.at.x > MAP_W / 2
-                        ? { left: s.at.x + 26, textAlign: 'left' }
-                        : { left: s.at.x - 136, textAlign: 'right' },
-                      { top: s.at.y + 14 },
-                      isCurrent && { color: colors.primary },
-                    ]}
-                  >
-                    {s.key}
-                  </Text>
 
-                  {/* Side Quests branching from this stage */}
-                  {s.sideQuests?.map((sq) => {
-                    const sqUnlocked = s.n <= CUR;
-                    const sqDone = !!progress.completed[100 + s.n];
-                    const sqStage: JourneyStage = {
-                      n: 100 + s.n,
-                      key: sq.key,
-                      name: sq.name,
-                      tagline: sq.tagline,
-                      at: sq.at,
-                      chapter: s.chapter,
-                      objectives: sq.objectives,
-                      rewardXp: sq.rewardXp,
-                      rewardBadge: sq.rewardBadge,
-                      quote: sq.quote,
-                      duration: sq.duration,
-                      isSideQuest: true,
-                      parentStageN: s.n,
-                      id: sq.id,
-                      internalSource: sq.internalSource,
-                      internalPatchVersion: sq.internalPatchVersion,
-                      coachExplanation: sq.coachExplanation,
-                      rule: sq.rule,
-                      why: sq.why,
-                      tiles: sq.tiles,
-                      clip: sq.clip,
-                    };
-                    return (
-                      <React.Fragment key={sq.id}>
-                        <Pressable
-                          onPress={() => {
-                            if (!sqUnlocked) {
-                              sfx('fail');
-                            } else {
-                              setSelected(sqStage);
-                              zoomIntoStage(sqStage);
-                            }
-                          }}
-                          hitSlop={8}
-                        >
-                          <View
-                            style={[
-                              styles.node,
-                              { left: sq.at.x - 13, top: sq.at.y - 13, width: 26, height: 26, borderRadius: 13 },
-                              sqDone ? styles.sqNodeDone : sqUnlocked ? styles.sqNodeUnlocked : styles.sqNodeLocked,
-                              selected.n === sqStage.n && { borderColor: 'rgba(238,242,236,0.9)', borderWidth: 1.5 },
-                            ]}
-                          >
-                            {!sqUnlocked ? (
-                              <LockIcon size={8} color="rgba(242,192,120,0.5)" />
-                            ) : sqDone ? (
-                              <CheckIcon size={9} color="#05130a" />
-                            ) : (
-                              <Text style={styles.sqNodeNum}>Q</Text>
-                            )}
-                          </View>
-                        </Pressable>
-                        {/* side quest name beside the node */}
-                        <Text
-                          style={[
-                            styles.stageKey,
-                            sq.at.x > MAP_W / 2
-                              ? { left: sq.at.x + 18, textAlign: 'left' }
-                              : { left: sq.at.x - 118, textAlign: 'right' },
-                            { top: sq.at.y + 14, width: 100, fontSize: 5.6, letterSpacing: 1.5, color: sqDone ? colors.accent : sqUnlocked ? colors.fg : 'rgba(143,184,155,0.4)' },
-                          ]}
-                        >
-                          {sq.key}
-                        </Text>
-                      </React.Fragment>
-                    );
-                  })}
-                </React.Fragment>
+                  <View style={styles.inputGrid}>
+                    {FIELD_ORDER.map((field) => (
+                      <StepTile
+                        key={field.key}
+                        label={field.label}
+                        value={match[field.key]}
+                        suffix={field.suffix}
+                        onChange={(value) => updateField(index, field.key, value)}
+                      />
+                    ))}
+                  </View>
+                </View>
               );
             })}
           </View>
-        </View>
 
-        {/* ── THE STANDARD — the parallel benchmark journey ── */}
-        <StandardPanel
-          chapter={standard.current}
-          clearedCount={standard.clearedCount}
-          stageN={CUR}
-        />
-
-        {/* ── YOUR CARD — the player's own collectible, derived from receipts.
-            Pairs with the Role Model above: YOUR JOURNEY (evidence) vs THE
-            STANDARD (benchmark), both as instruments. (Principles P1/P2) ── */}
-        <View style={styles.youCardWrap}>
-          <View style={styles.dualTagRow}>
-            <Text style={styles.dualTagGreen}>YOUR CARD · THE EVIDENCE</Text>
-            <Text style={styles.dualTagGold}>vs THE STANDARD</Text>
-          </View>
-          <View style={styles.youCardHolder}>
-            <PlayerCard
-              rating={playerCard.rating}
-              stats={playerCard.stats}
-              stageN={playerCard.stageN}
-              totalStages={playerCard.totalStages}
-              clearedCount={playerCard.clearedCount}
-              ascent={playerCard.ascent}
-              displayName={settings.displayName}
-            />
-          </View>
-          {/* the six honest stats in detail — the bars the card summarises */}
-          <View style={styles.youStatsCard}>
-            <Text style={styles.youStatsTitle}>YOUR RECEIPTS · HOW YOU'RE ACTUALLY PLAYING</Text>
-            <View style={styles.youStatsGap}>
-              {playerCard.stats.map((s, i) => (
-                <StatBar key={s.label} label={s.label} value={s.value} delay={i * 70} />
-              ))}
-            </View>
-            <Text style={styles.youStatsNote}>
-              GREEN WHEN THE EVIDENCE HOLDS · AMBER WHEN IT'S THIN · NEVER PAINTED. THE RATING
-              ONLY RISES WHEN A STAGE CLEARS — YOU CANNOT GRIND IT UP.
+          <Pressable
+            onPress={saveCheckpoint}
+            style={[styles.saveBtn, !canSave && styles.saveBtnMuted]}
+            disabled={!canSave}
+          >
+            <CheckIcon size={11} color="#05130a" />
+            <Text style={styles.saveBtnTxt}>SAVE THIS CHECKPOINT</Text>
+          </Pressable>
+          {!canSave && (
+            <Text style={styles.helperLine}>
+              EVERY CARD MUST BE BUILT FROM SEVEN COMPLETE MATCH STAT LINES.
             </Text>
-          </View>
+          )}
+          {savedNotice && <Text style={styles.savedNotice}>{savedNotice}</Text>}
         </View>
 
-        {/* ── stage detail card — the live edge marks it as the active
-            objective panel (locked stages get the quiet edge instead) ── */}
-        <EdgeGradient radius={16} style={{ marginTop: 16 }} stops={isLocked ? QUIET_STOPS : undefined}>
-        <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, { borderWidth: 0, marginTop: 0, borderRadius: 15 }, isLocked && styles.stageCardLocked]}>
-          <View style={styles.stageTop}>
-            {selected.isSideQuest ? (
-              <Text style={[styles.stageSelPill, { borderColor: 'rgba(242,192,120,0.5)', color: colors.accent }]}>SIDE QUEST · SELECTED</Text>
+        <Animated.View entering={FadeInUp.duration(280)} style={styles.cardBuild}>
+          <View style={styles.cardBuildHead}>
+            <View>
+              <Text style={styles.cardEyebrow}>LIVE DEVELOPMENT CARD</Text>
+              <Text style={styles.cardTitle}>{settings.displayName || 'PLAYER'}</Text>
+              <Text style={styles.cardSub}>BUILT FROM {liveSummary.matches} OF {BENCHMARK_MATCH_TARGET} STATS SCREENS</Text>
+            </View>
+            <View style={styles.confidencePill}>
+              <Text style={styles.confidenceTxt}>{liveSummary.style.confidence}</Text>
+            </View>
+          </View>
+
+          <View style={styles.proofStrip}>
+            <Text style={styles.proofStripLabel}>{liveProof.label}</Text>
+            <Text style={styles.proofStripSub}>{liveProof.sublabel}</Text>
+            <Text style={styles.proofStripMeta}>{liveProof.evidenceLine}</Text>
+          </View>
+
+          <Text style={styles.styleTitle}>{liveIdentity.archetype}</Text>
+          <Text style={styles.styleRead}>{liveSummary.style.read}</Text>
+
+          <View style={styles.identityGrid}>
+            <View style={styles.identityCell}>
+              <Text style={styles.identityLabel}>PRIMARY STYLE</Text>
+              <Text style={styles.identityValue}>{liveIdentity.primaryStyle}</Text>
+            </View>
+            <View style={styles.identityCell}>
+              <Text style={styles.identityLabel}>SECONDARY TENDENCY</Text>
+              <Text style={styles.identityValue}>{liveIdentity.secondaryTendency}</Text>
+            </View>
+            <View style={styles.identityCell}>
+              <Text style={styles.identityLabel}>TEMPERAMENT</Text>
+              <Text style={styles.identityValue}>{liveIdentity.temperament}</Text>
+            </View>
+            <View style={styles.identityCell}>
+              <Text style={styles.identityLabel}>CURRENT GROWTH EDGE</Text>
+              <Text style={styles.identityValue}>{liveSummary.style.focus}</Text>
+            </View>
+          </View>
+
+          <View style={styles.kpiRow}>
+            <Kpi label="W·D·L" value={`${liveSummary.wins}-${liveSummary.draws}-${liveSummary.losses}`} />
+            <Kpi label="PPM" value={liveSummary.pointsPerMatch.toFixed(1)} accent />
+            <Kpi label="AVG GF" value={liveSummary.avgGoalsFor.toFixed(1)} />
+            <Kpi label="AVG GA" value={liveSummary.avgGoalsAgainst.toFixed(1)} />
+          </View>
+
+          <View style={styles.metricWrap}>
+            <MetricPill label="POSS" value={`${liveSummary.avgPossession.toFixed(1)}%`} />
+            <MetricPill label="SHOTS" value={liveSummary.avgShots.toFixed(1)} />
+            <MetricPill label="ON TARGET" value={liveSummary.avgShotsOnTarget.toFixed(1)} />
+            <MetricPill label="PASS" value={`${liveSummary.avgPassAccuracy.toFixed(1)}%`} />
+            <MetricPill label="SHOT ACC" value={`${liveSummary.shotAccuracy.toFixed(1)}%`} />
+            <MetricPill label="TACKLES" value={liveSummary.avgTacklesWon.toFixed(1)} />
+            <MetricPill label="SAVES" value={liveSummary.avgSaves.toFixed(1)} />
+            <MetricPill label="CLEAN SHEETS" value={String(liveSummary.cleanSheets)} />
+          </View>
+
+          <View style={styles.premiumPanel}>
+            <Text style={styles.premiumPanelTitle}>TREND ENGINE</Text>
+            <Text style={styles.premiumPanelLead}>{liveMovementHeadline}</Text>
+            {liveDelta ? (
+              <View style={styles.trendGrid}>
+                <TrendRow label="PPM" value={liveDelta.pointsPerMatch} />
+                <TrendRow label="GF" value={liveDelta.avgGoalsFor} />
+                <TrendRow label="GA" value={liveDelta.avgGoalsAgainst} betterWhenLower />
+                <TrendRow label="PASS" value={liveDelta.avgPassAccuracy} />
+                <TrendRow label="POSS" value={liveDelta.avgPossession} />
+                <TrendRow label="ON TARGET" value={liveDelta.avgShotsOnTarget} />
+              </View>
             ) : (
-              <Text style={styles.stageSelPill}>STAGE {selected.n} · SELECTED</Text>
-            )}
-            {isLocked ? (
-              <View style={styles.statusPill}>
-                <LockIcon size={9} color="rgba(143,184,155,0.7)" />
-                <Text style={styles.statusLockedTxt}>LOCKED</Text>
-              </View>
-            ) : cleared ? (
-              <View style={styles.statusPill}>
-                <CheckIcon size={8} color={colors.primary} />
-                <Text style={styles.statusTxt}>CLEARED</Text>
-              </View>
-            ) : (
-              <View style={styles.statusPill}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusTxt}>IN PROGRESS</Text>
-              </View>
+              <Text style={styles.premiumPanelBody}>SAVE THIS FIRST CHECKPOINT AND THE APP WILL START DRAWING REAL MOVEMENT ARROWS AGAINST IT.</Text>
             )}
           </View>
 
-          <Text style={[styles.stageName, isLocked && { color: 'rgba(143,184,155,0.7)' }]}>{selected.name}</Text>
-          <Text style={styles.stageTagline}>{selected.tagline.replace('YOUR COACH', coachFirst)}</Text>
-          {/* the console grammar: facts as one dot-separated line, one accent */}
-          <Text style={styles.stageMeta}>
-            {(selected.objectives ?? []).length} OBJECTIVES · REWARD +{selected.rewardXp ?? 100} XP · STAGE {selected.n} OF {SEASON.totalStages}
-          </Text>
-          {selected.duration && (
-            <Text style={styles.stageDuration}>ESTIMATED TIME TO CLEAR: {selected.duration}</Text>
-          )}
+          <View style={styles.premiumPanel}>
+            <Text style={styles.premiumPanelTitle}>BENCHMARK GAP</Text>
+            <Text style={styles.premiumPanelLead}>YOUR EVIDENCE VS THE ELITE REFERENCE — CLOSE THE GAP, DON’T GUESS IT.</Text>
+            {liveGap.map((item) => (
+              <GapBar key={item.key} item={item} />
+            ))}
+          </View>
 
-          {isLocked ? (
-            <View style={styles.lockedNote}>
-              <Text style={styles.lockedNoteTxt}>
-                Finish Stage {selected.n - 1} first. The path only moves forward — no skipping, no shortcuts.
-              </Text>
-            </View>
-          ) : (
+          {liveDelta && (
             <>
-              {/* objectives — GRADED LIVE against the vault + the journal.
-                  Each is now an evidence ring, not a checkbox + "2/3" text. */}
-              <View style={styles.objectives}>
-                {(selected.objectives ?? []).map((o, i) => {
-                  const count = o.check
-                    ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled)
-                    : o.done;
-                  const shown = Math.min(count, o.target);
-                  const done = count >= o.target;
-                  return (
-                    <View key={i} style={styles.objRow}>
-                      <EvidenceRing
-                        value={shown}
-                        target={o.target}
-                        size={28}
-                        stroke={3.1}
-                        delay={i * 70}
-                        glyph={done ? <CheckIcon size={13} color={colors.primary} /> : undefined}
-                      />
-                      <Text style={[styles.objLabel, done && styles.objLabelDone]} numberOfLines={2}>
-                        {o.label}
-                      </Text>
-                      <Text style={[styles.objStatus, done && { color: colors.primary }]}>
-                        {done ? 'HIT' : `${shown}/${o.target}`}
-                      </Text>
-                    </View>
-                  );
-                })}
+              <Text style={styles.deltaTitle}>LIVE CHANGE VS LAST SAVED CHECKPOINT</Text>
+              <View style={styles.deltaRow}>
+                <DeltaPill label="PPM" value={liveDelta.pointsPerMatch} />
+                <DeltaPill label="GF" value={liveDelta.avgGoalsFor} />
+                <DeltaPill label="GA" value={liveDelta.avgGoalsAgainst} betterWhenLower />
+                <DeltaPill label="PASS" value={liveDelta.avgPassAccuracy} />
               </View>
-
-              {/* progress — FUT 26 Rivals Rank Ladder Progress */}
-              <RivalsRankLadder progressPct={stageLiveProgress} totalSteps={(selected.objectives ?? []).length + 1} />
-
-              {/* FC 26-grounded Champions capstone — the final climb reads like
-                  the real 15-rank Champions ladder (docs/FC26_UI_RESEARCH.md §6) */}
-              {selected.n === SEASON.totalStages && !selected.isSideQuest && (
-                <ChampionsLadder wins={Math.min(vault.w, 15)} total={15} />
-              )}
-
-              {/* reward — the badge as a real sealed/unsealed medallion + XP */}
-              <View style={styles.rewardRow}>
-                <BadgeMark stage={selected.n} sealed={!!cleared} size={48} />
-                <View style={styles.rewardMeta}>
-                  <Text style={styles.rewardTitle}>
-                    {BADGE_LABELS[selected.n] ?? selected.rewardBadge ?? 'STAGE BADGE'}
-                  </Text>
-                  <Text style={styles.rewardSub}>
-                    {cleared ? 'SEALED · THE EVIDENCE HOLDS' : 'SEALS WHEN THE STAGE CLEARS'}
-                  </Text>
-                </View>
-                <View style={styles.rewardXpBox}>
-                  <Text style={styles.rewardXpNum}>+{selected.rewardXp}</Text>
-                  <Text style={styles.rewardXpLbl}>XP</Text>
-                </View>
-              </View>
-
-              {/* coach quote — he speaks from a live presence, not a static stamp */}
-              {selected.quote && (
-                <View style={styles.quoteCard}>
-                  <View style={{ marginTop: 2 }}>
-                    <CoachPresence size={28}>
-                      <Image source={coach.portrait} style={styles.quoteAvatar} />
-                    </CoachPresence>
-                  </View>
-                  <View style={styles.quoteBody}>
-                    <Text style={styles.quoteTxt}>"{selected.quote}"</Text>
-                    <Text style={styles.quoteBy}>— {coach.name} · YOUR COACH</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* CTA — free stages open; paid ones ask once, then open forever */}
-              {needsUnlock(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) ? (
-                <View style={styles.payWall}>
-                  <Text style={styles.payTag}>
-                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n))}
-                  </Text>
-                  <Text style={styles.payBody}>
-                    {tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) >= 2
-                      ? 'The summit stages are PRO. One pass opens every stage, every trick and the film room — for the whole period, not per item.'
-                      : 'ACADEMY opens the full journey for the period you pick. Same tier, same access, wherever you are — only the currency changes.'}
-                  </Text>
-                  <Text style={styles.payNote}>
-                    YOU ARE ON {(access?.tier ?? 'free').toUpperCase()}
-                    {access?.daysLeft != null ? ` · ${access.daysLeft} DAYS LEFT` : ''}
-                  </Text>
-                  <ContinueButton label="SEE THE PASSES ›" onPress={() => setSheet('till')} />
-                </View>
-              ) : (
-                <ContinueButton
-                  label={cleared ? 'REPLAY FILM ROOM ›' : selected.isSideQuest ? 'START SIDE QUEST ›' : 'CONTINUE STAGE ›'}
-                  onPress={() => zoomIntoStage(selected)}
-                />
-              )}
             </>
           )}
 
-          <Pressable onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} hitSlop={8}>
-            <Text style={styles.fullMap}>VIEW FULL MAP · {SEASON.totalStages} STAGES</Text>
-          </Pressable>
+          <View style={styles.focusCard}>
+            <Text style={styles.focusTag}>{coachFirst}'S READ</Text>
+            <Text style={styles.focusBody}>{liveSummary.style.focus}</Text>
+          </View>
         </Animated.View>
-        </EdgeGradient>
 
-        {/* ── THE RECORD — the two ledgers every objective is graded from ── */}
+        <View style={styles.shareCardWrap}>
+          <Text style={styles.archiveTitle}>AD CARD PREVIEW</Text>
+          <Text style={styles.archiveSub}>TURN THE CHECKPOINT INTO SOMETHING YOU CAN POST, SEND OR SELL</Text>
+          <View style={styles.sharePreviewCard}>
+            <MarketingShareCard svg={shareSvg} width={332} />
+            <View style={styles.shareActionRow}>
+              <Pressable onPress={() => void exportSharePng()} style={[styles.actionBtn, styles.shareBtnPrimary]}>
+                <Text style={styles.shareBtnPrimaryTxt}>DOWNLOAD PNG</Text>
+              </Pressable>
+              <Pressable onPress={exportShareSvg} style={styles.actionBtn}>
+                <Text style={styles.actionBtnTxt}>DOWNLOAD SVG</Text>
+              </Pressable>
+            </View>
+            {shareNotice && <Text style={styles.shareNotice}>{shareNotice}</Text>}
+          </View>
+        </View>
+
+        {comparisonSvg && comparisonSource && comparisonDelta && (
+          <View style={styles.shareCardWrap}>
+            <Text style={styles.archiveTitle}>BEFORE VS AFTER POSTER</Text>
+            <Text style={styles.archiveSub}>THE PROOF PIECE — FIRST CHECKPOINT AGAINST THE LATEST READ</Text>
+            <View style={styles.sharePreviewCard}>
+              <MarketingShareCard svg={comparisonSvg} width={332} />
+              <Text style={styles.compareMeta}>
+                {comparisonSource.before.label} → {comparisonSource.after.label}
+              </Text>
+              <View style={styles.shareActionRow}>
+                <Pressable onPress={() => void exportComparisonPng()} style={[styles.actionBtn, styles.shareBtnPrimary]}>
+                  <Text style={styles.shareBtnPrimaryTxt}>DOWNLOAD PNG</Text>
+                </Pressable>
+                <Pressable onPress={exportComparisonSvg} style={styles.actionBtn}>
+                  <Text style={styles.actionBtnTxt}>DOWNLOAD SVG</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.archiveHead}>
+          <Text style={styles.archiveTitle}>TRACK RECORD ARCHIVE</Text>
+          <Text style={styles.archiveSub}>THE PART YOU CAN SHOW, STUDY AND SELL — REAL CHANGE, CHECKPOINT BY CHECKPOINT</Text>
+        </View>
+
+        {tracker.checkpoints.length === 0 ? (
+          <View style={styles.emptyArchive}>
+            <RouteIcon size={18} color="rgba(143,184,155,0.55)" />
+            <Text style={styles.emptyArchiveTitle}>NO SAVED CHECKPOINTS YET</Text>
+            <Text style={styles.emptyArchiveBody}>
+              The card above updates live, but the archive only starts when the first seven-match checkpoint is sealed.
+            </Text>
+          </View>
+        ) : (
+          tracker.checkpoints.map((snapshot, index) => (
+            <SnapshotCard
+              key={snapshot.id}
+              snapshot={snapshot}
+              compareTo={tracker.checkpoints[index + 1] ?? null}
+              onRemove={() => removeCheckpoint(snapshot)}
+            />
+          ))
+        )}
+
         <View style={styles.ledgerRow}>
           <Pressable style={styles.ledgerCard} onPress={() => setSheet('vault')}>
-            <Text style={styles.ledgerTag}>MATCH VAULT</Text>
-            <Text style={styles.ledgerBig}>{vault.played}</Text>
-            <Text style={styles.ledgerSub}>
-              {vault.w}W · {vault.d}D · {vault.l}L
-            </Text>
-            <Text style={styles.ledgerCta}>OPEN THE VAULT ›</Text>
+            <View style={styles.ledgerHead}>
+              <RouteIcon size={14} color={colors.primary} />
+              <Text style={styles.ledgerTitle}>MATCH VAULT</Text>
+            </View>
+            <Text style={styles.ledgerValue}>{vault.played}</Text>
+            <Text style={styles.ledgerBody}>W {vault.w} · D {vault.d} · L {vault.l}</Text>
+            <View style={styles.ledgerLinkRow}>
+              <Text style={styles.ledgerLink}>OPEN MATCH RECEIPTS</Text>
+              <ChevronRightIcon size={11} color={colors.primary} />
+            </View>
           </Pressable>
 
           <Pressable style={styles.ledgerCard} onPress={() => setSheet('journal')}>
-            <Text style={styles.ledgerTag}>LOSS JOURNAL</Text>
-            <Text style={styles.ledgerBig}>{journal.total}</Text>
-            <Text style={styles.ledgerSub}>
-              {settings.toggles.lossJournal
-                ? journal.streakDays > 0
-                  ? `${journal.streakDays} DAY STREAK`
-                  : 'LINES LOGGED'
-                : 'PAUSED'}
-            </Text>
-            <Text style={styles.ledgerCta}>
-              {settings.toggles.lossJournal ? 'WRITE A LINE ›' : 'TURN IT BACK ON ›'}
-            </Text>
+            <View style={styles.ledgerHead}>
+              <JournalIcon size={14} color={colors.accent} />
+              <Text style={styles.ledgerTitle}>LOSS JOURNAL</Text>
+            </View>
+            <Text style={[styles.ledgerValue, { color: colors.accent }]}>{journal.total}</Text>
+            <Text style={styles.ledgerBody}>{journal.streakDays > 0 ? `${journal.streakDays} DAY STREAK` : 'LINES LOGGED'}</Text>
+            <View style={styles.ledgerLinkRow}>
+              <Text style={styles.ledgerLink}>OPEN WRITTEN PATTERNS</Text>
+              <ChevronRightIcon size={11} color={colors.accent} />
+            </View>
           </Pressable>
         </View>
-
-        <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
       </ScrollView>
 
-      {/* full-screen ledgers */}
       {sheet === 'vault' && <MatchVault coach={coach} onClose={() => setSheet(null)} />}
       {sheet === 'journal' && <LossJournal coach={coach} onClose={() => setSheet(null)} />}
-      {sheet === 'till' && <StoreSheet onClose={() => { setSheet(null); refreshAccess(); }} />}
-      {sheet === 'rolemodel' && (
-        <RoleModelSheet
-          coach={coach}
-          onClose={() => setSheet(null)}
-          onWalkCurrent={() => {
-            setSheet(null);
-            zoomFromCard();
-          }}
-        />
-      )}
-      {sheet === 'feed' && (
-        <RoleModelFeedSheet
-          coach={coach}
-          onClose={() => setSheet(null)}
-          onOpenFinish={() => setSheet('rolemodel')}
-        />
-      )}
     </View>
   );
 }
 
-// ── THE STANDARD — the parallel benchmark journey. Not a second
-// progression track: it moves beside YOUR JOURNEY and reveals the
-// chapter that matches your current stage. Read it. Walk your own road.
-// ── FC 26-grounded Rivals ladder (docs/FC26_UI_RESEARCH.md §6).
-// Mirrors the current game's real ranked structure: you climb STAGES within
-// your division, a WIN STREAK doubles your progress, and a LIMITED CHECKPOINT
-// guards your place before you RANK UP to the next division.
-function RivalsRankLadder({ progressPct, totalSteps = 5 }: { progressPct: number; totalSteps?: number }) {
-  const activeStep = Math.min(totalSteps - 1, Math.floor((progressPct / 100) * totalSteps));
-  const streakOn = progressPct >= 45; // a "streak" lights once you're past the mid climb
-  return (
-    <View style={styles.rivalsTrack}>
-      <Text style={styles.rivalsTrackTitle}>FUT 26 DIV RIVALS LADDER PROGRESS</Text>
-      <Text style={styles.rivalsTrackSub}>
-        STAGES WITHIN YOUR DIVISION · WIN STREAKS DOUBLE PROGRESS · LIMITED CHECKPOINTS GUARD YOUR RANK
-      </Text>
-      <View style={styles.rivalsLineRow}>
-        <View style={styles.rivalsBgLine} />
-        <View style={[styles.rivalsActiveLine, { width: `${progressPct}%` }]} />
-        {Array.from({ length: totalSteps }).map((_, i) => {
-          const stepPct = (i / (totalSteps - 1)) * 100;
-          const isCompleted = progressPct >= stepPct || (i === 0);
-          const isActive = i === activeStep;
-          return (
-            <View
-              key={i}
-              style={[
-                styles.rivalsStepNode,
-                { left: `${stepPct}%` },
-                isCompleted && styles.rivalsStepCompleted,
-                isActive && styles.rivalsStepActive,
-              ]}
-            >
-              {i === totalSteps - 1 ? (
-                <Text style={[styles.rivalsStepGlyph, isCompleted && { color: '#05130a' }]}>★</Text>
-              ) : (
-                <View style={[styles.rivalsStepInnerDot, isCompleted && { backgroundColor: '#05130a' }]} />
-              )}
-              <Text
-                style={[
-                  styles.rivalsStepLabel,
-                  isCompleted ? { color: colors.primary } : { color: colors.muted },
-                  isActive && { color: colors.accent, fontWeight: '900' },
-                ]}
-              >
-                {i === 0 ? 'START' : i === totalSteps - 1 ? 'RANK UP' : i === 1 ? 'STAGE' : `STEP ${i}`}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-      <View style={styles.rivalsMetaRow}>
-        <View style={[styles.rivalsMetaPill, streakOn && styles.rivalsMetaStreak]}>
-          <FlameIcon size={9} color={streakOn ? '#ffcf7a' : 'rgba(143,184,155,0.55)'} />
-          <Text style={[styles.rivalsMetaTxt, streakOn && { color: colors.warm }]}>
-            {streakOn ? 'WIN STREAK ACTIVE' : 'STREAK: NONE'}
-          </Text>
-        </View>
-        <View style={styles.rivalsMetaPill}>
-          <Text style={styles.rivalsMetaTxt}>LIMITED CHECKPOINT · HOLDS</Text>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-// ── FC 26-grounded Champions ladder (docs/FC26_UI_RESEARCH.md §6).
-// The current game's Champions is a 15-rank ladder where RANK 1 = 15 wins and
-// rewards land per win. Rendered as the "PROVE IT" capstone on the final
-// climb so the app's competitive apex speaks the same ranked language.
-function ChampionsLadder({ wins, total = 15 }: { wins: number; total?: number }) {
-  const shown = Math.min(wins, total);
-  const pct = Math.min(100, (wins / total) * 100);
-  return (
-    <View style={styles.champsTrack}>
-      <View style={styles.champsHeader}>
-        <Text style={styles.champsTitle}>CHAMPIONS RANK LADDER · {total} WINS = RANK 1</Text>
-        <Text style={styles.champsWins}>{wins}/{total} WINS</Text>
-      </View>
-      <View style={styles.champsBarRow}>
-        <View style={styles.champsBgBar} />
-        <View style={[styles.champsFillBar, { width: `${pct}%` }]} />
-      </View>
-      <View style={styles.champsRanksRow}>
-        {[15, 10, 5, 1].map((r) => {
-          const hit = wins >= (total - r + 1);
-          return (
-            <View key={r} style={styles.champsRank}>
-              <View style={[styles.champsRankDot, hit && styles.champsRankDotHit]} />
-              <Text style={[styles.champsRankTxt, hit && { color: colors.primary }]}>RANK {r}</Text>
-            </View>
-          );
-        })}
-        <Text style={[styles.champsRankTxt, { marginLeft: 'auto', color: colors.warm }]}>
-          {shown}/{total} REACHED
-        </Text>
-      </View>
-      <Text style={styles.champsNote}>
-        NO PLAYOFFS IN FC 26 — QUALIFY VIA RIVALS DIVISION + QUALIFICATION POINTS · REWARDS LAND PER WIN
-      </Text>
-    </View>
-  );
-}
-
-function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
-  return (
-    <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
-      <View style={styles.standardHead}>
-        <View style={styles.standardTitleBlock}>
-          <Text style={styles.standardName}>THE STANDARD</Text>
-          <Text style={styles.standardSub}>A COMPOSITE OF THE BEST IN THE PATH</Text>
-        </View>
-        <View style={styles.standardStagePill}>
-          <Text style={styles.standardStageTxt}>STAGE {stageN}</Text>
-        </View>
-      </View>
-
-      {/* the dual line — YOUR JOURNEY vs THE STANDARD at the same point */}
-      <View style={styles.standardDual}>
-        <View style={styles.standardDualCol}>
-          <Text style={styles.standardDualTag}>YOUR JOURNEY</Text>
-          <Text style={styles.standardDualName}>{chapter.stageKey}</Text>
-        </View>
-        <View style={styles.standardDualArrow}>
-          <Text style={styles.standardDualArrowTxt}>‖</Text>
-        </View>
-        <View style={[styles.standardDualCol, styles.standardDualColRight]}>
-          <Text style={[styles.standardDualTag, styles.standardDualTagGold]}>THE STANDARD</Text>
-          <Text style={styles.standardDualName}>{chapter.chapterTitle}</Text>
-        </View>
-      </View>
-
-      <Text style={styles.standardLearnTitle}>WHAT ELITE PLAYERS LEARN HERE</Text>
-      <Text style={styles.standardLearnBody}>{chapter.whatTheyLearn}</Text>
-
-      <Text style={styles.standardLearnTitle}>THE PROFESSIONAL BEHAVIOUR TO STUDY</Text>
-      <View style={styles.standardBullets}>
-        {chapter.behaviourToStudy.map((b, i) => (
-          <View key={i} style={styles.standardBulletRow}>
-            <View style={styles.standardBulletDot} />
-            <Text style={styles.standardBulletTxt}>{b}</Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.standardBenchmark}>
-        <Text style={styles.standardBenchmarkTxt}>“{chapter.benchmark}”</Text>
-        <Text style={styles.standardBenchmarkBy}>— THE STANDARD · {chapter.chapterTitle}</Text>
-      </View>
-
-      <Text style={styles.standardMotto}>
-        YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK · {clearedCount}/6 STAGES CLEARED
-      </Text>
-    </Animated.View>
-  );
-}
-
-function ContinueButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const press = useSharedValue(0);
-  const s = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - press.value * 0.03 }],
-    shadowOpacity: 0.45 + press.value * 0.35,
-    shadowRadius: 14 + press.value * 8,
-  }));
-  return (
-    <Pressable
-      onPress={onPress}
-      onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
-      onPressOut={() => (press.value = withSpring(0))}
-    >
-      <Animated.View style={[styles.cta, s]}>
-        <Text style={styles.ctaTxt}>{label}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
+const webInputStyle = {
+  width: '100%',
+  marginTop: 12,
+  padding: '12px 14px',
+  borderRadius: '12px',
+  border: `1px dashed ${colors.primary}`,
+  background: 'rgba(57,255,106,0.05)',
+  color: colors.fg,
+  boxSizing: 'border-box' as const,
+};
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scroll: { paddingHorizontal: 16, paddingBottom: 12 },
+  scroll: { paddingHorizontal: 16, paddingBottom: 28 },
 
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 2 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 },
   brand: {
     fontFamily: monoFont,
     fontSize: 9.5,
@@ -881,605 +1208,498 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.primary,
     paddingBottom: 4,
-    textShadowColor: 'rgba(57,255,106,0.5)',
-    textShadowRadius: 6,
   },
-  seasonPill: {
+  headerPill: {
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.35)',
-    borderRadius: 9,
+    borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  seasonTxt: { fontFamily: monoFont, fontSize: 6.8, letterSpacing: 1.6, color: colors.muted },
+  headerPillTxt: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.5, color: colors.muted },
 
-  journeyBand: { marginTop: 12, borderRadius: 15 },
-  headlineBand: {
-    ...typeTokens.display,
-    fontSize: 30,
-    lineHeight: 30,
+  heroBand: { marginTop: 12, marginHorizontal: -1, borderRadius: 16 },
+  heroTitle: {
+    fontFamily: displayFont,
+    fontSize: 31,
+    lineHeight: 31,
     letterSpacing: 0.6,
     color: colors.fg,
-    textShadowColor: 'rgba(57,255,106,0.5)',
-    textShadowRadius: 10,
   },
-  sublineBand: {
+  heroSub: {
     marginTop: 7,
     fontFamily: monoFont,
-    fontSize: 7,
-    letterSpacing: 2.4,
-    color: 'rgba(238,242,236,0.85)',
-  },
-
-  chineduCard: {
-    marginTop: 14,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1.2,
-    borderColor: 'rgba(57,255,106,0.35)',
-    backgroundColor: 'rgba(57,255,106,0.04)',
-  },
-  chineduTag: {
-    fontFamily: monoFont,
-    fontSize: 7.2,
-    fontWeight: '800',
-    letterSpacing: 1.8,
-    color: colors.primary,
-  },
-  chineduTitle: {
-    marginTop: 5,
-    fontFamily: monoFont,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    color: colors.fg,
-  },
-  chineduText: {
-    marginTop: 8,
-    fontSize: 10.5,
-    lineHeight: 16.5,
-    color: 'rgba(143,184,155,0.9)',
-  },
-
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingHorizontal: 8 },
-  divLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.22)' },
-  dividerTxt: { fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
-
-  mapWrap: { marginTop: 2, alignItems: 'center' },
-  mapCanvas: { width: MAP_W, height: MAP_H },
-
-  heroWrap: { marginTop: 10, alignItems: 'center', paddingVertical: 14 },
-  heroHint: { marginTop: 14, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 2.2, color: 'rgba(143,184,155,0.55)' },
-
-  playerCard: {
-    position: 'absolute',
-    width: 104,
-    borderWidth: 1.2,
-    borderColor: 'rgba(57,255,106,0.55)',
-    borderRadius: 13,
-    backgroundColor: 'rgba(10,17,12,0.92)',
-    alignItems: 'center',
-    paddingVertical: 8,
-    gap: 2,
-  },
-  playerRating: { fontFamily: monoFont, fontSize: 13, fontWeight: '900', color: colors.primary, textAlign: 'center' },
-  playerRatingSub: { fontSize: 4.8, letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
-  playerName: { fontSize: 10, fontWeight: '800', letterSpacing: 1.6, color: colors.fg, marginTop: 2 },
-  playerMeta: { fontFamily: monoFont, fontSize: 4.6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
-  playerLabel: { position: 'absolute', width: 104, textAlign: 'center', fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.primary },
-  youToken: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 1.4,
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(10,17,12,0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.7,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  youTokenTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
-
-  pulseRing: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 1.4,
-    borderColor: colors.primary,
-  },
-  node: {
-    position: 'absolute',
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.3,
-  },
-  nodeCurrent: {
-    width: 48,
-    height: 48,
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.85,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  nodeDone: {
-    width: 36,
-    height: 36,
-    backgroundColor: 'rgba(57,255,106,0.12)',
-    borderColor: 'rgba(57,255,106,0.7)',
-  },
-  staleDot: {
-    position: 'absolute',
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.8,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  nodeLocked: {
-    width: 36,
-    height: 36,
-    backgroundColor: 'rgba(10,17,12,0.9)',
-    borderColor: 'rgba(57,255,106,0.35)',
-  },
-  nodeNum: { fontFamily: monoFont, fontSize: 14, fontWeight: '900', color: colors.fg },
-
-  // Side Quest Node Styles
-  sqNodeDone: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.85,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  sqNodeUnlocked: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(242,192,120,0.12)',
-  },
-  sqNodeLocked: {
-    borderColor: 'rgba(242,192,120,0.25)',
-    backgroundColor: 'rgba(10,17,12,0.95)',
-  },
-  sqNodeNum: {
-    fontFamily: monoFont,
-    fontSize: 9,
-    fontWeight: '900',
-    color: colors.accent,
-  },
-  rivalsTrack: {
-    marginTop: 14,
-    borderWidth: 1.1,
-    borderColor: 'rgba(57,255,106,0.22)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(10,20,13,0.72)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  rivalsTrackTitle: {
-    fontFamily: monoFont,
-    fontSize: 6.4,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-    color: colors.muted,
-    marginBottom: 14,
-    textAlign: 'center',
-  },
-  // the app's own brand-green sub-line — the ladder STRUCTURE carries the
-  // console-ranked nod, the colour stays ProSeasonAcademy's identity
-  rivalsTrackSub: {
-    fontFamily: monoFont,
-    fontSize: 5.2,
-    lineHeight: 8.5,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textAlign: 'center',
-    color: 'rgba(143,184,155,0.6)',
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  rivalsMetaRow: { flexDirection: 'row', gap: 7, marginTop: 2 },
-  rivalsMetaPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.25)',
-    borderRadius: 7,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(10,20,13,0.6)',
-  },
-  rivalsMetaStreak: { borderColor: 'rgba(255,207,122,0.5)', backgroundColor: 'rgba(242,192,120,0.07)' },
-  rivalsMetaTxt: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.1, color: 'rgba(143,184,155,0.8)' },
-  rivalsLineRow: {
-    height: 28,
-    position: 'relative',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  rivalsBgLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 4,
-    backgroundColor: '#172f21',
-    borderRadius: 2,
-  },
-  rivalsActiveLine: {
-    position: 'absolute',
-    left: 0,
-    height: 4,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
-  rivalsStepNode: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1.8,
-    borderColor: '#1f3826',
-    backgroundColor: '#0a0f0a',
-    top: 6,
-    marginLeft: -8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rivalsStepCompleted: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  rivalsStepActive: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(242,192,120,0.3)',
-    transform: [{ scale: 1.25 }],
-  },
-  rivalsStepGlyph: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: colors.accent,
-  },
-  rivalsStepInnerDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#1f3826',
-  },
-  rivalsStepLabel: {
-    position: 'absolute',
-    top: 20,
-    width: 80,
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 5.6,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginLeft: -40,
-    left: 8,
-  },
-
-  // ── 15-rank Champions ladder — the STRUCTURE mirrors the real ranked
-  //    format; the colour stays the app's own green/gold identity ──
-  champsTrack: {
-    marginTop: 12,
-    borderWidth: 1.2,
-    borderColor: 'rgba(242,192,120,0.35)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(20,16,8,0.5)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-  },
-  champsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  champsTitle: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgba(242,192,120,0.8)' },
-  champsWins: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.warm },
-  champsBarRow: { marginTop: 10, height: 5, borderRadius: 3, backgroundColor: 'rgba(31,56,38,0.8)', overflow: 'hidden' },
-  champsBgBar: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#172f21' },
-  champsFillBar: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  champsRanksRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  champsRank: { alignItems: 'center' },
-  champsRankDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: 'rgba(57,255,106,0.5)', backgroundColor: '#0a0f0a' },
-  champsRankDotHit: { backgroundColor: colors.primary, borderColor: colors.primary },
-  champsRankTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
-  champsNote: {
-    marginTop: 10,
-    fontFamily: monoFont,
-    fontSize: 5.2,
-    lineHeight: 8.5,
-    fontWeight: '700',
-    letterSpacing: 1,
-    textAlign: 'center',
-    color: 'rgba(143,184,155,0.55)',
-  },
-
-  currentPill: {
-    position: 'absolute',
-    backgroundColor: 'rgba(8,13,9,0.95)',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2.5,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.6,
-    shadowRadius: 7,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  currentPillTxt: { fontFamily: monoFont, fontSize: 5.4, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-  stageKey: {
-    position: 'absolute',
-    width: 110,
-    fontFamily: monoFont,
     fontSize: 6.2,
-    letterSpacing: 2,
-    color: 'rgba(143,184,155,0.6)',
+    letterSpacing: 1.9,
+    color: 'rgba(238,242,236,0.88)',
   },
 
-  stageCard: {
-    marginTop: 4,
-    borderWidth: 1.2,
-    borderColor: 'rgba(57,255,106,0.5)',
-    borderRadius: 16,
-    backgroundColor: 'rgba(12,20,14,0.94)',
+  statementCard: {
+    marginTop: 14,
     padding: 14,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  stageCardLocked: { borderColor: 'rgba(31,56,38,0.9)', shadowOpacity: 0 },
-  stageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  stageSelPill: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 9,
-    letterSpacing: 1.6,
-    color: colors.muted,
     borderWidth: 1,
-    borderColor: 'rgba(143,184,155,0.35)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderColor: 'rgba(57,255,106,0.28)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.9)',
   },
-  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3.5 },
-  statusDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary },
-  statusTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
-  statusLockedTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
-  stageName: { marginTop: 12, fontFamily: displayFont, fontSize: 29, lineHeight: 29, letterSpacing: 0.8, color: colors.fg, textTransform: 'uppercase' },
-  stageTagline: { marginTop: 6, fontFamily: bodyFont, fontSize: 12, letterSpacing: 0.3, color: 'rgba(143,184,155,0.85)' },
-  stageMeta: { marginTop: 8, fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.6, color: colors.primary },
-  stageDuration: { marginTop: 5, fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 1.8, color: colors.accent },
+  statementTag: { fontFamily: monoFont, fontSize: 6.6, letterSpacing: 1.9, color: colors.primary },
+  statementBody: { marginTop: 8, color: '#d6e3d9', fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18.5 },
+  statementQuote: { marginTop: 10, color: colors.warm, fontFamily: monoFont, fontSize: 8.4, lineHeight: 13.5, letterSpacing: 0.6 },
 
-  lockedNote: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(31,56,38,1)', borderRadius: 12, padding: 12, backgroundColor: 'rgba(15,26,19,0.5)' },
-  lockedNoteTxt: { fontSize: 10, lineHeight: 15, color: '#9db4a3' },
-
-  objectives: { marginTop: 12, gap: 9 },
-  objRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  objBox: {
-    width: 16,
-    height: 16,
-    borderRadius: 4.5,
-    borderWidth: 1.3,
-    borderColor: 'rgba(143,184,155,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  objBoxDone: { backgroundColor: colors.primary, borderColor: colors.primary },
-  objLabel: { flex: 1, fontFamily: bodyFontBold, fontSize: 12.5, letterSpacing: 0.2, color: '#c4d4c8' },
-  objLabelDone: { color: 'rgba(143,184,155,0.6)', textDecorationLine: 'line-through' },
-  objStatus: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '700', letterSpacing: 1, color: 'rgba(143,184,155,0.7)' },
-
-  progRow: { marginTop: 13, flexDirection: 'row', justifyContent: 'space-between' },
-  progLbl: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
-  progPct: { fontFamily: monoFont, fontSize: 7, fontWeight: '800', color: colors.primary },
-  progTrack: { marginTop: 5, height: 4.5, borderRadius: 3, backgroundColor: 'rgba(31,56,38,0.8)', overflow: 'hidden' },
-  progFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
-
-  reward: { marginTop: 11, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.6, color: colors.fg },
-  rewardHot: { color: colors.primary, fontWeight: '800' },
-  rewardRow: {
-    marginTop: 13, flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.1, borderColor: 'rgba(57,255,106,0.4)', borderRadius: 12,
-    backgroundColor: 'rgba(15,26,19,0.55)', paddingVertical: 10, paddingHorizontal: 12,
-  },
-  rewardMeta: { flex: 1 },
-  rewardTitle: { fontFamily: bodyFontBold, fontSize: 12, letterSpacing: 0.8, color: colors.fg },
-  rewardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
-  rewardXpBox: { alignItems: 'center', borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(57,255,106,0.07)' },
-  rewardXpNum: { fontFamily: monoFont, fontSize: 13, fontWeight: '900', color: colors.primary },
-  rewardXpLbl: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)' },
-
-  quoteCard: {
-    marginTop: 12,
-    flexDirection: 'row',
-    gap: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(31,56,38,0.9)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(15,26,19,0.6)',
-    padding: 11,
-  },
-  quoteAvatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
-  quoteBody: { flex: 1 },
-  quoteTxt: { fontSize: 10, lineHeight: 15, fontStyle: 'italic', color: '#c4d4c8' },
-  quoteBy: { marginTop: 6, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.8, color: colors.primary },
-
-  cta: {
-    marginTop: 13,
-    height: 46,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
-  },
-  ctaTxt: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 2.6, color: '#05130a' },
-
-  fullMap: { marginTop: 11, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
-  footVersion: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2.6, color: 'rgba(143,184,155,0.4)' },
-
-  // ── THE RECORD — vault + journal entry cards ──
-  payWall: {
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.45)',
-    backgroundColor: 'rgba(38,30,12,0.6)',
-    borderRadius: 11,
-    padding: 11,
-  },
-  payTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
-  payBody: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.5, letterSpacing: 0.6, color: 'rgba(238,242,236,0.85)' },
-  payNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(143,184,155,0.7)' },
-
-  ledgerRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
-  ledgerCard: {
-    flex: 1,
+  cycleCard: {
+    marginTop: 14,
+    padding: 14,
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.22)',
-    backgroundColor: 'rgba(10,20,13,0.72)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(10,20,13,0.74)',
   },
-  ledgerTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.9, color: 'rgba(143,184,155,0.85)' },
-  ledgerBig: { marginTop: 6, fontFamily: monoFont, fontSize: 26, fontWeight: '900', color: colors.primary, letterSpacing: 1 },
-  ledgerSub: { marginTop: 1, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.72)' },
-  ledgerCta: { marginTop: 9, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
-
-  // ── THE STANDARD ──
-  standardCard: {
-    marginTop: 14,
-    borderWidth: 1.2,
-    borderColor: 'rgba(242,192,120,0.55)',
-    borderRadius: 16,
-    backgroundColor: 'rgba(20,16,8,0.92)',
-    padding: 14,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  standardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  standardTitleBlock: { flex: 1 },
-  standardName: { ...typeTokens.displayTight, fontSize: 12, color: colors.accent },
-  standardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.8, color: 'rgba(242,192,120,0.65)' },
-  standardStagePill: {
+  cycleTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  cardEyebrow: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.primary },
+  cardTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 26, lineHeight: 26, color: colors.fg },
+  cardSub: { marginTop: 5, fontFamily: monoFont, fontSize: 6, lineHeight: 9, letterSpacing: 1.4, color: colors.muted },
+  cycleBadge: {
     borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.5)',
-    borderRadius: 7,
-    paddingHorizontal: 8,
-    paddingVertical: 3.5,
+    borderColor: 'rgba(242,192,120,0.4)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    alignItems: 'center',
+    minWidth: 74,
+    backgroundColor: 'rgba(38,30,12,0.55)',
   },
-  standardStageTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  cycleBadgeValue: { fontFamily: monoFont, fontSize: 14, fontWeight: '900', color: colors.accent },
+  cycleBadgeLabel: { marginTop: 3, fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1.2, color: 'rgba(242,192,120,0.75)' },
+  monthRailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginTop: 14 },
+  monthRailPill: {
+    flex: 1,
+    height: 30,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(143,184,155,0.22)',
+    backgroundColor: 'rgba(10,15,10,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthRailPillOn: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(57,255,106,0.14)',
+  },
+  monthRailTxt: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '800', color: 'rgba(143,184,155,0.55)' },
+  monthRailTxtOn: { color: colors.primary },
+  cycleFoot: { marginTop: 10, fontFamily: monoFont, fontSize: 5.8, lineHeight: 10, letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)' },
+  syncLine: { marginTop: 10, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.primary },
+  cloudNote: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, lineHeight: 10, letterSpacing: 1.1, color: colors.accent },
 
-  standardDual: {
-    marginTop: 13,
+  referenceCard: {
+    marginTop: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.35)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(20,16,8,0.84)',
+  },
+  referenceTitle: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.accent },
+  referenceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  referencePill: {
+    minWidth: '31%',
+    flexGrow: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.24)',
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: 'rgba(10,8,4,0.45)',
+    gap: 6,
+  },
+  referenceIndex: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', color: colors.accent },
+  referenceTxt: { fontFamily: monoFont, fontSize: 6.4, lineHeight: 9.5, letterSpacing: 1, color: '#eed3a7' },
+
+  captureCard: {
+    marginTop: 16,
+    padding: 14,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.36)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(12,20,14,0.92)',
+  },
+  captureHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  statusBox: {
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.35)',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minWidth: 78,
+    alignItems: 'center',
+    backgroundColor: 'rgba(57,255,106,0.07)',
+  },
+  statusBig: { fontFamily: monoFont, fontSize: 14, fontWeight: '900', color: colors.primary },
+  statusSmall: { marginTop: 3, fontFamily: monoFont, fontSize: 5.2, letterSpacing: 1.1, color: colors.muted },
+  warningBox: {
+    marginTop: 12,
     flexDirection: 'row',
-    alignItems: 'stretch',
     gap: 8,
     borderWidth: 1,
     borderColor: 'rgba(242,192,120,0.3)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(38,30,12,0.5)',
+    padding: 11,
+  },
+  warningTxt: { flex: 1, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, color: '#ebdfc7' },
+  nativeNote: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(57,255,106,0.05)',
+    padding: 12,
+  },
+  nativeNoteTxt: { fontFamily: monoFont, fontSize: 6, lineHeight: 10, letterSpacing: 1.1, color: colors.muted },
+  nativePickBtn: {
+    marginTop: 10,
+    minHeight: 40,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  nativePickBtnTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.3, color: '#05130a' },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 12 },
+  actionBtn: {
+    flex: 1,
+    minHeight: 40,
     borderRadius: 11,
-    backgroundColor: 'rgba(10,8,4,0.5)',
-    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.3)',
+    backgroundColor: 'rgba(10,15,10,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 10,
   },
-  standardDualCol: { flex: 1 },
-  standardDualColRight: { alignItems: 'flex-end' },
-  standardDualTag: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-  standardDualTagGold: { color: colors.accent },
-  standardDualName: { marginTop: 5, fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
-  standardDualArrow: { alignItems: 'center', justifyContent: 'center' },
-  standardDualArrowTxt: { fontFamily: monoFont, fontSize: 9, color: 'rgba(242,192,120,0.5)' },
+  actionBtnSolid: { backgroundColor: colors.primary, borderColor: colors.primary },
+  actionBtnTxt: { fontFamily: monoFont, fontSize: 7.2, letterSpacing: 1.4, color: colors.primary },
+  actionBtnSolidTxt: { fontFamily: monoFont, fontSize: 7.2, letterSpacing: 1.2, color: '#05130a' },
+  ocrSummary: { marginTop: 10, fontFamily: monoFont, fontSize: 5.8, lineHeight: 10, letterSpacing: 1.1, color: colors.accent },
 
-  standardLearnTitle: { marginTop: 12, fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.9, color: 'rgba(242,192,120,0.8)' },
-  standardLearnBody: { marginTop: 6, fontSize: 10, lineHeight: 15, color: '#c4d4c8' },
-  standardBullets: { marginTop: 8, gap: 6 },
-  standardBulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  standardBulletDot: { marginTop: 4.5, width: 5, height: 5, borderRadius: 3, backgroundColor: colors.accent },
-  standardBulletTxt: { flex: 1, fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
-
-  standardBenchmark: {
-    marginTop: 12,
-    borderLeftWidth: 2,
-    borderLeftColor: colors.accent,
-    paddingLeft: 10,
+  matchList: { marginTop: 14, gap: 10 },
+  matchCard: {
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.16)',
+    borderRadius: 13,
+    backgroundColor: 'rgba(10,15,10,0.5)',
+    padding: 12,
   },
-  standardBenchmarkTxt: { fontSize: 10.5, lineHeight: 16, fontStyle: 'italic', color: colors.fg },
-  standardBenchmarkBy: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(242,192,120,0.7)' },
-
-  standardMotto: {
-    marginTop: 12,
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 5.6,
-    letterSpacing: 1.4,
-    lineHeight: 9,
-    color: 'rgba(143,184,155,0.65)',
-  },
-
-  // ── YOUR CARD hero ──
-  youCardWrap: { marginTop: 16, alignItems: 'center' },
-  dualTagRow: {
+  matchCardReady: { borderColor: 'rgba(57,255,106,0.42)', backgroundColor: 'rgba(57,255,106,0.06)' },
+  matchHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  matchTag: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.primary },
+  matchFile: { marginTop: 4, maxWidth: 220, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10, letterSpacing: 0.9, color: colors.muted },
+  readyBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 12,
+    gap: 5,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
-  dualTagGreen: {
-    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary,
-    borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 6,
-    paddingHorizontal: 8, paddingVertical: 4, backgroundColor: 'rgba(57,255,106,0.07)',
+  readyBadgeTxt: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1.2, color: '#05130a' },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.35)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(38,30,12,0.4)',
   },
-  dualTagGold: {
-    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
-  },
-  youCardHolder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
-  youStatsCard: {
+  pendingBadgeTxt: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1.1, color: colors.accent },
+  shotPreview: { width: '100%', height: 120, marginTop: 10, borderRadius: 11, backgroundColor: colors.surface2 },
+  shotPlaceholder: {
     width: '100%',
+    height: 120,
+    marginTop: 10,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(143,184,155,0.16)',
+    borderStyle: 'dashed',
+    backgroundColor: 'rgba(12,20,14,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shotPlaceholderTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.5, color: 'rgba(143,184,155,0.55)' },
+  sideRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  sideRowLabel: { flex: 1, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.2, color: colors.muted },
+  sideChipRow: { flexDirection: 'row', gap: 6 },
+  sideChip: {
+    minWidth: 52,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    alignItems: 'center',
+    backgroundColor: 'rgba(10,15,10,0.4)',
+  },
+  sideChipOn: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.12)' },
+  sideChipTxt: { fontFamily: monoFont, fontSize: 6, letterSpacing: 1.1, color: colors.muted },
+  sideChipTxtOn: { color: colors.primary },
+  scanBtn: {
+    marginTop: 10,
+    minHeight: 38,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.35)',
+    backgroundColor: 'rgba(38,30,12,0.42)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  scanBtnTxt: { fontFamily: monoFont, fontSize: 6.6, letterSpacing: 1.3, color: colors.accent },
+  pasteWrap: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.14)', borderRadius: 10, backgroundColor: 'rgba(10,15,10,0.35)', padding: 10 },
+  pasteLabel: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.2, color: colors.muted },
+  pasteInput: { marginTop: 8, minHeight: 64, borderWidth: 1, borderColor: 'rgba(57,255,106,0.16)', borderRadius: 8, backgroundColor: '#0a0f0a', color: colors.fg, fontFamily: monoFont, fontSize: 9.5, lineHeight: 14, padding: 10, textAlignVertical: 'top' },
+  pasteBtn: { marginTop: 8, minHeight: 36, borderRadius: 9, borderWidth: 1, borderColor: 'rgba(57,255,106,0.26)', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(57,255,106,0.08)' },
+  pasteBtnTxt: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.2, color: colors.primary },
+  scanNote: { marginTop: 7, fontFamily: monoFont, fontSize: 5.6, lineHeight: 9.5, letterSpacing: 1.1, color: colors.muted },
+  scanNoteDone: { color: colors.primary },
+  scanNoteError: { color: colors.loss },
+  inputGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  inputTile: {
+    width: '47%',
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 10,
+    backgroundColor: '#0a0f0a',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  inputTileLabel: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: colors.muted },
+  inputValueRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 4, marginTop: 6 },
+  inputTileValue: {
+    flex: 1,
+    padding: 0,
+    color: colors.fg,
+    fontFamily: bodyFontHeavy,
+    fontSize: 18,
+  },
+  inputTileSuffix: { marginBottom: 2, color: colors.primary, fontFamily: monoFont, fontSize: 9 },
+  saveBtn: {
+    marginTop: 14,
+    minHeight: 48,
+    borderRadius: 13,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  saveBtnMuted: { opacity: 0.35 },
+  saveBtnTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: '#05130a' },
+  helperLine: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.muted },
+  savedNotice: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: colors.accent },
+
+  cardBuild: {
     marginTop: 16,
-    borderWidth: 1.1,
-    borderColor: 'rgba(57,255,106,0.4)',
-    borderRadius: 14,
-    backgroundColor: 'rgba(12,20,14,0.9)',
     padding: 14,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.32)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(15,26,19,0.92)',
   },
-  youStatsTitle: {
-    fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.7, color: colors.muted,
+  cardBuildHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  confidencePill: {
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.4)',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(38,30,12,0.52)',
   },
-  youStatsGap: { marginTop: 12, gap: 9 },
-  youStatsNote: {
-    marginTop: 13,
-    fontFamily: monoFont, fontSize: 5.4, lineHeight: 9, letterSpacing: 1.1, color: 'rgba(143,184,155,0.55)',
+  confidenceTxt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: colors.accent },
+  proofStrip: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.28)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(38,30,12,0.38)',
+    padding: 11,
   },
+  proofStripLabel: { fontFamily: monoFont, fontSize: 6.1, letterSpacing: 1.5, color: colors.accent },
+  proofStripSub: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 12, color: colors.fg },
+  proofStripMeta: { marginTop: 4, fontFamily: monoFont, fontSize: 5.6, lineHeight: 9.5, letterSpacing: 1, color: colors.muted },
+  styleTitle: { marginTop: 10, fontFamily: displayFont, fontSize: 28, lineHeight: 28, color: colors.fg },
+  styleRead: { marginTop: 7, color: '#d6e3d9', fontFamily: bodyFont, fontSize: 12, lineHeight: 18 },
+  identityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  identityCell: {
+    width: '47%',
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    backgroundColor: 'rgba(10,15,10,0.42)',
+  },
+  identityLabel: { fontFamily: monoFont, fontSize: 5.2, lineHeight: 8.5, letterSpacing: 1.1, color: colors.muted },
+  identityValue: { marginTop: 6, fontFamily: bodyFontBold, fontSize: 12.5, lineHeight: 16, color: colors.fg },
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 },
+  kpiCell: {
+    flex: 1,
+    minWidth: 72,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'rgba(10,15,10,0.52)',
+  },
+  kpiValue: { fontFamily: bodyFontHeavy, fontSize: 18, color: colors.primary },
+  kpiLabel: { marginTop: 4, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.2, color: colors.muted },
+  metricWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  metricPill: {
+    width: '47%',
+    borderWidth: 1,
+    borderColor: 'rgba(31,56,38,0.95)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    backgroundColor: 'rgba(10,15,10,0.42)',
+  },
+  metricPillLabel: { fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1.2, color: colors.muted },
+  metricPillValue: { marginTop: 6, fontFamily: bodyFontBold, fontSize: 13.5, color: colors.fg },
+  premiumPanel: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,15,10,0.38)',
+    padding: 12,
+  },
+  premiumPanelTitle: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.6, color: colors.accent },
+  premiumPanelLead: { marginTop: 6, fontFamily: bodyFontBold, fontSize: 11, lineHeight: 16, color: colors.fg },
+  premiumPanelBody: { marginTop: 8, fontFamily: bodyFont, fontSize: 11, lineHeight: 16, color: '#bdd0c3' },
+  trendGrid: { marginTop: 10, gap: 8 },
+  trendRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(57,255,106,0.08)', paddingBottom: 7 },
+  trendLabel: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.muted },
+  trendValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  trendArrow: { fontFamily: monoFont, fontSize: 10, color: colors.muted },
+  trendValue: { fontFamily: bodyFontHeavy, fontSize: 12.5, color: colors.fg },
+  gapRow: { marginTop: 10 },
+  gapHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gapLabel: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.fg },
+  gapNums: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: colors.primary },
+  gapTrack: { marginTop: 6, height: 8, borderRadius: 4, backgroundColor: 'rgba(31,56,38,0.95)', overflow: 'hidden' },
+  gapFill: { height: '100%', borderRadius: 4, backgroundColor: colors.primary },
+  gapNote: { marginTop: 5, fontFamily: monoFont, fontSize: 5.2, lineHeight: 8.5, letterSpacing: 1, color: colors.muted },
+  deltaTitle: { marginTop: 14, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.6, color: colors.accent },
+  deltaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  deltaPill: {
+    minWidth: 78,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(143,184,155,0.2)',
+    backgroundColor: 'rgba(12,20,14,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  deltaPillGood: { borderColor: 'rgba(57,255,106,0.35)', backgroundColor: 'rgba(57,255,106,0.08)' },
+  deltaPillBad: { borderColor: 'rgba(224,96,92,0.35)', backgroundColor: 'rgba(224,96,92,0.08)' },
+  deltaLabel: { fontFamily: monoFont, fontSize: 5.2, letterSpacing: 1.2, color: colors.muted },
+  deltaValue: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 12.5, color: colors.fg },
+  focusCard: {
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.28)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(38,30,12,0.45)',
+    padding: 12,
+  },
+  focusTag: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.4, color: colors.accent },
+  focusBody: { marginTop: 7, color: '#eadfc8', fontFamily: bodyFont, fontSize: 12, lineHeight: 18 },
+
+  shareCardWrap: { marginTop: 18 },
+  sharePreviewCard: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(12,20,14,0.88)',
+    padding: 14,
+    alignItems: 'center',
+  },
+  shareActionRow: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', gap: 10, width: '100%' },
+  shareBtnPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
+  shareBtnPrimaryTxt: { fontFamily: monoFont, fontSize: 7.2, letterSpacing: 1.2, color: '#05130a' },
+  shareNotice: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, lineHeight: 10, letterSpacing: 1.1, color: colors.accent },
+  compareMeta: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, lineHeight: 10, letterSpacing: 1.2, color: colors.primary },
+
+  archiveHead: { marginTop: 18 },
+  archiveTitle: { fontFamily: displayFont, fontSize: 26, lineHeight: 26, color: colors.fg },
+  archiveSub: { marginTop: 6, fontFamily: monoFont, fontSize: 6.1, lineHeight: 9, letterSpacing: 1.3, color: colors.muted },
+  emptyArchive: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.16)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.7)',
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+  },
+  emptyArchiveTitle: { marginTop: 10, fontFamily: monoFont, fontSize: 7.6, letterSpacing: 1.8, color: colors.muted },
+  emptyArchiveBody: { marginTop: 8, textAlign: 'center', color: '#97ae9f', fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17 },
+
+  snapshotCard: {
+    marginTop: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.26)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.86)',
+  },
+  snapshotTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  snapshotTag: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.7, color: colors.primary },
+  snapshotDate: { marginTop: 4, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.muted },
+  snapshotSync: { marginTop: 5, fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1.1, color: colors.muted },
+  snapshotSyncOn: { color: colors.primary },
+  snapshotProofRow: { marginTop: 8 },
+  snapshotProof: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.accent },
+  snapshotProofSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1, color: colors.muted },
+  snapshotStyle: { marginTop: 10, fontFamily: bodyFontHeavy, fontSize: 17, color: colors.fg },
+  snapshotRead: { marginTop: 5, color: '#d4e0d6', fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17 },
+  snapshotIdentityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  snapshotIdentityChip: { borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5, fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1, color: colors.primary, backgroundColor: 'rgba(57,255,106,0.06)' },
+  snapshotKpis: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  snapshotFocus: { marginTop: 12, fontFamily: monoFont, fontSize: 6, lineHeight: 10, letterSpacing: 1.2, color: colors.accent },
+  iconBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(224,96,92,0.25)',
+    backgroundColor: 'rgba(42,14,12,0.4)',
+  },
+
+  ledgerRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  ledgerCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(10,20,13,0.74)',
+    padding: 13,
+  },
+  ledgerHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  ledgerTitle: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.6, color: colors.fg },
+  ledgerValue: { marginTop: 8, fontFamily: bodyFontHeavy, fontSize: 28, color: colors.primary },
+  ledgerBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6, lineHeight: 9.5, letterSpacing: 1.1, color: colors.muted },
+  ledgerLinkRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  ledgerLink: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.2, color: colors.primary },
 });
