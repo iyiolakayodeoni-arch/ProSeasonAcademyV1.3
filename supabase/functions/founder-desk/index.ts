@@ -282,6 +282,36 @@ Deno.serve(async (req) => {
       return json({ ok: true, refundDays: r.refundDays, tier: r.tier, note: r.note });
     }
 
+    case 'refund': {
+      // Founder-initiated refund (Stripe)
+      const paymentIntent = body.payment_intent ? String(body.payment_intent) : null;
+      const charge = body.charge ? String(body.charge) : null;
+      if (!paymentIntent && !charge) return json({ ok: false, error: 'payment_intent or charge required' }, 400);
+      const stripeSecret = Deno.env.get('STRIPE_SECRET');
+      if (!stripeSecret) return json({ ok: false, error: 'stripe secret not set' }, 500);
+      const payload = new URLSearchParams();
+      if (paymentIntent) payload.append('payment_intent', paymentIntent);
+      else payload.append('charge', charge!);
+      if (body.amount) payload.append('amount', String(body.amount));
+      if (body.reason) payload.append('reason', String(body.reason));
+
+      const r = await fetch('https://api.stripe.com/v1/refunds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${stripeSecret}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload.toString(),
+      }).catch((e) => ({ ok: false, error: String(e) }));
+
+      if (!('ok' in r) && r && r.status && r.status >= 400) {
+        const txt = await r.text().catch(() => '');
+        await sb.rpc('audit', { p_action: 'refund', p_target: paymentIntent ?? charge ?? null, p_detail: { provider: 'stripe', status: r.status, body: txt } });
+        return json({ ok: false, error: 'refund failed', detail: txt }, 502);
+      }
+
+      const data = await r.json().catch(() => null);
+      await sb.rpc('audit', { p_action: 'refund', p_target: paymentIntent ?? charge ?? null, p_detail: { provider: 'stripe', result: data } });
+      return json({ ok: true, refund: data });
+    }
+
     // ── PAYMENT CLAIMS ───────────────────────────────────────
     case 'claims': {
       const { data, error } = await sb

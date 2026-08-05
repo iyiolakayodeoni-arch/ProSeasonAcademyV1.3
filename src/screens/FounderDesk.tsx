@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Linking } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
@@ -92,7 +93,39 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 
   const [claims, setClaims] = useState<backend.ClaimRow[] | null>(null);
   const [claimBusy, setClaimBusy] = useState<number | null>(null);
+  const [refundBusy, setRefundBusy] = useState<number | null>(null);
   const loadClaims = async () => setClaims(await backend.founderClaims(founderKey));
+
+  const refundClaim = (c: backend.ClaimRow) => {
+    const doRefund = async () => {
+      try {
+        setRefundBusy(c.id);
+        const ref = c.reference ?? null;
+        if (!ref) {
+          setErr('NO REFERENCE ON CLAIM');
+          setRefundBusy(null);
+          return;
+        }
+        const r = await backend.founderRefund(founderKey, null, ref, c.amount ?? null, 'Refund from claim');
+        setRefundBusy(null);
+        if (!r) setErr('REFUND FAILED');
+        else {
+          setErr(null);
+          void loadClaims();
+          void loadStuck();
+        }
+      } catch (e) {
+        setRefundBusy(null);
+        setErr('REFUND FAILED');
+      }
+    };
+
+    const label = c.amount ? `Refund ${c.amount} for ${c.academy_id ?? c.handle ?? ''}?` : `Refund for ${c.academy_id ?? c.handle ?? ''}?`;
+    Alert.alert('Confirm refund', label, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Refund', style: 'destructive', onPress: () => void doRefund() },
+    ]);
+  };
 
   /** people whose card was refused — a sale you still have if you answer */
   const [stuck, setStuck] = useState<backend.StuckRow[] | null>(null);
@@ -561,12 +594,17 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
               </Text>
               {c.sender_note ? <Text style={styles.inboxBody}>{c.sender_note}</Text> : null}
               <View style={styles.rowBetween}>
-                <Pressable onPress={() => void decide(c.id, false)} hitSlop={6} disabled={claimBusy === c.id}>
+                <Pressable onPress={() => void decide(c.id, false)} hitSlop={6} disabled={claimBusy === c.id || refundBusy === c.id}>
                   <Text style={styles.ghostBtn}>CANNOT FIND IT</Text>
                 </Pressable>
-                <Pressable onPress={() => void decide(c.id, true)} hitSlop={6} disabled={claimBusy === c.id}>
+                <Pressable onPress={() => void decide(c.id, true)} hitSlop={6} disabled={claimBusy === c.id || refundBusy === c.id}>
                   <Text style={styles.linkBtn}>
                     {claimBusy === c.id ? 'GRANTING…' : 'CONFIRM & GRANT ›'}
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => void refundClaim(c)} hitSlop={6} disabled={refundBusy === c.id || claimBusy === c.id}>
+                  <Text style={[styles.linkBtn, { color: colors.loss }]}>
+                    {refundBusy === c.id ? 'REFUNDING…' : 'REFUND ›'}
                   </Text>
                 </Pressable>
               </View>

@@ -1,0 +1,23 @@
+# Template: Webhook smoke tests
+# Copy to .github/workflows/webhook-smoke.yml to enable CI test that runs local webhook test vectors.
+
+name: Webhook smoke tests (template)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  test-webhook-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Run webhook smoke tests
+        run: npm run test:ci-smoke
+        # This job runs the local signature + routing tests that mirror pay-webhook logic.
+        # To enable in CI: copy this file to .github/workflows/webhook-smoke.yml and commit to main.

@@ -146,6 +146,26 @@ are needed. `BUILD.md` explains why.
 
 ---
 
+## Storybook (dev)
+
+A minimal story scaffolding is included for the new StatRing component.
+
+To run Storybook locally (React Native / Expo):
+
+1. Install Storybook dev dependencies locally: `npm install --save-dev @storybook/react-native @storybook/addon-essentials`
+2. Create a `.storybook/main.js` with the sample config and follow the React Native Storybook guide: https://storybook.js.org/docs/react-native/get-started/introduction
+3. Open `src/components/StatRing.stories.tsx` to preview examples.
+
+Note: the repo intentionally does not add Storybook packages automatically. The project now includes minimal Storybook devDependencies and runnable scripts for web preview. To use native RN Storybook you must follow the React Native Storybook guide and wire the Storybook entrypoint into the app (instructions below).
+
+To run Storybook (web preview):
+1. npm install
+2. npm run storybook
+
+To enable React Native Storybook (native/dev-client): follow https://storybook.js.org/docs/react-native/get-started/introduction — then run the app using the Storybook entrypoint or a dev client.
+
+---
+
 ## Architecture
 
 ```
