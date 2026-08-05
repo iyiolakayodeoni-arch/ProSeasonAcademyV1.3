@@ -35,18 +35,12 @@ import {
   CHANNELS,
   ChatMessage,
   ChatUser,
-  dmUser,
   hhmm,
-  isDm,
   joinSquad,
-  openDm,
-  postSquadCard,
-  previewOf,
   ReactionIcon,
   sendText,
   setActiveThread,
   shareScanResult,
-  startMockTraffic,
   startLiveRooms,
   getRemoteUsers,
   toggleMute,
@@ -60,6 +54,11 @@ import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong
 import { isValidReflection } from '../../data/honestyGuard';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
+
+/** Safety net for a message whose author isn't in the roster — should
+ *  never happen (authors join the map with their message), but the UI
+ *  must never crash on a shape surprise from the wire. */
+const FALLBACK_USER: ChatUser = { id: 'unknown', handle: 'PLAYER', color: '#8fb89b', role: 'member', online: false, tagline: '' };
 
 // ── tiny helpers ──────────────────────────────────────────────
 
@@ -185,28 +184,19 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const st = useCommunityState();
   const cloud = useCloud();
   const users: Record<string, UserWithAvatar> = useMemo(() => {
-    const u = buildUsers(coach);
-    // real players from the live rooms join the same map the UI renders
-    return { ...u, ...getRemoteUsers(), coach: { ...u.coach, avatar: coach.portrait } };
-  }, [coach, st.messages, st.live]);
+    // You + whoever has actually spoken in the live rooms. That IS the
+    // whole roster — nobody fictional padding the benches. (P1 honesty)
+    return { ...buildUsers(), ...getRemoteUsers() };
+  }, [st.messages, st.live]);
 
-  // LIVE first: if the academy cloud answers, the public channels mirror
-  // real Supabase rooms. Only a genuinely offline hall gets the scripted
-  // engine, so the room never looks abandoned on a dead network.
+  // REAL OR CLOSED: if the academy cloud answers, the channels mirror
+  // real Supabase rooms. If it doesn't, they stay closed and SAY so —
+  // an honest empty hall beats a scripted crowd, every single time.
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const live = await startLiveRooms(backend.getMe());
-      if (!cancelled && !live) startMockTraffic(coach);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [coach, cloud.status]);
+    void startLiveRooms(backend.getMe());
+  }, [cloud.status]);
 
-  const inDm = isDm(st.activeThreadId, st.dms);
   const channel = CHANNELS.find((c) => c.id === st.activeThreadId);
-  const otherUser = inDm ? users[dmUser(st.activeThreadId, st.dms)] : undefined;
 
   // ── composer state ──
   const [draft, setDraft] = useState('');
@@ -225,15 +215,13 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
   const [profileUser, setProfileUser] = useState<UserWithAvatar | null>(null);
-  const [picker, setPicker] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState('');
 
   // ── search ──
   const [searchMode, setSearchMode] = useState(false);
   const [query, setQuery] = useState('');
 
-  // ── squad action ──
-  const [squadBusy, setSquadBusy] = useState(false);
+  // ── squad action ── (a REAL call into the live room, posted as you)
+  const squadCooldown = useRef(0);
 
   // ── scroll management ──
   const scrollRef = useRef<ScrollView>(null);
@@ -268,19 +256,24 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   // ── actions ──
   const submit = () => {
+    if (!st.live) return; // closed rooms take no words — never a fake send
     const text = draft.trim();
     if (!text || !isValidReflection(text, { minLength: 2, minWords: 1 })) return;
     sendText(st.activeThreadId, text);
     setDraft('');
   };
 
-  const findSquad = () => {
-    if (squadBusy) return;
-    setSquadBusy(true);
-    setTimeout(() => {
-      postSquadCard(st.activeThreadId, ['UCHEPRO', 'KOJO_9'], 2);
-      setSquadBusy(false);
-    }, 1800);
+  // No "SEARCHING…" spinner ghost, no fake squad card by fake players:
+  // your squad call is a real message from you into the real room.
+  const callSquad = () => {
+    if (!st.live) return;
+    const now = Date.now();
+    if (now - squadCooldown.current < 90000) return; // one call a minute, no spam
+    squadCooldown.current = now;
+    sendText(
+      st.activeThreadId,
+      'squad up — got 2 slots open, mic optional, vibes mandatory. who’s in?',
+    );
   };
 
   const shareMyScan = () => {
@@ -294,7 +287,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
     const [stage, c] = done[done.length - 1];
     shareScanResult(
       st.activeThreadId,
-      `scan receipt: STAGE ${stage} CLEARED · +${c.xp} XP${c.badge ? ` · ${c.badge}` : ''}. the coach watched it happen live.`,
+      `scan receipt: STAGE ${stage} CLEARED · +${c.xp} XP${c.badge ? ` · ${c.badge}` : ''}. logged it, scanned it, cleared it — the receipt speaks.`,
     );
   };
 
@@ -312,10 +305,10 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   let coachDividerShown = false;
   const rows = messages.map((m, i) => {
     const prev = messages[i - 1];
-    const author = users[m.authorId] ?? users.p12;
+    const author = users[m.authorId] ?? FALLBACK_USER;
     const grouped = !!prev && prev.authorId === m.authorId && m.at - prev.at < 120000 && m.kind !== 'squad';
     const isCoachMsg = author.role === 'coach';
-    const showCoachDivider = isCoachMsg && !coachDividerShown && !inDm;
+    const showCoachDivider = isCoachMsg && !coachDividerShown;
     if (isCoachMsg) coachDividerShown = true;
     return { m, author, grouped, showCoachDivider, key: m.id };
   });
@@ -326,7 +319,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
       {/* ── header ── */}
       <View style={styles.header}>
-        <Pressable onPress={() => (inDm ? setActiveThread('general') : setPanel(null))} hitSlop={8} style={styles.headerBtn}>
+        <Pressable onPress={() => setPanel(null)} hitSlop={8} style={styles.headerBtn}>
           <ChevronLeftIcon size={14} color={colors.fg} />
         </Pressable>
 
@@ -345,24 +338,15 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               <XMarkIcon size={10} color="rgba(143,184,155,0.8)" />
             </Pressable>
           </View>
-        ) : inDm && otherUser ? (
-          <Pressable onPress={() => setProfileUser(otherUser)} style={styles.titleWrap} hitSlop={4}>
-            <Ring color={otherUser.color} online={otherUser.online} avatar={otherUser.avatar} initials={initialsOf(otherUser.handle)} size={30} />
-            <View style={styles.titleCol}>
-              <Text style={[styles.titleName, { color: otherUser.color }]}>{otherUser.handle}</Text>
-              <View style={styles.subRow}>
-                {otherUser.online && <View style={styles.liveDot} />}
-                <Text style={styles.subText}>{otherUser.online ? 'ONLINE · PRIVATE CHAT' : 'LAST SEEN TODAY · PRIVATE CHAT'}</Text>
-              </View>
-            </View>
-          </Pressable>
         ) : (
           <Pressable onPress={() => setPanel('channels')} style={styles.titleWrap} hitSlop={4}>
             <Text style={styles.titleChannel}>#{channel?.name ?? 'general'}</Text>
             <View style={styles.subRow}>
-              <View style={styles.liveDot} />
+              <View style={[styles.liveDot, !st.live && styles.liveDotOff]} />
               <Text style={styles.subText}>
-                {channel?.desc} · {st.presence[channel?.id ?? 'general'] ?? 0} ONLINE
+                {st.live
+                  ? `${channel?.desc} · ${st.presence[channel?.id ?? 'general'] ?? 0} ONLINE`
+                  : 'OFFLINE — ROOMS OPEN WHEN THE CLOUD ANSWERS'}
               </Text>
             </View>
           </Pressable>
@@ -402,11 +386,13 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </View>
       ) : null}
 
-      {/* ── THE CHINEDU WAY: ACADEMY COMMUNITY STANDARD — riding on the huddle ── */}
+      {/* ── ACADEMY COMMUNITY STANDARD — riding on the huddle. Not chrome:
+          this strip is the room's constitution — how you talk, and who is
+          (and is NOT) allowed to exist in here. ── */}
       <ArtBand
         source={HUDDLE}
         width={bandW}
-        height={96}
+        height={108}
         veil="light"
         warmAt={{ x: bandW * 0.24, y: 26, r: bandW * 0.55 }}
         style={{ marginHorizontal: 12, marginTop: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' }}
@@ -417,6 +403,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </Text>
         <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.82)' }}>
           Record & watch · pen your moments first · cool down 24–30m · then log your truth.
+        </Text>
+        <Text style={{ marginTop: 5, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.8, color: 'rgba(242,192,120,0.9)' }}>
+          NO BOTS · NO SCRIPTS — EVERY NAME IN HERE IS A REAL PLAYER
         </Text>
       </ArtBand>
 
@@ -434,9 +423,19 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         }}
         scrollEventThrottle={60}
       >
-        <Text style={styles.dateDivider}>
-          TODAY · {inDm ? `@${otherUser?.handle}` : `#${channel?.name?.toUpperCase()}`}
-        </Text>
+        <Text style={styles.dateDivider}>TODAY · #{channel?.name?.toUpperCase() ?? 'GENERAL'}</Text>
+
+        {/* the honest room: empty is a STATE, not a failure worth faking over */}
+        {rows.length === 0 && (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTag}>{st.live ? 'REAL ROOM · ZERO MESSAGES' : 'ROOM CLOSED · OFFLINE'}</Text>
+            <Text style={styles.emptyTxt}>
+              {st.live
+                ? 'Quiet in here — no bots, no scripts, no fake crowd warming the bench. When a real player speaks, it lands here. The first word can be yours.'
+                : 'The academy cloud is unreachable, so the rooms are shut — nothing here pretends to send, and nobody here is pretend.'}
+            </Text>
+          </View>
+        )}
 
         {rows.map(({ m, author, grouped, showCoachDivider }) => (
           <React.Fragment key={m.id}>
@@ -535,22 +534,23 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </Pressable>
       )}
 
-      {/* FIND A SQUAD — quick action pill (channels only) */}
-      {!inDm && (
+      {/* SQUAD CALL — posts a real message from you into the live room */}
+      {st.live && (
         <View style={styles.squidRow}>
-          <Pressable onPress={findSquad} hitSlop={6}>
-            <View style={[styles.squadPill, squadBusy && { opacity: 0.6 }]}>
+          <Pressable onPress={callSquad} hitSlop={6}>
+            <View style={styles.squadPill}>
               <TargetGlyphIcon size={11} color={colors.primary} />
-              <Text style={styles.squadPillTxt}>{squadBusy ? 'SEARCHING…' : 'FIND A SQUAD'}</Text>
+              <Text style={styles.squadPillTxt}>SQUAD CALL</Text>
             </View>
           </Pressable>
         </View>
       )}
 
-      {/* ── composer ── */}
-      {channel?.readOnly ? (
+      {/* ── composer — open only while the room is REAL. Offline there is
+          nobody to talk to, so the door is honestly shut. ── */}
+      {!st.live ? (
         <View style={styles.readOnlyBar}>
-          <Text style={styles.readOnlyTxt}>READ ONLY — ONLY COACHES POST IN THIS ROOM</Text>
+          <Text style={styles.readOnlyTxt}>ROOMS SHUT WHILE OFFLINE — NOTHING HERE PRETENDS TO SEND</Text>
         </View>
       ) : (
         <View>
@@ -573,7 +573,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               onChangeText={setDraft}
               onSubmitEditing={submit}
               returnKeyType="send"
-              placeholder={inDm ? `> message @${otherUser?.handle}…` : `> message #${channel?.name}…`}
+              placeholder={`> message #${channel?.name}…`}
               placeholderTextColor="rgba(143,184,155,0.5)"
               style={styles.input}
             />
@@ -614,7 +614,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                       <Text style={styles.chanDesc}>{c.desc}</Text>
                     </View>
                     <View style={styles.chanMeta}>
-                      <Text style={styles.chanCount}>{c.baseCount}</Text>
+                      <Text style={styles.chanCount}>{st.presence[c.id] ?? 0} IN</Text>
                       {unread > 0 && (
                         <View style={styles.unreadDot}>
                           <Text style={styles.unreadTxt}>{unread}</Text>
@@ -626,52 +626,13 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               );
             })}
 
-            <View style={styles.dmHeadRow}>
-              <Text style={styles.panelSection}>DIRECT MESSAGES</Text>
-              <Pressable onPress={() => setPicker(true)} hitSlop={6}>
-                <Text style={styles.dmNew}>＋ NEW</Text>
-              </Pressable>
-            </View>
-            {[...st.dms]
-              .sort(
-                (a, b) =>
-                  (st.messages[b.id]?.[st.messages[b.id].length - 1]?.at ?? 0) -
-                  (st.messages[a.id]?.[st.messages[a.id].length - 1]?.at ?? 0),
-              )
-              .map((d) => {
-                const u = users[d.userId];
-                if (!u) return null;
-                const unread = st.unreads[d.id] ?? 0;
-                return (
-                  <Pressable
-                    key={d.id}
-                    onPress={() => {
-                      setActiveThread(d.id);
-                      setPanel(null);
-                    }}
-                  >
-                    <View style={[styles.chanRow, d.id === st.activeThreadId && styles.chanRowActive]}>
-                      <Ring color={u.color} online={u.online} avatar={u.avatar} initials={initialsOf(u.handle)} size={26} />
-                      <View style={[styles.chanMain, { marginLeft: 9 }]}>
-                        <Text style={[styles.chanName, unread > 0 && { color: colors.fg }]}>{u.handle}</Text>
-                        <Text style={styles.chanDesc} numberOfLines={1}>
-                          {previewOf(d.id, st.messages[d.id])}
-                        </Text>
-                      </View>
-                      <View style={styles.chanMeta}>
-                        <Text style={styles.chanCount}>
-                          {st.messages[d.id]?.length ? hhmm(st.messages[d.id][st.messages[d.id].length - 1].at) : ''}
-                        </Text>
-                        {unread > 0 && (
-                          <View style={styles.unreadDot}>
-                            <Text style={styles.unreadTxt}>{unread}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
+            {/* DMs deliberately absent in v1: a private message that can
+                never reach the other person is just an echo in a costume.
+                They return when the plumbing is real. Until then you call
+                people out in the open room — where it's actually them. */}
+            <Text style={styles.panelNote}>
+              DIRECT MESSAGES RETURN IN V2 — WITH REAL DELIVERY. UNTIL THEN, @ SOMEONE IN THE OPEN ROOM.
+            </Text>
           </Animated.View>
         </View>
       )}
@@ -684,22 +645,26 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Animated.View>
           <Animated.View entering={SlideInRight} exiting={SlideOutRight} style={styles.panelRight}>
             <Text style={styles.panelTitle}>IN THE ROOM</Text>
-            <Text style={styles.panelSection}>COACHES</Text>
-            {[users.coach].map((u) => (
-              <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
-            ))}
-            <Text style={styles.panelSection}>ONLINE — {Object.values(users).filter((u) => u.online && u.role !== 'coach').length}</Text>
+            {/* a name appears here ONLY because that person really posted.
+                Presence numbers live in the header; this is the roll of
+                real speakers — no fictional bench-warmers. */}
+            {Object.values(users).filter((u) => u.role === 'coach').length > 0 && (
+              <>
+                <Text style={styles.panelSection}>FOUNDER</Text>
+                {Object.values(users)
+                  .filter((u) => u.role === 'coach')
+                  .map((u) => (
+                    <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
+                  ))}
+              </>
+            )}
+            <Text style={styles.panelSection}>SPOKEN IN THE ROOMS — {Object.values(users).filter((u) => u.role !== 'coach').length}</Text>
             {Object.values(users)
-              .filter((u) => u.online && u.role !== 'coach')
+              .filter((u) => u.role !== 'coach')
               .map((u) => (
                 <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
               ))}
-            <Text style={styles.panelSection}>OFFLINE</Text>
-            {Object.values(users)
-              .filter((u) => !u.online)
-              .map((u) => (
-                <MemberRow key={u.id} u={u} dim onPress={() => setProfileUser(u)} />
-              ))}
+            <Text style={styles.panelNote}>NAMES APPEAR WHEN REAL PLAYERS SPEAK. THE LIVE COUNT SITS IN THE HEADER.</Text>
           </Animated.View>
         </View>
       )}
@@ -718,16 +683,18 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                 <Text style={styles.sheetTag}>{profileUser.tagline}</Text>
               </View>
             </View>
-            {profileUser.role !== 'you' && (
+            {/* Reach a real player the only way that actually reaches
+                them in v1: a public @-mention in the live room. */}
+            {profileUser.role !== 'you' && st.live && (
               <Pressable
                 onPress={() => {
-                  openDm(profileUser.id);
+                  setDraft(`@${profileUser.handle} `);
                   setProfileUser(null);
                   setPanel(null);
                 }}
               >
                 <View style={styles.sheetAction}>
-                  <Text style={styles.sheetActionTxt}>MESSAGE ›</Text>
+                  <Text style={styles.sheetActionTxt}>CALL OUT IN THE ROOM ›</Text>
                 </View>
               </Pressable>
             )}
@@ -750,49 +717,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                 </View>
               </Pressable>
             )}
-          </Animated.View>
-        </View>
-      )}
-
-      {/* ── new DM picker sheet ── */}
-      {picker && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.backdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setPicker(false)} />
-          </Animated.View>
-          <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={styles.sheet}>
-            <Text style={styles.panelSection}>NEW MESSAGE — PICK A PLAYER</Text>
-            <TextInput
-              value={pickerQuery}
-              onChangeText={setPickerQuery}
-              placeholder="> search the clubhouse…"
-              placeholderTextColor="rgba(143,184,155,0.5)"
-              style={[styles.input, styles.pickerInput]}
-              autoFocus
-            />
-            {Object.values(users)
-              .filter((u) => u.role !== 'you' && u.handle.toLowerCase().includes(pickerQuery.toLowerCase()))
-              .map((u) => (
-                <Pressable
-                  key={u.id}
-                  onPress={() => {
-                    openDm(u.id);
-                    setPicker(false);
-                    setPickerQuery('');
-                    setPanel(null);
-                  }}
-                >
-                  <View style={styles.pickerRow}>
-                    <Ring color={u.color} online={u.online} avatar={u.avatar} initials={initialsOf(u.handle)} size={26} />
-                    <View style={[styles.chanMain, { marginLeft: 9 }]}>
-                      <Text style={styles.chanName}>{u.handle}</Text>
-                      <Text style={styles.chanDesc} numberOfLines={1}>
-                        {u.tagline}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
           </Animated.View>
         </View>
       )}
@@ -922,7 +846,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   subText: { fontFamily: bodyFontBold, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.75)' },
+  liveDotOff: { backgroundColor: colors.loss, shadowColor: colors.loss },
   headerRule: { height: 1, backgroundColor: 'rgba(57,255,106,0.28)', shadowColor: colors.primary, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+
+  emptyWrap: {
+    marginTop: 46,
+    marginHorizontal: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(143,184,155,0.3)',
+    borderRadius: 14,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+  },
+  emptyTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 2.2, color: colors.accent },
+  emptyTxt: { marginTop: 8, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, textAlign: 'center', color: 'rgba(238,242,236,0.72)' },
   gateBanner: { marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 10, backgroundColor: 'rgba(242,192,120,0.07)', paddingHorizontal: 12, paddingVertical: 9 },
   gateBannerTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 0.8, color: colors.warm, textAlign: 'center', lineHeight: 15 },
 
@@ -1149,6 +1088,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 2.6, color: colors.fg, marginBottom: 14 },
   panelSection: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: 'rgba(143,184,155,0.6)', marginTop: 14, marginBottom: 8 },
+  panelNote: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '700', letterSpacing: 1.3, lineHeight: 12, color: 'rgba(242,192,120,0.75)', marginTop: 18, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.18)' },
 
   chanRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 8, borderRadius: 10 },
   chanRowActive: { backgroundColor: 'rgba(57,255,106,0.08)' },
