@@ -231,7 +231,7 @@ function syncMatches(userId, wireMatches) {
         mechanics_used: intOr(m.mechanicsUsed ?? m.mechanics_used, 0),
         led_at75: (m.ledAt75 ?? m.led_at75) == null ? null : (m.ledAt75 ?? m.led_at75) ? 1 : 0,
         decisive: m.decisive ?? null,
-        source: m.source === 'watcher' ? 'watcher' : 'manual',
+        source: m.source === 'scan' ? 'scan' : 'manual',
         composure: m.composure == null ? null : intOr(m.composure, null),
         note: m.note ? String(m.note).slice(0, 140) : null,
       });
@@ -387,7 +387,6 @@ function tillSummary() {
 function adminSummary() {
   const users = db.prepare(`SELECT COUNT(*) AS n FROM users WHERE academy_id != 'PSA-FOUNDER'`).get().n;
   const matches = db.prepare(`SELECT COUNT(*) AS n FROM matches`).get().n;
-  const watcherMatches = db.prepare(`SELECT COUNT(*) AS n FROM matches WHERE source = 'watcher'`).get().n;
   const messages = db.prepare(`SELECT COUNT(*) AS n FROM messages`).get().n;
   const weekAgo = Date.now() - 7 * 86400000;
   const matchesThisWeek = db.prepare(`SELECT COUNT(*) AS n FROM matches WHERE at > ?`).get(weekAgo).n;
@@ -409,7 +408,7 @@ function adminSummary() {
     FROM matches m JOIN users u ON u.id = m.user_id
     ORDER BY m.at DESC LIMIT 10
   `).all();
-  return { users, matches, watcherMatches, messages, matchesThisWeek, regions, coaches, topScorersWeek, recentMatches, till: tillSummary(), seats: seasonSeats(), generatedAt: Date.now() };
+  return { users, matches, messages, matchesThisWeek, regions, coaches, topScorersWeek, recentMatches, till: tillSummary(), seats: seasonSeats(), generatedAt: Date.now() };
 }
 
 module.exports = { db, createGuest, seasonSeats, userByToken, founderUser, syncMatches, listMatches, qChannels: () => qChannels.all(), qChannel: (s) => qChannel.get(s), postMessage, messagesAfter, toggleReaction, adminSummary, walletFor, topUp, activatePlan, spendFor, ledgerFor, tillSummary };

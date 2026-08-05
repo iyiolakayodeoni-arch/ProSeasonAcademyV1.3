@@ -3,7 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch, setMatchComposure } from './matches';
 import { getThread, settleCarried, swearLesson, ThreadVerdict } from './lessonThread';
 import * as backend from './backend';
-import { armWatcher, finishWatcher } from './matchWatcher';
 import { isValidReflection } from './honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
@@ -33,7 +32,6 @@ export type MirrorPhase =
   | 'idle'
   | 'thread-check' // the carried lesson must be answered: held or broke
   | 'intention'    // pre-match answers, before the score changes the emotions
-  | 'armed'        // consent + capture armed, waiting for the match
   | 'live'         // first half running
   | 'half-time'    // half-time checkpoint
   | 'second-half'  // second half running
@@ -159,7 +157,6 @@ export interface MirrorReceipt {
   lessonId: string | null;
   closestVersion: VersionKey | null;
   threadVerdict: ThreadVerdict | null;
-  recordingPath: string | null; // local MP4 (never uploaded by default)
 }
 
 export interface MirrorSessionState {
@@ -186,8 +183,6 @@ export interface MirrorSessionState {
   lesson: string;
   lessonId: string | null;
   endedAt: number | null;
-  /** local recording path for this session (null in manual mode) */
-  recordingPath: string | null;
   // the record
   receipts: MirrorReceipt[];
 }
@@ -217,7 +212,6 @@ const EMPTY: MirrorSessionState = {
   lesson: '',
   lessonId: null,
   endedAt: null,
-  recordingPath: null,
   receipts: [],
 };
 
@@ -263,7 +257,6 @@ function revive(raw: string): MirrorSessionState | null {
       lesson: typeof s.lesson === 'string' ? s.lesson : '',
       lessonId: typeof s.lessonId === 'string' ? s.lessonId : null,
       endedAt: typeof s.endedAt === 'number' ? s.endedAt : null,
-      recordingPath: typeof s.recordingPath === 'string' ? s.recordingPath : null,
       receipts: Array.isArray(s.receipts) ? (s.receipts as MirrorReceipt[]) : [],
     };
   } catch {
@@ -321,7 +314,6 @@ export function startMirrorSession(stageN: number): void {
       lesson: '',
       lessonId: null,
       endedAt: null,
-      recordingPath: null,
     });
   } else {
     set({
@@ -342,7 +334,6 @@ export function startMirrorSession(stageN: number): void {
       lesson: '',
       lessonId: null,
       endedAt: null,
-      recordingPath: null,
     });
   }
 }
@@ -359,16 +350,7 @@ export function saveIntention(a: IntentionAnswers): void {
   set({ intention: a });
 }
 
-/** ARM THE MIRROR — official MediaProjection consent must be shown by the
- *  OS; recording must never start silently. Fails soft: on devices without
- *  the native watcher the session proceeds in manual mode. */
-export async function armMirrorSession(): Promise<boolean> {
-  set({ phase: 'armed' });
-  const armed = await armWatcher().catch(() => false);
-  return armed;
-}
-
-/** the match has started — the watcher may detect it; the player confirms it */
+/** the player confirms the console match has started */
 export function beginMatch(): void {
   set({ phase: 'live' });
 }
@@ -387,7 +369,7 @@ export function openScorePhase(): void {
 }
 
 /** full time — the score is logged to the REAL vault first (the receipt),
- *  then the player's memory is captured BEFORE the recording is reviewed. */
+ *  then the player's memory is captured before the manual review. */
 export function atFullTime(gf: number, ga: number): string {
   const intention = state.intention;
   const note = `MIRROR SESSION — ${intention?.practice ?? 'focus'}`.slice(0, 60);
@@ -407,9 +389,6 @@ export function atFullTime(gf: number, ga: number): string {
     },
     'scan',
   );
-  void finishWatcher().then((sess) => {
-    if (sess?.recordingPath) set({ recordingPath: sess.recordingPath });
-  }).catch(() => {});
   set({ gf, ga, matchId: entry.id, phase: 'full-time' });
   return entry.id;
 }
@@ -512,7 +491,6 @@ export function finishMirrorLesson(lesson: string): MirrorReceipt {
     lessonId: entry?.id ?? null,
     closestVersion: state.closestVersion,
     threadVerdict: state.threadVerdict,
-    recordingPath: state.recordingPath,
   };
   set({
     phase: 'done',
@@ -524,12 +502,8 @@ export function finishMirrorLesson(lesson: string): MirrorReceipt {
   return receipt;
 }
 
-/** leave the session without swearing a lesson — the match receipt stays.
- *  Any running capture is stopped so a recording is never left dangling. */
+/** leave the session without swearing a lesson — the match receipt stays. */
 export function abandonMirrorSession(): void {
-  void finishWatcher().then((sess) => {
-    if (sess?.recordingPath) set({ recordingPath: sess.recordingPath });
-  }).catch(() => {});
   if (state.phase !== 'done' && state.phase !== 'idle') {
     const receipt: MirrorReceipt = {
       sessionId: newId('MS'),
@@ -544,7 +518,6 @@ export function abandonMirrorSession(): void {
       lessonId: state.lessonId,
       closestVersion: state.closestVersion,
       threadVerdict: state.threadVerdict,
-      recordingPath: state.recordingPath,
     };
     set({ phase: 'idle', receipts: [receipt, ...state.receipts].slice(0, 100) });
   } else {

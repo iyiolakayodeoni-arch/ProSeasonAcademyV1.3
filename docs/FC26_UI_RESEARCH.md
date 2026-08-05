@@ -2,7 +2,6 @@
 
 > Research target: **EA SPORTS FC 26**, the current console/PC release (PS5, Xbox Series X|S,
 > Windows). Released 25–26 September 2025; it is the current title as of August 2026 (FC 27 has
-> not yet released). This is **not** FC Mobile. All findings below are grounded in real, current
 > sources — EA's own Pitch Notes, launch/review coverage, and current community discussion —
 > cross-checked across multiple sources. Where a detail is from a single source or could not be
 > confirmed, it is flagged rather than asserted.

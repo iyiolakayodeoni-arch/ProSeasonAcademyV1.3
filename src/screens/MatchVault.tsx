@@ -148,7 +148,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
       <View style={styles.headerWrap}>
         <Text style={styles.eyebrow}>{coachFirst} GRADES WHAT YOU LOG</Text>
         <Text style={styles.title}>MATCH VAULT</Text>
-        <Text style={styles.subtitle}>HONOR-SYSTEM INGEST — AUTO-IMPORT WHEN THE GAME ALLOWS IT</Text>
+        <Text style={styles.subtitle}>HONOR-SYSTEM INGEST — MANUAL CONSOLE LOG</Text>
       </View>
 
       {/* stats */}
@@ -342,7 +342,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
             <Text style={styles.logBtnTxt}>LOG MATCH — {result} {gf}–{ga}</Text>
           </Pressable>
           <Text style={styles.honor}>
-            AUTO-IMPORT ARRIVES WHEN THE GAME OFFERS A REAL FEED — UNTIL THEN THE VAULT IS ON YOUR HONOR, AND THE SCAN ONLY GRADES WHAT'S LOGGED.
+            CONSOLE MATCHES ARE LOGGED BY YOU — THE VAULT IS ON YOUR HONOR, AND THE SCAN ONLY GRADES WHAT'S LOGGED.
           </Text>
         </View>
 
@@ -405,7 +405,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
                       <Text style={styles.entryNote} numberOfLines={2}>“{m.note}”</Text>
                     ) : null}
                     <Text style={styles.entryTime}>
-                      {new Date(m.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — {m.source === 'watcher' ? 'AUTO (LEGACY)' : 'VIA HONOR LOG'}
+                      {new Date(m.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} — VIA HONOR LOG
                     </Text>
                   </View>
                   <Pressable onPress={() => removeMatch(m.id)} hitSlop={8} style={styles.entryDel}>

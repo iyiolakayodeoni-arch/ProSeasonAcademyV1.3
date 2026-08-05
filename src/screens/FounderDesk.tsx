@@ -306,7 +306,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {[
             { v: data?.users, l: 'PLAYERS' },
             { v: data?.matches, l: 'MATCHES' },
-            { v: data?.watcherMatches, l: 'AUTO (LEGACY)' },
             { v: data?.messages, l: 'MESSAGES' },
             { v: data?.matchesThisWeek, l: 'THIS WEEK' },
           ].map((c) => (
@@ -957,7 +956,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
               <Text style={styles.matchScore}>{m.gf}–{m.ga}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.matchMeta} numberOfLines={1}>
-                  {m.handle} · {m.mode ?? '—'} · {m.source === 'watcher' ? 'AUTO (LEGACY)' : 'HONOR'}
+                  {m.handle} · {m.mode ?? '—'} · HONOR
                   {m.composure != null ? ` · HEAD: ${HEAD_LABELS[m.composure - 1] ?? m.composure}` : ''}
                 </Text>
                 {m.note ? <Text style={styles.matchNote} numberOfLines={2}>“{m.note}”</Text> : null}

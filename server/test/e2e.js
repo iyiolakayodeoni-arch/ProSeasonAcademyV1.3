@@ -55,7 +55,7 @@ async function main() {
   console.log('✓ guest auth (2 users)');
 
   // ── 2. match vault sync: idempotent upserts (incl. booleans + MIND) ──
-  const m1 = { clientId: 'Mtest1', at: Date.now(), gf: 3, ga: 1, mode: 'RANKED', source: 'watcher', composure: 4, note: 'STAYED CALM AFTER EQUALIZER', ledAt75: true, noSprint: true };
+  const m1 = { clientId: 'Mtest1', at: Date.now(), gf: 3, ga: 1, mode: 'RANKED', source: 'manual', composure: 4, note: 'STAYED CALM AFTER EQUALIZER', ledAt75: true, noSprint: true };
   const m2 = { clientId: 'Mtest2', at: Date.now() - 3.6e6, gf: 0, ga: 2, mode: 'H2H', ledAt75: null, noSprint: false };
   const s1 = await j('POST', '/matches/sync', { token: a.body.token, body: { matches: [m1, m2] } });
   assert.deepEqual({ inserted: s1.body.inserted, skipped: s1.body.skipped }, { inserted: 2, skipped: 0 });
@@ -63,13 +63,13 @@ async function main() {
   assert.deepEqual({ inserted: s2.body.inserted, skipped: s2.body.skipped }, { inserted: 0, skipped: 2 }, 'dup sync skipped');
   const list = await j('GET', '/matches', { token: a.body.token });
   assert.equal(list.body.matches.length, 2);
-  const eye = list.body.matches.find((m) => m.client_id === 'Mtest1');
-  assert.equal(eye.source, 'watcher');
-  assert.equal(eye.composure, 4);
-  assert.equal(eye.note, 'STAYED CALM AFTER EQUALIZER');
-  assert.equal(eye.led_at75, 1);
-  assert.equal(eye.no_sprint, 1);
-  console.log('✓ match vault sync (idempotent upserts + THE MIND fields + bool coercion)');
+  const logged = list.body.matches.find((m) => m.client_id === 'Mtest1');
+  assert.equal(logged.source, 'manual');
+  assert.equal(logged.composure, 4);
+  assert.equal(logged.note, 'STAYED CALM AFTER EQUALIZER');
+  assert.equal(logged.led_at75, 1);
+  assert.equal(logged.no_sprint, 1);
+  console.log('✓ match vault sync (idempotent upserts + manual console fields + bool coercion)');
 
   // ── 3. community realtime: WS join → live message → cursor history ──
   const chans = await j('GET', '/community/channels', { token: a.body.token });
@@ -123,12 +123,12 @@ async function main() {
   assert.equal(summary.status, 200);
   assert.equal(summary.body.users, 2);
   assert.equal(summary.body.matches, 2);
-  assert.equal(summary.body.watcherMatches, 1);
+  assert.equal(summary.body.matches, 2);
   assert.equal(summary.body.messages, 2);
   const html = await fetch(`${BASE}/admin?key=${ADMIN}`);
   assert.equal(html.status, 200);
   assert.ok((await html.text()).includes('ADMIN DESK'));
-  console.log('✓ admin summary (users/matches/watcher stats, gated)');
+  console.log('✓ admin summary (users/matches/manual stats, gated)');
 
   // ── 6. pricing halls + founder broadcast (key-gated, live fan-out) ──
   assert.deepEqual({ africa: summary.body.regions.africa, unset: summary.body.regions.unset }, { africa: 1, unset: 1 });

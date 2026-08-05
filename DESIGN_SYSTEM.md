@@ -129,7 +129,6 @@ forbids it; the research explains *why the market does too*.
   *forward* signal, not a current FC 26/27 feature. Framed as direction, not
   fact.
 
-[r1]: https://mwm.ai/apps/renderz-fc-mobile-25-database/6472486745
 [r2]: https://www.charlieintel.com/efootball-version-1-0-0-patch-notes-season-1/171427/
 [r3]: https://www.ea.com/games/ea-sports-fc/fc-27/news/pitch-notes-fc27-fut-deep-dive
 [r4]: https://supercoinsy.com/article/ea-sports-fc-25-walkouts

@@ -2,8 +2,8 @@
 ## Current application documentation
 
 **Document status:** Updated for the MIRROR DIRECTION (01 Aug 2026). The sections below that describe the two coach-specific journeys (**The Ashfault Ascent** / **The Merehaven Way**) are now **historical** — see §0 for the applied direction and `../MIRROR_DIRECTION.md` for the full record.
-**Repository:** `iyiolakayodeoni-arch/ProSeasonAcademyV1.3`  
-**Prepared:** 31 July 2026 (UTC) · updated 01 Aug 2026  
+**Repository:** `iyiolakayodeoni-arch/ProSeasonAcademyV1.3`
+**Prepared:** 31 July 2026 (UTC) · updated 01 Aug 2026
 **Scope:** The Journey as it is currently implemented in the application, including the map, stages, objectives, Match Scan / Mirror Session, coach room, progression, Role Model finish, storage, access rules, and known implementation notes.
 
 ---
@@ -169,9 +169,9 @@ The Ashfault Ascent is a climb out of Cinder Row through six fictional places. I
 
 ## Stage 1 — CINDER ROW
 
-**Tagline:** Where he learned that space is borrowed and paid back in sweat  
-**Mentor:** Mama Ukae  
-**Estimated time:** 2–3 days  
+**Tagline:** Where he learned that space is borrowed and paid back in sweat
+**Mentor:** Mama Ukae
+**Estimated time:** 2–3 days
 **Reward:** **+120 XP** · `CINDER ROW BADGE`
 
 ### Objectives
@@ -191,9 +191,9 @@ Mama Ukae ran the evening games from her shopfront step. The stage asks for two 
 
 ## Stage 2 — THE LEAN-TO
 
-**Tagline:** A broken roof teaches shape: stand where the rain is not  
-**Mentor:** Drummer Ezra  
-**Estimated time:** 3–4 days  
+**Tagline:** A broken roof teaches shape: stand where the rain is not
+**Mentor:** Drummer Ezra
+**Estimated time:** 3–4 days
 **Reward:** **+150 XP** · `LEAN-TO BADGE`
 
 ### Objectives
@@ -213,9 +213,9 @@ Drummer Ezra teaches that a team standing correctly sounds tight; a team chasing
 
 ## Stage 3 — THE SALTPITS
 
-**Tagline:** The grind — cramps first, wages later  
-**Mentor:** Foreman Baba Salt  
-**Estimated time:** 4–5 days  
+**Tagline:** The grind — cramps first, wages later
+**Mentor:** Foreman Baba Salt
+**Estimated time:** 4–5 days
 **Reward:** **+180 XP** · `SALTPITS BADGE`
 
 ### Objectives
@@ -235,9 +235,9 @@ Foreman Baba Salt's lesson is that ranked work is a contract: results first, the
 
 ## Stage 4 — LONG CORRIDOR
 
-**Tagline:** Patience — a lock opens tooth by tooth, never all at once  
-**Mentor:** Locksmith Venn  
-**Estimated time:** 4–5 days  
+**Tagline:** Patience — a lock opens tooth by tooth, never all at once
+**Mentor:** Locksmith Venn
+**Estimated time:** 4–5 days
 **Reward:** **+200 XP** · `CORRIDOR BADGE`
 
 ### Objectives
@@ -257,9 +257,9 @@ Locksmith Venn's principle is incremental progress: pass, pass, wait, pass; then
 
 ## Stage 5 — RED LANTERN END
 
-**Tagline:** Late drama — when their legs start negotiating, yours vote  
-**Mentor:** Night-Watch Kettle  
-**Estimated time:** 5–6 days  
+**Tagline:** Late drama — when their legs start negotiating, yours vote
+**Mentor:** Night-Watch Kettle
+**Estimated time:** 5–6 days
 **Reward:** **+240 XP** · `RED LANTERN BADGE`
 
 ### Objectives
@@ -279,9 +279,9 @@ Night-Watch Kettle represents the hour when other players sit down. The stage re
 
 ## Stage 6 — THE IRON WHISTLE
 
-**Tagline:** Finals mentality — full time when the climb is done, not before  
-**Mentor:** Old Whistle Onye  
-**Estimated time:** 6–7 days  
+**Tagline:** Finals mentality — full time when the climb is done, not before
+**Mentor:** Old Whistle Onye
+**Estimated time:** 6–7 days
 **Reward:** **+300 XP** · `THE IRON WHISTLE`
 
 ### Objectives
@@ -308,13 +308,13 @@ Old Whistle Onye represents full time: the player must not assume the climb is f
 
 **Arc:** `THE HARBOUR ROAD TO CALM WATER — HOW THE ICEMAN LEARNED HIS TEMPERATURE`
 
-The Merehaven Way is a harbour road to Calm Water. Its fictional supporting voices are Fisher-boy Idri, Boatman Sola, Dockmaster Yew, Fogwatcher Nne, Light-keeper Ama, and Elder Mere.
+The Merehaven Way is a harbour road to Calm Water. Its fictional supporting voices are Fisher-boy Idri, Boatman Sola, Dockmaster Yew, Fog Keeper Nne, Light-keeper Ama, and Elder Mere.
 
 ## Stage 1 — TIDE FLATS
 
-**Tagline:** First touch — the tide gives minutes, not hours  
-**Mentor:** Fisher-boy Idri  
-**Estimated time:** 2–3 days  
+**Tagline:** First touch — the tide gives minutes, not hours
+**Mentor:** Fisher-boy Idri
+**Estimated time:** 2–3 days
 **Reward:** **+120 XP** · `TIDE FLATS BADGE`
 
 ### Objectives
@@ -334,9 +334,9 @@ Fisher-boy Idri's tide gives minutes, not hours: use the available time well and
 
 ## Stage 2 — LANTERN CANAL
 
-**Tagline:** Rhythm — passing that stops feeling like a pattern  
-**Mentor:** Boatman Sola  
-**Estimated time:** 3–4 days  
+**Tagline:** Rhythm — passing that stops feeling like a pattern
+**Mentor:** Boatman Sola
+**Estimated time:** 3–4 days
 **Reward:** **+150 XP** · `CANAL BADGE`
 
 ### Objectives
@@ -356,9 +356,9 @@ Boatman Sola teaches that the boat should finish its thought. Patience through b
 
 ## Stage 3 — STILLWATER DOCKS
 
-**Tagline:** Patience vs the block — still water moves what storms cannot  
-**Mentor:** Dockmaster Yew  
-**Estimated time:** 4–5 days  
+**Tagline:** Patience vs the block — still water moves what storms cannot
+**Mentor:** Dockmaster Yew
+**Estimated time:** 4–5 days
 **Reward:** **+180 XP** · `STILLWATER BADGE`
 
 ### Objectives
@@ -378,9 +378,9 @@ Dockmaster Yew compares the low block to a dock wall: move it patiently instead 
 
 ## Stage 4 — THE FOG GATE
 
-**Tagline:** Composure in chaos — when you cannot see, steer by feel  
-**Mentor:** Fogwatcher Nne  
-**Estimated time:** 4–5 days  
+**Tagline:** Composure in chaos — when you cannot see, steer by feel
+**Mentor:** Fog Keeper Nne
+**Estimated time:** 4–5 days
 **Reward:** **+200 XP** · `FOG GATE BADGE`
 
 ### Objectives
@@ -394,15 +394,15 @@ This stage turns difficult moments into reflection and controlled finishing. The
 
 ### Coach story
 
-Fogwatcher Nne counts ships by sound when visibility fails. The player likewise learns to make a useful read when a match becomes hard to interpret.
+Fog Keeper Nne counts ships by sound when visibility fails. The player likewise learns to make a useful read when a match becomes hard to interpret.
 
 ---
 
 ## Stage 5 — HARBOUR LIGHTS
 
-**Tagline:** Vision — see the whole pitch the way a lighthouse sees the bay  
-**Mentor:** Light-keeper Ama  
-**Estimated time:** 5–6 days  
+**Tagline:** Vision — see the whole pitch the way a lighthouse sees the bay
+**Mentor:** Light-keeper Ama
+**Estimated time:** 5–6 days
 **Reward:** **+240 XP** · `HARBOUR LIGHTS BADGE`
 
 ### Objectives
@@ -422,9 +422,9 @@ Light-keeper Ama sees weather before sailors feel it. The player is asked to rea
 
 ## Stage 6 — CALM WATER
 
-**Tagline:** Mastery — the opponent supplies the waves; you remain the temperature  
-**Mentor:** Elder Mere  
-**Estimated time:** 6–7 days  
+**Tagline:** Mastery — the opponent supplies the waves; you remain the temperature
+**Mentor:** Elder Mere
+**Estimated time:** 6–7 days
 **Reward:** **+300 XP** · `CALM WATER BADGE`
 
 ### Objectives

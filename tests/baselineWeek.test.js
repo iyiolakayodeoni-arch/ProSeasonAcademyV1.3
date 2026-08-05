@@ -15,20 +15,20 @@ const fs = require('node:fs');
 const root = path.join(__dirname, '..');
 
 execSync(
-  `npx tsc --ignoreConfig src/data/baselineScan.ts tests/test-env.d.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0`,
+  `npx tsc --ignoreConfig src/data/baselineScan.ts tests/test-env.d.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0 --types node`,
   { cwd: root, stdio: 'inherit' }
 );
 
 // the cloud uplink is a runtime concern — remove it so the vault's dynamic
 // require fails soft (which addMatch is designed to survive)
-try { fs.unlinkSync(path.join(__dirname, '.build', 'cloudSync.js')); } catch {}
+try { fs.unlinkSync(path.join(__dirname, '.build', 'data', 'cloudSync.js')); } catch {}
 
 // a STATEFUL AsyncStorage stub so persistence + migration can be tested
 const stubDir = path.join(__dirname, '.build', 'node_modules');
 fs.mkdirSync(path.join(stubDir, 'react-native'), { recursive: true });
 fs.writeFileSync(
   path.join(stubDir, 'react-native', 'index.js'),
-  `module.exports = { NativeModules: {}, NativeEventEmitter: class { addListener() { return { remove() {} }; } }, Platform: { OS: 'ios' } };`
+  `module.exports = { NativeModules: {}, NativeEventEmitter: class { addListener() { return { remove() {} }; } }, Platform: { OS: 'ios', select: (options) => options.ios ?? options.default } };`
 );
 fs.mkdirSync(path.join(stubDir, '@react-native-async-storage', 'async-storage'), { recursive: true });
 fs.writeFileSync(
@@ -41,8 +41,10 @@ module.exports = {
   __store: store,
 };`
 );
+fs.mkdirSync(path.join(stubDir, 'react-native-url-polyfill'), { recursive: true });
+fs.writeFileSync(path.join(stubDir, 'react-native-url-polyfill', 'auto.js'), '');
 
-const B = require('./.build/baselineScan.js');
+const B = require('./.build/data/baselineScan.js');
 
 const DAY = B.BASELINE_DAY_MS;
 

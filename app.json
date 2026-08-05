@@ -34,7 +34,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "./plugins/withMatchWatcher",
       "./plugins/withGradleCompat",
       [
         "expo-splash-screen",

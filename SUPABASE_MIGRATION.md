@@ -9,7 +9,7 @@
 
 ## 0 · What changes for players: nothing. For you: less stress, one GUI.
 
-Every screen, the coaches, the journeys, the vault, THE EYE, the live
+Every screen, the coaches, the journeys, the vault, manual console review, the live
 rooms, the Founder Desk, THE TILL — pixel-identical. The app was built
 with a **backend seam**: one file (`src/data/backend.ts`) is the only
 place that knows how the academy talks to its backend. We swap the

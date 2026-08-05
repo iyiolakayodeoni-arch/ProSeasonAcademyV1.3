@@ -228,7 +228,7 @@ coaching IP should not be browseable.
 ```bash
 # Code quality
 npx tsc --noEmit                 # must be zero errors.
-node tests/frameAnalysis.test.js  # 7/7 pass.
+node tests/mirrorSession.test.js  # 7/7 pass.
 npx expo export --platform web    # should succeed.
 
 # With .env set (keys from eas.json):
@@ -244,10 +244,10 @@ node tests/live-backend.test.mjs  # 20 passed · 0 failed.
 | `.env` created | Real Supabase URL + anon key from the live project |
 | MetaBot scheduler installed | `.github/workflows/metabot.yml` — runs daily |
 | 4 new MetaBot lessons | Stages 3–6 now have content (The Second Ball, The Driven Pass, The 75th-Minute Switch, The Controlled Sprint) — `liveFeed.json` has 6 lesson-bearing posts |
-| THE EYE Android module written | `plugins/withMatchWatcher.js` — Expo config plugin that injects native Kotlin (MatchWatcherModule, MatchWatcherService, MatchWatcherPackage) at prebuild time. Registered in `app.json` |
+| manual console review Android module written | `plugins/withmanual console review.js` — Expo config plugin that injects native Kotlin (manual console reviewModule, manual console reviewService, manual console reviewPackage) at prebuild time. Registered in `app.json` |
 | Edge functions verified | All 10 are complete and ready to deploy |
 | TypeScript verified | `tsc --noEmit` — zero errors |
-| Tests pass | `frameAnalysis.test.js` — 7/7 |
+| Tests pass | `mirrorSession.test.js` — 7/7 |
 | Auth keys baked | `eas.json` has real URL + anon key for cloud builds |
 
 ---

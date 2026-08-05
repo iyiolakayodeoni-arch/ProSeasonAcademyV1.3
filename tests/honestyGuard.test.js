@@ -11,11 +11,11 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 
 execSync(
-  `npx tsc --ignoreConfig src/data/honestyGuard.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0`,
+  `npx tsc --ignoreConfig src/data/honestyGuard.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0 --types node`,
   { cwd: root, stdio: 'inherit' }
 );
 
-const H = require('./.build/honestyGuard.js');
+const H = require('./.build/data/honestyGuard.js');
 
 function testValidReflections() {
   const valid = [
