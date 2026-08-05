@@ -2,8 +2,8 @@
 
 > **SHIPPED (v3, 30 July 2026):** the loop below now runs in the app as described.
 > The stage match scan is a *watched training session*: the player plays, the
-> scanner tags the key moments (auto goal markers from THE EYE where the native
-> watcher exists + the player's own tags), the coach asks a guiding question on
+> scanner tags the key moments (auto goal markers from manual console review where the native
+> manual console review exists + the player's own tags), the coach asks a guiding question on
 > **every** tag, and the player jots **THE LESSON** — one signed line that
 > becomes the **thread**, the player's MAIN QUEST for the next session. The next
 > scan opens by asking how the last lesson held (HELD / BROKE + one honest
@@ -26,7 +26,7 @@
 
 This is the intended direction for ProSeasonAcademy’s match scan.
 
-The academy is **not** trying to become a fake automatic coach that pretends it understands a full FC Mobile match. The product should attract serious players who are willing to watch themselves, write honestly, and learn from their own decisions.
+The academy is **not** trying to become a fake automatic coach that pretends it understands a full EA SPORTS FC 26/27 Console match. The product should attract serious players who are willing to watch themselves, write honestly, and learn from their own decisions.
 
 ## The principle
 
@@ -57,7 +57,7 @@ When the player taps `START MATCH SCAN`:
 - the app starts a scan session
 - the app explains what will be recorded and why
 - Android asks for screen-record permission if the native recorder is available
-- the player switches to FC Mobile and plays the match
+- the player starts their console match in EA SPORTS FC 26/27 and plays
 
 If native recording is unavailable, the flow falls back to manual logging and written reflection.
 
@@ -214,7 +214,7 @@ The phone does the local recording/review. Supabase stores small text/metadata r
 
 To make the full scan ritual real:
 
-1. MediaProjection screen recorder
+1. console capture screen recorder
 2. optional floating overlay prompt
 3. local compression with MediaCodec
 4. scoreboard/key-frame sampler
@@ -228,7 +228,7 @@ This should remain Android-first. iOS cannot support the same overlay/recording 
 
 The bot should study public real-player material:
 
-- FC Mobile YouTube tutorials
+- EA SPORTS FC 26/27 Console YouTube tutorials
 - real H2H gameplay videos
 - patch notes
 - guide posts

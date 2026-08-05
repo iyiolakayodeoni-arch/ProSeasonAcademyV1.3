@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Onliversity",
+    "slug": "onliversity-pm",
+    "scheme": "onliversitypm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0f0a",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#0a0f0a",
+      "resizeMode": "contain",
+      "imageWidth": 1
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.onliversity.packagemanager"
+    },
+    "android": {
+      "package": "com.onliversity.packagemanager",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.REQUEST_INSTALL_PACKAGES",
+        "android.permission.INTERNET"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "./plugins/withInstaller"
+    ]
+  }
+}

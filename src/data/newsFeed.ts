@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// FC MOBILE NEWS — published drafts from MetaBot (founder-approved).
+// FC 26/27 CONSOLE NEWS — published drafts from MetaBot (founder-approved).
 // Never auto-publishes. Pending items are Desk-only.
 // ─────────────────────────────────────────────────────────────
 

@@ -11,12 +11,15 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
+import UpdateBanner from '../../components/UpdateBanner';
+import { InputCombo, ControllerButton } from '../../components/ButtonGlyph';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
 import { SideLesson } from '../../data/sideLesson';
 import SideLessonSheet from '../SideLessonSheet';
+import RoleModelFeedSheet from '../RoleModelFeedSheet';
 import {
   formatAnnouncementWhen,
   markAnnouncementRead,
@@ -33,7 +36,16 @@ import { colors, monoFont } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
-const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'COACH & GROUP'] as const;
+const COMBO_MAP: Record<string, ControllerButton[]> = {
+  'controlled-sprint': ['R1', 'LS'],
+  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'driven-pass': ['R1', 'CROSS'],
+  'second-ball': ['LS', 'CIRCLE'],
+  'lane-change': ['L1', 'RS_FLICK'],
+  'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
+};
+
+const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'ROLE MODEL STORY', 'COACH & GROUP'] as const;
 type Chip = (typeof CHIPS)[number];
 
 const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null | 'FOUNDER' | 'NEWS'> = {
@@ -41,6 +53,7 @@ const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null | 'FOUNDER' | 'NEWS
   FOUNDER: 'FOUNDER',
   NEWS: 'NEWS',
   'META WATCH': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
+  'ROLE MODEL STORY': ['ROLE_MODEL'],
   'COACH & GROUP': ['COACH_UPDATE'],
 };
 
@@ -85,6 +98,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   const [tillOpen, setTillOpen] = useState(false);
   // the SIDE NOTE — a bot trick opened as an in-app lesson + blog
   const [side, setSide] = useState<SideLesson | null>(null);
+  // the ROLE MODEL FEED — Chinedu's ongoing story, opened from a cross-post
+  const [feedOpen, setFeedOpen] = useState(false);
 
   // ── the founder mutters when you poke the wordmark enough ──
   const [brandTaps, setBrandTaps] = useState(0);
@@ -187,6 +202,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           </Marquee>
         </View>
 
+        <UpdateBanner />
+
         {/* FOUNDER ANNOUNCEMENTS — official, never community-style placeholders */}
         {showFounder && announcements.length > 0 && (
           <View style={styles.annSection}>
@@ -205,10 +222,10 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           <Text style={styles.emptyFounder}>NO FOUNDER ANNOUNCEMENTS YET — WHEN POCOLASTONES POSTS, IT LANDS HERE.</Text>
         )}
 
-        {/* Approved FC Mobile news (founder-reviewed drafts only) */}
+        {/* Approved FC 26/27 Console news (founder-reviewed drafts only) */}
         {showNews && news.length > 0 && (
           <View style={styles.annSection}>
-            <Text style={styles.annSectionLbl}>FC MOBILE NEWS · FOUNDER-APPROVED</Text>
+            <Text style={styles.annSectionLbl}>FC 26/27 CONSOLE NEWS · FOUNDER-APPROVED</Text>
             {news.slice(0, chip === 'NEWS' ? 20 : 3).map((n, idx) => (
               <NewsCard key={n.id} item={n} delay={idx * 40} />
             ))}
@@ -239,6 +256,12 @@ export default function HomeTab({ coach }: { coach: Coach }) {
               <Text style={styles.heroHeadline}>
                 {hero?.headline ?? HERO_FALLBACK.headline}
               </Text>
+              {hero?.sideLesson?.topic && COMBO_MAP[hero.sideLesson.topic] && (
+                <View style={styles.heroComboRow}>
+                  <Text style={styles.heroComboLabel}>CONTROLLER INPUT: </Text>
+                  <InputCombo combo={COMBO_MAP[hero.sideLesson.topic]} size={18} />
+                </View>
+              )}
               <Text style={styles.heroBody}>
                 {hero?.body ?? HERO_FALLBACK.body}
               </Text>
@@ -290,6 +313,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             locked={isTrick(card.kind) && !trickOpen(card.id)}
             onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
             onOpenLesson={(l) => { setSide(l); sfx('whoosh'); }}
+            onOpenRoleFeed={() => { sfx('whoosh'); setFeedOpen(true); }}
           />
         ))}
 
@@ -303,8 +327,16 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           )
         )}
 
+        {/* ── THE CHINEDU WAY: HOME TAB RITUAL REMINDER ── */}
+        <View style={{ padding: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)', marginTop: 16, marginBottom: 8 }}>
+          <Text style={{ fontFamily: monoFont, fontWeight: '900', letterSpacing: 1.4, textAlign: 'center', color: colors.primary, fontSize: 10 }}>THE CHINEDU WAY · PEN TO PAPER</Text>
+          <Text style={{ marginTop: 4, fontFamily: monoFont, fontSize: 9.5, lineHeight: 14.5, color: 'rgba(143,184,155,0.85)', textAlign: 'center' }}>
+            Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your results into your database. The hard way is the easy way, and tech is meant to elevate.
+          </Text>
+        </View>
+
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
-        <Text style={styles.footTag}>BUILT BY PLAYERS · NO FULLBACKS WERE HARMED</Text>
+        <Text style={styles.footTag}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
       </ScrollView>
 
       {tillOpen && (
@@ -317,6 +349,13 @@ export default function HomeTab({ coach }: { coach: Coach }) {
       {side && (
         <View style={StyleSheet.absoluteFill}>
           <SideLessonSheet coach={coach} lesson={side} origin="home" onClose={() => { setSide(null); sfx('tap'); }} />
+        </View>
+      )}
+
+      {/* the ROLE MODEL FEED — Chinedu's ongoing story, from a Home cross-post */}
+      {feedOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <RoleModelFeedSheet coach={coach} onClose={() => { setFeedOpen(false); sfx('tap'); }} />
         </View>
       )}
     </View>
@@ -382,6 +421,7 @@ function FeedCard({
   locked = false,
   onUnlock,
   onOpenLesson,
+  onOpenRoleFeed,
 }: {
   card: FeedCardData;
   coach: Coach;
@@ -393,9 +433,15 @@ function FeedCard({
   onUnlock?: () => void;
   /** a trick carrying a SIDE NOTE — open the lesson + blog inside the app */
   onOpenLesson?: (lesson: SideLesson) => void;
+  /** a ROLE MODEL cross-post — open Chinedu's ongoing story feed */
+  onOpenRoleFeed?: () => void;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
+    if (card.kind === 'ROLE_MODEL' && onOpenRoleFeed) {
+      onOpenRoleFeed(); // the role model story opens the feed, never a link
+      return;
+    }
     if (card.sideLesson && onOpenLesson) {
       onOpenLesson(card.sideLesson); // the side note reads INSIDE the academy
       return;
@@ -406,6 +452,40 @@ function FeedCard({
       console.log(`[home] "${card.cta ?? card.tag}" on ${card.id} (hub screens land in a next build)`);
     }
   };
+
+  // ── ROLE MODEL STORY — a distinct cross-post card. Warm gold story look
+  //    (never the green "coaching aimed at me" tone) so the ongoing story is
+  //    immediately tellable apart from the sourced FC 26 intel. ──
+  if (card.kind === 'ROLE_MODEL') {
+    return (
+      <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={[styles.rmCard, card.live && styles.rmCardLive]}>
+        <Pressable onPress={open}>
+          <View style={styles.rmTop}>
+            <View style={styles.rmTagWrap}>
+              <Text style={styles.rmTag}>{card.tag}</Text>
+              {card.live && <Text style={styles.rmLive}>● LIVE</Text>}
+            </View>
+            <Text style={styles.rmTime}>{card.time}</Text>
+          </View>
+          <View style={styles.rmHeader}>
+            {card.avatar === 'coach' && <Image source={coach.portrait} style={styles.rmAvatar} />}
+            <View style={styles.rmHeaderTxt}>
+              <Text style={styles.rmHandle}>{card.authorHandle}</Text>
+              <Text style={styles.rmHeadline}>{card.headline}</Text>
+            </View>
+          </View>
+          {card.metaRight && (
+            <View style={styles.rmStatLine}>
+              <Text style={styles.rmStatLineTxt}>{card.metaRight}</Text>
+            </View>
+          )}
+          <Text style={styles.rmBody} numberOfLines={4}>{card.body}</Text>
+          <Text style={styles.rmCta}>{card.cta}</Text>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={[styles.card, { borderColor: a.soft }]}>
       {/* top row: tag + time (and LIVE badge) */}
@@ -429,6 +509,11 @@ function FeedCard({
         <View style={styles.cardBody}>
           {card.authorHandle && <Text style={styles.cardHandle}>{card.authorHandle}</Text>}
           <Text style={styles.cardHeadline}>{card.headline}</Text>
+          {card.sideLesson?.topic && COMBO_MAP[card.sideLesson.topic] && !locked && (
+            <View style={styles.cardComboRow}>
+              <InputCombo combo={COMBO_MAP[card.sideLesson.topic]} size={16} />
+            </View>
+          )}
           {card.body && !locked && (
             <Text style={styles.cardText} numberOfLines={3}>
               {card.body}
@@ -733,6 +818,8 @@ const styles = StyleSheet.create({
   },
   heroDurationTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '700', letterSpacing: 1, color: colors.fg },
   heroHeadline: { marginTop: 11, fontSize: 16.5, fontWeight: '800', letterSpacing: 0.2, color: colors.fg },
+  heroComboRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  heroComboLabel: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   heroBody: { marginTop: 7, fontSize: 10.5, lineHeight: 15.5, color: '#b9cabe' },
   heroFoot: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heroCta: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
@@ -780,6 +867,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1 },
   cardHandle: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
   cardHeadline: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, color: colors.fg },
+  cardComboRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   cardText: { marginTop: 5, fontSize: 9.5, lineHeight: 13.5, color: '#a9bbae' },
   lockBox: {
     marginTop: 7,
@@ -846,4 +934,43 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(242,192,120,0.4)',
     textShadowRadius: 5,
   },
+
+  // ── ROLE MODEL STORY cross-post card — warm gold, distinct from coaching ──
+  rmCard: {
+    marginTop: 8,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.45)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(24,18,8,0.72)',
+    padding: 12,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  rmCardLive: {
+    borderColor: colors.accent,
+    shadowOpacity: 0.22,
+  },
+  rmTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rmTagWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  rmTag: {
+    fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+    borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2.5,
+    backgroundColor: 'rgba(242,192,120,0.07)',
+  },
+  rmLive: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  rmTime: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
+  rmHeader: { flexDirection: 'row', marginTop: 9, gap: 9 },
+  rmAvatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', marginTop: 2 },
+  rmHeaderTxt: { flex: 1 },
+  rmHandle: { fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(242,192,120,0.6)' },
+  rmHeadline: { marginTop: 3, fontSize: 13.5, fontWeight: '900', lineHeight: 18, color: colors.fg },
+  rmStatLine: {
+    marginTop: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)',
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: 'rgba(10,17,12,0.5)',
+  },
+  rmStatLineTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  rmBody: { marginTop: 7, fontSize: 9.6, lineHeight: 13.5, color: '#d8cfc0' },
+  rmCta: { marginTop: 8, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.5, color: colors.warm },
 });

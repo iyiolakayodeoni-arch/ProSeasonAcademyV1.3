@@ -61,6 +61,7 @@ const LIVE: { updatedAt: string; currentPatch: string; posts: LivePost[] } = req
 export interface LessonPlan {
   contentId: string; // metabot id — stored on the stage for stale-swap tracking
   kind: string;
+  topic?: string; // mechanism key used for combo lookup (derived from LessonBlock.topic)
   patchVersion: string;
   discoveredAt: string;
   sourceName: string;
@@ -88,6 +89,7 @@ function toPlan(p: LivePost): LessonPlan {
   return {
     contentId: p.id,
     kind: p.kind,
+    topic: l.topic ?? l.name.toLowerCase().replace(/^the /, '').replace(/ /g, '-'),
     patchVersion: p.patchVersion,
     discoveredAt: p.discoveredAt,
     sourceName: p.sourceName,
@@ -176,12 +178,12 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       greeting:
         'Come in. Sit down first — today is just **me talking.** No essays, no quizzes. The only thing I need back is one match at the end. And please, let the controller cool down first — it has done nothing wrong.',
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
-      mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.obinna} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
+      mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
       quip: coachQuip('obinna', plan.contentId),
-      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, divide the moments yourself, and swear the next lesson. **The mirror preserves every version of what you thought.** It never writes it for you.`,
+      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after full time, then type your truth into your database. **There is a special connection a biro has to a book that cannot be typed.**`,
       scanIntro:
-        'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION CAPTURES WHAT YOU THOUGHT BEFORE THE MATCH, AT HALF-TIME, AT FULL-TIME, AND AFTER YOU REVIEW YOUR OWN MOMENTS. THEN YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
-      footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
+        'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. THE HARD WAY IS THE EASY WAY.',
+      footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR OWN PATH — PEN TO PAPER BEFORE YOU TYPE.',
     };
   }
   return {
@@ -190,10 +192,10 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
-    closer: `That’s the whole side note. Now the real work — start a **Mirror Session**, carry your thread into the match, answer the checkpoints, mark your own moments, swear the next lesson. **The mirror does not think for you.** It just makes sure you cannot forget what you believed.`,
+    closer: `That’s the whole side note. Now the real work — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape, and write your key moments on paper with a biro. Let your mind cool down for 24–30 minutes, then type your truth into your database. **The hard way is the easy way, and tech is meant to elevate.**`,
     scanIntro:
-      'START A MIRROR SESSION — ONE RANKED MATCH, YOUR INTENTION FIRST. THE SESSION KEEPS YOUR PRE-MATCH THINKING, YOUR HALF-TIME HEAD, YOUR FULL-TIME MEMORY AND YOUR REVIEWED EVIDENCE SIDE BY SIDE. YOU JOT THE LESSON. THAT LESSON IS YOUR THREAD.',
-    footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR HEAD — ONLY YOUR MATCHES WRITE IT.',
+      'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.',
+    footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR OWN PATH — ONLY YOUR MATCHES WRITE IT.',
   };
 }
 
@@ -306,14 +308,14 @@ export function stageSoulQuestion(
   _gf: number,
   _ga: number,
 ): string {
-  const script = BASELINE_SCRIPTS[coachId] ?? BASELINE_SCRIPTS.obinna;
+  const script = BASELINE_SCRIPTS[coachId] ?? BASELINE_SCRIPTS.chinedu;
   const pool = script.questions[result];
   return pool[Math.max(0, stageN - 1) % pool.length];
 }
 
 /** the funny story beat this scoreline shakes loose — coach memory, not verdict */
 export function stageScoreBeat(coachId: string, gf: number, ga: number): string {
-  const script = BASELINE_SCRIPTS[coachId] ?? BASELINE_SCRIPTS.obinna;
+  const script = BASELINE_SCRIPTS[coachId] ?? BASELINE_SCRIPTS.chinedu;
   return script.beats[beatKey(gf, ga)];
 }
 
@@ -332,7 +334,7 @@ const READ_LINES: Record<string, Record<MatchResult, string>> = {
 
 /** the coach's read of the scan — tied to TODAY'S mechanic when the room has one */
 export function stageReadLine(coachId: string, result: MatchResult, mechShort: string | null): string {
-  const lines = READ_LINES[coachId] ?? READ_LINES.obinna;
+  const lines = READ_LINES[coachId] ?? READ_LINES.chinedu;
   const mech = mechShort ? `Today's mechanic, ${mechShort.toUpperCase()},` : 'The work this stage is built on,';
   return lines[result].replace('{MECH}', mech);
 }

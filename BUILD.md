@@ -68,38 +68,7 @@ cd android
 
 The APK lands in `android\app\build\outputs\apk\release\`.
 
-**Troubleshooting**
-
-- `ConfigError: The expected package.json path: ...\android\package.json does not exist`
-  → you ran the command from **inside** `android/` (Expo then treats `android/` as the
-  project root). Run `cd C:\Users\admin\ProSeasonAcademyV1.3` (or wherever the repo is)
-  first and repeat the block above. A tell-tale sign: `cd android` fails with
-  `Cannot find path '...\android\android'`.
-- `Task :app:compileReleaseKotlin FAILED` with errors in `MatchWatcherModule.kt` /
-  `MatchWatcherService.kt` (`Unresolved reference 'emit'`, `Conflicting overloads`,
-  `Missing '}'`, …) → the `android/` folder still contains the **old** pre-fix
-  MatchWatcher files (the fixed ones are only written into `android/` when prebuild or
-  the patch script runs). Fix without touching your keystore:
-
-  ```powershell
-  node scripts/fix-matchwatcher.cjs    # copies the fixed Kotlin from plugins/withMatchWatcher.js
-  cd android
-  .\gradlew assembleRelease
-  ```
-  **`Unresolved reference 'RGBA_8888'` is a thing of the past:** the plugin now generates
-  the `ImageReader` format argument as the literal `1` (`1 /* ImageFormat.RGBA_8888 */` —
-  identical behaviour, since RGBA_8888 == 1 in every Android version), so the generated
-  Kotlin contains no member reference that can fail to resolve. Just re-inject with
-  `node scripts/fix-matchwatcher.cjs`, then if needed clear the stale build cache
-  (`.\gradlew.bat --stop`, `.\gradlew.bat clean`, delete `android\.gradle`,
-  `android\build`, `android\app\build`, `android\app\.kotlin`) and rebuild.
-  Quick check that only compiles Kotlin: `.\gradlew.bat :app:compileReleaseKotlin`.
-
-- **Never delete the `android/` folder** unless you have backed up the release keystore
-  (`android/app/*.jks`, plus its passwords). Deleting it regenerates a fresh debug
-  keystore and drops any manual signing config.
-
----
+**Native capture is intentionally not part of this product.** Members record console matches with PS Share, Xbox Capture, a capture card, or phone recording, then review and log them manually in the app.
 
 ## 2 · Where the Supabase keys come from
 
@@ -165,7 +134,7 @@ Run the same checks I run — a two-minute habit that catches the expensive mist
 
 ```bash
 npm run typecheck                    # tsc, must be clean
-npm test                             # watcher frame tests, 7/7
+npm test                             # offline unit/state-machine tests
 npx expo export --platform web --clear
 
 B=$(ls dist/_expo/static/js/web/index-*.js)
@@ -200,13 +169,6 @@ and player progress survives because it lives in AsyncStorage keyed per coach.
 
 ---
 
-## 6 · Native code (THE EYE)
+## 6 · Console capture
 
-`npx expo prebuild` regenerates `android/`, which is gitignored — it is generated output,
-not source. You only need it if you add the native MatchWatcher module for automatic goal
-detection (the 4 required pieces are documented at the top of `src/data/matchWatcher.ts`).
-
-⚠️ `RELEASE_CHECKLIST.md` refers to `android/app/proseason-upload.keystore` from the older
-local Gradle builds. **That file is not in this repo.** If it exists only in an old zip,
-find it and back it up before you go anywhere near prebuild — or let EAS manage signing
-from here on and treat that old key as retired.
+The app is for EA SPORTS FC console play only. It has no screen capture, automatic capture, or automatic goal detection, or in-app recording service. Players record externally and enter their own match evidence after the cool-down.

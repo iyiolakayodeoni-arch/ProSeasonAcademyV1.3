@@ -17,12 +17,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import LogoMark from '../components/LogoMark';
 import CoachCard from '../components/CoachCard';
 import NeonInput from '../components/NeonInput';
 import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES } from '../data/coaches';
+import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont } from '../theme';
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
 import { COUNTRY_OPTIONS, optionForLabel, verifyLocation } from '../data/location';
@@ -41,7 +43,8 @@ type Props = {
 
 export default function SignInScreen({ onSignedIn }: Props) {
   const { width } = useWindowDimensions();
-  const cardWidth = Math.min((width - PAGE_PAD * 2 - CARD_GAP) / 2, 190);
+  // one coach — give the card the full width instead of splitting for two
+  const cardWidth = Math.min(width - PAGE_PAD * 2, 232);
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -54,6 +57,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
   const [academyToken, setAcademyToken] = useState<string | null>(null);
   const [tokenRevealed, setTokenRevealed] = useState(false);
+  const [installHelp, setInstallHelp] = useState(false);
 
   const { loading, register, login, requestReset } = useAuth();
 
@@ -163,6 +167,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     return (
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <View style={styles.crestWrap}>
           <View style={{ marginTop: 120 }}>
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
@@ -192,6 +197,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     return (
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
           <View style={styles.crestWrap}>
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
@@ -237,6 +243,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     >
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
@@ -247,7 +254,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
           </View>
 
-          <Text style={styles.headline}>YOUR COACHES ARE WAITING</Text>
+          <Text style={styles.headline}>YOUR COACH IS WAITING</Text>
 
           <View style={styles.cardsRow}>
             {COACHES.map((c, i) => (
@@ -433,11 +440,21 @@ export default function SignInScreen({ onSignedIn }: Props) {
             SEASON ONE · 1,000 SEATS · EMAIL + PASSWORD · AUTO ACADEMY TOKEN
           </Text>
 
+          <Pressable onPress={() => setInstallHelp(true)} hitSlop={6} style={styles.installLinkWrap}>
+            <Text style={styles.installLink}>HOW DO I INSTALL THE APP? ›</Text>
+          </Pressable>
+
           <View style={styles.footerRow}>
             <Text style={styles.footer}>PROSEASONACADEMY</Text>
             <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
           </View>
         </ScrollView>
+
+        {installHelp && (
+          <View style={StyleSheet.absoluteFill}>
+            <SideloadAssistant onClose={() => setInstallHelp(false)} />
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -524,6 +541,11 @@ const styles = StyleSheet.create({
     color: 'rgba(143,184,155,0.6)',
     textAlign: 'center',
     lineHeight: 11,
+  },
+  installLinkWrap: { marginTop: 12, alignSelf: 'center' },
+  installLink: {
+    fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+    borderBottomWidth: 1, borderBottomColor: 'rgba(242,192,120,0.5)', paddingBottom: 2,
   },
   fullCard: {
     marginHorizontal: PAGE_PAD,

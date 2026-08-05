@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CURRENT_STAGE, JOURNEY_SEASON } from './journey';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
 // JOURNEY PROGRESS STORE — the single source of truth for where
@@ -32,9 +33,13 @@ export interface ProgressState {
 }
 
 const KEY_BASE = 'psa.progress.v1';
-/** progress is per-coach: the lock is permanent, so is his ledger */
+/** progress is isolated per verified user + coach */
 let coachKey = 'unset';
-const storageKey = () => `${KEY_BASE}.${coachKey}`;
+const storageKey = () => {
+  const me = backend.getMe();
+  const userPart = me?.id ? me.id : 'anon';
+  return `${KEY_BASE}.${userPart}.${coachKey}`;
+};
 
 const EMPTY: ProgressState = {
   currentStage: CURRENT_STAGE,
@@ -81,7 +86,7 @@ function reviveState(raw: string): ProgressState | null {
     for (const [k, v] of Object.entries(s.completed ?? {})) {
       const n = Number(k);
       const c = v as StageCompletion;
-      if (!Number.isFinite(n) || n < 1 || n > JOURNEY_SEASON.totalStages) continue;
+      if (!Number.isFinite(n) || n < 1 || (n > JOURNEY_SEASON.totalStages && (n < 101 || n > 104))) continue;
       if (!c || typeof c.passedAt !== 'number') continue;
       completed[n] = {
         contentId: typeof c.contentId === 'string' ? c.contentId : null,
@@ -142,11 +147,12 @@ export function assignLessonRef(stageN: number, contentId: string) {
 /** MATCH SCAN passed → stage cleared, XP awarded, next node unlocks */
 export function recordStagePass(stageN: number, c: StageCompletion) {
   if (state.completed[stageN]) return; // replays never double-pay
+  const isSideQuest = stageN >= 101 && stageN <= 104;
   set({
     completed: { ...state.completed, [stageN]: c },
     xp: state.xp + (c.xp ?? 0),
     badges: c.badge && !state.badges.includes(c.badge) ? [...state.badges, c.badge] : state.badges,
-    currentStage: Math.min(JOURNEY_SEASON.totalStages, Math.max(state.currentStage, stageN + 1)),
+    currentStage: isSideQuest ? state.currentStage : Math.min(JOURNEY_SEASON.totalStages, Math.max(state.currentStage, stageN + 1)),
   });
 }
 

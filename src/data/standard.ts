@@ -7,8 +7,17 @@ import { useJourneyProgress } from './progress';
 // MIRROR DIRECTION §4.2: a visible, authored journey based on the
 // behaviours, decisions, discipline and development habits of the
 // best people in the player's chosen field or path. For Pro
-// Season that is an elite FC Mobile professional — a FICTIONAL
-// COMPOSITE Role Model, never a copy of one real person.
+// Season that is an elite FC console professional — the academy's
+// ONE coach, Chinedu, IS that benchmark and walks the road with you.
+//
+// The Standard's content is grounded in the DOCUMENTED game of the
+// current consensus world #1 FC console competitor — supreme
+// composure under pressure, "cut-and-press" defending, an
+// undefeated streak built on relentless discipline, clean efficient
+// attacking, and a ruthless "force mistakes, don't wait for them"
+// mentality. Per the standing rule, NO real player's name or
+// likeness appears inside the app: the real #1 is research
+// inspiration for the fictional benchmark, never copied.
 //
 // The Standard is NOT a second progression track: no player
 // objectives, no XP, no badges, no second route to complete. It
@@ -50,9 +59,9 @@ export const STANDARD: StandardModel = {
   credo: [
     'Deliberate practice over volume.',
     'Honest match review over comfortable stories.',
-    'Emotional control under pressure.',
-    'Preparation before talent.',
-    'Consistency when nobody is watching.',
+    'Composure is the first skill — pressure is where habits prove themselves.',
+    'Force mistakes; do not wait for them.',
+    'The routine is the talent. Consistency when nobody is watching.',
   ],
   pillars: [
     'DELIBERATE PRACTICE',
@@ -102,11 +111,12 @@ export const STANDARD: StandardModel = {
         'The best read patterns, danger, space, tempo and decision context — and act before the picture changes. They play the picture, not the ball, and they build that vision by counting what repeats.',
       behaviourToStudy: [
         'Notice the run before it starts, the danger before it arrives.',
+        'Cut and press — when a lane is closed, immediately attack the ball carrier. Never stop at one block.',
         'Break the low block with patience, not panic.',
-        'Choose the pass that serves the next three seconds.',
+        'Force the mistake; do not wait for it. Go forward with purpose.',
       ],
-      benchmark: 'They see the game three seconds ahead, because they studied the two seconds behind.',
-      voice: 'The Standard does not react to the game. It reads it, and the game does what it expects.',
+      benchmark: 'They see the game three seconds ahead, because they studied the two seconds behind — and they close the gap the instant a lane shuts.',
+      voice: 'The Standard does not react to the game. It reads it, shuts the lane, and presses the carrier before he knows the option is gone.',
     },
     {
       n: 4,
@@ -127,14 +137,14 @@ export const STANDARD: StandardModel = {
       stageKey: 'PERFORM UNDER PRESSURE',
       chapterTitle: 'PERFORM UNDER PRESSURE',
       whatTheyLearn:
-        'Under pressure, players do not rise to the occasion — they sink to their highest level of preparation. The best test their work in real competitive situations, close out leads, and decide games in the minutes that break others.',
+        'Under pressure, players do not rise to the occasion — they sink to their highest level of preparation. Composure is the signature of the very best: they turn high-stakes matches in the minutes that break everyone else, because the moment feels no bigger than the work they already did.',
       behaviourToStudy: [
         'Take ranked seriously — it is the exam, not a warm-up.',
-        'Close out the lead at 75’ with discipline, not panic.',
-        'Decide the game in the late minutes, deliberately.',
+        'Close out the lead at 75’ with composure, not panic — keep the ball, run the clock.',
+        'Decide the game in the late minutes, deliberately, when the opponent blinks first.',
       ],
-      benchmark: 'When the pressure arrives, the Standard is already prepared — so it looks calm.',
-      voice: 'The Standard does not get more nervous in the big moments. It gets more prepared.',
+      benchmark: 'When the pressure arrives, the Standard is already prepared — so it looks calm, and calm wins the late minutes.',
+      voice: 'The Standard does not get more nervous in the big moments. It gets more prepared — and that is why the big moments bend toward it.',
     },
     {
       n: 6,

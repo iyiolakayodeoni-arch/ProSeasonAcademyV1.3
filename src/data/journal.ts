@@ -1,5 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as backend from './backend';
+import { isValidReflection } from './honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
 // LOSS JOURNAL — the coach's oldest rule: ONE LINE PER LOSS.
@@ -26,6 +28,11 @@ export interface JournalState {
 const STORAGE_KEY = 'psa.loss-journal.v1';
 const MAX_LINE = 90; // one line means ONE line
 
+function journalStorageKey(): string {
+  const me = backend.getMe();
+  return me?.id ? `${STORAGE_KEY}.${me.id}` : STORAGE_KEY;
+}
+
 let state: JournalState = { entries: [] };
 let hydrated = false;
 
@@ -40,13 +47,13 @@ function subscribe(l: () => void) {
 function set(next: Partial<JournalState>) {
   state = { ...state, ...next };
   listeners.forEach((l) => l());
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+  AsyncStorage.setItem(journalStorageKey(), JSON.stringify(state)).catch(() => {});
 }
 
 function ensureHydrated() {
   if (hydrated) return;
   hydrated = true;
-  AsyncStorage.getItem(STORAGE_KEY)
+  AsyncStorage.getItem(journalStorageKey())
     .then((raw: string | null) => {
       if (!raw) return;
       const saved = JSON.parse(raw) as Partial<JournalState>;
@@ -77,7 +84,7 @@ export function journalLineCount(): number {
 let seq = 1;
 export function addEntry(tag: LossTag, rawText: string): JournalEntry | null {
   const text = rawText.replace(/\s+/g, ' ').trim().slice(0, MAX_LINE);
-  if (!text) return null;
+  if (!text || !isValidReflection(text, { minLength: 4, minWords: 2 })) return null;
   const entry: JournalEntry = {
     id: `J${Date.now().toString(36)}${(seq++).toString(36)}`,
     at: Date.now(),

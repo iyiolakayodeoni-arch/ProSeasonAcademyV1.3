@@ -1,13 +1,13 @@
 import { fetchText, cleanOutside } from '../util.js';
 
-// EA's official FC Mobile news hub — read directly from ea.com.
+// EA's official FC Console news hub — read directly from ea.com.
 
-const LISTING = 'https://www.ea.com/games/ea-sports-fc/fc-mobile/news';
-const LISTING_ALT = 'https://www.ea.com/en/games/ea-sports-fc/fc-mobile/news';
+const LISTING = 'https://www.ea.com/games/ea-sports-fc/news';
+const LISTING_ALT = 'https://www.ea.com/en/games/ea-sports-fc/news';
 // gameplay-relevant articles first — promos/offers sink to the bottom
 const PRIORITY = /(patch|update|gameplay|deep-dive|guide|roadmap|beta)/i;
-const HREF_RE = /href="((?:\/en)?\/games\/ea-sports-fc\/fc-mobile\/news\/[a-z0-9-]+)"/gi;
-const VERSION_RE = /fc[\s-]*mobile[\s-]*(\d{2})/i;
+const HREF_RE = /href="((?:\/en)?\/games\/ea-sports-fc\/[a-z0-9-/]+news\/[a-z0-9-]+)"/gi;
+const VERSION_RE = /fc[\s-]*(?:console[\s-]*)?(\d{2})/i;
 const VERSION_CONTEXT = /(update|patch)/i;
 
 // handles both attribute orders: <meta name="x" content="y"> and <meta content="y" name="x">
@@ -42,10 +42,10 @@ export async function eaNews({ max = 8 } = {}) {
       const page = await fetchText(`https://www.ea.com${path}`);
       const t = metaTag(page, 'og:title', 160);
       const tClean = t ? t.split('|')[0].replace(/\s*[-–—]\s*EA.*$/i, '').trim() : '';
-      // some articles brand the title ("EA SPORTS FC™ Mobile — X"); strip the brand.
+      // some articles brand the title ("EA SPORTS FC™ — X"); strip the brand.
       // whichever of slug vs meta title carries more real words wins — the slug often
       // knows more than an abbreviated og:title (e.g. "...patch-notes").
-      const brandless = tClean.replace(/^ea\s+sports\s+fc\W*mobile\W*/i, '').trim();
+      const brandless = tClean.replace(/^ea\s+sports\s+fc(?:\W*console)?\W*/i, '').trim();
       const slugTitle = slug.replace(/-/g, ' ');
       const words = (s) => (s.match(/[a-z0-9]+/gi) ?? []).length;
       if (brandless.length >= 6 && words(brandless) >= words(slugTitle)) {
@@ -60,13 +60,13 @@ export async function eaNews({ max = 8 } = {}) {
       title: cleanOutside(title),
       summary: cleanOutside(summary),
       sourceUrl: `https://www.ea.com${path}`,
-      sourceName: 'EA SPORTS FC Mobile — official news',
+      sourceName: 'EA SPORTS FC 26/27 Console — official news',
     });
   }
   return items;
 }
 
-// figure out the season version from official titles: "FC Mobile 26 Update - Patch Notes" → "FC Mobile 26"
+// figure out the season version from official titles: "FC 26 Update - Patch Notes" → "FC 26/27 Console"
 export async function detectPatchFromEa() {
   try {
     // pull a deep list so the patch article is definitely included
@@ -74,7 +74,7 @@ export async function detectPatchFromEa() {
     for (const it of items) {
       const hay = `${it.title} ${it.sourceUrl}`;
       const m = VERSION_RE.exec(hay);
-      if (m && VERSION_CONTEXT.test(hay)) return `FC Mobile ${m[1]}`;
+      if (m && VERSION_CONTEXT.test(hay)) return `FC 26/27 Console`;
     }
   } catch { /* fall through */ }
   return 'unknown';

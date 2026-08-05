@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image } from 
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import { RecordingPlayer, SECONDS_PER_MATCH_MIN } from '../components/RecordingPlayer';
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
@@ -22,8 +21,11 @@ import {
   beatKey,
   currentBaselineDay,
   dayStatus,
+  isBaselineMatchDay,
+  isBaselineRestDay,
   isWeekComplete,
   loadBaseline,
+  matchNumberForDay,
   nextUnlockAt,
   recordBaselineMatch,
   saveBaselineReflection,
@@ -32,11 +34,13 @@ import {
   tendenciesOf,
   weekMoments,
 } from '../data/baselineScan';
-import { armWatcher, beginMatchRecording, finishWatcher, useMatchWatcher } from '../data/matchWatcher';
+
 import { getSettings } from '../data/settings';
 import { COMPOSURE_LABELS, resultOf } from '../data/matches';
 import { scheduleBaselineUnlock } from '../data/notifications';
 import { CheckIcon, EyeIcon, LockIcon } from '../components/Icons';
+import HonestyBadge from '../components/HonestyBadge';
+import { isValidReflection } from '../data/honestyGuard';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
@@ -61,7 +65,7 @@ import { colors, monoFont } from '../theme';
 const MIN_ANSWER = 12;
 
 type Phase = 'talk' | 'day' | 'locked' | 'reflection' | 'ambition' | 'card';
-type DayStep = 'arm' | 'match' | 'review' | 'analysis' | 'dayq';
+type DayStep = 'start' | 'match' | 'review' | 'analysis' | 'dayq';
 
 interface DraftMoment {
   id: string;
@@ -122,11 +126,10 @@ function hms(ms: number): string {
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.obinna, [coach.id]);
-  const watcher = useMatchWatcher();
+  const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
-  const [step, setStep] = useState<DayStep>('arm');
+  const [step, setStep] = useState<DayStep>('start');
   const [notReady, setNotReady] = useState(false);
   const [now, setNow] = useState(Date.now());
   const scrollRef = useRef<ScrollView>(null);
@@ -138,9 +141,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [composure, setComposure] = useState<number | null>(null);
   const [moments, setMoments] = useState<DraftMoment[]>([]);
   const [dayAnswer, setDayAnswer] = useState('');
-  const [recPath, setRecPath] = useState<string | null>(null);
-  const [playbackSec, setPlaybackSec] = useState(0);
-  const [seekToSec, setSeekToSec] = useState<number | undefined>(undefined);
   const [momentName, setMomentName] = useState('');
   const [momentStart, setMomentStart] = useState(0);
   const [momentEnd, setMomentEnd] = useState(5);
@@ -157,10 +157,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     void loadBaseline(coach.id).then((s) => {
       setSession(s);
       if (s.card) setPhase('card');
-      else if (currentBaselineDay(s) === BASELINE_DAYS + 1) setPhase('ambition');
-      else if (currentBaselineDay(s) === BASELINE_DAYS) setPhase('reflection');
-      else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) {
-        // a returning player skips the talk unless the week truly just began
+      else if (currentBaselineDay(s) > BASELINE_DAYS) setPhase('ambition');
+      else if (isBaselineRestDay(currentBaselineDay(s))) {
+        setPhase(dayStatus(s, currentBaselineDay(s)) === 'locked' ? 'locked' : 'reflection');
+      } else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) {
         setPhase(dayStatus(s, currentBaselineDay(s)) === 'locked' ? 'locked' : 'day');
       } else {
         setPhase(s.entries.length > 0 ? 'day' : 'talk');
@@ -185,7 +185,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const beat = played ? script.beats[beatKey(gf, ga)] : null;
   const allMomentsDone = moments.length > 0 && moments.every(momentComplete);
   const canSealDay =
-    composure !== null && allMomentsDone && dayAnswer.trim().length >= MIN_ANSWER;
+    composure !== null && allMomentsDone && isValidReflection(dayAnswer, { minLength: MIN_ANSWER, minWords: 2, prompt: question });
   const unlockAt = nextUnlockAt(session);
   const lastEntry = session?.entries[session.entries.length - 1] ?? null;
 
@@ -214,9 +214,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
         answer: dayAnswer.trim(),
         moments: filed,
       },
-      recPath,
     );
-    sealBaselineDay(day, { recordingPath: recPath });
+    sealBaselineDay(day);
     // reset the day's drafts
     setGf(0);
     setGa(0);
@@ -224,22 +223,17 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setComposure(null);
     setMoments([]);
     setDayAnswer('');
-    setRecPath(null);
     setMomentName('');
     setMomentStart(0);
     setMomentEnd(5);
-    setStep('arm');
+    setStep('start');
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
       const d = currentBaselineDay(s);
       if (d > BASELINE_DAYS) {
         setPhase('ambition');
-      } else if (d === BASELINE_DAYS) {
-        setPhase('locked'); // day 6 unlocks tomorrow
-      } else if (d === 1 && s.entries.length === 0) {
-        setPhase('talk');
       } else {
-        setPhase('locked'); // the next match day unlocks in 24h
+        setPhase('locked'); // the next day unlocks tomorrow
       }
       // schedule the nudge for the day that just unlocked (fires at its
       // unlock time even if the app is closed — fails soft if denied)
@@ -253,7 +247,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   /** day 6 — seal the week's reflection, day 7 unlocks tomorrow */
   const sealReflection = () => {
-    if (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER || !session) return;
+    if (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 }) || !session) return;
     sfx('whoosh');
     saveBaselineReflection(reflection.repeated, reflection.changed);
     sealBaselineDay(6);
@@ -267,7 +261,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   /** day 7 — the ambition question, then the card seals */
   const seal = async () => {
-    if (ambition.trim().length < MIN_ANSWER || sealing) return;
+    if (!isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) || sealing) return;
     setSealing(true);
     const card = await sealBaseline(getSettings().displayName, coach.id, ambition.trim());
     sfx('success');
@@ -277,19 +271,15 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setSealing(false);
   };
 
-  /** begin the match: record only after the player confirms the match started */
+  /** begin the console match; all evidence is logged manually */
   const startMatch = async () => {
     sfx('whoosh');
     setStep('match');
-    beginMatchRecording();
   };
 
-  /** full time: log the score, stop the capture, get the local recording path */
+  /** full time: log the score manually */
   const logScore = () => {
     sfx('whoosh');
-    void finishWatcher().then((sess) => {
-      if (sess?.recordingPath) setRecPath(sess.recordingPath);
-    });
     setStep('review');
   };
 
@@ -363,7 +353,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Text style={styles.bluffTxt}>“{script.bluff}”</Text>
               </Animated.View>
 
-              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('arm'); }} style={styles.cta}>
+              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('start'); }} style={styles.cta}>
                 <Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text>
               </Pressable>
               <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}>
@@ -379,41 +369,36 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
             </>
           )}
 
-          {/* ════ A MATCH DAY (1–5): ARM → MATCH → WATCH/NAME → ANALYSE → DAY Q ════ */}
-          {phase === 'day' && day <= BASELINE_MATCHES && (
+          {/* ════ A MATCH DAY: ARM → MATCH → WATCH/NAME → ANALYSE → DAY Q ════ */}
+          {phase === 'day' && day <= BASELINE_DAYS && (
             <>
-              <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {day} OF {BASELINE_MATCHES}</Text>
+              <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES}</Text>
               <WeekStrip session={session} now={now} />
 
               {day > 1 && (
                 <View style={styles.dayIntro}>
                   <Image source={coach.portrait} style={styles.beatFace} />
-                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.obinna?.[day]}</Text>
+                  <Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.chinedu?.[day]}</Text>
                 </View>
               )}
 
-              {/* ── ARM ── */}
-              {step === 'arm' && (
+              {/* ── ARM (PRE-MATCH MANUAL BRIEFING) ── */}
+              {step === 'start' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>ARM THE MIRROR, THEN PLAY ONE RANKED MATCH.</Text>
+                  <Text style={styles.heroLine}>THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE.</Text>
                   <Text style={styles.heroSub}>
-                    The mirror asks the system for screen-capture consent — recording never starts silently. It only
-                    begins when your match starts, and it stays on your phone.
+                    1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
+                    {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Write down your key moments, unusual things that happened, and answer the guiding questions on paper first.
+                    {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after the match.
+                    {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your written answers into your database.
                   </Text>
                   <View style={styles.armNote}>
                     <Text style={styles.armNoteTxt}>
-                      {watcher.available ? 'SCREEN CAPTURE: READY' : 'SCREEN CAPTURE: NOT AVAILABLE ON THIS DEVICE — MANUAL MODE'}
-                      {watcher.lastError ? `\n${watcher.lastError}` : ''}
+                      IN A WORLD LOOKING FOR THE EASY WAY OUT: THE HARD WAY IS THE EASY WAY, AND THE EASY WAY IS THE HARD WAY. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.
                     </Text>
                   </View>
-                  <Pressable
-                    onPress={() => { void armWatcher(); }}
-                    style={[styles.cta, { opacity: 0.9 }]}
-                  >
-                    <Text style={styles.ctaTxt}>ARM THE MIRROR ›</Text>
-                  </Pressable>
-                  <Pressable onPress={() => void startMatch()} style={styles.ghostCtaWrap} hitSlop={6}>
-                    <Text style={styles.ghostCta}>MATCH STARTED — BEGIN THE SESSION + RECORDING ›</Text>
+                  <Pressable onPress={() => void startMatch()} style={[styles.cta, { opacity: 0.95 }]}>
+                    <Text style={styles.ctaTxt}>I HAVE READ THE RITUAL — START THE MATCH ›</Text>
                   </Pressable>
                   <Pressable onPress={() => setPhase('locked')} style={styles.ghostCtaWrap} hitSlop={6}>
                     <Text style={styles.ghostCta}>REST DAY — COME BACK TOMORROW</Text>
@@ -475,23 +460,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
                     give each one a name. Then we analyse them one at a time.
                   </Text>
-                  {recPath ? (
-                    <>
-                      <RecordingPlayer uri={recPath} seekToSeconds={seekToSec} onCurrentSecond={setPlaybackSec} />
-                      <View style={styles.markRow}>
-                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentStart(Math.min(44, Math.max(0, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
-                          <Text style={styles.markBtnTxt}>MARK START ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
-                        </Pressable>
-                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentEnd(Math.max(momentStart + 1, Math.min(45, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
-                          <Text style={styles.markBtnTxt}>MARK END ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
-                        </Pressable>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.armNote}>
-                      <Text style={styles.armNoteTxt}>NO RECORDING ON THIS DEVICE — NAME YOUR MOMENTS WITH THE TIMELINE BELOW.</Text>
-                    </View>
-                  )}
+                  <View style={styles.armNote}>
+                    <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS AND UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MINUTE COOL-DOWN.</Text>
+                  </View>
 
                   <View style={styles.momentCard}>
                     <Text style={styles.qLabel}>NAME THE MOMENT (YOUR WORDS)</Text>
@@ -573,11 +544,11 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         <EyeIcon size={12} color={colors.accent} />
                         <Text style={styles.analysisHeadTxt}>MOMENT {mi + 1} · {m.startMin}’–{m.endMin}’ · {m.name.toUpperCase()}</Text>
                       </View>
-                      {recPath && (
-                        <Pressable hitSlop={8} onPress={() => setSeekToSec(m.startMin * SECONDS_PER_MATCH_MIN)}>
-                          <Text style={styles.playTxt}>▶ WATCH THIS MOMENT AGAIN</Text>
-                        </Pressable>
-                      )}
+                      <View style={styles.armNote}>
+                        <Text style={styles.armNoteTxt}>
+                          THE CHINEDU WAY: Have your paper notes in front of you. You formulated your answers with pen on paper after your 24–30 min cool-down — now type your written truth into your database.
+                        </Text>
+                      </View>
                       {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (
                         <View key={q.key} style={styles.aqCard}>
                           <Text style={styles.aqLabel}>{q.label}</Text>
@@ -627,7 +598,12 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     multiline
                     maxLength={500}
                   />
-                  <Text style={styles.countTxt}>{dayAnswer.trim().length}/{MIN_ANSWER}+ · THE EYE NEVER READS THIS — {first} DOES</Text>
+                  <HonestyBadge
+                    text={dayAnswer}
+                    options={{ minLength: MIN_ANSWER, minWords: 2, prompt: question }}
+                    defaultNote={`YOUR WORDS, YOUR TRUTH — ${first} READS THIS`}
+                    coachId={coach.id}
+                  />
                   <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}>
                     <Text style={styles.ctaTxt}>
                       {day >= BASELINE_MATCHES ? 'SEAL DAY 5 — THE WEEK SO FAR UNLOCKS TOMORROW' : `SEAL DAY ${day} — MATCH ${day + 1} UNLOCKS TOMORROW`}
@@ -651,7 +627,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <LockIcon size={16} color={colors.accent} />
               </View>
               <Text style={styles.restTitle}>REST. THE WORK NEEDS TONIGHT.</Text>
-              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.obinna}</Text>
+              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.chinedu}</Text>
               {unlockAt != null && (
                 <View style={styles.countdownBox}>
                   <Text style={styles.countdownLabel}>DAY {day} UNLOCKS IN</Text>
@@ -680,22 +656,32 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
             </Animated.View>
           )}
 
-          {/* ════ DAY 6 — THE WEEK SO FAR ════ */}
+          {/* ════ DAY 4 / DAY 6 — THE REST & REFLECTION DAYS (NO MATCH) ════ */}
           {phase === 'reflection' && (
             <Animated.View entering={FadeInUp.duration(300)}>
-              <Text style={styles.eyebrow}>BASELINE WEEK · DAY 6 OF {BASELINE_DAYS} · NO MATCH TODAY</Text>
+              <Text style={styles.eyebrow}>
+                {day === 4
+                  ? `BASELINE WEEK · DAY 4 OF ${BASELINE_DAYS} · REST DAY 1 (NO MATCH TODAY)`
+                  : `BASELINE WEEK · DAY 6 OF ${BASELINE_DAYS} · REST DAY 2 (PRE-FINALE PREPARATION)`}
+              </Text>
               <WeekStrip session={session} now={now} />
-              <Text style={styles.heroLine}>THE WEEK HAS BEEN SPEAKING. LISTEN TO IT TOGETHER.</Text>
+              <Text style={styles.heroLine}>
+                {day === 4
+                  ? 'MOMENTUM IS BUILT. TODAY YOU REST AND REFLECT.'
+                  : 'REST AND RECALIBRATE BEFORE THE FINALE.'}
+              </Text>
               <Text style={styles.heroSub}>
-                {BASELINE_DAY_INTRO[coach.id]?.[6] ?? BASELINE_DAY_INTRO.obinna[6]} Here is what you named, across all five matches — your own words, back in front of you.
+                {day === 4
+                  ? 'Realistically, you have a life outside the pitch. Momentum has been built over your first three matches — now you take a rest day. Tech is meant to elevate and not make you dormant: step away from the screen, take your biro and paper, and reflect on the patterns from your first three matches.'
+                  : 'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tomorrow is your 5th and final baseline match. Today you rest. Take your biro and paper: set your non-negotiable standards for the finale tomorrow.'}
               </Text>
 
               <View style={styles.receiptBox}>
-                <Text style={styles.receiptTag}>THE MOMENTS YOU NAMED THIS WEEK</Text>
+                <Text style={styles.receiptTag}>THE MOMENTS YOU NAMED SO FAR</Text>
                 {allWeekMoments.length === 0 && <Text style={styles.receiptEmpty}>None yet — the week is waiting.</Text>}
                 {session?.entries.map((e, ei) => (
                   <View key={ei} style={styles.receiptEntry}>
-                    <Text style={styles.receiptEntryHead}>DAY {ei + 1} · {e.result} {e.gf}–{e.ga} · HEAD {e.composure}/5</Text>
+                    <Text style={styles.receiptEntryHead}>MATCH {ei + 1} · {e.result} {e.gf}–{e.ga} · HEAD {e.composure}/5</Text>
                     {(e.moments ?? []).map((m) => (
                       <Text key={m.id} style={styles.receiptMoment}>
                         · {m.startMin}’–{m.endMin}’ {m.name.toUpperCase()}
@@ -718,7 +704,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 )}
               </View>
 
-              <Text style={styles.fieldLabel}>WHAT DO YOU KEEP REPEATING?</Text>
+              <Text style={styles.fieldLabel}>
+                {day === 4 ? 'WHAT PATTERN HAVE YOU REPEATED ACROSS MATCHES 1–3?' : 'WHAT DO YOU KEEP REPEATING ACROSS MATCHES 1–4?'}
+              </Text>
               <TextInput
                 value={reflection.repeated}
                 onChangeText={(t) => setReflection((r) => ({ ...r, repeated: t }))}
@@ -727,9 +715,16 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 style={styles.input}
                 multiline
               />
-              <Text style={styles.countTxt}>{reflection.repeated.trim().length}/{MIN_ANSWER}+</Text>
+              <HonestyBadge
+                text={reflection.repeated}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="NAMING THE REPETITION IS THE FIRST STEP TO CLOSING IT"
+                coachId={coach.id}
+              />
 
-              <Text style={styles.fieldLabel}>WHAT HAS ACTUALLY CHANGED SINCE DAY 1?</Text>
+              <Text style={styles.fieldLabel}>
+                {day === 4 ? 'HOW WILL YOU BREAK THIS PATTERN IN MATCH 4 TOMORROW?' : 'WHAT IS YOUR ONE NON-NEGOTIABLE STANDARD FOR THE FINALE TOMORROW?'}
+              </Text>
               <TextInput
                 value={reflection.changed}
                 onChangeText={(t) => setReflection((r) => ({ ...r, changed: t }))}
@@ -738,13 +733,22 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 style={styles.input}
                 multiline
               />
-              <Text style={styles.countTxt}>{reflection.changed.trim().length}/{MIN_ANSWER}+</Text>
+              <HonestyBadge
+                text={reflection.changed}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="IN YOUR DECISIONS, NOT YOUR RESULTS — BE HONEST"
+                coachId={coach.id}
+              />
 
               <Pressable
                 onPress={sealReflection}
-                style={[styles.cta, (reflection.repeated.trim().length < MIN_ANSWER || reflection.changed.trim().length < MIN_ANSWER) && { opacity: 0.35 }]}
+                style={[styles.cta, (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 })) && { opacity: 0.35 }]}
               >
-                <Text style={styles.ctaTxt}>SEAL THE WEEK'S REFLECTION — DAY 7 UNLOCKS TOMORROW</Text>
+                <Text style={styles.ctaTxt}>
+                  {day === 4
+                    ? 'SEAL REST DAY 1 — MATCH 4 UNLOCKS TOMORROW'
+                    : 'SEAL REST DAY 2 — MATCH 5 (THE FINALE) UNLOCKS TOMORROW'}
+                </Text>
               </Pressable>
             </Animated.View>
           )}
@@ -767,8 +771,13 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 multiline
                 maxLength={240}
               />
-              <Text style={styles.countTxt}>{ambition.trim().length}/{MIN_ANSWER}+ · HE WILL BRING THIS BACK UP — COUNT ON IT</Text>
-              <Pressable onPress={() => void seal()} style={[styles.cta, ambition.trim().length < MIN_ANSWER && { opacity: 0.35 }]}>
+              <HonestyBadge
+                text={ambition}
+                options={{ minLength: MIN_ANSWER, minWords: 2 }}
+                defaultNote="HE WILL BRING THIS BACK UP — COUNT ON IT"
+                coachId={coach.id}
+              />
+              <Pressable onPress={() => void seal()} style={[styles.cta, !isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) && { opacity: 0.35 }]}>
                 <Text style={styles.ctaTxt}>{sealing ? 'SEALING…' : 'SEAL MY BASELINE CARD'}</Text>
               </Pressable>
             </>

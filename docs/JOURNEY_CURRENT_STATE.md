@@ -2,8 +2,8 @@
 ## Current application documentation
 
 **Document status:** Updated for the MIRROR DIRECTION (01 Aug 2026). The sections below that describe the two coach-specific journeys (**The Ashfault Ascent** / **The Merehaven Way**) are now **historical** — see §0 for the applied direction and `../MIRROR_DIRECTION.md` for the full record.
-**Repository:** `iyiolakayodeoni-arch/ProSeasonAcademyV1.3`  
-**Prepared:** 31 July 2026 (UTC) · updated 01 Aug 2026  
+**Repository:** `iyiolakayodeoni-arch/ProSeasonAcademyV1.3`
+**Prepared:** 31 July 2026 (UTC) · updated 01 Aug 2026
 **Scope:** The Journey as it is currently implemented in the application, including the map, stages, objectives, Match Scan / Mirror Session, coach room, progression, Role Model finish, storage, access rules, and known implementation notes.
 
 ---
@@ -169,9 +169,9 @@ The Ashfault Ascent is a climb out of Cinder Row through six fictional places. I
 
 ## Stage 1 — CINDER ROW
 
-**Tagline:** Where he learned that space is borrowed and paid back in sweat  
-**Mentor:** Mama Ukae  
-**Estimated time:** 2–3 days  
+**Tagline:** Where he learned that space is borrowed and paid back in sweat
+**Mentor:** Mama Ukae
+**Estimated time:** 2–3 days
 **Reward:** **+120 XP** · `CINDER ROW BADGE`
 
 ### Objectives
@@ -191,9 +191,9 @@ Mama Ukae ran the evening games from her shopfront step. The stage asks for two 
 
 ## Stage 2 — THE LEAN-TO
 
-**Tagline:** A broken roof teaches shape: stand where the rain is not  
-**Mentor:** Drummer Ezra  
-**Estimated time:** 3–4 days  
+**Tagline:** A broken roof teaches shape: stand where the rain is not
+**Mentor:** Drummer Ezra
+**Estimated time:** 3–4 days
 **Reward:** **+150 XP** · `LEAN-TO BADGE`
 
 ### Objectives
@@ -213,9 +213,9 @@ Drummer Ezra teaches that a team standing correctly sounds tight; a team chasing
 
 ## Stage 3 — THE SALTPITS
 
-**Tagline:** The grind — cramps first, wages later  
-**Mentor:** Foreman Baba Salt  
-**Estimated time:** 4–5 days  
+**Tagline:** The grind — cramps first, wages later
+**Mentor:** Foreman Baba Salt
+**Estimated time:** 4–5 days
 **Reward:** **+180 XP** · `SALTPITS BADGE`
 
 ### Objectives
@@ -235,9 +235,9 @@ Foreman Baba Salt's lesson is that ranked work is a contract: results first, the
 
 ## Stage 4 — LONG CORRIDOR
 
-**Tagline:** Patience — a lock opens tooth by tooth, never all at once  
-**Mentor:** Locksmith Venn  
-**Estimated time:** 4–5 days  
+**Tagline:** Patience — a lock opens tooth by tooth, never all at once
+**Mentor:** Locksmith Venn
+**Estimated time:** 4–5 days
 **Reward:** **+200 XP** · `CORRIDOR BADGE`
 
 ### Objectives
@@ -257,9 +257,9 @@ Locksmith Venn's principle is incremental progress: pass, pass, wait, pass; then
 
 ## Stage 5 — RED LANTERN END
 
-**Tagline:** Late drama — when their legs start negotiating, yours vote  
-**Mentor:** Night-Watch Kettle  
-**Estimated time:** 5–6 days  
+**Tagline:** Late drama — when their legs start negotiating, yours vote
+**Mentor:** Night-Watch Kettle
+**Estimated time:** 5–6 days
 **Reward:** **+240 XP** · `RED LANTERN BADGE`
 
 ### Objectives
@@ -279,9 +279,9 @@ Night-Watch Kettle represents the hour when other players sit down. The stage re
 
 ## Stage 6 — THE IRON WHISTLE
 
-**Tagline:** Finals mentality — full time when the climb is done, not before  
-**Mentor:** Old Whistle Onye  
-**Estimated time:** 6–7 days  
+**Tagline:** Finals mentality — full time when the climb is done, not before
+**Mentor:** Old Whistle Onye
+**Estimated time:** 6–7 days
 **Reward:** **+300 XP** · `THE IRON WHISTLE`
 
 ### Objectives
@@ -308,13 +308,13 @@ Old Whistle Onye represents full time: the player must not assume the climb is f
 
 **Arc:** `THE HARBOUR ROAD TO CALM WATER — HOW THE ICEMAN LEARNED HIS TEMPERATURE`
 
-The Merehaven Way is a harbour road to Calm Water. Its fictional supporting voices are Fisher-boy Idri, Boatman Sola, Dockmaster Yew, Fogwatcher Nne, Light-keeper Ama, and Elder Mere.
+The Merehaven Way is a harbour road to Calm Water. Its fictional supporting voices are Fisher-boy Idri, Boatman Sola, Dockmaster Yew, Fog Keeper Nne, Light-keeper Ama, and Elder Mere.
 
 ## Stage 1 — TIDE FLATS
 
-**Tagline:** First touch — the tide gives minutes, not hours  
-**Mentor:** Fisher-boy Idri  
-**Estimated time:** 2–3 days  
+**Tagline:** First touch — the tide gives minutes, not hours
+**Mentor:** Fisher-boy Idri
+**Estimated time:** 2–3 days
 **Reward:** **+120 XP** · `TIDE FLATS BADGE`
 
 ### Objectives
@@ -334,9 +334,9 @@ Fisher-boy Idri's tide gives minutes, not hours: use the available time well and
 
 ## Stage 2 — LANTERN CANAL
 
-**Tagline:** Rhythm — passing that stops feeling like a pattern  
-**Mentor:** Boatman Sola  
-**Estimated time:** 3–4 days  
+**Tagline:** Rhythm — passing that stops feeling like a pattern
+**Mentor:** Boatman Sola
+**Estimated time:** 3–4 days
 **Reward:** **+150 XP** · `CANAL BADGE`
 
 ### Objectives
@@ -356,9 +356,9 @@ Boatman Sola teaches that the boat should finish its thought. Patience through b
 
 ## Stage 3 — STILLWATER DOCKS
 
-**Tagline:** Patience vs the block — still water moves what storms cannot  
-**Mentor:** Dockmaster Yew  
-**Estimated time:** 4–5 days  
+**Tagline:** Patience vs the block — still water moves what storms cannot
+**Mentor:** Dockmaster Yew
+**Estimated time:** 4–5 days
 **Reward:** **+180 XP** · `STILLWATER BADGE`
 
 ### Objectives
@@ -378,9 +378,9 @@ Dockmaster Yew compares the low block to a dock wall: move it patiently instead 
 
 ## Stage 4 — THE FOG GATE
 
-**Tagline:** Composure in chaos — when you cannot see, steer by feel  
-**Mentor:** Fogwatcher Nne  
-**Estimated time:** 4–5 days  
+**Tagline:** Composure in chaos — when you cannot see, steer by feel
+**Mentor:** Fog Keeper Nne
+**Estimated time:** 4–5 days
 **Reward:** **+200 XP** · `FOG GATE BADGE`
 
 ### Objectives
@@ -394,15 +394,15 @@ This stage turns difficult moments into reflection and controlled finishing. The
 
 ### Coach story
 
-Fogwatcher Nne counts ships by sound when visibility fails. The player likewise learns to make a useful read when a match becomes hard to interpret.
+Fog Keeper Nne counts ships by sound when visibility fails. The player likewise learns to make a useful read when a match becomes hard to interpret.
 
 ---
 
 ## Stage 5 — HARBOUR LIGHTS
 
-**Tagline:** Vision — see the whole pitch the way a lighthouse sees the bay  
-**Mentor:** Light-keeper Ama  
-**Estimated time:** 5–6 days  
+**Tagline:** Vision — see the whole pitch the way a lighthouse sees the bay
+**Mentor:** Light-keeper Ama
+**Estimated time:** 5–6 days
 **Reward:** **+240 XP** · `HARBOUR LIGHTS BADGE`
 
 ### Objectives
@@ -422,9 +422,9 @@ Light-keeper Ama sees weather before sailors feel it. The player is asked to rea
 
 ## Stage 6 — CALM WATER
 
-**Tagline:** Mastery — the opponent supplies the waves; you remain the temperature  
-**Mentor:** Elder Mere  
-**Estimated time:** 6–7 days  
+**Tagline:** Mastery — the opponent supplies the waves; you remain the temperature
+**Mentor:** Elder Mere
+**Estimated time:** 6–7 days
 **Reward:** **+300 XP** · `CALM WATER BADGE`
 
 ### Objectives
@@ -483,15 +483,31 @@ Each Match Vault entry may contain:
 
 A stage passes only when **every objective** is met. The scan does not require the latest match alone to satisfy every objective; it grades the accumulated ledger. This makes earlier qualifying matches count toward the stage.
 
-### Honest-system boundary
+### Honest-system boundary: "The Chinedu Way"
 
-The application does not have an official FC Mobile match feed. Match data is normally entered by the player. On supported Android builds, **The Eye** / Match Watcher can watch the scorebug, detect goal events, and prefill the score; it does not replace the player's reflection or all context fields. The app intentionally keeps the psychology and lesson player-authored.
+The application does not have an official EA SPORTS FC 26/27 Console match feed. Match data and key moments are entered manually by the player following **The Chinedu Way**:
+1. **Pen to Paper:** *"There is a special connection a biro has to a book that cannot be typed."* Players screen record their match, watch their tape back, and pen the unusual and key make-or-break moments on paper with a biro first.
+2. **24–30 Minute Cool-Down:** Players let their thoughts settle for 24–30 minutes after the match before typing their written answers into the Academy database.
+3. **The 7-Day Cadence (3 Matches → Rest 1 → Match 4 → Rest 2 → Match 5 Finale):**
+   - **Days 1–3:** Matches 1, 2, and 3 (building momentum).
+   - **Day 4:** Rest Day 1 (mid-week rest & reflection on matches 1–3, no match played — respecting that players have a life outside the pitch).
+   - **Day 5:** Match 4.
+   - **Day 6:** Rest Day 2 (pre-finale preparation & reflection, no match played).
+   - **Day 7:** Match 5 (The Finale) + Ambition & Profile Card seal.
+4. **Philosophy:** In a world looking for the easy way out, the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.
 
 ---
 
 ## 8. The stage room: what happens after opening a stage
 
 The stage room is a coach-led film-room screen with two quests.
+
+### 8.0 "The Chinedu Way" in Our Own Path (The Journey)
+
+The entire universal player Journey (our own path across the 18 stages, not the role model's path) is walked using **The Chinedu Way**:
+- **Stage Room (`CoachingScreen.tsx`):** Displays **The Chinedu Way: How You Work In Our Path** card right above the Main Quest, instructing players to screen record, pen to paper with a biro first, cool down for 24–30 minutes, and type their truth into the database.
+- **Coach Briefings (`coaching.ts`):** Both Coach Chinedu and Coach Obinna remind the player that *"there is a special connection a biro has to a book that cannot be typed"* and *"the hard way is the easy way; tech is meant to elevate."*
+- **Main Quest (`MirrorSessionScreen.tsx`) & Stage Scan (`StageScanSheet.tsx`):** Every review and checkpoint prompts the player to answer from their immediate memory or paper notes before typing into the app.
 
 ### 8.1 Coach briefing
 
@@ -537,7 +553,7 @@ The side-quest card can include:
 - an in-app blog/lesson sheet;
 - mechanic-specific scan targets.
 
-The current checked-in feed is marked `FC Mobile 26` and includes fresh items such as **THE LANE CHANGE**, **THE TACTIC WINDOW**, **THE SECOND BALL**, and **THE DRIVEN PASS**. The stage claims the newest eligible fresh item not already assigned to another stage. Once claimed, that stage keeps the item until it becomes stale. If the source is patched out, the UI explicitly flags it and waits for a fresh approved replacement rather than silently teaching outdated material.
+The current checked-in feed is marked `FC 26/27 Console` and includes fresh items such as **THE LANE CHANGE**, **THE TACTIC WINDOW**, **THE SECOND BALL**, and **THE DRIVEN PASS**. The stage claims the newest eligible fresh item not already assigned to another stage. Once claimed, that stage keeps the item until it becomes stale. If the source is patched out, the UI explicitly flags it and waits for a fresh approved replacement rather than silently teaching outdated material.
 
 The side mechanic's own scan targets are shown as coach watch-list items, but they do not replace the stage objective checks in the Journey data.
 

@@ -111,7 +111,7 @@ npx eas submit --platform ios
       real device screenshots at exact resolutions.
 - [ ] **Feature graphic** (1024×500, Play Store only) + app icon 512×512 for the Play listing
 - [ ] **Content rating questionnaires** — both stores (age rating, gambling/loot-box declarations —
-      IMPORTANT because FC Mobile content implies gaming; answer truthfully)
+      IMPORTANT because EA SPORTS FC 26/27 Console content implies gaming; answer truthfully)
 - [ ] **Export compliance** (iOS) — standard encryption question: app uses HTTPS only →
       can answer "exempt", but the question must still be answered in App Store Connect
 - [ ] **Data safety form** (Android) — what data is collected (email? match stats? device IDs?)

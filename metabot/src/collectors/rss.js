@@ -1,6 +1,6 @@
 import { fetchText, cleanOutside } from '../util.js';
 
-// Generic RSS/Atom reader for FC Mobile news blogs that publish feeds.
+// Generic RSS/Atom reader for FC 26/27 Console news blogs that publish feeds.
 // Any feed that 404s/403s is skipped with a log — sources are editable in config.
 
 export async function rssCollect(feeds, { maxPerFeed = 4 } = {}) {

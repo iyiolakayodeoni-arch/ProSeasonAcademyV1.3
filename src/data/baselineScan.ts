@@ -1,35 +1,51 @@
 // ─────────────────────────────────────────────────────────────
-// BASELINE SCAN — the 5-match interview that builds the player
-// profile card. Semi-automatic BY DESIGN, same principle as the
-// Match Vault: THE EYE gets the numbers (score), THE MIND gets
-// the truth (composure + a soul-searching answer). We refuse AI
-// for the second half on purpose — the manifesto below is the
-// product philosophy, said out loud by the coach.
+// BASELINE SCAN — the 7-day interview that builds the player
+// profile card. Structured around "The Chinedu Way":
+//   DAY 1–3: Match 1, 2, 3 (build momentum)
+//   DAY 4:   Rest Day 1 (mid-week rest & reflection, no match)
+//   DAY 5:   Match 4
+//   DAY 6:   Rest Day 2 (pre-finale rest & preparation, no match)
+//   DAY 7:   Match 5 (The Finale) + Ambition & Profile Card seal
 //
-// Everything persists to AsyncStorage so a closed app resumes
-// mid-baseline. Completed entries ALSO land in the real Match
-// Vault (they're real matches — the scan grades them later).
+// For every match, players follow The Chinedu Way ritual:
+//   1. Record as usual and watch the match tape.
+//   2. Pen the key moments and unusual events on paper with a biro.
+//      "There is a special connection a biro has to a book that
+//       cannot be typed."
+//   3. Let their mind cool down for 24–30 minutes.
+//   4. Type their written answers into the Academy database.
+//   "The hard way is the easy way. Tech is meant to elevate and
+//    not make you dormant."
 // ─────────────────────────────────────────────────────────────
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch } from './matches';
+import { isValidReflection } from './honestyGuard';
+import * as backend from './backend';
 
 const KEY = 'psa.baseline.v1';
+
+function baselineStorageKey(): string {
+  const me = backend.getMe();
+  return me?.id ? `${KEY}.${me.id}` : KEY;
+}
 
 export type MatchResult = 'W' | 'D' | 'L';
 
 // ─────────────────────────────────────────────────────────────
 // THE BASELINE WEEK — 5 matches across 7 calendar-paced days.
 //
-// The point of the pacing is HONESTY: one match a day, and the
-// review work (watch the recording, name the moments where you
-// failed, analyse each one) is done while the day is still real.
-// Nothing is bombarded — the next day unlocks 24h after the
-// previous one is sealed, so the player always has time to think.
+// The point of the pacing is HONESTY and RESILIENCE: three matches
+// build momentum, then a rest day to reflect; one match, then a
+// rest day to prepare; finally Match 5 (The Finale). The next day
+// unlocks 24h after the previous one is sealed, so the player
+// always has time to think and let their mind cool down.
 //
-//   DAY 1–5   one ranked match + review each (watch → name → analyse)
-//   DAY 6     the week so far — receipts + one reflection, no match
-//   DAY 7     the ambition question + the sealed profile card
+//   DAY 1, 2, 3   Matches 1, 2, 3 + review each (watch → pen → database)
+//   DAY 4         Rest Day 1 — mid-week reflection on matches 1–3
+//   DAY 5         Match 4 + review
+//   DAY 6         Rest Day 2 — pre-finale preparation & reflection
+//   DAY 7         Match 5 (The Finale) + Ambition & Profile Card seal
 // ─────────────────────────────────────────────────────────────
 export const BASELINE_MATCHES = 5;
 export const BASELINE_DAYS = 7;
@@ -96,7 +112,7 @@ export interface BaselineMoment {
 
 export function baselineMomentComplete(m: BaselineMoment): boolean {
   return BASELINE_MOMENT_QUESTIONS.every(
-    (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
+    (q) => isValidReflection(m.analysis[q.key] ?? '', { minLength: BASELINE_MOMENT_MIN_ANSWER, minWords: 2 }),
   );
 }
 
@@ -106,7 +122,6 @@ export interface BaselineDay {
   /** epoch ms when this day opened (day 1 = session start; later days = prev seal + 24h) */
   unlockedAt: number;
   entryIndex?: number; // match days: index into entries[]
-  recordingPath?: string | null; // the day's local recording, if any
   reflection?: { repeated: string; changed: string }; // day 6
 }
 
@@ -155,6 +170,51 @@ export interface BaselineSession {
 let session: BaselineSession | null = null;
 let hydrated = false;
 
+/** Day 1, 2, 3, 5, 7 are match days; Day 4 and 6 are rest days */
+export function isBaselineMatchDay(day: number): boolean {
+  return day === 1 || day === 2 || day === 3 || day === 5 || day === 7;
+}
+
+export function isBaselineRestDay(day: number): boolean {
+  return day === 4 || day === 6;
+}
+
+/** Day to entry index (0-based) for match days */
+export function dayToEntryIndex(day: number): number | undefined {
+  switch (day) {
+    case 1:
+      return 0;
+    case 2:
+      return 1;
+    case 3:
+      return 2;
+    case 5:
+      return 3;
+    case 7:
+      return 4;
+    default:
+      return undefined;
+  }
+}
+
+/** Entry index (0-based) to day number (1..7) */
+export function entryIndexToDay(idx: number): number {
+  switch (idx) {
+    case 0:
+      return 1;
+    case 1:
+      return 2;
+    case 2:
+      return 3;
+    case 3:
+      return 5;
+    case 4:
+      return 7;
+    default:
+      return idx + 1;
+  }
+}
+
 /** build the 7-day schedule. Day 1 opens at the session start; each next day
  *  opens 24h after the previous one is sealed. Old sessions (pre-week) are
  *  migrated from their existing entries so no one is reset mid-baseline. */
@@ -162,8 +222,16 @@ function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   const days: BaselineDay[] = [];
   let prevSeal = startedAt;
   for (let day = 1; day <= BASELINE_DAYS; day++) {
-    const entryIndex = day <= entries.length ? day - 1 : undefined;
-    const sealedAt = entryIndex !== undefined ? entries[entryIndex].at : null;
+    const targetIdx = dayToEntryIndex(day);
+    const entryIndex = targetIdx !== undefined && targetIdx < entries.length ? targetIdx : undefined;
+    let sealedAt: number | null = null;
+    if (entryIndex !== undefined) {
+      sealedAt = entries[entryIndex].at;
+    } else if (day === 4 && entries.length >= 4) {
+      sealedAt = entries[2].at + 1000;
+    } else if (day === 6 && entries.length >= 5) {
+      sealedAt = entries[3].at + 1000;
+    }
     const unlock = day === 1 ? startedAt : prevSeal + BASELINE_DAY_MS;
     days.push({ day, sealedAt, unlockedAt: unlock, entryIndex });
     if (sealedAt != null) prevSeal = sealedAt;
@@ -175,7 +243,7 @@ export async function loadBaseline(coachId: string): Promise<BaselineSession> {
   if (!hydrated) {
     hydrated = true;
     try {
-      const raw = await AsyncStorage.getItem(KEY);
+      const raw = await AsyncStorage.getItem(baselineStorageKey());
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<BaselineSession>;
         session = {
@@ -257,11 +325,24 @@ export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void
   void persist();
 }
 
-/** day 6 — the week's reflection, no match */
-export function saveBaselineReflection(repeated: string, changed: string): void {
+/** day 4 or day 6 — the week's rest & reflection days (no match) */
+export function saveBaselineReflection(dayOrRepeated: number | string, repeatedOrChanged: string, maybeChanged?: string): void {
   if (!session) return;
+  let day = 6;
+  let repeated = '';
+  let changed = '';
+  if (typeof dayOrRepeated === 'number') {
+    day = dayOrRepeated;
+    repeated = repeatedOrChanged;
+    changed = maybeChanged ?? '';
+  } else {
+    day = currentBaselineDay(session);
+    if (day !== 4 && day !== 6) day = 6;
+    repeated = dayOrRepeated;
+    changed = repeatedOrChanged;
+  }
   const days = session.days.map((d) =>
-    d.day === 6 ? { ...d, reflection: { repeated: repeated.trim(), changed: changed.trim() } } : d,
+    d.day === day ? { ...d, reflection: { repeated: repeated.trim(), changed: changed.trim() } } : d,
   );
   session = { ...session, days };
   void persist();
@@ -269,9 +350,26 @@ export function saveBaselineReflection(repeated: string, changed: string): void 
 
 /** which match number a sealed day produced (1-based) */
 export function matchNumberForDay(s: BaselineSession | null, day: number): number {
-  return (s?.days ?? []).find((d) => d.day === day)?.entryIndex != null
-    ? ((s?.days ?? []).find((d) => d.day === day)?.entryIndex ?? 0) + 1
-    : day;
+  const d = (s?.days ?? []).find((x) => x.day === day);
+  if (d?.entryIndex != null) return d.entryIndex + 1;
+  switch (day) {
+    case 1:
+      return 1;
+    case 2:
+      return 2;
+    case 3:
+      return 3;
+    case 4:
+      return 3;
+    case 5:
+      return 4;
+    case 6:
+      return 4;
+    case 7:
+      return 5;
+    default:
+      return day;
+  }
 }
 
 /** the week's receipts for day 6 — every named moment across the matches */
@@ -284,19 +382,19 @@ export function getBaseline(): BaselineSession | null {
 }
 
 async function persist() {
-  await AsyncStorage.setItem(KEY, JSON.stringify(session)).catch(() => {});
+  await AsyncStorage.setItem(baselineStorageKey(), JSON.stringify(session)).catch(() => {});
 }
 
 /** record one debriefed match; also lands in the real vault. The day whose
  *  match this is gets its entry index + recording path linked automatically. */
-export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>, recordingPath?: string | null): void {
+export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
   if (!session) return;
   const at = Date.now();
   session = { ...session, entries: [...session.entries, { ...entry, at }] };
-  // match N belongs to day N — link the entry + recording path
   const idx = session.entries.length - 1;
+  const matchDay = entryIndexToDay(idx);
   const days = session.days.map((d) =>
-    d.day === idx + 1 ? { ...d, entryIndex: idx, recordingPath: recordingPath ?? null } : d,
+    d.day === matchDay ? { ...d, entryIndex: idx } : d,
   );
   session = { ...session, days };
   const momentLine = entry.moments.length
@@ -378,7 +476,7 @@ function coachReadFor(coachId: string, avg: number, w: number, l: number): strin
 export async function resetBaselineForDev(): Promise<void> {
   session = null;
   hydrated = false;
-  await AsyncStorage.removeItem(KEY).catch(() => {});
+  await AsyncStorage.removeItem(baselineStorageKey()).catch(() => {});
 }
 
 // ═════════════════════════════════════════════════════════════
@@ -415,15 +513,15 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     intro: [
       'Sit down. My name is Chinedu. They call me THE DISCIPLINARIAN and I earned every letter of it.',
       'I was never the best player on any pitch. Too slow, too small, take your pick. So I became the most honest one instead — and honest players are the ones still standing in April.',
-      'I have watched a hundred careers die from one disease: lying to yourself after a match. “The game is rigged.” “My phone lagged.” Maybe. Usually it was your head, and we both know it.',
+      'I have watched a hundred careers die from one disease: lying to yourself after a match. “The game is rigged.” “My controller lagged.” Maybe. Usually it was your head, and we both know it.',
       'You picked my path. Good. I do not do comfort — I do receipts. And for the record: I am glad you are here. Now let us find out the truth about you.',
     ],
     introSignoff: 'Enough about me. Now you.',
     talk: [
       'Before one tactic. Before one mechanic. Five matches. Yours.',
-      'Play them normally. After EACH one, come straight back here. I will take the numbers — the easy part. A machine could take the numbers. What I cannot take is the truth, and that is the part that actually changes a player.',
-      'Hear me: we do not use AI to read your head. AI can summarise a match — it cannot build your mentality in a live game. Only you can build that, and you build it by thinking for yourself. That is why my questions will dig. That is not a bug in the scan. That IS the scan.',
-      'This gate is real, by the way. The academy does not carry passengers. A player who cannot sit with their own performance for five debriefs will not survive a season — better we know now than in week nine. That is us being serious about what we do.',
+      'For every match, follow The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
+      'Let your head cool for 24–30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
+      'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.',
     ],
     bluff:
       'One warning. Answer honestly. I have listened to two thousand debriefs — I know what a lie sounds like before you finish the sentence. Try me once and you will not try me twice.',
@@ -477,10 +575,10 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     ],
     introSignoff: 'My story is told. Yours starts now, little one.',
     talk: [
-      'Here is how we begin: five matches. Just five. Play them exactly as you always do — no performing for me.',
-      'After each one, come back here. The score is the easy part; a machine can watch a scoreboard. The important part is what was happening between your ears — and I ask, you answer, because that is how a mind gets strong.',
-      'Why not let AI do all this? Because AI can summarise your match, but it cannot grow your mentality, and it will never sit with you after a bad loss and mean it. You grow by thinking for yourself. Free thinkers win real games. So we do this properly — the old way, on purpose.',
-      'And hear me well, little one: this gate is real. The academy is serious about what we do — a player who cannot face five honest debriefs is not ready for a season. That is not harshness. That is respect for your time AND mine.',
+      'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches across seven days, walked at your own pace.',
+      'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
+      'Let your mind cool down for 24–30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
+      'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
     ],
     bluff:
       'And little one — be honest with me. I have heard every excuse ever built; I can hear the difference between a player telling the truth and a player performing it. Honest answers make you better and make me better for you. Win-win.',

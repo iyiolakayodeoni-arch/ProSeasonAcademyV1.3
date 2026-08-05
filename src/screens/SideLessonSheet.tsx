@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import LessonAnimation from '../components/LessonAnimation';
 import {
   ArrowOutIcon,
@@ -13,6 +14,7 @@ import {
 } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import { SideLesson } from '../data/sideLesson';
+import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 
@@ -32,6 +34,19 @@ function mmss(total: number): string {
 }
 
 const TileIcon = { target: TargetGlyphIcon, waves: WavesGlyphIcon, arrow: ArrowOutIcon };
+
+const COMBO_MAP: Record<string, ControllerButton[]> = {
+  'controlled-sprint': ['R1', 'LS'],
+  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'driven-pass': ['R1', 'CROSS'],
+  'second-ball': ['LS', 'CIRCLE'],
+  'lane-change': ['L1', 'RS_FLICK'],
+  'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
+  'sq-1': ['L2'],
+  'sq-2': ['R1', 'CROSS'],
+  'sq-3': ['Y'],
+  'sq-4': ['L2', 'CIRCLE'],
+};
 
 type Props = {
   coach: Coach;
@@ -69,6 +84,7 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
   return (
     <Animated.View entering={FadeIn.duration(220)} style={styles.root}>
       <GridBackground />
+      <ScreenFlash />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         {/* header */}
         <View style={styles.headerWrap}>
@@ -119,6 +135,17 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
           <Text style={styles.clipSubcaption}>{lesson.clip.subcaption}</Text>
 
           <Text style={styles.headline}>{lesson.headline}</Text>
+          {(() => {
+            const topicKey = lesson.mechanicName.toLowerCase().replace(/^the /, '').replace(/ /g, '-');
+            const combo = COMBO_MAP[topicKey] || COMBO_MAP[lesson.contentId] || COMBO_MAP[`sq-${lesson.contentId.replace('sq-content-', '')}`] || COMBO_MAP[`sq-${lesson.mechanicName.toLowerCase().replace('the ', '')}`];
+            if (!combo) return null;
+            return (
+              <View style={styles.comboRow}>
+                <Text style={styles.comboLabel}>CONTROLLER INPUT: </Text>
+                <InputCombo combo={combo} size={18} />
+              </View>
+            );
+          })()}
           <Text style={styles.why}>{lesson.why}</Text>
 
           {/* 3-step breakdown */}
@@ -150,6 +177,18 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
             <Text style={styles.blogBody}>{lesson.blogBody}</Text>
           </View>
         ) : null}
+
+        {/* the chinedu way: pen to paper */}
+        <View style={[styles.sideNote, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
+          <Text style={[styles.sideNoteTitle, { color: colors.primary }]}>THE CHINEDU WAY · HOW YOU TRAIN</Text>
+          <Text style={styles.sideNoteBody}>
+            1. RECORD & WATCH: Record your match and watch your tape back. Don't look away from mistakes.
+            {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down how this mechanic felt on paper first.
+            {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind cool for 24–30 minutes after full time.
+            {'\n'}4. LOG TO DATABASE: Open the app and type your written truth into your database.
+            {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+          </Text>
+        </View>
 
         {/* the honest framing — a side note, never the assignment */}
         <View style={styles.sideNote}>
@@ -239,6 +278,8 @@ const styles = StyleSheet.create({
   clipSubcaption: { marginTop: 4, fontFamily: monoFont, fontSize: 5.9, lineHeight: 10, letterSpacing: 1.1, color: 'rgba(143,184,155,0.7)' },
 
   headline: { marginTop: 13, fontSize: 19, lineHeight: 22, fontWeight: '900', letterSpacing: 0.2, color: colors.fg },
+  comboRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
+  comboLabel: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
   why: { marginTop: 9, fontFamily: monoFont, fontSize: 6.8, lineHeight: 12.6, letterSpacing: 1.3, color: 'rgba(143,184,155,0.85)' },
 
   tilesRow: { marginTop: 13, flexDirection: 'row', gap: 7 },

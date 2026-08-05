@@ -1,6 +1,6 @@
 # ⚽ ProSeasonAcademy
 
-**Onliversity's ProSeasonAcademy — Pro Season, the FC Mobile Pro development programme.**
+**Onliversity's ProSeasonAcademy — Pro Season, the EA SPORTS FC 26/27 Console Pro development programme.**
 
 You lock in **one coach — permanently** — as your voice, guide and accountability presence on a
 **universal six-stage development journey** (See Yourself → Control Yourself → Read the Game →
@@ -15,12 +15,13 @@ review them in your own words, and watch the versions of your thinking sit besid
 records the evidence; **it never does your thinking for you.** Each session ends with one lesson
 you swear into **The Thread**, which the next session opens by asking how it held — or broke.
 
-Before the Journey runs **The Baseline Week** — the same discipline as the gate: one ranked
-match a day for seven days. Each day you watch the recording, name the moments where you
-failed, and analyse each one (how you were thinking, what made you fail, what you could have
-done differently). The next day unlocks 24 hours after the previous one seals — a forced gap
-so the thinking has time to land. Nothing is bombarded, nothing is forced, lateness is never
-punished. Day 6 is the week's reflection, day 7 seals your profile card.
+Across the entire application — from **The Baseline Week** to **The Journey (Our Own Path)**, **Loss Journal**, and **Side Quests** — every player trains under **The Chinedu Way**:
+1. **Record & Watch:** Record your console match as usual (PS Share / Xbox Capture / capture card or phone recording) and watch your tape back.
+2. **Pen to Paper Before You Type:** *"There is a special connection a biro has to a book that cannot be typed."* Write down your key moments, unusual events, and answers on paper with a biro first.
+3. **24–30 Minute Cool-Down:** Let your head settle and cool down for 24–30 minutes after full time before opening the app.
+4. **Log to Database:** Type your penned truth into the Academy database.
+5. **The 7-Day Cadence:** Days 1–3 build momentum with Matches 1, 2, and 3; Day 4 is Rest Day 1 (mid-week rest & reflection, no match played); Day 5 is Match 4; Day 6 is Rest Day 2 (pre-finale rest & preparation, no match played); Day 7 is Match 5 (The Finale) & Profile Card seal.
+6. **The Philosophy:** *"In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way."*
 
 **Private enterprise software.** Distributed inside the Onliversity ecosystem — not on any
 app store. **Season One is capped at 1,000 seats**, enforced in the database, so coaching
@@ -39,7 +40,7 @@ npm start                 # Expo dev server
 |---|---|
 | `npm start` | Metro dev server (Expo Go or a dev build) |
 | `npm run typecheck` | `tsc --noEmit` — must be clean |
-| `npm test` | watcher frame-analysis tests (7/7) |
+| `npm test` | offline unit and state-machine tests |
 | `npm run doctor` | `expo-doctor` project health |
 | `npx eas build --platform android --profile production` | **signed APK** → see `BUILD.md` |
 
@@ -88,15 +89,7 @@ that play in the briefing room. Every asset is generated in-repo, never licensed
 `python3 scripts/make-sounds.py` re-synthesises the whole pack in `assets/sounds/`. Two
 toggles (MUSIC / SOUND FX) live in Settings → SOUND and persist with the other preferences.
 
-**The native watcher (`plugins/withMatchWatcher.js`)** is the Mirror Session's eyes and
-recorder: at `expo prebuild` it injects a MediaProjection module into the generated
-`android/` project — official screen-capture consent, a `mediaProjection` foreground
-service, ~1fps grayscale frames for the on-device ScoreTracker (goals), and a
-**MediaRecorder that only starts when the match is detected** (first goal or your
-MATCH STARTED tap). The MP4 is written to app-private storage and never uploaded by
-default; the session plays it back with MARK START / MARK END from the timeline.
-⚠️ Requires a development build (`npx expo run:android` / EAS) — not in Expo Go; on
-other platforms the session runs in manual mode.
+**Console capture is external by design.** Record matches using PS Share, Xbox Capture, a capture card, or phone recording. The app never captures your screen, watches the match, or generates your key moments; you review your own tape and enter the evidence manually.
 
 ---
 

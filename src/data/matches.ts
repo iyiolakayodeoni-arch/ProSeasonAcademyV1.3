@@ -1,10 +1,11 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
 // THE MATCH VAULT — every match you play, logged and graded.
 //
-// This is the MATCH SCAN backend. FC Mobile exposes no official
+// This is the MATCH SCAN backend. EA SPORTS FC 26/27 Console exposes no official
 // match feed (and we ship no third-party services), so the vault
 // is HONOR-SYSTEM INGEST: you play, you log the truth in under
 // 15 seconds, and the scan grades the vault — objectives, scores,
@@ -19,8 +20,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // a painted one.
 // ─────────────────────────────────────────────────────────────
 
-/** THE MIND's 1..5 head-state ladder (index 0 = composure 1). Semi-automatic
- *  by design: THE EYE counts goals, only the player reports the psychology. */
+/** THE MIND's 1..5 head-state ladder (index 0 = composure 1). Manual by
+ *  design: we do not watch or tag your match for you — manual observation
+ *  and self-reporting is where mental resilience is forged. */
 export const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'] as const;
 
 export const MATCH_MODES = ['RANKED', 'CASUAL', 'TOURNAMENT'] as const;
@@ -35,7 +37,7 @@ export type DecisiveWindow = 'EARLY' | 'AFTER 60' | 'AFTER 80';
 export interface MatchEntry {
   id: string;
   at: number; // epoch ms
-  source: 'manual' | 'scan' | 'watcher'; // 'watcher' = auto-logged by the on-device Match Watcher
+  source: 'manual' | 'scan';
   gf: number; // goals you scored
   ga: number; // goals you conceded
   mode: MatchMode;
@@ -77,6 +79,11 @@ export type ObjectiveCheck =
 const STORAGE_KEY = 'psa.match-vault.v1';
 const MAX_GOALS = 9; // stepper ceiling — nobody needs 10 in the vault
 
+function matchStorageKey(): string {
+  const me = backend.getMe();
+  return me?.id ? `${STORAGE_KEY}.${me.id}` : STORAGE_KEY;
+}
+
 let state: VaultState = { matches: [] };
 let hydrated = false;
 
@@ -91,13 +98,13 @@ function subscribe(l: () => void) {
 function set(next: Partial<VaultState>) {
   state = { ...state, ...next };
   listeners.forEach((l) => l());
-  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
+  AsyncStorage.setItem(matchStorageKey(), JSON.stringify(state)).catch(() => {});
 }
 
 function ensureHydrated() {
   if (hydrated) return;
   hydrated = true;
-  AsyncStorage.getItem(STORAGE_KEY)
+  AsyncStorage.getItem(matchStorageKey())
     .then((raw: string | null) => {
       if (!raw) return;
       const saved = JSON.parse(raw) as Partial<VaultState>;
@@ -150,10 +157,7 @@ export function removeMatch(id: string) {
   set({ matches: state.matches.filter((m) => m.id !== id) });
 }
 
-/** attach/update a self-rated head state on an existing receipt (THE MIND
- *  is semi-automatic by design: the machine counts goals, the player owns
- *  the psychology — the Mirror Session writes it after the full-time
- *  reflection, before the review). */
+/** attach/update a self-rated head state on an existing receipt. */
 export function setMatchComposure(id: string, composure: number) {
   const c = Math.max(1, Math.min(5, Math.round(composure)));
   set({
@@ -190,7 +194,7 @@ export function mergeServerMatches(rows: ServerMatchRowLike[]) {
     fresh.push({
       id: r.client_id,
       at: r.at,
-      source: r.source === 'watcher' ? 'watcher' : 'manual',
+      source: r.source === 'scan' ? 'scan' : 'manual',
       gf: clampGoals(r.gf),
       ga: clampGoals(r.ga),
       mode: (MATCH_MODES as readonly string[]).includes(r.mode ?? '') ? (r.mode as MatchMode) : 'RANKED',

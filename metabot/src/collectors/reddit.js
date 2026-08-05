@@ -1,11 +1,11 @@
 import { fetchText, cleanOutside } from '../util.js';
 
-// r/FUTMobile's public JSON — no account, no key.
+// r/EASportsFC's public JSON — no account, no key.
 // NOTE: Reddit rate-limits datacenter IPs hard; from a normal/home network this
 // collector works as-is. When blocked it throws a clear error and the bucket
 // simply continues with the other collectors (logged, never fatal).
 
-const SUB = 'FUTMobile';
+const SUB = 'EASportsFC';
 const MAX_AGE_MS = 31 * 864e5;
 
 export async function redditSearch(query, { max = 5 } = {}) {
@@ -39,7 +39,7 @@ export async function redditSearch(query, { max = 5 } = {}) {
       title: cleanOutside(p.title),
       summary: cleanOutside((p.selftext || '').slice(0, 500)),
       sourceUrl: `https://www.reddit.com${p.permalink}`,
-      sourceName: 'r/FUTMobile community thread',
+      sourceName: 'r/EASportsFC community thread',
       via: `${p.score} upvotes · ${p.num_comments} comments`,
     }));
 }

@@ -1,12 +1,12 @@
 import { fetchText, cleanOutside } from '../util.js';
 
-// Watches FC Mobile guide sites' listing pages for fresh/updated guides.
+// Watches FC 26/27 Console guide sites' listing pages for fresh/updated guides.
 
 export async function guideWatch({ max = 5 } = {}) {
   const targets = [
     {
-      url: 'https://fcmobileguide.com/tutorials/',
-      name: 'FCMobileGuide — tutorials',
+      url: 'https://www.ea.com/games/ea-sports-fc/news',
+      name: 'EASportsFC — console tutorials',
       keyRe: /skill|formation|meta|h2h|head to head|tactic|guide/i,
     },
   ];
@@ -29,7 +29,7 @@ export async function guideWatch({ max = 5 } = {}) {
       items.push({
         title: text,
         summary: text,
-        sourceUrl: href.startsWith('http') ? href : `https://fcmobileguide.com${href}`,
+        sourceUrl: href.startsWith('http') ? href : `https://www.ea.com${href}`,
         sourceName: t.name,
       });
       count++;

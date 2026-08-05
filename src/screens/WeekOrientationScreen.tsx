@@ -17,14 +17,14 @@ import { colors, monoFont } from '../theme';
 const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'gold' }[] = [
   {
     eyebrow: 'THE NEXT 7 DAYS',
-    title: 'ONE MATCH A DAY',
-    body: 'Five matches, one per day. After each one you watch the recording, name the moments where you failed, and analyse each moment in your own words. Day 6 is the week’s reflection. Day 7 seals your profile.',
+    title: '5 MATCHES · 2 REST DAYS',
+    body: 'Days 1–3: Matches 1, 2, and 3 (build momentum). Day 4: Rest Day 1 (mid-week reflection, no match). Day 5: Match 4. Day 6: Rest Day 2 (pre-finale rest). Day 7: Match 5 (The Finale) & profile seal.',
     tone: 'green',
   },
   {
-    eyebrow: 'THE MIRROR',
-    title: 'YOU DO THE SEEING',
-    body: 'The app records the evidence — it never writes your psychology, never picks your moments, never hands you a verdict. The next day unlocks 24 hours after the last one seals, so the thinking has time to land.',
+    eyebrow: 'THE CHINEDU WAY',
+    title: 'PEN TO PAPER BEFORE YOU TYPE',
+    body: 'For every match: record as usual and watch your tape, write your moments on paper with a biro, cool down for 24–30 mins, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
   },
   {
     eyebrow: 'WHAT FOLLOWS',

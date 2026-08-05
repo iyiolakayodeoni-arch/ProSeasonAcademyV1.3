@@ -5,6 +5,18 @@ import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, RefreshGlyphIcon, ScanGlyphIcon } from '../components/Icons';
 import { colors, monoFont } from '../theme';
 import * as backend from '../data/backend';
+import {
+  triageMessage,
+  sortInboxByPriority,
+  triageFlag,
+  lapsedRecommendation,
+  deskDigest,
+  pricingDigest,
+  PRIORITY_LABEL,
+  CATEGORY_COLOR,
+  DeskCategory,
+} from '../data/founderAssist';
+import { useCannedReplies, addCanned, cannedFor } from '../data/cannedReplies';
 import { publishAnnouncement } from '../data/announcements';
 import { fetchPendingNews, reviewNews, NewsItem } from '../data/newsFeed';
 
@@ -110,6 +122,13 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
     void loadFlags();
     void loadClaims();
     void loadStuck();
+  };
+
+  // the founder's saved-reply library + a one-tap per-seat release
+  const canned = useCannedReplies();
+  const releaseSeat = async (academyId: string) => {
+    await backend.founderSetStatus(founderKey, academyId, 'removed');
+    void loadLapsed();
   };
   const closeConsult = async () => {
     if (!closeArmed) { setCloseArmed(true); return; }
@@ -287,7 +306,6 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {[
             { v: data?.users, l: 'PLAYERS' },
             { v: data?.matches, l: 'MATCHES' },
-            { v: data?.watcherMatches, l: 'VIA THE EYE' },
             { v: data?.messages, l: 'MESSAGES' },
             { v: data?.matchesThisWeek, l: 'THIS WEEK' },
           ].map((c) => (
@@ -297,6 +315,30 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </View>
           ))}
         </Animated.View>
+
+        {/* ── TODAY AT THE DESK — one pass, top to bottom (the daily digest) ── */}
+        {(() => {
+          const d = deskDigest({ stuck, claims, flags, lapsed, inboxUnread: unread });
+          if (d.clear) return null;
+          const tone = (t: string) =>
+            t === 'payment' ? colors.accent : t === 'flag' ? colors.loss : t === 'seat' ? colors.warm : colors.primary;
+          return (
+            <Animated.View entering={FadeInDown.delay(70).duration(320)} style={styles.digestCard}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.digestTag}>TODAY AT THE DESK</Text>
+                <Text style={styles.digestTotal}>{d.total}</Text>
+              </View>
+              <Text style={styles.digestHead}>{d.headline}</Text>
+              {d.actions.map((a, i) => (
+                <View key={i} style={styles.digestActionRow}>
+                  <View style={[styles.digestDot, { backgroundColor: tone(a.tone) }]} />
+                  <Text style={styles.digestActionTxt}>{a.count}× {a.label}</Text>
+                </View>
+              ))}
+              <Text style={styles.emptyNote}>ONE PASS, TOP TO BOTTOM — EACH SECTION BELOW HAS THE ACTION READY.</Text>
+            </Animated.View>
+          );
+        })()}
 
         {/* ── THE INBOX — members writing to you privately ── */}
         <Animated.View entering={FadeInDown.delay(80).duration(320)} style={styles.splitCard}>
@@ -310,7 +352,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {!inbox || inbox.length === 0 ? (
             <Text style={styles.emptyNote}>NOTHING YET — THE LINE IS OPEN.</Text>
           ) : (
-            inbox.slice(0, 12).map((m) => (
+            sortInboxByPriority(inbox).slice(0, 12).map((m) => {
+              const t = triageMessage(m);
+              return (
               <View key={m.id} style={[styles.inboxRow, !m.read && styles.inboxUnread]}>
                 <View style={styles.rowBetween}>
                   <Text style={styles.inboxWho}>
@@ -318,12 +362,49 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                   </Text>
                   <Text style={styles.inboxAt}>{new Date(m.at).toLocaleDateString()}</Text>
                 </View>
+                {/* auto-triage: category + priority + a one-line "what they want".
+                    The assistant sorts and labels — the founder still reads + decides. */}
+                <View style={[styles.triageChip, { borderColor: CATEGORY_COLOR[t.category] }]}>
+                  <Text style={[styles.triageChipTxt, { color: CATEGORY_COLOR[t.category] }]}>
+                    {t.category} · {PRIORITY_LABEL[t.priority]}
+                  </Text>
+                  <Text style={styles.triageConf}>{t.confidence.toUpperCase()}</Text>
+                </View>
+                <Text style={styles.triageSum}>{t.summary}</Text>
                 <Text style={styles.inboxBody}>{m.body}</Text>
 
                 {m.reply ? (
                   <Text style={styles.inboxReplied}>YOU: {m.reply}</Text>
                 ) : replyTo === m.id ? (
                   <View>
+                    <Text style={styles.draftHint}>DRAFT PRE-FILLED — EDIT, THEN SEND. NOTHING GOES WITHOUT YOUR TAP.</Text>
+                    {/* saved-reply library: tap to fill, or save this edit for next time */}
+                    {(() => {
+                      const opts = cannedFor(canned, t.category).slice(0, 4);
+                      if (!opts.length) return null;
+                      return (
+                        <View style={styles.cannedWrap}>
+                          <Text style={styles.cannedLbl}>USE A SAVED REPLY · {t.category}:</Text>
+                          <View style={styles.cannedChips}>
+                            {opts.map((c) => (
+                              <Pressable
+                                key={c.id}
+                                onPress={() =>
+                                  setReplyTxt(c.body.replace('{ACADEMY_ID}', m.academy_id ?? m.handle ?? 'YOUR ID'))
+                                }
+                                hitSlop={4}
+                              >
+                                <View style={[styles.cannedChip, c.custom && styles.cannedChipCustom]}>
+                                  <Text style={styles.cannedChipTxt} numberOfLines={1}>
+                                    {c.custom ? '★ ' : ''}{c.body.slice(0, 34)}
+                                  </Text>
+                                </View>
+                              </Pressable>
+                            ))}
+                          </View>
+                        </View>
+                      );
+                    })()}
                     <TextInput
                       value={replyTxt}
                       onChangeText={setReplyTxt}
@@ -333,6 +414,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                       style={styles.replyInput}
                     />
                     <View style={styles.rowBetween}>
+                      <Pressable onPress={() => { addCanned(t.category, replyTxt); }} hitSlop={6}>
+                        <Text style={styles.ghostBtn}>SAVE REPLY</Text>
+                      </Pressable>
                       <Pressable onPress={() => { setReplyTo(null); setReplyTxt(''); }} hitSlop={6}>
                         <Text style={styles.ghostBtn}>CANCEL</Text>
                       </Pressable>
@@ -342,12 +426,13 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                     </View>
                   </View>
                 ) : (
-                  <Pressable onPress={() => { setReplyTo(m.id); setReplyTxt(''); }} hitSlop={6}>
-                    <Text style={styles.linkBtn}>REPLY ›</Text>
+                  <Pressable onPress={() => { setReplyTo(m.id); setReplyTxt(t.draft); }} hitSlop={6}>
+                    <Text style={styles.linkBtn}>REPLY (DRAFT READY) ›</Text>
                   </Pressable>
                 )}
               </View>
-            ))
+              );
+            })
           )}
         </Animated.View>
 
@@ -362,6 +447,17 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                 </Text>
               </Pressable>
             </View>
+
+            {(() => {
+              const pd = pricingDigest(consult);
+              if (!pd) return null;
+              return (
+                <View style={styles.digestCard}>
+                  <Text style={styles.digestTag}>PRICING DIGEST</Text>
+                  <Text style={styles.digestHead}>{pd.read}</Text>
+                </View>
+              );
+            })()}
 
             {consult.map((r: any) => (
               <View key={r.slug} style={styles.inboxRow}>
@@ -484,12 +580,27 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             NEVER APPEAR HERE. NOBODY IS REMOVED AUTOMATICALLY FOR THIS; YOU READ IT AND DECIDE.
           </Text>
 
-          {flags?.slice(0, 8).map((f) => (
+          {flags?.slice(0, 8).map((f) => {
+            const ft = triageFlag(f);
+            return (
             <View key={f.id} style={styles.inboxRow}>
               <View style={styles.rowBetween}>
                 <Text style={styles.inboxWho}>{f.handle ?? '—'} · #{f.channel}</Text>
                 <Text style={styles.inboxAt}>MATCHED "{f.matched}"</Text>
               </View>
+              {/* auto-triage: severity + a recommendation. The assistant only
+                  labels — WARN / FALSE ALARM are still the founder's tap. */}
+              <View style={[styles.triageChip, {
+                borderColor: ft.recommendation === 'WARN' ? colors.loss : colors.accent,
+              }]}>
+                <Text style={[styles.triageChipTxt, {
+                  color: ft.recommendation === 'WARN' ? colors.loss : colors.accent,
+                }]}>
+                  {ft.severity.replace('_', ' ')} · SUGGESTED: {ft.recommendation === 'WARN' ? 'WARN' : 'READ FIRST'}
+                </Text>
+                <Text style={styles.triageConf}>{ft.confidence.toUpperCase()}</Text>
+              </View>
+              <Text style={styles.triageSum}>{ft.reason}</Text>
               <Text style={styles.inboxBody}>{f.text}</Text>
               <View style={styles.rowBetween}>
                 <Pressable onPress={() => void dismissFlag(f.id)} hitSlop={6}>
@@ -500,7 +611,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
                 </Pressable>
               </View>
             </View>
-          ))}
+            );
+          })}
         </Animated.View>
 
         {/* ── THE SWEEPER ── */}
@@ -533,15 +645,33 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           {trialNote && <Text style={styles.invNew}>{trialNote}</Text>}
 
           {lapsed && lapsed.length > 0 && (
-            <View style={{ marginTop: 10 }}>
+            <View style={{ marginTop: 12 }}>
               <Text style={styles.cardTag}>SEATS THAT COULD BE RECLAIMED</Text>
-              {lapsed.slice(0, 8).map((m) => (
-                <Text key={m.academy_id} style={styles.invMeta}>
-                  {m.handle} · {m.academy_id} · LAPSED {m.days_lapsed}D
-                </Text>
-              ))}
+              {lapsed.slice(0, 8).map((m) => {
+                const lr = lapsedRecommendation(m);
+                const tone = lr.action === 'RELEASE' ? colors.loss : lr.action === 'GRACE' ? colors.accent : 'rgba(143,184,155,0.6)';
+                return (
+                  <View key={m.academy_id} style={styles.inboxRow}>
+                    <View style={styles.rowBetween}>
+                      <Text style={styles.inboxWho}>{m.handle} · {m.academy_id}</Text>
+                      <Text style={styles.inboxAt}>{m.tier} · LAPSED {m.days_lapsed}D</Text>
+                    </View>
+                    <View style={[styles.triageChip, { borderColor: tone }]}>
+                      <Text style={[styles.triageChipTxt, { color: tone }]}>SUGGESTED: {lr.action}</Text>
+                      <Text style={styles.triageConf}>{lr.confidence.toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.triageSum}>{lr.reason}</Text>
+                    <View style={[styles.rowBetween, { marginTop: 4 }]}>
+                      <Text style={styles.ghostBtn}>YOUR CALL — NOTHING AUTO</Text>
+                      <Pressable onPress={() => void releaseSeat(m.academy_id)} hitSlop={6}>
+                        <Text style={[styles.linkBtn, { color: colors.loss }]}>RELEASE SEAT ›</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })}
               <Text style={styles.emptyNote}>
-                NOTHING IS AUTOMATIC — REMOVING SOMEONE IS ALWAYS YOUR CALL.
+                NOTHING IS AUTOMATIC — REMOVING SOMEONE IS ALWAYS YOUR TAP.
               </Text>
             </View>
           )}
@@ -733,7 +863,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
         {/* MetaBot news review — drafts never auto-publish */}
         <Animated.View entering={FadeInDown.delay(135).duration(320)} style={styles.card}>
           <View style={styles.rowBetween}>
-            <Text style={styles.cardTag}>FC MOBILE NEWS · PENDING REVIEW</Text>
+            <Text style={styles.cardTag}>FC 26/27 CONSOLE NEWS · PENDING REVIEW</Text>
             <Text style={[styles.cardTag, pendingNews.length > 0 && { color: colors.accent }]}>
               {pendingNews.length} DRAFT{pendingNews.length === 1 ? '' : 'S'}
             </Text>
@@ -826,7 +956,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
               <Text style={styles.matchScore}>{m.gf}–{m.ga}</Text>
               <View style={{ flex: 1 }}>
                 <Text style={styles.matchMeta} numberOfLines={1}>
-                  {m.handle} · {m.mode ?? '—'} · {m.source === 'watcher' ? 'THE EYE' : 'HONOR'}
+                  {m.handle} · {m.mode ?? '—'} · HONOR
                   {m.composure != null ? ` · HEAD: ${HEAD_LABELS[m.composure - 1] ?? m.composure}` : ''}
                 </Text>
                 {m.note ? <Text style={styles.matchNote} numberOfLines={2}>“{m.note}”</Text> : null}
@@ -872,6 +1002,34 @@ const styles = StyleSheet.create({
   inboxAt: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
   inboxBody: { marginTop: 3, fontFamily: monoFont, fontSize: 7.6, lineHeight: 11.5, color: 'rgba(238,242,236,0.92)' },
   inboxReplied: { marginTop: 5, fontFamily: monoFont, fontSize: 7, lineHeight: 11, color: colors.primary },
+  triageChip: {
+    marginTop: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3,
+    backgroundColor: 'rgba(15,26,19,0.6)',
+  },
+  triageChipTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.2 },
+  triageConf: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  triageSum: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.8)', fontStyle: 'italic' },
+  draftHint: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1, color: colors.accent, marginBottom: 5 },
+  // daily digest
+  digestCard: {
+    marginTop: 10, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.92)', padding: 13,
+    shadowColor: colors.primary, shadowOpacity: 0.16, shadowRadius: 16, shadowOffset: { width: 0, height: 0 },
+  },
+  digestTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  digestTotal: { fontFamily: monoFont, fontSize: 16, fontWeight: '900', color: colors.primary },
+  digestHead: { marginTop: 7, fontFamily: monoFont, fontSize: 7.4, lineHeight: 12, letterSpacing: 0.8, fontWeight: '700', color: colors.fg },
+  digestActionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 7 },
+  digestDot: { width: 7, height: 7, borderRadius: 4 },
+  digestActionTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1, color: '#cdd9cf' },
+  // canned-reply picker
+  cannedWrap: { marginTop: 6, marginBottom: 6 },
+  cannedLbl: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1, color: 'rgba(143,184,155,0.7)', marginBottom: 4 },
+  cannedChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  cannedChip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 7, paddingHorizontal: 7, paddingVertical: 4, backgroundColor: 'rgba(15,26,19,0.7)', maxWidth: 150 },
+  cannedChipCustom: { borderColor: 'rgba(242,192,120,0.5)', backgroundColor: 'rgba(38,30,12,0.4)' },
+  cannedChipTxt: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 0.4, color: '#cdd9cf' },
   replyInput: {
     marginTop: 6, minHeight: 54, textAlignVertical: 'top',
     borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 8, padding: 8,

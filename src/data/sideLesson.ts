@@ -24,6 +24,7 @@ export interface SideLessonClip {
 export interface SideLesson {
   contentId: string;
   kind: string;
+  topic?: string; // mechanism key used for combo lookup
   patchVersion: string;
   discoveredAt: string;
   sourceName: string;
@@ -41,6 +42,7 @@ export interface SideLesson {
 export function sideLessonFromPlan(plan: {
   contentId: string;
   kind: string;
+  topic?: string;
   patchVersion: string;
   discoveredAt: string;
   sourceName: string;
@@ -52,7 +54,22 @@ export function sideLessonFromPlan(plan: {
   rule: string;
   clip: SideLessonClip;
 }): SideLesson {
-  return { ...plan, blogBody: '' };
+  return {
+    contentId: plan.contentId,
+    kind: plan.kind,
+    topic: plan.topic ?? plan.mechanicName?.toLowerCase().replace(/^the /, '').replace(/ /g, '-'),
+    patchVersion: plan.patchVersion,
+    discoveredAt: plan.discoveredAt,
+    sourceName: plan.sourceName,
+    sourceUrl: plan.sourceUrl,
+    mechanicName: plan.mechanicName,
+    headline: plan.headline,
+    why: plan.why,
+    blogBody: '',
+    tiles: plan.tiles,
+    rule: plan.rule,
+    clip: plan.clip,
+  };
 }
 
 /** from a raw MetaBot/live-feed post (has the blog body on top) */
@@ -76,6 +93,7 @@ export function sideLessonFromPost(p: {
   return {
     contentId: p.id,
     kind: p.kind,
+    topic: p.lesson.name.toLowerCase().replace(/^the /, '').replace(/ /g, '-'),
     patchVersion: p.patchVersion,
     discoveredAt: p.discoveredAt,
     sourceName: p.sourceName,

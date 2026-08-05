@@ -1,7 +1,7 @@
 # ProSeason MetaBot 🤖
 
 **What this is:** our own search robot that lives *next to* the app (never inside it).
-On a schedule it goes out and reads what's actually happening in FC Mobile right now —
+On a schedule it goes out and reads what's actually happening in EA SPORTS FC 26/27 Console right now —
 EA's official news hub, YouTube search results, news blogs, guide sites, Reddit — and
 turns it into ProSeasonAcademy feed posts.
 
@@ -23,7 +23,7 @@ approved list (`src/data/liveFeed.json`) when the Home tab ships.
    │ 1 · FETCH    src/collectors/* — OUR own bot  │  youtube search results pages,
    │              searches the sources directly:   │  ea.com news hub + patch notes,
    │              EA news, YouTube, RSS blogs,     │  RSS/Atom feeds, guide sites,
-   │              guide sites, r/FUTMobile*        │  reddit's public JSON — no keys
+   │              guide sites, r/EASportsFC*        │  reddit's public JSON — no keys
    └──────────────────────┬──────────────────────┘
                           ▼
    ┌─────────────────────────────────────────────┐

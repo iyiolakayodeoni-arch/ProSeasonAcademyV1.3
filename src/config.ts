@@ -23,3 +23,9 @@
 
 export const PSA_SUPABASE_URL = process.env.EXPO_PUBLIC_PSA_SUPABASE_URL ?? '';
 export const PSA_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY ?? '';
+
+// The founder's own APK download link (sideloaded — no app store). Set via env
+// at build time; blank falls back to a placeholder so the install assistant
+// never shows a dead link. Used by the SideloadAssistant self-service screen.
+export const PSA_DOWNLOAD_URL =
+  process.env.EXPO_PUBLIC_PSA_DOWNLOAD_URL ?? 'https://proseasonacademy.app/download';

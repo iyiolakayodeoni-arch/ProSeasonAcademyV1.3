@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // and the auth seam when real accounts land.
 // ─────────────────────────────────────────────────────────────
 
-export const PLATFORMS = ['CONSOLE', 'MOBILE'] as const;
+export const PLATFORMS = ['PS5 / XBOX', 'PC / CONSOLE'] as const;
 export const REGIONS = [
   'EU WEST · GMT+1',
   'EU EAST · GMT+2',
@@ -70,7 +70,7 @@ const DEFAULTS: SettingsState = {
   joinedAt: Date.now(),
   div: 'DIV 4',
   bestStreak: 3,
-  platform: 'CONSOLE',
+  platform: 'PS5 / XBOX',
   region: 'EU WEST · GMT+1',
   plan: 'PRO',
   toggles: {
@@ -113,9 +113,13 @@ function ensureHydrated() {
     .then((raw: string | null) => {
       if (!raw) return;
       const saved = JSON.parse(raw) as Partial<SettingsState>;
+      const platform = (saved.platform as unknown as string) === 'CONSOLE' || (saved.platform as unknown as string) === 'MOBILE' || !saved.platform
+        ? 'PS5 / XBOX'
+        : saved.platform;
       state = {
         ...state,
         ...saved,
+        platform,
         toggles: { ...state.toggles, ...(saved.toggles ?? {}) },
       };
       listeners.forEach((l) => l());

@@ -342,7 +342,6 @@ begin
   return jsonb_build_object(
     'users', (select count(*) from profiles where academy_id != 'PSA-FOUNDER'),
     'matches', (select count(*) from matches),
-    'watcherMatches', (select count(*) from matches where source = 'watcher'),
     'messages', (select count(*) from messages),
     'matchesThisWeek', (select count(*) from matches where at > week_ago),
     'regions', (select jsonb_build_object(

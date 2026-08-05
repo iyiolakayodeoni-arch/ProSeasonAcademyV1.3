@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import RoleModelCard from '../components/RoleModelCard';
 import { ChevronLeftIcon, LockIcon, RouteIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
@@ -76,12 +77,13 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
   const thread = useLessonThread();
   const SEASON = journeySeasonFor(coach.id);
   const cleared = prog.completedCount >= SEASON.totalStages;
-  const story = STORIES[coach.id] ?? STORIES.obinna;
+  const story = STORIES[coach.id] ?? STORIES.chinedu;
   const coachFirst = coach.name.split(' ')[0];
 
   return (
     <Animated.View entering={FadeIn.duration(240)} style={styles.root}>
       <GridBackground />
+      <ScreenFlash />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         <View style={styles.headerWrap}>
           <Text style={styles.eyebrow}>STAGE {SEASON.totalStages + 1} OF {SEASON.totalStages} · THE FINISH</Text>

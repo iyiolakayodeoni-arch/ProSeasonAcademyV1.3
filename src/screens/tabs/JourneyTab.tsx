@@ -14,7 +14,10 @@ import Animated, {
 import GridBackground from '../../components/GridBackground';
 import MiniPitch from '../../components/MiniPitch';
 import RoleModelCard from '../../components/RoleModelCard';
-import { CheckIcon, LockIcon, PersonIcon } from '../../components/Icons';
+import PlayerCard from '../../components/PlayerCard';
+import BadgeMark, { BADGE_LABELS } from '../../components/BadgeMark';
+import { EvidenceRing, StatBar, EvidenceMeter } from '../../components/StatReadout';
+import { CheckIcon, LockIcon, PersonIcon, FlameIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
 import {
   journeySeasonFor,
@@ -33,12 +36,14 @@ import { useJournal } from '../../data/journal';
 import { useSettings } from '../../data/settings';
 import { useLessonThread } from '../../data/lessonThread';
 import { useStandard, StandardChapter } from '../../data/standard';
+import { playerCardData, evidenceFromVault, PLAYER_CARD } from '../../data/playerCard';
 import * as backend from '../../data/backend';
 import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
 import StoreSheet from '../StoreSheet';
 import RoleModelSheet from '../RoleModelSheet';
-import { colors, monoFont } from '../../theme';
+import RoleModelFeedSheet from '../RoleModelFeedSheet';
+import { colors, monoFont, type as typeTokens } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
 
@@ -90,7 +95,47 @@ export default function JourneyTab({
   const threadSettled = thread.heldCount + thread.brokeCount;
   // THE STANDARD — the parallel benchmark journey, revealed by progress
   const standard = useStandard();
-  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
+
+  // ── THE PLAYER CARD — derived honestly from the same ledgers every
+  //    objective is graded from. Rating is stage-gated (clears lift it);
+  //    the six stats are the live receipt readout. (Principles P1/P2)
+  const playerCard = React.useMemo(
+    () =>
+      playerCardData(
+        progress,
+        evidenceFromVault({
+          played: vault.played,
+          w: vault.w,
+          d: vault.d,
+          l: vault.l,
+          ga: vault.ga,
+          cleanSheets: vault.cleanSheets,
+          matches: vault.matches,
+          journalTotal: journal.total,
+          journalStreakDays: journal.streakDays,
+          threadSettled: threadSettled,
+          threadHeld: thread.heldCount,
+          threadBroke: thread.brokeCount,
+        }),
+      ),
+    [progress, vault, journal.total, journal.streakDays, threadSettled, thread.heldCount, thread.brokeCount],
+  );
+
+  // ── LIVE stage progress — the honest met-objective ratio, replacing the
+  //    author-set progressPct. A stage's bar fills only as the vault/journal
+  //    actually meet its objectives. (Principle P1)
+  const stageLiveProgress = React.useMemo(() => {
+    const objs = selected.objectives ?? [];
+    if (!objs.length) return 0;
+    const met = objs.filter((o) => {
+      const count = o.check
+        ? objectiveCount(o.check, vault.matches, journal.entries.length, threadSettled)
+        : o.done;
+      return count >= o.target;
+    }).length;
+    return Math.round((met / objs.length) * 100);
+  }, [selected, vault.matches, journal.entries.length, threadSettled]);
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | 'feed' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
   // Identical rungs in every country; only the currency differs.
@@ -123,8 +168,8 @@ export default function JourneyTab({
   const litPath = buildLitPath(CUR);
   const dots = footprintDots(CUR);
   const current = SEASON.stages[CUR - 1] ?? SEASON.stages[SEASON.stages.length - 1];
-  const cleared = progress.completed[selected.n];
-  const isLocked = selected.n > CUR;
+  const cleared = !!progress.completed[selected.n];
+  const isLocked = selected.isSideQuest ? (selected.parentStageN ?? 1) > CUR : selected.n > CUR;
 
   // node tap → the node zooms open into the Coaching Screen
   const zoomIntoStage = (s: JourneyStage) => {
@@ -169,6 +214,20 @@ export default function JourneyTab({
 
         <Text style={styles.headline}>YOUR JOURNEY</Text>
         <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
+
+        {/* ── THE CHINEDU WAY: OUR OWN PATH PHILOSOPHY ── */}
+        <View style={styles.chineduCard}>
+          <Text style={styles.chineduTag}>THE CHINEDU WAY · HOW YOU WALK OUR PATH</Text>
+          <Text style={styles.chineduTitle}>PEN TO PAPER BEFORE YOU TYPE · THE HARD WAY IS THE EASY WAY</Text>
+          <Text style={styles.chineduText}>
+            1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
+            {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
+            {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
+            {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
+            {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+          </Text>
+        </View>
+
         <View style={styles.dividerRow}>
           <View style={styles.divLine} />
           <Text style={styles.dividerTxt}>STAGE {SEASON.totalStages + 1} — WHERE THIS PATH ENDS</Text>
@@ -181,11 +240,11 @@ export default function JourneyTab({
             coach={coach}
             onPress={() => {
               sfx('whoosh');
-              setSheet('rolemodel');
+              setSheet('feed');
             }}
           />
           <Text style={styles.heroHint}>
-            TAP THE CARD — WHY THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
+            PRESS [A/CROSS] — FOLLOW HIS ONGOING STORY · THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
           </Text>
         </View>
 
@@ -201,21 +260,35 @@ export default function JourneyTab({
               ))}
               {/* lit path up to the current node */}
               <LitPathPulse d={litPath} />
+              {/* connecting dashed amber lines to side quests */}
+              {SEASON.stages.map((s) => (
+                <React.Fragment key={`lines-${s.n}`}>
+                  {s.sideQuests?.map((sq) => {
+                    const sqUnlocked = s.n <= CUR;
+                    return (
+                      <Path
+                        key={`line-${sq.id}`}
+                        d={`M ${s.at.x} ${s.at.y} L ${sq.at.x} ${sq.at.y}`}
+                        stroke={colors.accent}
+                        strokeWidth={1.4}
+                        strokeDasharray="3 4"
+                        opacity={sqUnlocked ? 0.8 : 0.3}
+                      />
+                    );
+                  })}
+                </React.Fragment>
+              ))}
               <Circle cx={current.at.x} cy={current.at.y} r={4} fill={colors.primary} />
             </Svg>
 
-            {/* player card */}
-            <View style={[styles.playerCard, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y - 42 }]}>
-              <Text style={styles.playerRating}>
-                {SEASON.playerCard.rating + progress.completedCount}
-                <Text style={styles.playerRatingSub}>{'\n'}ACADEMY</Text>
-              </Text>
-              <PersonIcon size={22} color="rgba(238,242,236,0.85)" />
-              <Text style={styles.playerName}>PLAYER</Text>
-              <Text style={styles.playerMeta}>PROSEASON ACADEMY</Text>
+            {/* player position token — "YOU · here". The full identity card
+                lives just below the map, so the map only marks the spot. */}
+            <View style={[styles.youToken, { left: SEASON.playerCard.at.x - 30, top: SEASON.playerCard.at.y - 30 }]}>
+              <PersonIcon size={16} color={colors.primary} />
+              <Text style={styles.youTokenTxt}>YOU</Text>
             </View>
-            <Text style={[styles.playerLabel, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y + 48 }]}>
-              YOU — STAGE {progress.completedCount}
+            <Text style={[styles.playerLabel, { left: SEASON.playerCard.at.x - 52, top: SEASON.playerCard.at.y + 36 }]}>
+              YOU · STAGE {playerCard.stageN} / {SEASON.totalStages}
             </Text>
 
             {/* stage nodes */}
@@ -280,6 +353,79 @@ export default function JourneyTab({
                   >
                     {s.key}
                   </Text>
+
+                  {/* Side Quests branching from this stage */}
+                  {s.sideQuests?.map((sq) => {
+                    const sqUnlocked = s.n <= CUR;
+                    const sqDone = !!progress.completed[100 + s.n];
+                    const sqStage: JourneyStage = {
+                      n: 100 + s.n,
+                      key: sq.key,
+                      name: sq.name,
+                      tagline: sq.tagline,
+                      at: sq.at,
+                      chapter: s.chapter,
+                      objectives: sq.objectives,
+                      rewardXp: sq.rewardXp,
+                      rewardBadge: sq.rewardBadge,
+                      quote: sq.quote,
+                      duration: sq.duration,
+                      isSideQuest: true,
+                      parentStageN: s.n,
+                      id: sq.id,
+                      internalSource: sq.internalSource,
+                      internalPatchVersion: sq.internalPatchVersion,
+                      coachExplanation: sq.coachExplanation,
+                      rule: sq.rule,
+                      why: sq.why,
+                      tiles: sq.tiles,
+                      clip: sq.clip,
+                    };
+                    return (
+                      <React.Fragment key={sq.id}>
+                        <Pressable
+                          onPress={() => {
+                            if (!sqUnlocked) {
+                              sfx('fail');
+                            } else {
+                              setSelected(sqStage);
+                              zoomIntoStage(sqStage);
+                            }
+                          }}
+                          hitSlop={8}
+                        >
+                          <View
+                            style={[
+                              styles.node,
+                              { left: sq.at.x - 13, top: sq.at.y - 13, width: 26, height: 26, borderRadius: 13 },
+                              sqDone ? styles.sqNodeDone : sqUnlocked ? styles.sqNodeUnlocked : styles.sqNodeLocked,
+                              selected.n === sqStage.n && { borderColor: 'rgba(238,242,236,0.9)', borderWidth: 1.5 },
+                            ]}
+                          >
+                            {!sqUnlocked ? (
+                              <LockIcon size={8} color="rgba(242,192,120,0.5)" />
+                            ) : sqDone ? (
+                              <CheckIcon size={9} color="#05130a" />
+                            ) : (
+                              <Text style={styles.sqNodeNum}>Q</Text>
+                            )}
+                          </View>
+                        </Pressable>
+                        {/* side quest name beside the node */}
+                        <Text
+                          style={[
+                            styles.stageKey,
+                            sq.at.x > MAP_W / 2
+                              ? { left: sq.at.x + 18, textAlign: 'left' }
+                              : { left: sq.at.x - 118, textAlign: 'right' },
+                            { top: sq.at.y + 14, width: 100, fontSize: 5.6, letterSpacing: 1.5, color: sqDone ? colors.accent : sqUnlocked ? colors.fg : 'rgba(143,184,155,0.4)' },
+                          ]}
+                        >
+                          {sq.key}
+                        </Text>
+                      </React.Fragment>
+                    );
+                  })}
                 </React.Fragment>
               );
             })}
@@ -293,10 +439,48 @@ export default function JourneyTab({
           stageN={CUR}
         />
 
+        {/* ── YOUR CARD — the player's own collectible, derived from receipts.
+            Pairs with the Role Model above: YOUR JOURNEY (evidence) vs THE
+            STANDARD (benchmark), both as instruments. (Principles P1/P2) ── */}
+        <View style={styles.youCardWrap}>
+          <View style={styles.dualTagRow}>
+            <Text style={styles.dualTagGreen}>YOUR CARD · THE EVIDENCE</Text>
+            <Text style={styles.dualTagGold}>vs THE STANDARD</Text>
+          </View>
+          <View style={styles.youCardHolder}>
+            <PlayerCard
+              rating={playerCard.rating}
+              stats={playerCard.stats}
+              stageN={playerCard.stageN}
+              totalStages={playerCard.totalStages}
+              clearedCount={playerCard.clearedCount}
+              ascent={playerCard.ascent}
+              displayName={settings.displayName}
+            />
+          </View>
+          {/* the six honest stats in detail — the bars the card summarises */}
+          <View style={styles.youStatsCard}>
+            <Text style={styles.youStatsTitle}>YOUR RECEIPTS · HOW YOU'RE ACTUALLY PLAYING</Text>
+            <View style={styles.youStatsGap}>
+              {playerCard.stats.map((s, i) => (
+                <StatBar key={s.label} label={s.label} value={s.value} delay={i * 70} />
+              ))}
+            </View>
+            <Text style={styles.youStatsNote}>
+              GREEN WHEN THE EVIDENCE HOLDS · AMBER WHEN IT'S THIN · NEVER PAINTED. THE RATING
+              ONLY RISES WHEN A STAGE CLEARS — YOU CANNOT GRIND IT UP.
+            </Text>
+          </View>
+        </View>
+
         {/* ── stage detail card ── */}
         <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, isLocked && styles.stageCardLocked]}>
           <View style={styles.stageTop}>
-            <Text style={styles.stageSelPill}>STAGE {selected.n} · SELECTED</Text>
+            {selected.isSideQuest ? (
+              <Text style={[styles.stageSelPill, { borderColor: 'rgba(242,192,120,0.5)', color: colors.accent }]}>SIDE QUEST · SELECTED</Text>
+            ) : (
+              <Text style={styles.stageSelPill}>STAGE {selected.n} · SELECTED</Text>
+            )}
             {isLocked ? (
               <View style={styles.statusPill}>
                 <LockIcon size={9} color="rgba(143,184,155,0.7)" />
@@ -329,7 +513,8 @@ export default function JourneyTab({
             </View>
           ) : (
             <>
-              {/* objectives — GRADED LIVE against the vault + the journal */}
+              {/* objectives — GRADED LIVE against the vault + the journal.
+                  Each is now an evidence ring, not a checkbox + "2/3" text. */}
               <View style={styles.objectives}>
                 {(selected.objectives ?? []).map((o, i) => {
                   const count = o.check
@@ -339,33 +524,50 @@ export default function JourneyTab({
                   const done = count >= o.target;
                   return (
                     <View key={i} style={styles.objRow}>
-                      <View style={[styles.objBox, done && styles.objBoxDone]}>
-                        {done && <CheckIcon size={9} color="#05130a" />}
-                      </View>
-                      <Text style={[styles.objLabel, done && styles.objLabelDone]} numberOfLines={1}>
+                      <EvidenceRing
+                        value={shown}
+                        target={o.target}
+                        size={28}
+                        stroke={3.1}
+                        delay={i * 70}
+                        glyph={done ? <CheckIcon size={13} color={colors.primary} /> : undefined}
+                      />
+                      <Text style={[styles.objLabel, done && styles.objLabelDone]} numberOfLines={2}>
                         {o.label}
                       </Text>
                       <Text style={[styles.objStatus, done && { color: colors.primary }]}>
-                        {done ? 'DONE' : `${shown}/${o.target}`}
+                        {done ? 'HIT' : `${shown}/${o.target}`}
                       </Text>
                     </View>
                   );
                 })}
               </View>
 
-              {/* progress */}
-              <View style={styles.progRow}>
-                <Text style={styles.progLbl}>STAGE PROGRESS</Text>
-                <Text style={styles.progPct}>{selected.progressPct ?? 0}%</Text>
-              </View>
-              <View style={styles.progTrack}>
-                <View style={[styles.progFill, { width: `${selected.progressPct ?? 0}%` }]} />
-              </View>
+              {/* progress — FUT 26 Rivals Rank Ladder Progress */}
+              <RivalsRankLadder progressPct={stageLiveProgress} totalSteps={(selected.objectives ?? []).length + 1} />
 
-              {/* reward */}
-              <Text style={styles.reward}>
-                <Text style={styles.rewardHot}>REWARD ›</Text> +{selected.rewardXp} XP · {selected.rewardBadge}
-              </Text>
+              {/* FC 26-grounded Champions capstone — the final climb reads like
+                  the real 15-rank Champions ladder (docs/FC26_UI_RESEARCH.md §6) */}
+              {selected.n === SEASON.totalStages && !selected.isSideQuest && (
+                <ChampionsLadder wins={Math.min(vault.w, 15)} total={15} />
+              )}
+
+              {/* reward — the badge as a real sealed/unsealed medallion + XP */}
+              <View style={styles.rewardRow}>
+                <BadgeMark stage={selected.n} sealed={!!cleared} size={48} />
+                <View style={styles.rewardMeta}>
+                  <Text style={styles.rewardTitle}>
+                    {BADGE_LABELS[selected.n] ?? selected.rewardBadge ?? 'STAGE BADGE'}
+                  </Text>
+                  <Text style={styles.rewardSub}>
+                    {cleared ? 'SEALED · THE EVIDENCE HOLDS' : 'SEALS WHEN THE STAGE CLEARS'}
+                  </Text>
+                </View>
+                <View style={styles.rewardXpBox}>
+                  <Text style={styles.rewardXpNum}>+{selected.rewardXp}</Text>
+                  <Text style={styles.rewardXpLbl}>XP</Text>
+                </View>
+              </View>
 
               {/* coach quote */}
               {selected.quote && (
@@ -379,13 +581,13 @@ export default function JourneyTab({
               )}
 
               {/* CTA — free stages open; paid ones ask once, then open forever */}
-              {needsUnlock(selected.n) ? (
+              {needsUnlock(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) ? (
                 <View style={styles.payWall}>
                   <Text style={styles.payTag}>
-                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.n))}
+                    STAGES 1–{freeStages} ARE FREE · THIS ONE NEEDS {tierName(tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n))}
                   </Text>
                   <Text style={styles.payBody}>
-                    {tierFor(selected.n) >= 2
+                    {tierFor(selected.isSideQuest ? (selected.parentStageN ?? 1) : selected.n) >= 2
                       ? 'The summit stages are PRO. One pass opens every stage, every trick and the film room — for the whole period, not per item.'
                       : 'ACADEMY opens the full journey for the period you pick. Same tier, same access, wherever you are — only the currency changes.'}
                   </Text>
@@ -397,7 +599,7 @@ export default function JourneyTab({
                 </View>
               ) : (
                 <ContinueButton
-                  label={cleared ? 'REPLAY THE FILM ROOM ›' : 'CONTINUE STAGE ›'}
+                  label={cleared ? 'REPLAY FILM ROOM ›' : selected.isSideQuest ? 'START SIDE QUEST ›' : 'CONTINUE STAGE ›'}
                   onPress={() => zoomIntoStage(selected)}
                 />
               )}
@@ -453,6 +655,13 @@ export default function JourneyTab({
           }}
         />
       )}
+      {sheet === 'feed' && (
+        <RoleModelFeedSheet
+          coach={coach}
+          onClose={() => setSheet(null)}
+          onOpenFinish={() => setSheet('rolemodel')}
+        />
+      )}
     </View>
   );
 }
@@ -460,6 +669,107 @@ export default function JourneyTab({
 // ── THE STANDARD — the parallel benchmark journey. Not a second
 // progression track: it moves beside YOUR JOURNEY and reveals the
 // chapter that matches your current stage. Read it. Walk your own road.
+// ── FC 26-grounded Rivals ladder (docs/FC26_UI_RESEARCH.md §6).
+// Mirrors the current game's real ranked structure: you climb STAGES within
+// your division, a WIN STREAK doubles your progress, and a LIMITED CHECKPOINT
+// guards your place before you RANK UP to the next division.
+function RivalsRankLadder({ progressPct, totalSteps = 5 }: { progressPct: number; totalSteps?: number }) {
+  const activeStep = Math.min(totalSteps - 1, Math.floor((progressPct / 100) * totalSteps));
+  const streakOn = progressPct >= 45; // a "streak" lights once you're past the mid climb
+  return (
+    <View style={styles.rivalsTrack}>
+      <Text style={styles.rivalsTrackTitle}>FUT 26 DIV RIVALS LADDER PROGRESS</Text>
+      <Text style={styles.rivalsTrackSub}>
+        STAGES WITHIN YOUR DIVISION · WIN STREAKS DOUBLE PROGRESS · LIMITED CHECKPOINTS GUARD YOUR RANK
+      </Text>
+      <View style={styles.rivalsLineRow}>
+        <View style={styles.rivalsBgLine} />
+        <View style={[styles.rivalsActiveLine, { width: `${progressPct}%` }]} />
+        {Array.from({ length: totalSteps }).map((_, i) => {
+          const stepPct = (i / (totalSteps - 1)) * 100;
+          const isCompleted = progressPct >= stepPct || (i === 0);
+          const isActive = i === activeStep;
+          return (
+            <View
+              key={i}
+              style={[
+                styles.rivalsStepNode,
+                { left: `${stepPct}%` },
+                isCompleted && styles.rivalsStepCompleted,
+                isActive && styles.rivalsStepActive,
+              ]}
+            >
+              {i === totalSteps - 1 ? (
+                <Text style={[styles.rivalsStepGlyph, isCompleted && { color: '#05130a' }]}>★</Text>
+              ) : (
+                <View style={[styles.rivalsStepInnerDot, isCompleted && { backgroundColor: '#05130a' }]} />
+              )}
+              <Text
+                style={[
+                  styles.rivalsStepLabel,
+                  isCompleted ? { color: colors.primary } : { color: colors.muted },
+                  isActive && { color: colors.accent, fontWeight: '900' },
+                ]}
+              >
+                {i === 0 ? 'START' : i === totalSteps - 1 ? 'RANK UP' : i === 1 ? 'STAGE' : `STEP ${i}`}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+      <View style={styles.rivalsMetaRow}>
+        <View style={[styles.rivalsMetaPill, streakOn && styles.rivalsMetaStreak]}>
+          <FlameIcon size={9} color={streakOn ? '#ffcf7a' : 'rgba(143,184,155,0.55)'} />
+          <Text style={[styles.rivalsMetaTxt, streakOn && { color: colors.warm }]}>
+            {streakOn ? 'WIN STREAK ACTIVE' : 'STREAK: NONE'}
+          </Text>
+        </View>
+        <View style={styles.rivalsMetaPill}>
+          <Text style={styles.rivalsMetaTxt}>LIMITED CHECKPOINT · HOLDS</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ── FC 26-grounded Champions ladder (docs/FC26_UI_RESEARCH.md §6).
+// The current game's Champions is a 15-rank ladder where RANK 1 = 15 wins and
+// rewards land per win. Rendered as the "PROVE IT" capstone on the final
+// climb so the app's competitive apex speaks the same ranked language.
+function ChampionsLadder({ wins, total = 15 }: { wins: number; total?: number }) {
+  const shown = Math.min(wins, total);
+  const pct = Math.min(100, (wins / total) * 100);
+  return (
+    <View style={styles.champsTrack}>
+      <View style={styles.champsHeader}>
+        <Text style={styles.champsTitle}>CHAMPIONS RANK LADDER · {total} WINS = RANK 1</Text>
+        <Text style={styles.champsWins}>{wins}/{total} WINS</Text>
+      </View>
+      <View style={styles.champsBarRow}>
+        <View style={styles.champsBgBar} />
+        <View style={[styles.champsFillBar, { width: `${pct}%` }]} />
+      </View>
+      <View style={styles.champsRanksRow}>
+        {[15, 10, 5, 1].map((r) => {
+          const hit = wins >= (total - r + 1);
+          return (
+            <View key={r} style={styles.champsRank}>
+              <View style={[styles.champsRankDot, hit && styles.champsRankDotHit]} />
+              <Text style={[styles.champsRankTxt, hit && { color: colors.primary }]}>RANK {r}</Text>
+            </View>
+          );
+        })}
+        <Text style={[styles.champsRankTxt, { marginLeft: 'auto', color: colors.warm }]}>
+          {shown}/{total} REACHED
+        </Text>
+      </View>
+      <Text style={styles.champsNote}>
+        NO PLAYOFFS IN FC 26 — QUALIFY VIA RIVALS DIVISION + QUALIFICATION POINTS · REWARDS LAND PER WIN
+      </Text>
+    </View>
+  );
+}
+
 function StandardPanel({ chapter, stageN, clearedCount }: { chapter: StandardChapter; stageN: number; clearedCount: number }) {
   return (
     <Animated.View entering={FadeInUp.duration(300)} style={styles.standardCard}>
@@ -562,10 +872,8 @@ const styles = StyleSheet.create({
   headline: {
     marginTop: 12,
     textAlign: 'center',
-    fontFamily: monoFont,
+    ...typeTokens.display,
     fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 3.4,
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.6)',
     textShadowRadius: 12,
@@ -578,6 +886,37 @@ const styles = StyleSheet.create({
     letterSpacing: 2.4,
     color: 'rgba(143,184,155,0.75)',
   },
+
+  chineduCard: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1.2,
+    borderColor: 'rgba(57,255,106,0.35)',
+    backgroundColor: 'rgba(57,255,106,0.04)',
+  },
+  chineduTag: {
+    fontFamily: monoFont,
+    fontSize: 7.2,
+    fontWeight: '800',
+    letterSpacing: 1.8,
+    color: colors.primary,
+  },
+  chineduTitle: {
+    marginTop: 5,
+    fontFamily: monoFont,
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: colors.fg,
+  },
+  chineduText: {
+    marginTop: 8,
+    fontSize: 10.5,
+    lineHeight: 16.5,
+    color: 'rgba(143,184,155,0.9)',
+  },
+
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10, paddingHorizontal: 8 },
   divLine: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.22)' },
   dividerTxt: { fontFamily: monoFont, fontSize: 6.3, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
@@ -604,6 +943,23 @@ const styles = StyleSheet.create({
   playerName: { fontSize: 10, fontWeight: '800', letterSpacing: 1.6, color: colors.fg, marginTop: 2 },
   playerMeta: { fontFamily: monoFont, fontSize: 4.6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
   playerLabel: { position: 'absolute', width: 104, textAlign: 'center', fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.8, color: colors.primary },
+  youToken: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1.4,
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(10,17,12,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 1,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  youTokenTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
 
   pulseRing: {
     position: 'absolute',
@@ -654,6 +1010,186 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(57,255,106,0.35)',
   },
   nodeNum: { fontFamily: monoFont, fontSize: 14, fontWeight: '900', color: colors.fg },
+
+  // Side Quest Node Styles
+  sqNodeDone: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.85,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  sqNodeUnlocked: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(242,192,120,0.12)',
+  },
+  sqNodeLocked: {
+    borderColor: 'rgba(242,192,120,0.25)',
+    backgroundColor: 'rgba(10,17,12,0.95)',
+  },
+  sqNodeNum: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.accent,
+  },
+  rivalsTrack: {
+    marginTop: 14,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,13,0.72)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  rivalsTrackTitle: {
+    fontFamily: monoFont,
+    fontSize: 6.4,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    color: colors.muted,
+    marginBottom: 14,
+    textAlign: 'center',
+  },
+  // the app's own brand-green sub-line — the ladder STRUCTURE carries the
+  // console-ranked nod, the colour stays ProSeasonAcademy's identity
+  rivalsTrackSub: {
+    fontFamily: monoFont,
+    fontSize: 5.2,
+    lineHeight: 8.5,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    color: 'rgba(143,184,155,0.6)',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  rivalsMetaRow: { flexDirection: 'row', gap: 7, marginTop: 2 },
+  rivalsMetaPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.25)',
+    borderRadius: 7,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(10,20,13,0.6)',
+  },
+  rivalsMetaStreak: { borderColor: 'rgba(255,207,122,0.5)', backgroundColor: 'rgba(242,192,120,0.07)' },
+  rivalsMetaTxt: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.1, color: 'rgba(143,184,155,0.8)' },
+  rivalsLineRow: {
+    height: 28,
+    position: 'relative',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  rivalsBgLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#172f21',
+    borderRadius: 2,
+  },
+  rivalsActiveLine: {
+    position: 'absolute',
+    left: 0,
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  rivalsStepNode: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.8,
+    borderColor: '#1f3826',
+    backgroundColor: '#0a0f0a',
+    top: 6,
+    marginLeft: -8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rivalsStepCompleted: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  rivalsStepActive: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(242,192,120,0.3)',
+    transform: [{ scale: 1.25 }],
+  },
+  rivalsStepGlyph: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: colors.accent,
+  },
+  rivalsStepInnerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1f3826',
+  },
+  rivalsStepLabel: {
+    position: 'absolute',
+    top: 20,
+    width: 80,
+    textAlign: 'center',
+    fontFamily: monoFont,
+    fontSize: 5.6,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginLeft: -40,
+    left: 8,
+  },
+
+  // ── 15-rank Champions ladder — the STRUCTURE mirrors the real ranked
+  //    format; the colour stays the app's own green/gold identity ──
+  champsTrack: {
+    marginTop: 12,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.35)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(20,16,8,0.5)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  champsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  champsTitle: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: 'rgba(242,192,120,0.8)' },
+  champsWins: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.warm },
+  champsBarRow: { marginTop: 10, height: 5, borderRadius: 3, backgroundColor: 'rgba(31,56,38,0.8)', overflow: 'hidden' },
+  champsBgBar: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: '#172f21' },
+  champsFillBar: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  champsRanksRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  champsRank: { alignItems: 'center' },
+  champsRankDot: { width: 8, height: 8, borderRadius: 4, borderWidth: 1.3, borderColor: 'rgba(57,255,106,0.5)', backgroundColor: '#0a0f0a' },
+  champsRankDotHit: { backgroundColor: colors.primary, borderColor: colors.primary },
+  champsRankTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  champsNote: {
+    marginTop: 10,
+    fontFamily: monoFont,
+    fontSize: 5.2,
+    lineHeight: 8.5,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textAlign: 'center',
+    color: 'rgba(143,184,155,0.55)',
+  },
+
   currentPill: {
     position: 'absolute',
     backgroundColor: 'rgba(8,13,9,0.95)',
@@ -746,6 +1282,17 @@ const styles = StyleSheet.create({
 
   reward: { marginTop: 11, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.6, color: colors.fg },
   rewardHot: { color: colors.primary, fontWeight: '800' },
+  rewardRow: {
+    marginTop: 13, flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1.1, borderColor: 'rgba(57,255,106,0.4)', borderRadius: 12,
+    backgroundColor: 'rgba(15,26,19,0.55)', paddingVertical: 10, paddingHorizontal: 12,
+  },
+  rewardMeta: { flex: 1 },
+  rewardTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
+  rewardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  rewardXpBox: { alignItems: 'center', borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(57,255,106,0.07)' },
+  rewardXpNum: { fontFamily: monoFont, fontSize: 13, fontWeight: '900', color: colors.primary },
+  rewardXpLbl: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)' },
 
   quoteCard: {
     marginTop: 12,
@@ -821,7 +1368,7 @@ const styles = StyleSheet.create({
   },
   standardHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   standardTitleBlock: { flex: 1 },
-  standardName: { fontFamily: monoFont, fontSize: 12, fontWeight: '900', letterSpacing: 2.6, color: colors.accent },
+  standardName: { ...typeTokens.displayTight, fontSize: 12, color: colors.accent },
   standardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.8, color: 'rgba(242,192,120,0.65)' },
   standardStagePill: {
     borderWidth: 1,
@@ -875,5 +1422,40 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     lineHeight: 9,
     color: 'rgba(143,184,155,0.65)',
+  },
+
+  // ── YOUR CARD hero ──
+  youCardWrap: { marginTop: 16, alignItems: 'center' },
+  dualTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  dualTagGreen: {
+    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary,
+    borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 4, backgroundColor: 'rgba(57,255,106,0.07)',
+  },
+  dualTagGold: {
+    fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+  },
+  youCardHolder: { alignItems: 'center', justifyContent: 'center', paddingVertical: 6 },
+  youStatsCard: {
+    width: '100%',
+    marginTop: 16,
+    borderWidth: 1.1,
+    borderColor: 'rgba(57,255,106,0.4)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(12,20,14,0.9)',
+    padding: 14,
+  },
+  youStatsTitle: {
+    fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.7, color: colors.muted,
+  },
+  youStatsGap: { marginTop: 12, gap: 9 },
+  youStatsNote: {
+    marginTop: 13,
+    fontFamily: monoFont, fontSize: 5.4, lineHeight: 9, letterSpacing: 1.1, color: 'rgba(143,184,155,0.55)',
   },
 });

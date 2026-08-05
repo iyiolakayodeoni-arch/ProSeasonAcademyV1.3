@@ -24,7 +24,7 @@ export async function ytSearch(query, { max = 6 } = {}) {
         title: cleanOutside(title),
         summary: cleanOutside(desc),
         sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
-        sourceName: `YouTube — FC Mobile search`,
+        sourceName: `YouTube — FC 26/27 Console search`,
         via: channel,
       });
       if (items.length >= max) break;

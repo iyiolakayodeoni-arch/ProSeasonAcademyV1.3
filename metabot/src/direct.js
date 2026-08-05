@@ -52,9 +52,9 @@ export function makeDirect() {
     'official-patch': async () => toFindings(await safeCollect('ea news hub', () => eaNews()), { patch: await patch() }),
     'community-disco': async (queries) => {
       const redditStuff = await Promise.all(
-        queries.map((q) => safeCollect('reddit (r/FUTMobile)', () => redditSearch(q))),
+        queries.map((q) => safeCollect('reddit (r/EASportsFC)', () => redditSearch(q))),
       );
-      const ytStuff = await safeCollect('youtube search', () => ytSearch('FC Mobile glitch exploit what works H2H', { max: 5 }));
+      const ytStuff = await safeCollect('youtube search', () => ytSearch('FC 26 27 console glitch exploit what works H2H FUT', { max: 5 }));
       return toFindings([...redditStuff.flat(), ...ytStuff], { patch: await patch() });
     },
     'meta-now': async (queries) => {

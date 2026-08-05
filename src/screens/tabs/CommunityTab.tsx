@@ -52,6 +52,7 @@ import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
 import PricingTable from '../PricingTable';
 import { colors, monoFont } from '../../theme';
+import { isValidReflection } from '../../data/honestyGuard';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
 
@@ -260,8 +261,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   // ── actions ──
   const submit = () => {
-    if (!draft.trim()) return;
-    sendText(st.activeThreadId, draft);
+    const text = draft.trim();
+    if (!text || !isValidReflection(text, { minLength: 2, minWords: 1 })) return;
+    sendText(st.activeThreadId, text);
     setDraft('');
   };
 
@@ -392,6 +394,16 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Text>
         </View>
       ) : null}
+
+      {/* ── THE CHINEDU WAY: ACADEMY COMMUNITY STANDARD ── */}
+      <View style={{ marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 10, backgroundColor: 'rgba(57,255,106,0.03)', paddingHorizontal: 12, paddingVertical: 8 }}>
+        <Text style={{ fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.2, color: colors.primary, textAlign: 'center' }}>
+          THE CHINEDU WAY · PEN TO PAPER BEFORE YOU TYPE
+        </Text>
+        <Text style={{ marginTop: 3, fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, color: 'rgba(143,184,155,0.8)', textAlign: 'center' }}>
+          Record & watch · Pen your moments on paper · 24–30m cool-down · Type your truth into your database. The hard way is the easy way.
+        </Text>
+      </View>
 
       {/* ── message list ── */}
       <ScrollView

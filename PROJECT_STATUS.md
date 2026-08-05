@@ -9,7 +9,7 @@ This document is the single place to check **what the app already does**, **what
 
 ## 1. What the app is (30-second version)
 
-ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach — permanently**. Your coach walks you up a **6-stage journey**. Each stage he teaches you **one mechanic that is actually working in the game right now** (found by your own scouting bot, MetaBot — no third-party apps involved), then a **Match Scan** grades whether you used it in a real match. Pass → XP + badge → next node unlocks. Around that: a Home feed, a Community clubhouse, film-room sessions, and a Role Model collectible card of your coach.
+ProSeasonAcademy is your coaching academy for EA SPORTS FC 26/27 Console. You pick **one coach — permanently**. Your coach walks you up a **6-stage journey**. Each stage he teaches you **one mechanic that is actually working in the game right now** (found by your own scouting bot, MetaBot — no third-party apps involved), then a **Match Scan** grades whether you used it in a real match. Pass → XP + badge → next node unlocks. Around that: a Home feed, a Community clubhouse, film-room sessions, and a Role Model collectible card of your coach.
 
 ---
 
@@ -36,7 +36,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 ### 2.4 Journey tab — the map (TWO different odysseys)
 - **Each coach walks a different path through a different fictional world** — inspired by research on the world's top console players (see `uploads/role-model-player-research.md`), distilled into archetypes with zero real names/likenesses on screen:
   - **CHINEDU — "THE ASHFAULT ASCENT"** (Ruthless Winner × Dominant Prodigy): Cinder Row → The Lean-To → The Saltpits → Long Corridor → Red Lantern End → The Iron Whistle. Mentors: Mama Ukae, Drummer Ezra, Foreman Baba Salt, Locksmith Venn, Night-Watch Kettle, Old Whistle Onye
-  - **OBINNA — "THE MEREHAVEN WAY"** (Iceman × Unlikely Champion): Tide Flats → Lantern Canal → Stillwater Docks → The Fog Gate → Harbour Lights → Calm Water. Mentors: Fisher-Boy Idri, Boatman Sola, Dockmaster Yew, Fogwatcher Nne, Light-Keeper Ama, Elder Mere
+  - **OBINNA — "THE MEREHAVEN WAY"** (Iceman × Unlikely Champion): Tide Flats → Lantern Canal → Stillwater Docks → The Fog Gate → Harbour Lights → Calm Water. Mentors: Fisher-Boy Idri, Boatman Sola, Dockmaster Yew, Fog Keeper Nne, Light-Keeper Ama, Elder Mere
   - Obinna's map even winds in the **opposite direction** (mirrored layout)
 - **Six stages** per path, same mechanical arc (First Touch → … → Showtime), full data per stage: objectives, progress, XP ramp (120 → 400), **place-named badges** (e.g. CINDER ROW BADGE), stage quotes spoken by the fictional mentor who shaped that place
 - Winding dotted path with footprint pips; the path to your current node stays **lit**
@@ -57,7 +57,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 - Message sequence: greeting in his own voice → **voice note bubble** with working play/pause, animated waveform and 0:42 countdown → the mechanic message with **green highlights** → closer ("the scan will know.")
 - **TODAY'S MECHANIC lesson card**, fed live from MetaBot: tags + name + headline + *why it works after the update* + 3 step tiles (icons) + coach's rule strip + clip block with play countdown + a real SOURCE link to the original video/post + traceability line (`TRACKING FEED ITEM mb-…`)
 - **Safe empty states**: if MetaBot approved nothing new, the room shows a clearly-marked "coach is prepping today's mechanic" placeholder; if a mechanic got patched out, a gold "PATCHED OUT" banner appears instead of stale teaching
-- **MATCH SCAN** state machine: armed → scanning → passed/failed, checklist fills with HIT x/y or MISSED per target; fail → "RUN IT BACK"
+- **MATCH SCAN** state machine: ready → scanning → passed/failed, checklist fills with HIT x/y or MISSED per target; fail → "RUN IT BACK"
 
 ### 2.7 XP, badges & the celebration moment 🏆
 - Passing a scan awards real XP + the stage badge, once (replays never double-pay)
@@ -107,7 +107,7 @@ ProSeasonAcademy is your coaching academy for FC Mobile. You pick **one coach �
 
 ### 2.14 Match Vault + the REAL Match Scan — *the scan tells the truth now*
 - **Match Vault** (`src/data/matches.ts`): every match you play, logged in ~15 seconds — score, mode (RANKED/CASUAL/TOURNAMENT), their style (LOW BLOCK/HIGH PRESS/COUNTERS/POSSESSION/LONG BALL/HARD TO TELL), pass accuracy off the post-match screen, and honor chips (no-sprint kept · taught mechanics used · winner's minute · led at 75')
-- **Honor-system ingest, by design**: FC Mobile exposes no official match feed (and we ship zero third-party services). The `source` field is the seam — rows are `'manual'` today, `'scan'` the day automatic ingest exists; nothing else in the app changes
+- **Honor-system ingest, by design**: EA SPORTS FC 26/27 Console exposes no official match feed (and we ship zero third-party services). The `source` field is the seam — rows are `'manual'` today, `'scan'` the day automatic ingest exists; nothing else in the app changes
 - **Objectives are machine-readable now**: every match-provable journey objective carries a `check` spec (26 wired across both journeys — wins, ranked wins, no-sprint wins, pass accuracy, concede-max, goals-vs-style, late winners, close-outs, clean sheets, taught-mechanics wins, journal lines). `objectiveCount()` grades them against the vault *live*
 - **MATCH SCAN reads the vault** (no more scripted resolves): scan card shows THE COACH'S EYE (the live mechanic's watch-items — judged by the coach, not the vault) above THE VAULT SAYS (graded rows: HIT/MISSED with real counts). Pass = every gradable objective genuinely met → stage clears, XP + badge celebration
 - **Auto-read setting honored**: with `matchScanAutoRead` on, opening a room with matches in the vault starts the scan by itself; off → manual START THE SCAN
@@ -131,7 +131,7 @@ These are real, finished UIs wired to a **marked seam** instead of a server. Not
 | Feature | Status today | Why | What makes it 100% real |
 |---------|--------------|-----|------------------------|
 | Accounts / sign-in | Local session | No server yet | Auth service (Supabase/Firebase) plugs into the marked seam — UI won't change |
-| Match Scan result | **REAL — graded from the Match Vault** (§2.14) | Match entry is honor-system because FC Mobile has no official feed | Automatic ingest (on-device post-match read) writes the same vault as `source:'scan'` — UI won't change |
+| Match Scan result | **REAL — graded from the Match Vault** (§2.14) | Match entry is honor-system because EA SPORTS FC 26/27 Console has no official feed | Automatic ingest (on-device post-match read) writes the same vault as `source:'scan'` — UI won't change |
 | Community live traffic & DM replies | Scripted engine (bot members) | Real humans need a realtime chat server | Swap engine for WebSocket feed — UI won't change |
 | Coach voice notes | Player UI + waveform + countdown, no audio | **CUT from v1 by owner decision (26 Jul)** — may return post-launch | Drop-in audio file later; UI already wired |
 | Lesson clip replay | Countdown placeholder + source link | No video pipeline yet | Host the clip → feeds into the in-app player |
@@ -197,12 +197,6 @@ App side: `src/data/backend.ts` + `cloudSync.ts` (outbox, 30s re-probe, unique p
 handles) + community bridge (general/wins/losses mirror server rooms, LIVE chip).
 E2E: two-browser live chat + vault→admin desk all green.
 
-## 2.18 · MATCH WATCHER (THE EYE) + THE MIND (semi-automatic BY DESIGN)
-On-device auto scan: native MatchWatcherService (MediaProjection, ~1fps 96×54 grayscale)
-→ pure ScoreTracker (pixel-change goal detection, 7/7 unit tests) → Match Vault
-AUTOPILOT card (arm/live score/swap sides/full time/prefill AUTO). THE MIND = framed
-as the point: composure dial + one-line debrief, per-coach self-aware framing copy.
-
 ## 2.19 · BASELINE SCAN (5-match interview gate)
 Post-lock flow: CoachSelect → LOCK → CoachIntro (his fictional backstory in his voice)
 → BaselineScanScreen: serious gate (no-AI manifesto, house-rule bluff, NOT READY note)
@@ -215,7 +209,7 @@ matches land in the real vault (source manual, note prefix BASELINE Mn). Data:
 ## 2.20 · STAGE MATCH SCAN v2 (the new scan system INSIDE the coaching stages)
 The full scan ritual now lives inside every stage room, not just the vault/baseline.
 CoachingScreen's MATCH SCAN card carries a gold "SCAN V2" tag and its CTAs open the
-new `StageScanSheet` (full-screen, in-room): PART 1 THE SCAN (score steppers + THE EYE
+new `StageScanSheet` (full-screen, in-room): PART 1 THE SCAN (score steppers + manual console review
 bridge/prefill, mode, opp profile, pass accuracy, honor rows auto-labelled with today's
 mechanic) → PART 2 THE MIND (composure + the SOUL QUESTION from the baseline canon,
 answer ≥12 chars enforced — gated LOG) → THE STORY (funny scoreline beat) + THE READ
@@ -229,14 +223,14 @@ scan 1–0 → STAGE 1 CLEARED + 120 XP + badge.
 
 ## 2.21 · RELEASE BUILD v1.2.0 (everything compiled in)
 Local Gradle release (assembleRelease + bundleRelease) on the full system: baseline,
-cloud sync + live community, THE EYE native watcher (Kotlin compile-checked for the
+cloud sync + live community, manual console review native automated capture (Kotlin compile-checked for the
 first time — fixed RN 0.86 signature/null-safety + manifest quote), THE MIND, and the
 in-room STAGE MATCH SCAN v2. Signed with the academy upload key — cert SHA-256
 832cbd23125b64c5db1e1cad205e8b88fe68745893aed91330661ec40967d01a (same key as the
 first builds; installs as an upgrade). Hermes bundle string-probed: baseline copy,
 STAGE_SCAN_COPY, soul questions, story beats, both fictional journeys + mentors all
-PRESENT. APK 38.1MB / AAB 28.7MB. THE EYE runtime needs one real-phone check
-(MediaProjection consent) — everything else verified end-to-end.
+PRESENT. APK 38.1MB / AAB 28.7MB. manual console review runtime needs one real-phone check
+(console capture consent) — everything else verified end-to-end.
 
 ## 2.22 · REGIONAL MONETIZATION FOUNDATIONS + FOUNDER DESK (v1.3)
 JAN 1 payment split (Africa → credit packs · World → subscription) foundations:
@@ -294,7 +288,7 @@ live E2E battery vs real project (incl. forced SEASON_FULL); v1.3 APK/AAB cut
 
 The product direction (see `MIRROR_DIRECTION.md`) is implemented with the names
 preserved — **Onliversity · ProSeasonAcademy** stay; "Mirror" is the method, "Pro
-Season" the programme, "FC Mobile Pro" the first specialist path.
+Season" the programme, "EA SPORTS FC 26/27 Console Pro" the first specialist path.
 
 - **ONE universal Journey** (`src/data/journey.ts`): the two coach-specific
   fictional roads (Ashfault Ascent / Merehaven Way) are retired as *curriculum*.
@@ -316,7 +310,7 @@ Season" the programme, "FC Mobile Pro" the first specialist path.
   both NEW): the full session replaces the scan as the MAIN QUEST ritual.
   Sequence: THREAD CHECK (carried lesson answered HELD/BROKE first) → INTENTION
   (5 answers + starting composure, before the score) → ARM (official
-  MediaProjection consent via the watcher; manual mode fallback) → LIVE →
+  console capture consent via the automated capture; manual mode fallback) → LIVE →
   HALF-TIME (7 answers + composure) → SECOND HALF → SCORE (logged to the real
   Match Vault as the receipt) → FULL-TIME reflection (7 answers + final
   composure, captured BEFORE the recording) → DIVISION (the player divides the
@@ -338,45 +332,13 @@ Season" the programme, "FC Mobile Pro" the first specialist path.
 - Verified: `npm run typecheck` clean · `npm test` 12/12 · existing ledgers,
   payments, seats and community untouched.
 
-## 2.25 — 2026-08-01 · NATIVE RECORDING MODULE (THE EYE + THE RECORDING)
-
-The last Mirror-direction seam is closed: `plugins/withMatchWatcher.js` (the Expo
-config plugin) was rewritten from a stub into a **real native implementation**
-injected at `expo prebuild` into the generated `android/` project:
-
-- **Official MediaProjection consent** launched from the Activity via
-  `startActivityForResult` (`ActivityEventListener`) — recording never starts
-  silently; declined consent → clean manual-mode fallback.
-- **Foreground service** (`MatchWatcherService`, `foregroundServiceType="mediaProjection"`,
-  notification channel, `POST_NOTIFICATIONS` permission requested on Android 13+).
-- **Two virtual displays off one projection:** 96×54 grayscale `mw-frame` events
-  (~1fps) for the pure ScoreTracker (goal detection unchanged) + a full-resolution
-  **MediaRecorder (H.264 MP4)** that starts ONLY when the match is detected — first
-  goal event auto-calls `beginRecording()`, or the player's MATCH STARTED tap.
-- **Time-based checkpoints** (`mw-checkpoint {half|full}` at ~5.5/11.5 min) auto-pause
-  the Mirror Session; the manual buttons always override.
-- **Stop → local MP4 path** in app-private storage (`files/Movies/match-watcher/`),
-  never uploaded by default; `finishWatcher()` awaits the native `mw-state stopped`
-  event and returns the path; the session stores it on the receipt.
-- **In-app playback** (`expo-video`): the DIVISION and REVIEW phases render the
-  recording with MARK START / MARK END from the timeline and per-moment seek
-  (≈8 recording-seconds per match-minute mapping).
-- TS (`src/data/matchWatcher.ts`) extended: recording state, checkpoints, auto-record
-  on goal, path-returning stop — the hook API is unchanged for callers.
-- Verified: `npm run typecheck` clean · `npm test` 12/12 · plugin prebuild injection
-  verified with a `compileModsAsync` harness (files written, package registered,
-  permissions + service in manifest, TS↔native contract match).
-- ⚠️ Requires a development build (`npx expo run:android` / EAS) — not in Expo Go.
-  First `expo run:android` compiles the Kotlin (JDK 21 / SDK 36); the consent flow
-  still needs one real-phone check (MediaProjection dialog + first recording).
-
 ## 2.26 — 2026-08-01 · THE BASELINE WEEK (the honest 7-day gate)
 
 The 5-match Baseline Scan is now **BASELINE WEEK** — one match a day over seven
 days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 
 - **DAYS 1–5 — one ranked match + review per day.** After each match the player
-  WATCHES the local recording (shared `RecordingPlayer` component, MARK START /
+  WATCHES the local recording (shared `external recording` component, MARK START /
   MARK END from the timeline, per-moment seek), **names the moments where they
   failed** (their words + optional coarse tag), then **analyses EACH moment** with
   nine questions in their own words — what happened / what they were thinking /
@@ -394,13 +356,13 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
   a live countdown and yesterday's review. Lateness is never punished — the gap is
   always 24h from the actual seal, so a player who comes back three days later just
   continues where they are. Nothing is forced: one task a day is the contract.
-- **Recording in the trial:** the day flow arms the same native watcher (consent,
+- **Recording in the trial:** the day flow arms the same native automated capture (consent,
   goal-triggered auto-record, local MP4); in manual mode the timeline fallback
   works. The recording path is stored on the day/entry and the vault receipt keeps
   `BASELINE Mn` notes.
 - Old pre-week sessions **migrate** to the schedule from their existing entries —
   nobody is reset mid-baseline.
-- Verified: `npm run typecheck` clean · `npm test` 18/18 (7 watcher + 5 mirror +
+- Verified: `npm run typecheck` clean · `npm test` 18/18 (7 automated capture + 5 mirror +
   6 baseline-week: day-1 open, 24h gap, lateness, moment completeness, migration,
   full-week flow).
 
@@ -438,3 +400,18 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
   fails soft when denied/unavailable (the REST countdown is the fallback).
   `cancelBaselineUnlocks()` runs on Delete Account so a dead account gets no nags.
 - Verified: typecheck clean · 18/18 tests · web export bundles.
+
+## 2.29 — 2026-08-04 · THE HONESTY GUARD & COACH AUDIT (v1.3)
+
+In ProSeasonAcademy, "The app records the evidence; it never does your thinking for you." Because AI is intentionally refused for the player's psychology and we cannot read minds to detect a lie, we ensure players stay honest when typing by detecting and rejecting nonsense, keyboard mashing, repeated spam, evasive shortcuts, and copy-pasted prompts:
+- **Honesty Guard Engine** (`src/data/honestyGuard.ts`): provides robust, coach-voiced validation (`checkHonesty`, `isValidReflection`, `getHonestyFeedback`) checking against:
+  - **Too short** (`too_short`): enforces minimum character lengths and word counts.
+  - **Keyboard mash** (`keyboard_mash`): detects home-row runs (`qwerty`, `asdfgh`, `zxcvbn`), 6+ consecutive consonants (`/[bcdfghjklmnpqrstvwxz]{6,}/i`), and 4+ identical repeated characters.
+  - **Gibberish** (`gibberish`): flags vowel/consonant imbalance (`< 12%` or `> 88%` vowels in alphabetic strings >= 6 chars) and symbol/number-only input.
+  - **Evasive filler phrases** (`filler_phrase`): blocks lazy dismissals (`"idk"`, `"nothing"`, `"nothing happened"`, `"no idea"`, `"same"`, `"test"`, `"n/a"`) while allowing valid sentences that contain those words.
+  - **Repetitive spam** (`repetitive`): catches triple word repeats (`"test test test"`) and low word diversity (`< 38%` unique words).
+  - **Copied prompt** (`copied_prompt`): detects when a user copies the question/prompt verbatim into their reflection box.
+- **Visual Assurance & Live Feedback** (`src/components/HonestyBadge.tsx`): rendered below typed reflections across `StageScanSheet`, `MirrorSessionScreen`, `BaselineScanScreen`, `LossJournal`, `MatchVault`, `MomentReview`, and `ContactSheet`. Displays coach audit warnings in amber/gold (`⚠️ [HONESTY CHECK] I KNOW WHAT A KEYBOARD MASH SOUNDS LIKE...`) or verification confirmation in bright green (`✓ [HONEST LEDGER] SUBSTANTIVE REFLECTION VERIFIED`).
+- **Enforced at submission gates**: forms in `StageScanSheet`, `MirrorSessionScreen`, `BaselineScanScreen`, `LossJournal` (`addEntry`), `MatchVault`, `CommunityTab` (`submit`), and `ContactSheet` block submission of any text that fails `isValidReflection`.
+- **Unit tested**: 8/8 new tests in `tests/honestyGuard.test.js` integrated into `npm test` (22/22 tests passing across all suites).
+

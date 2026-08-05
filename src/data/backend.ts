@@ -43,9 +43,9 @@ export function getSeasonGate(): SeasonGate | null {
  */
 /** resolve when the promise does, or reject after ms — used so a dead
  *  network never hangs the UI forever */
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+function withTimeout<T>(p: Promise<T> | PromiseLike<T>, ms: number): Promise<T> {
   return Promise.race([
-    p,
+    Promise.resolve(p),
     new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
   ]);
 }
@@ -173,7 +173,7 @@ export async function pushMatches(matches: { clientId: string }[]): Promise<bool
       mechanics_used: Math.round(Number(m.mechanicsUsed ?? m.mechanics_used) || 0),
       led_at75: (m.ledAt75 ?? m.led_at75) == null ? null : !!(m.ledAt75 ?? m.led_at75),
       decisive: m.decisive ?? null,
-      source: m.source === 'watcher' ? 'watcher' : 'manual',
+      source: m.source === 'scan' ? 'scan' : 'manual',
       composure: m.composure == null ? null : Math.round(Number(m.composure)),
       note: m.note ? String(m.note).slice(0, 600) : null,
     }));
@@ -311,7 +311,6 @@ export async function toggleCloudReaction(messageId: number, emoji: string): Pro
 export interface AdminSummary {
   users: number;
   matches: number;
-  watcherMatches: number;
   messages: number;
   matchesThisWeek: number;
   regions: { africa: number; world: number; unset: number };

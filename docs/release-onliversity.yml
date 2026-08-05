@@ -1,0 +1,90 @@
+# Onliversity release pipeline — push to git → live in the Package Manager.
+#
+# When you push to main (or tag v1.4.0, or run it manually), this builds the
+# ProSeasonAcademy APK, then scripts/publish-onliversity.mjs uploads it,
+# updates the PM's catalog, and bumps PSA's in-app update config. Members see
+# the update in the Onliversity PM (and PSA's UpdateBanner) and install it.
+#
+# THIS IS THE PART THAT FEELS LIKE A STORE ON YOUR SIDE: one push, the new
+# version is live for everyone. On the member's side they still tap INSTALL
+# once (Android's rule — silent install is impossible). For pure-JS changes
+# that don't need a new APK, use Expo Updates OTA instead (see RELEASE_PIPELINE.md).
+#
+# Required repo secrets (Settings → Secrets → Actions):
+#   EXPO_TOKEN                  an Expo access token (expo.ai → Access Tokens)
+#   EAS_PROJECT_ID              the EAS project id for ProSeasonAcademy
+#   SUPABASE_URL                https://ymnkphqgjxexsnbgtqvk.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY   CI-only — NEVER in the client app
+# And a public Storage bucket named "onliversity" with onliversity-catalog.json.
+
+name: Release to Onliversity PM
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'App.tsx'
+      - 'src/**'
+      - 'assets/**'
+      - 'app.json'
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'One-line release note'
+        required: false
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install EAS + deps
+        run: |
+          npm ci
+          npm i -g eas-cli
+
+      - name: Read version + versionCode
+        id: v
+        run: |
+          echo "version=$(jq -r .expo.version app.json)" >> $GITHUB_OUTPUT
+          echo "code=$(jq -r .expo.android.versionCode app.json)" >> $GITHUB_OUTPUT
+
+      - name: Build the APK (local on the runner → app-release.apk)
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_PROJECT_ID: ${{ secrets.EAS_PROJECT_ID }}
+        run: |
+          eas build --platform android --profile production \
+            --non-interactive --local --output=app-release.apk
+
+      - name: Publish to the Onliversity PM catalog
+        env:
+          APK_PATH: app-release.apk
+          APP_ID: proseasonacademy
+          APP_NAME: 'ProSeason Academy'
+          APP_PACKAGE: com.onliversity.proseasonacademy
+          VERSION: ${{ steps.v.outputs.version }}
+          VERSION_CODE: ${{ steps.v.outputs.code }}
+          NOTES: ${{ github.event.inputs.notes || github.event.head_commit.message }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/publish-onliversity.mjs
+
+      - name: Attach APK to the Git release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app-release.apk
+          generate_release_notes: true

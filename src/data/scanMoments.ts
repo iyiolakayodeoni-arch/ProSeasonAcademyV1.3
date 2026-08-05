@@ -1,11 +1,13 @@
+import { isValidReflection } from './honestyGuard';
+
 // ─────────────────────────────────────────────────────────────
 // SCAN MOMENTS — the key-moment vocabulary of the MATCH SCAN.
 //
 // The scanner (and the player) tags the moments that make or
-// break a match — NOT the score. Auto markers land from THE EYE
-// (goal for / goal against), player markers land from honest
-// review. Every tag earns a guiding question from the coach:
-// he never hands you the lesson — he asks until you find it.
+// break a match — NOT the score. We do not watch or tag the match
+// for you; all markers land from honest manual review. Every tag
+// earns a guiding question from the coach: he never hands you the
+// lesson — he asks until you find it.
 //
 // The answer to each moment is psychology DATA in the baseline
 // (no lesson written there — he is still reading you) and the
@@ -15,7 +17,7 @@
 
 // ── vocabulary ────────────────────────────────────────────────
 
-/** moments the EYE drops in by itself (score changed) */
+/** goal moments the player can choose to record during manual review */
 export const AUTO_MOMENTS = ['GOAL FOR', 'GOAL AGAINST'] as const;
 
 /** moments the player tags while reviewing their own match */
@@ -47,8 +49,8 @@ export interface TaggedMoment {
   kind: KeyMomentKind;
   when: MomentWindow | null; // null only on EYE-autos before the player sets it
   answer: string; // the player's reasoning under the coach's question
-  auto?: boolean; // tagged by THE EYE, not the player
-  eyeNote?: string; // EYE detail line, e.g. "spotted 12:47 in"
+  auto?: boolean; // retained for legacy records; new entries are manual
+  eyeNote?: string; // retained for legacy records
 }
 
 /** a review is complete when every tag has a window + a real answer */
@@ -56,7 +58,7 @@ export const MOMENT_MIN_ANSWER = 8;
 
 export function momentsComplete(moments: TaggedMoment[]): boolean {
   if (!moments.length) return false;
-  return moments.every((m) => m.when != null && m.answer.trim().length >= MOMENT_MIN_ANSWER);
+  return moments.every((m) => m.when != null && isValidReflection(m.answer, { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
 }
 
 /** top moment kinds across a set of tagged moments — the "tendencies" read */
@@ -171,7 +173,7 @@ const BANKS: Record<string, Record<string, string[]>> = {
 
 /** the question the coach asks for the (index-th) tag of this kind */
 export function momentQuestion(coachId: string, kind: string, index = 0): string {
-  const bank = BANKS[coachId] ?? BANKS.obinna;
-  const list = bank[kind] ?? BANKS.obinna[kind] ?? ['What was your head doing in that moment?'];
+  const bank = BANKS[coachId] ?? BANKS.chinedu;
+  const list = bank[kind] ?? BANKS.chinedu[kind] ?? ['What was your head doing in that moment?'];
   return list[index % list.length];
 }

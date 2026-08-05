@@ -24,7 +24,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'start',
     eyebrow: 'START HERE',
     title: 'YOUR NEXT MOVE',
-    body: 'Your Baseline Week is sealed — the honest part is done. Open JOURNEY and tap Stage 1. Your coach is waiting. Nothing unlocks by tapping; every stage is cleared by evidence.',
+    body: 'Your Baseline Week is sealed — the honest part is done. Open JOURNEY and press Stage 1. Your coach is waiting. Nothing unlocks by pressing buttons; every stage is cleared by evidence.',
     tone: 'green',
   },
   {
@@ -41,10 +41,17 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     tone: 'gold',
   },
   {
+    id: 'chinedu-way',
+    eyebrow: 'THE CHINEDU WAY',
+    title: 'PEN TO PAPER BEFORE YOU TYPE',
+    body: 'There is a special connection a biro has to a book that cannot be typed. Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
+    tone: 'green',
+  },
+  {
     id: 'mirror',
     eyebrow: 'MIRROR SESSION',
     title: 'THE MAIN RITUAL',
-    body: 'Before a match you set an intention. At half-time and full-time you answer in your own words. You mark your key moments, review them, and place your versions beside the evidence. The app never thinks for you.',
+    body: 'Before a match you set an intention. You record your match as usual, watch your tape, and write your moments on paper. After your 24–30 minute cool-down, you type your review into your database. The app never thinks for you.',
   },
   {
     id: 'thread',

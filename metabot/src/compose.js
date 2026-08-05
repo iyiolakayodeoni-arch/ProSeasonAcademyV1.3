@@ -47,7 +47,7 @@ const pick = (arr, seedStr) => {
 
 function headlineFrom(rawTitle, kind) {
   let t = cleanOutside(rawTitle)
-    // strip channel branding tails: "| FC Mobile", "- YouTube", "· Channel"
+    // strip channel branding tails: "| FC 26", "| FC 27", "- YouTube", "· Channel"
     .split(/\s[|\-–·]\s/)[0]
     .replace(/[!?]{2,}/g, '')
     .replace(/^\s*(new|must watch|urgent|insane|broken)\s+/i, '$1 ');
