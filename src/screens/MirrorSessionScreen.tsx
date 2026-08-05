@@ -8,9 +8,14 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
+
+// the lone figure and his shadow — the mirror's face: you against your own tape
+const MIRROR_ART = require('../../assets/art/mirror-drill.jpg');
 import { CheckIcon, ChevronLeftIcon, XMarkIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
@@ -43,7 +48,7 @@ import {
 } from '../data/mirrorSession';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont } from '../theme';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
 
@@ -200,6 +205,8 @@ export default function MirrorSessionScreen({
 }) {
   const mirror = useMirrorSession();
   const thread = useLessonThread();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const [ready, setReady] = useState(false);
 
   // start a fresh session the first time this screen opens
@@ -280,6 +287,9 @@ export default function MirrorSessionScreen({
           onLeave={completed ? () => onClose(true) : handleLeave}
           phaseLabel={phaseLabel[mirror.phase] ?? 'SESSION'}
         />
+        {/* the mirror strip — a photographic spine behind every phase; slim
+            so the questions keep the room */}
+        <ArtBand source={MIRROR_ART} width={bandW} height={58} warmAt={null} grain={0.05} lift={-(bandW / 1.7917 - 58) * 0.9} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {/* ══ THREAD CHECK — the carried lesson must be answered first ══ */}
           {mirror.phase === 'thread-check' && (
@@ -728,8 +738,8 @@ const styles = StyleSheet.create({
   },
   phaseBadgeTxt: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
 
-  heroLine: { marginTop: 18, fontFamily: monoFont, fontSize: 13, fontWeight: '900', letterSpacing: 1.6, color: colors.primary, textShadowColor: 'rgba(57,255,106,0.45)', textShadowRadius: 10 },
-  heroSub: { marginTop: 7, fontSize: 10, lineHeight: 15, color: '#9db4a3' },
+  heroLine: { marginTop: 16, fontFamily: displayFont, fontSize: 22, lineHeight: 24, letterSpacing: 0.6, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.45)', textShadowRadius: 10 },
+  heroSub: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#9db4a3' },
 
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, marginBottom: 4 },
   sectionTitle: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 2, color: colors.muted },

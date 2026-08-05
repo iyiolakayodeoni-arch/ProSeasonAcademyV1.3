@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { checkHonesty, HonestyOptions } from '../data/honestyGuard';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, bodyFontBold } from '../theme';
 
 interface Props {
   text: string;
@@ -62,11 +62,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(242,192,120,0.08)',
   },
   warnTxt: {
-    fontFamily: monoFont,
-    fontSize: 9.5,
-    letterSpacing: 1.1,
+    fontFamily: bodyFontBold,
+    fontSize: 12,
+    lineHeight: 17,
     color: colors.accent,
-    fontWeight: '700',
   },
   okTxt: {
     fontFamily: monoFont,

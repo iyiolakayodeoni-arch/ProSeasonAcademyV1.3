@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import { ChevronLeftIcon, TillIcon, RefreshGlyphIcon } from '../components/Icons';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold } from '../theme';
+
+// the empty seats — the till's face: a seat is what you buy here, nothing else
+const SEATS = require('../../assets/art/seats-till.jpg');
 import * as backend from '../data/backend';
 import PaySheet from './PaySheet';
 import { getCloud } from '../data/cloudSync';
@@ -23,6 +27,8 @@ import { FALLBACK_PRODUCTS, TILL_COPY, StoreProduct } from '../data/store';
 // ─────────────────────────────────────────────────────────────
 
 export default function StoreSheet({ onClose }: { onClose: () => void }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const settings = useSettings();
   const [bundles, setBundles] = useState<Record<string, string[]>>({});
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
@@ -110,13 +116,20 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
   return (
     <Animated.View entering={FadeIn.duration(180)} style={styles.root}>
       <GridBackground />
-      <View style={styles.headerWrap}>
+      {/* the seats band — what a pass actually buys, said in a photograph */}
+      <ArtBand
+        source={SEATS}
+        width={bandW}
+        height={164}
+        warmAt={{ x: bandW * 0.8, y: 46, r: bandW * 0.5 }}
+        style={{ marginTop: -50, marginHorizontal: -16 }}
+      >
         <Text style={styles.eyebrow}>{TILL_COPY.eyebrow}</Text>
-        <Text style={styles.title}>{TILL_COPY.title}</Text>
+        <Text style={styles.bandTitle}>{TILL_COPY.title}</Text>
         <Text style={styles.subtitle}>
           {live ? 'YOUR WALLET, YOUR RISE — SPEND IT WELL' : 'PRICES POSTED · TILL IN TESTING'}
         </Text>
-      </View>
+      </ArtBand>
 
       {/* WHERE YOU STAND — the same three rungs everywhere */}
       {access && (
@@ -237,13 +250,12 @@ export default function StoreSheet({ onClose }: { onClose: () => void }) {
 
 const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 2.2, color: colors.muted },
-  title: { marginTop: 6, fontSize: 19, fontWeight: '900', letterSpacing: 4, color: colors.warm },
-  subtitle: { marginTop: 4, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.5, color: colors.accent, textAlign: 'center' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 2.2, color: colors.warm },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 32, lineHeight: 32, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(238,242,236,0.85)' },
 
   banner: { marginTop: 14, fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 1.2, color: colors.loss, textAlign: 'center', lineHeight: 12 },
-  dim: { marginTop: 8, fontFamily: monoFont, fontSize: 7, letterSpacing: 1, color: colors.muted, lineHeight: 12 },
+  dim: { marginTop: 8, fontFamily: bodyFont, fontSize: 12, color: colors.muted, lineHeight: 17 },
 
   balanceCard: { marginTop: 16, flexDirection: 'row', alignItems: 'center', borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 14, backgroundColor: 'rgba(242,192,120,0.05)', padding: 14 },
   balanceLeft: { flex: 1 },
@@ -266,31 +278,31 @@ const styles = StyleSheet.create({
   cardTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.8 },
 
   packRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 10 },
-  packTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
+  packTitle: { fontFamily: bodyFontBold, fontSize: 13.5, letterSpacing: 0.2, color: colors.fg },
   packMeta: { marginTop: 3, fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.1, color: colors.primary },
   tierNow: {
-    marginHorizontal: 14, marginBottom: 8, borderWidth: 1,
+    marginHorizontal: 14, marginTop: 14, marginBottom: 8, borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(10,22,14,0.8)',
     borderRadius: 10, padding: 11,
   },
   tierNowTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-  tierNowSub: { marginTop: 4, fontFamily: monoFont, fontSize: 6.3, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
+  tierNowSub: { marginTop: 4, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: 'rgba(238,242,236,0.82)' },
   tierFair: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: 'rgba(143,184,155,0.65)' },
   comparePrice: { marginTop: 1, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 0.8, color: 'rgba(143,184,155,0.55)' },
-  priceNote: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, lineHeight: 8.6, letterSpacing: 0.5, color: 'rgba(143,184,155,0.72)' },
+  priceNote: { marginTop: 2, fontFamily: bodyFont, fontSize: 11, lineHeight: 14.5, color: 'rgba(143,184,155,0.85)' },
   packIncludes: { marginTop: 2, fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 0.9, color: colors.accent },
   packPrice: { fontSize: 12, fontWeight: '900', color: colors.warm },
   buyBtn: { backgroundColor: colors.accent, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 8 },
   buyBtnOff: { backgroundColor: 'rgba(46,42,30,1)' },
   buyTxt: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '900', letterSpacing: 1.1, color: '#0a0f0a' },
 
-  howLine: { marginTop: 8, fontFamily: monoFont, fontSize: 6.4, fontWeight: '700', letterSpacing: 1, color: colors.fg, lineHeight: 13 },
-  howFoot: { marginTop: 10, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1, color: colors.muted, lineHeight: 12, fontStyle: 'italic' },
+  howLine: { marginTop: 8, fontFamily: bodyFont, fontSize: 12, color: '#c4d4c8', lineHeight: 17 },
+  howFoot: { marginTop: 10, fontFamily: bodyFontItalic, fontSize: 11.5, color: colors.muted, lineHeight: 16 },
   remark: { marginTop: 9, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.1, color: colors.accent, lineHeight: 13 },
 
   ledgerRow: { marginTop: 9, flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 9 },
   ledgerDelta: { width: 44, fontSize: 12, fontWeight: '900' },
-  ledgerReason: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, color: colors.fg },
+  ledgerReason: { fontFamily: bodyFontBold, fontSize: 12.5, color: colors.fg },
   ledgerRef: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '800', letterSpacing: 1, color: colors.muted },
 
   toolRow: { marginTop: 14 },

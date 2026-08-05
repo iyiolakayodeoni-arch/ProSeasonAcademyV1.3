@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
+
+// the empty dressing room — a private line belongs in a quiet room
+const LOCKERS = require('../../assets/art/locker-room.jpg');
 import * as backend from '../data/backend';
 
 // ─────────────────────────────────────────────────────────────
@@ -27,6 +31,8 @@ const KINDS: { key: backend.ContactKind; label: string }[] = [
 const MIN_LEN = 10;
 
 export default function ContactSheet({ onClose }: { onClose: () => void }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const [kind, setKind] = useState<backend.ContactKind>('question');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -67,13 +73,14 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
     <Animated.View entering={FadeIn.duration(200)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.header}>
+      {/* the quiet-room band — a private line, said as an empty dressing room */}
+      <ArtBand source={LOCKERS} width={bandW} height={120} warmAt={{ x: bandW * 0.5, y: 34, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
         <Text style={styles.eyebrow}>DIRECT LINE</Text>
-        <Text style={styles.title}>TALK TO THE FOUNDER</Text>
+        <Text style={styles.bandTitle}>TALK TO THE FOUNDER</Text>
         <Text style={styles.sub}>
           PRIVATE. NOBODY IN THE HALLS SEES THIS — JUST HIM.
         </Text>
-      </View>
+      </ArtBand>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -183,10 +190,9 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
-  header: { paddingHorizontal: 18, paddingBottom: 8 },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent, textAlign: 'center' },
-  title: { marginTop: 4, fontFamily: monoFont, fontSize: 15, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
-  sub: { marginTop: 4, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.3, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 27, lineHeight: 28, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 10 },
+  sub: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.3, color: 'rgba(238,242,236,0.85)' },
   scroll: { paddingHorizontal: 16, paddingTop: 12 },
 
   card: {

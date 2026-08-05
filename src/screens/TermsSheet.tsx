@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import LogoMark from '../components/LogoMark';
 import { CheckIcon } from '../components/Icons';
 import { useTrailLoop } from '../hooks/useTrailLoop';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
+
+// the seats — the terms are the contract for the seat you are about to hold
+const SEATS = require('../../assets/art/seats-till.jpg');
 import * as backend from '../data/backend';
 
 // ─────────────────────────────────────────────────────────────
@@ -22,6 +26,8 @@ import * as backend from '../data/backend';
 
 export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2000, eraseMs: 2000 });
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const [tos, setTos] = useState<backend.MyTos | null>(null);
   const [readToEnd, setReadToEnd] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -47,12 +53,13 @@ export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
     <Animated.View entering={FadeIn.duration(220)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.header}>
-        <LogoMark size={54} loopProps={loopProps} glowStyle={glowStyle} />
+      {/* the seats band — the contract for the seat, crest and all */}
+      <ArtBand source={SEATS} width={bandW} height={150} warmAt={{ x: bandW * 0.8, y: 44, r: bandW * 0.5 }} style={{ marginTop: -52 }}>
+        <LogoMark size={40} loopProps={loopProps} glowStyle={glowStyle} />
         <Text style={styles.eyebrow}>BEFORE YOU START</Text>
-        <Text style={styles.title}>HOW THIS WORKS</Text>
+        <Text style={styles.bandTitle}>HOW THIS WORKS</Text>
         <Text style={styles.sub}>READ IT ONCE. THEN NOTHING HERE CAN SURPRISE YOU.</Text>
-      </View>
+      </ArtBand>
 
       {daysLeft != null && (
         <View style={styles.deadline}>
@@ -98,9 +105,9 @@ export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 52 },
   header: { alignItems: 'center', paddingHorizontal: 20 },
-  eyebrow: { marginTop: 10, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent },
-  title: { marginTop: 4, fontFamily: monoFont, fontSize: 16, fontWeight: '900', letterSpacing: 2, color: colors.fg },
-  sub: { marginTop: 4, fontFamily: monoFont, fontSize: 6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+  eyebrow: { marginTop: 8, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent },
+  bandTitle: { marginTop: 4, fontFamily: displayFont, fontSize: 29, lineHeight: 30, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 10 },
+  sub: { marginTop: 6, fontFamily: monoFont, fontSize: 6, letterSpacing: 1.2, color: 'rgba(238,242,236,0.85)' },
 
   deadline: {
     marginTop: 12, marginHorizontal: 16, borderWidth: 1,

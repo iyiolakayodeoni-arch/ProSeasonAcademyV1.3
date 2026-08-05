@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import Animated, {
@@ -13,6 +13,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
+import ArtBand from '../components/ArtBand';
+import CoachPresence from '../components/CoachPresence';
+
+// the touchline — the film room is his ground; the whole screen is his room
+const TOUCHLINE = require('../../assets/art/coach-touchline.jpg');
 import LessonAnimation from '../components/LessonAnimation';
 import {
   ArrowOutIcon,
@@ -50,7 +55,7 @@ import { PLAYER_CARD } from '../data/playerCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const VOICE_LEN = 42; // fallback seconds — the real clip reports its own length
@@ -174,6 +179,8 @@ type Props = {
 // ─────────────────────────────────────────────────────────────
 export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2200, eraseMs: 2200 });
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const prog = useJourneyProgress();
   const coachFirst = coach.name.split(' ')[0];
   // the ledgers the scan is graded from
@@ -411,24 +418,32 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   return (
     <View style={styles.root}>
       <GridBackground />
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        {/* ── header ── */}
-        <View style={styles.headerWrap}>
-          <LogoMark size={26} loopProps={loopProps} glowStyle={glowStyle} />
-          <Text style={styles.eyebrow}>
-            STAGE {stage.n} — {stage.key}{stage.duration ? ` · ${stage.duration}` : ''}
-          </Text>
-          <View style={styles.nameRow}>
-            <Text style={styles.coachBig}>{coachFirst}</Text>
-            <OnlineDot />
-            <Text style={styles.online}>ONLINE</Text>
-          </View>
+      {/* ── header — the film room's window onto the touchline ── */}
+      <ArtBand
+        source={TOUCHLINE}
+        width={bandW}
+        height={150}
+        warmAt={{ x: bandW * 0.76, y: 44, r: bandW * 0.5 }}
+        style={{ marginTop: -46 }}
+      >
+        <Text style={styles.eyebrow}>
+          STAGE {stage.n} — {stage.key}{stage.duration ? ` · ${stage.duration}` : ''}
+        </Text>
+        <View style={styles.nameRow}>
+          <LogoMark size={24} loopProps={loopProps} glowStyle={glowStyle} />
+          <Text style={styles.coachBig}>{coachFirst}</Text>
+          <OnlineDot />
+          <Text style={styles.online}>ONLINE</Text>
         </View>
+      </ArtBand>
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
 
-        {/* ── coach identity card ── */}
+        {/* ── coach identity card — he is live, not decorative ── */}
         <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.identity}>
           <View style={styles.avatarWrap}>
-            <Image source={coach.portrait} style={styles.avatar} />
+            <CoachPresence size={46}>
+              <Image source={coach.portrait} style={styles.avatar} />
+            </CoachPresence>
             <View style={styles.onlineBadge} />
           </View>
           <View style={styles.identityText}>
@@ -878,22 +893,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  headerWrap: { alignItems: 'center', paddingTop: 2 },
   eyebrow: {
-    marginTop: 6,
     fontFamily: monoFont,
     fontSize: 7,
     letterSpacing: 2.6,
-    color: 'rgba(143,184,155,0.75)',
+    color: 'rgba(238,242,236,0.9)',
   },
-  nameRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nameRow: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 8 },
   coachBig: {
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 2.2,
+    fontFamily: displayFont,
+    fontSize: 28,
+    lineHeight: 29,
+    letterSpacing: 0.8,
     color: colors.fg,
-    textShadowColor: 'rgba(238,242,236,0.25)',
-    textShadowRadius: 8,
+    textShadowColor: 'rgba(57,255,106,0.45)',
+    textShadowRadius: 10,
   },
   online: {
     fontFamily: monoFont,
@@ -901,7 +915,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.8,
     color: colors.primary,
-    marginTop: 2,
   },
 
   identity: { marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 6 },

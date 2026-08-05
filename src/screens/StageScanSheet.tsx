@@ -1,9 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
+import CoachPresence from '../components/CoachPresence';
 import MomentReview, { makeMoment } from '../components/MomentReview';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
+
+// the match moment — the scan grades what happened out there, not what you meant
+const VAULT_ART = require('../../assets/art/vault-match.jpg');
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
 import { LessonPlan, STAGE_SCAN_COPY, stageSoulQuestion, stageScoreBeat, stageReadLine, parseHot } from '../data/coaching';
@@ -76,7 +81,11 @@ function RichText({ text, style, hotStyle }: { text: string; style: object; hotS
 function CoachBubble({ coach, label, children }: { coach: Coach; label: string; children: React.ReactNode }) {
   return (
     <Animated.View entering={FadeInDown.duration(320)} style={styles.msgRow}>
-      <Image source={coach.portrait} style={styles.msgAvatar} />
+      <View style={{ marginTop: 12 }}>
+        <CoachPresence size={24}>
+          <Image source={coach.portrait} style={styles.msgAvatar} />
+        </CoachPresence>
+      </View>
       <View style={styles.msgCol}>
         <Text style={styles.msgLabel}>{label}</Text>
         <View style={styles.bubble}>{children}</View>
@@ -107,6 +116,8 @@ type Props = {
 };
 
 export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const copy = STAGE_SCAN_COPY[coach.id] ?? STAGE_SCAN_COPY.chinedu;
   const coachFirst = coach.name.split(' ')[0];
   const stern = coach.id === 'chinedu';
@@ -215,13 +226,20 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
     <Animated.View entering={FadeIn.duration(200)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.headerWrap}>
+      {/* the match band — the scan grades what happened out there */}
+      <ArtBand
+        source={VAULT_ART}
+        width={bandW}
+        height={126}
+        warmAt={{ x: bandW * 0.22, y: 38, r: bandW * 0.55 }}
+        style={{ marginTop: -50, marginHorizontal: -16 }}
+      >
         <Text style={styles.eyebrow}>
           STAGE {stage.n} · {stage.key} — MAIN QUEST SESSION
         </Text>
-        <Text style={styles.title}>THE MATCH SCAN</Text>
+        <Text style={styles.bandTitle}>THE MATCH SCAN</Text>
         <Text style={styles.subtitle}>YOU PLAY · THE SCANNER TAGS · HE ASKS · YOU WRITE THE LESSON</Text>
-      </View>
+      </ArtBand>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {phase === 'brief' ? (
@@ -618,13 +636,12 @@ const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
   scroll: { paddingBottom: 26 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
-  subtitle: { marginTop: 4, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: colors.primary, textAlign: 'center' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(238,242,236,0.85)' },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 30, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.5)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(238,242,236,0.85)' },
 
   msgRow: { flexDirection: 'row', marginTop: 14, alignItems: 'flex-start' },
-  msgAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)', marginTop: 12 },
+  msgAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
   msgCol: { flex: 1, marginLeft: 8 },
   msgLabel: { fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 2.2, color: colors.primary, marginBottom: 4, marginLeft: 2 },
   bubble: {

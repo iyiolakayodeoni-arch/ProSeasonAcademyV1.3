@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Svg, { Path, Circle } from 'react-native-svg';
 import Animated, {
@@ -43,7 +43,13 @@ import LossJournal from '../LossJournal';
 import StoreSheet from '../StoreSheet';
 import RoleModelSheet from '../RoleModelSheet';
 import RoleModelFeedSheet from '../RoleModelFeedSheet';
-import { colors, monoFont, type as typeTokens } from '../../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy, type as typeTokens } from '../../theme';
+import EdgeGradient, { QUIET_STOPS } from '../../components/EdgeGradient';
+import ArtBand from '../../components/ArtBand';
+import CoachPresence from '../../components/CoachPresence';
+
+// the walkout tunnel — the journey's face: you step toward the light
+const TUNNEL = require('../../../assets/art/journey-tunnel.jpg');
 
 type StageOrigin = { x: number; y: number };
 
@@ -162,6 +168,9 @@ export default function JourneyTab({
   const scrollRef = useRef<ScrollView>(null);
   const canvasRef = useRef<View>(null);
   const heroRef = useRef<View>(null);
+  const { width: winW } = useWindowDimensions();
+  const colW = Math.min(winW, 430); // App.tsx frames the column on wide screens
+  const bandW = colW - 32; // page padding is 16 a side
 
   const coachFirst = coach.name.split(' ')[0];
   const dimPath = buildMapPath();
@@ -212,19 +221,23 @@ export default function JourneyTab({
           </View>
         </View>
 
-        <Text style={styles.headline}>YOUR JOURNEY</Text>
-        <Text style={styles.subline}>GUIDED BY {coach.name.toUpperCase()} · THE STANDARD SHOWS THE WAY. YOUR EVIDENCE MOVES YOU.</Text>
+        {/* the walkout band — the journey's face: the tunnel photograph, the
+            headline in the display face, everything below stays instruments */}
+        <ArtBand source={TUNNEL} width={bandW} height={168} style={styles.journeyBand} warmAt={{ x: bandW * 0.5, y: 44, r: bandW * 0.6 }}>
+          <Text style={styles.headlineBand}>YOUR JOURNEY</Text>
+          <Text style={styles.sublineBand}>GUIDED BY {coach.name.toUpperCase()} · YOUR EVIDENCE MOVES YOU</Text>
+        </ArtBand>
 
         {/* ── THE CHINEDU WAY: OUR OWN PATH PHILOSOPHY ── */}
         <View style={styles.chineduCard}>
           <Text style={styles.chineduTag}>THE CHINEDU WAY · HOW YOU WALK OUR PATH</Text>
           <Text style={styles.chineduTitle}>PEN TO PAPER BEFORE YOU TYPE · THE HARD WAY IS THE EASY WAY</Text>
           <Text style={styles.chineduText}>
-            1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
-            {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
-            {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
-            {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
-            {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
+            1. RECORD & WATCH — film your match, then watch the tape back.
+            {'\n'}2. PEN TO PAPER — a biro holds what typing forgets. Write the moments down first.
+            {'\n'}3. COOL DOWN 24–30 MIN — let your head settle after full time.
+            {'\n'}4. LOG IT — type your penned truth into your database.
+            {'\n\n'}The hard way is the easy way. Tech should elevate you, never make you dormant.
           </Text>
         </View>
 
@@ -473,8 +486,10 @@ export default function JourneyTab({
           </View>
         </View>
 
-        {/* ── stage detail card ── */}
-        <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, isLocked && styles.stageCardLocked]}>
+        {/* ── stage detail card — the live edge marks it as the active
+            objective panel (locked stages get the quiet edge instead) ── */}
+        <EdgeGradient radius={16} style={{ marginTop: 16 }} stops={isLocked ? QUIET_STOPS : undefined}>
+        <Animated.View key={selected.n} entering={FadeInUp.duration(300)} style={[styles.stageCard, { borderWidth: 0, marginTop: 0, borderRadius: 15 }, isLocked && styles.stageCardLocked]}>
           <View style={styles.stageTop}>
             {selected.isSideQuest ? (
               <Text style={[styles.stageSelPill, { borderColor: 'rgba(242,192,120,0.5)', color: colors.accent }]}>SIDE QUEST · SELECTED</Text>
@@ -501,6 +516,10 @@ export default function JourneyTab({
 
           <Text style={[styles.stageName, isLocked && { color: 'rgba(143,184,155,0.7)' }]}>{selected.name}</Text>
           <Text style={styles.stageTagline}>{selected.tagline.replace('YOUR COACH', coachFirst)}</Text>
+          {/* the console grammar: facts as one dot-separated line, one accent */}
+          <Text style={styles.stageMeta}>
+            {(selected.objectives ?? []).length} OBJECTIVES · REWARD +{selected.rewardXp ?? 100} XP · STAGE {selected.n} OF {SEASON.totalStages}
+          </Text>
           {selected.duration && (
             <Text style={styles.stageDuration}>ESTIMATED TIME TO CLEAR: {selected.duration}</Text>
           )}
@@ -569,10 +588,14 @@ export default function JourneyTab({
                 </View>
               </View>
 
-              {/* coach quote */}
+              {/* coach quote — he speaks from a live presence, not a static stamp */}
               {selected.quote && (
                 <View style={styles.quoteCard}>
-                  <Image source={coach.portrait} style={styles.quoteAvatar} />
+                  <View style={{ marginTop: 2 }}>
+                    <CoachPresence size={28}>
+                      <Image source={coach.portrait} style={styles.quoteAvatar} />
+                    </CoachPresence>
+                  </View>
                   <View style={styles.quoteBody}>
                     <Text style={styles.quoteTxt}>"{selected.quote}"</Text>
                     <Text style={styles.quoteBy}>— {coach.name} · YOUR COACH</Text>
@@ -610,6 +633,7 @@ export default function JourneyTab({
             <Text style={styles.fullMap}>VIEW FULL MAP · {SEASON.totalStages} STAGES</Text>
           </Pressable>
         </Animated.View>
+        </EdgeGradient>
 
         {/* ── THE RECORD — the two ledgers every objective is graded from ── */}
         <View style={styles.ledgerRow}>
@@ -869,22 +893,22 @@ const styles = StyleSheet.create({
   },
   seasonTxt: { fontFamily: monoFont, fontSize: 6.8, letterSpacing: 1.6, color: colors.muted },
 
-  headline: {
-    marginTop: 12,
-    textAlign: 'center',
+  journeyBand: { marginTop: 12, borderRadius: 15 },
+  headlineBand: {
     ...typeTokens.display,
-    fontSize: 17,
-    color: colors.primary,
-    textShadowColor: 'rgba(57,255,106,0.6)',
-    textShadowRadius: 12,
+    fontSize: 30,
+    lineHeight: 30,
+    letterSpacing: 0.6,
+    color: colors.fg,
+    textShadowColor: 'rgba(57,255,106,0.5)',
+    textShadowRadius: 10,
   },
-  subline: {
+  sublineBand: {
     marginTop: 7,
-    textAlign: 'center',
     fontFamily: monoFont,
     fontSize: 7,
     letterSpacing: 2.4,
-    color: 'rgba(143,184,155,0.75)',
+    color: 'rgba(238,242,236,0.85)',
   },
 
   chineduCard: {
@@ -1228,23 +1252,23 @@ const styles = StyleSheet.create({
   stageCardLocked: { borderColor: 'rgba(31,56,38,0.9)', shadowOpacity: 0 },
   stageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   stageSelPill: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 1.8,
+    fontFamily: bodyFontHeavy,
+    fontSize: 9,
+    letterSpacing: 1.6,
     color: colors.muted,
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.35)',
     borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 9, paddingHorizontal: 8, paddingVertical: 3.5 },
   statusDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary },
-  statusTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
-  statusLockedTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
-  stageName: { marginTop: 10, fontSize: 19, fontWeight: '900', letterSpacing: 0.6, color: colors.fg },
-  stageTagline: { marginTop: 5, fontFamily: monoFont, fontSize: 6.6, letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
+  statusTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
+  statusLockedTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.7)' },
+  stageName: { marginTop: 12, fontFamily: displayFont, fontSize: 29, lineHeight: 29, letterSpacing: 0.8, color: colors.fg, textTransform: 'uppercase' },
+  stageTagline: { marginTop: 6, fontFamily: bodyFont, fontSize: 12, letterSpacing: 0.3, color: 'rgba(143,184,155,0.85)' },
+  stageMeta: { marginTop: 8, fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.6, color: colors.primary },
   stageDuration: { marginTop: 5, fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 1.8, color: colors.accent },
 
   lockedNote: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(31,56,38,1)', borderRadius: 12, padding: 12, backgroundColor: 'rgba(15,26,19,0.5)' },
@@ -1262,9 +1286,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   objBoxDone: { backgroundColor: colors.primary, borderColor: colors.primary },
-  objLabel: { flex: 1, fontFamily: monoFont, fontSize: 8.4, letterSpacing: 0.6, color: '#c4d4c8' },
+  objLabel: { flex: 1, fontFamily: bodyFontBold, fontSize: 12.5, letterSpacing: 0.2, color: '#c4d4c8' },
   objLabelDone: { color: 'rgba(143,184,155,0.6)', textDecorationLine: 'line-through' },
-  objStatus: { fontFamily: monoFont, fontSize: 7, fontWeight: '700', letterSpacing: 1, color: 'rgba(143,184,155,0.7)' },
+  objStatus: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '700', letterSpacing: 1, color: 'rgba(143,184,155,0.7)' },
 
   progRow: { marginTop: 13, flexDirection: 'row', justifyContent: 'space-between' },
   progLbl: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 2, color: 'rgba(143,184,155,0.6)' },
@@ -1288,7 +1312,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.55)', paddingVertical: 10, paddingHorizontal: 12,
   },
   rewardMeta: { flex: 1 },
-  rewardTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
+  rewardTitle: { fontFamily: bodyFontBold, fontSize: 12, letterSpacing: 0.8, color: colors.fg },
   rewardSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
   rewardXpBox: { alignItems: 'center', borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: 'rgba(57,255,106,0.07)' },
   rewardXpNum: { fontFamily: monoFont, fontSize: 13, fontWeight: '900', color: colors.primary },
@@ -1304,7 +1328,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.6)',
     padding: 11,
   },
-  quoteAvatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)', marginTop: 2 },
+  quoteAvatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
   quoteBody: { flex: 1 },
   quoteTxt: { fontSize: 10, lineHeight: 15, fontStyle: 'italic', color: '#c4d4c8' },
   quoteBy: { marginTop: 6, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.8, color: colors.primary },

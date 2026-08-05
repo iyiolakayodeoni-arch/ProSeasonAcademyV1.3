@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import LogoMark from '../components/LogoMark';
+import ArtBand from '../components/ArtBand';
 import { Coach } from '../data/coaches';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy } from '../theme';
+
+// the tunnel — orientation looks down the road the week opens onto
+const TUNNEL = require('../../assets/art/journey-tunnel.jpg');
 
 // ─────────────────────────────────────────────────────────────
 // WEEK ORIENTATION — the 30-second handshake between the coach's
@@ -18,18 +21,18 @@ const CARDS: { eyebrow: string; title: string; body: string; tone?: 'green' | 'g
   {
     eyebrow: 'THE NEXT 7 DAYS',
     title: '5 MATCHES · 2 REST DAYS',
-    body: 'Days 1–3: Matches 1, 2, and 3 (build momentum). Day 4: Rest Day 1 (mid-week reflection, no match). Day 5: Match 4. Day 6: Rest Day 2 (pre-finale rest). Day 7: Match 5 (The Finale) & profile seal.',
+    body: 'Days 1–3: Matches 1–3, build momentum. Day 4: rest and mid-week reflection. Day 5: Match 4. Day 6: rest before the finale. Day 7: Match 5 — the Finale — and your profile seals.',
     tone: 'green',
   },
   {
     eyebrow: 'THE CHINEDU WAY',
     title: 'PEN TO PAPER BEFORE YOU TYPE',
-    body: 'For every match: record as usual and watch your tape, write your moments on paper with a biro, cool down for 24–30 mins, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
+    body: 'Record your match, watch the tape, pen your moments with a biro, cool down 24–30 minutes, then type your truth into your database. The hard way is the easy way.',
   },
   {
     eyebrow: 'WHAT FOLLOWS',
     title: 'YOUR ROAD + THE STANDARD',
-    body: 'The week builds your profile. Then the Journey opens: six stages graded by your receipts, The Standard as the benchmark beside you, and the Till when you are ready — first stages free, the pass opens the full road.',
+    body: 'The week builds your profile. Then the Journey opens: six stages graded by your receipts, The Standard beside you, and the Till when you are ready — first stages free, the pass opens the full road.',
     tone: 'gold',
   },
 ];
@@ -39,17 +42,19 @@ export default function WeekOrientationScreen({ coach, onDone }: { coach: Coach;
   const card = CARDS[i];
   const last = i >= CARDS.length - 1;
   const first = coach.name.split(' ')[0].toUpperCase();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   return (
     <View style={styles.root}>
       <GridBackground />
-      <View style={styles.crest}>
-        <LogoMark size={30} />
-      </View>
-
-      <View style={styles.inner}>
+      {/* the road-ahead band — orientation looks down the tunnel the week opens */}
+      <ArtBand source={TUNNEL} width={bandW} height={132} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.6 }}>
         <Text style={styles.eyebrow}>BEFORE THE WEEK · {first} IS YOUR GUIDE</Text>
         <Text style={styles.kicker}>ORIENTATION · {i + 1} / {CARDS.length}</Text>
+      </ArtBand>
+
+      <View style={styles.inner}>
 
         <Animated.View key={card.eyebrow} entering={FadeInRight.duration(280)} style={[styles.card, card.tone === 'gold' && styles.cardGold]}>
           <Text style={[styles.cardEyebrow, card.tone === 'gold' && { color: colors.warm }]}>{card.eyebrow}</Text>
@@ -84,19 +89,16 @@ export default function WeekOrientationScreen({ coach, onDone }: { coach: Coach;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  crest: { alignItems: 'center', paddingTop: 58 },
-  inner: { flex: 1, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 36, justifyContent: 'center' },
+  inner: { flex: 1, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 36, justifyContent: 'center' },
   eyebrow: {
-    textAlign: 'center',
     fontFamily: monoFont,
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 2.4,
-    color: colors.muted,
+    color: 'rgba(238,242,236,0.9)',
   },
   kicker: {
-    marginTop: 8,
-    textAlign: 'center',
+    marginTop: 6,
     fontFamily: monoFont,
     fontSize: 7,
     fontWeight: '800',
@@ -123,13 +125,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2.6,
     color: colors.accent,
   },
-  cardTitle: { marginTop: 12, fontSize: 22, fontWeight: '900', letterSpacing: 2, color: colors.fg },
+  cardTitle: { marginTop: 12, fontFamily: displayFont, fontSize: 27, lineHeight: 28, letterSpacing: 0.6, color: colors.fg },
   cardBody: {
     marginTop: 14,
-    fontFamily: monoFont,
-    fontSize: 9.5,
-    lineHeight: 16,
-    letterSpacing: 0.6,
+    fontFamily: bodyFont,
+    fontSize: 13,
+    lineHeight: 20,
     color: '#b9cabe',
   },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 22 },
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
   cta: {
     marginTop: 22,
     height: 52,
-    borderRadius: 13,
+    borderRadius: 26,
     borderWidth: 1.3,
     borderColor: colors.primary,
     backgroundColor: 'rgba(57,255,106,0.08)',
@@ -146,19 +147,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ctaTxt: {
-    fontFamily: monoFont,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 3,
+    fontFamily: bodyFontHeavy,
+    fontSize: 13.5,
+    letterSpacing: 1.2,
     color: colors.primary,
   },
   skip: {
     marginTop: 16,
     textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontFamily: bodyFont,
+    fontSize: 11.5,
     color: colors.muted,
   },
 });

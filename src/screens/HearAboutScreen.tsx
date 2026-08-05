@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
   FadeInUp,
@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import LogoMark from '../components/LogoMark';
+import ArtBand from '../components/ArtBand';
 import {
   TiktokIcon,
   InstagramIcon,
@@ -20,8 +20,10 @@ import {
   GamepadIcon,
   ElseIcon,
 } from '../components/Icons';
-import { useTrailLoop } from '../hooks/useTrailLoop';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont } from '../theme';
+
+// the huddle — word of mouth is how every grassroots team fills its numbers
+const HUDDLE = require('../../assets/art/community-huddle.jpg');
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -42,7 +44,8 @@ const OPTIONS = [
 
 export default function HearAboutScreen({ onDone }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
-  const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   const press = useSharedValue(0);
   const ctaStyle = useAnimatedStyle(() => ({
@@ -66,27 +69,29 @@ export default function HearAboutScreen({ onDone }: Props) {
     <View style={styles.flex}>
       <GridBackground />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
-        {/* brand crest — top center */}
-        <View style={styles.crestWrap}>
-          <LogoMark size={44} loopProps={loopProps} glowStyle={glowStyle} />
-        </View>
-
-        {/* onboarding stepper */}
-        <Animated.View entering={FadeInUp.duration(320)} style={styles.kickerRow}>
-          <Text style={styles.kicker}>ONBOARDING — FINAL STEP</Text>
-          <View style={styles.dots}>
-            <View style={[styles.dot, styles.dotDim]} />
-            <View style={[styles.dot, styles.dotDim]} />
-            <View style={[styles.dot, styles.dotHot]} />
-          </View>
-        </Animated.View>
-
-        <Animated.Text entering={FadeInUp.delay(60).duration(320)} style={styles.headline}>
-          HOW DID YOU HEAR ABOUT US?
-        </Animated.Text>
-        <Animated.Text entering={FadeInUp.delay(110).duration(320)} style={styles.sub}>
-          one tap — it helps us find more players like you
-        </Animated.Text>
+        {/* the huddle band — the final step of onboarding, said as a team */}
+        <ArtBand
+          source={HUDDLE}
+          width={bandW}
+          height={168}
+          warmAt={{ x: bandW * 0.24, y: 42, r: bandW * 0.55 }}
+          style={{ marginHorizontal: -20, marginTop: -46 }}
+        >
+          <Animated.View entering={FadeInUp.duration(320)} style={styles.kickerRow}>
+            <Text style={styles.kicker}>ONBOARDING — FINAL STEP</Text>
+            <View style={styles.dots}>
+              <View style={[styles.dot, styles.dotDim]} />
+              <View style={[styles.dot, styles.dotDim]} />
+              <View style={[styles.dot, styles.dotHot]} />
+            </View>
+          </Animated.View>
+          <Animated.Text entering={FadeInUp.delay(60).duration(320)} style={styles.headline}>
+            HOW DID YOU HEAR ABOUT US?
+          </Animated.Text>
+          <Animated.Text entering={FadeInUp.delay(110).duration(320)} style={styles.sub}>
+            one tap — it helps us find more players like you
+          </Animated.Text>
+        </ArtBand>
 
         {/* options */}
         <View style={styles.options}>
@@ -184,10 +189,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingHorizontal: 20, paddingTop: 46, paddingBottom: 18 },
 
-  crestWrap: { alignItems: 'center', height: 48 },
-
-  kickerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 4 },
-  kicker: { fontFamily: monoFont, fontSize: 7.5, letterSpacing: 2.6, color: 'rgba(143,184,155,0.75)' },
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  kicker: { fontFamily: monoFont, fontSize: 7.5, letterSpacing: 2.6, color: 'rgba(238,242,236,0.85)' },
   dots: { flexDirection: 'row', gap: 5 },
   dot: { width: 4, height: 4, borderRadius: 2 },
   dotDim: { backgroundColor: 'rgba(143,184,155,0.35)' },
@@ -200,23 +203,19 @@ const styles = StyleSheet.create({
   },
 
   headline: {
-    marginTop: 12,
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 3,
-    color: colors.primary,
-    textShadowColor: 'rgba(57,255,106,0.6)',
+    fontFamily: displayFont,
+    fontSize: 26,
+    lineHeight: 27,
+    letterSpacing: 0.6,
+    color: colors.fg,
+    textShadowColor: 'rgba(57,255,106,0.5)',
     textShadowRadius: 12,
   },
   sub: {
-    marginTop: 8,
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 8,
-    letterSpacing: 1.4,
-    color: 'rgba(143,184,155,0.65)',
+    marginTop: 7,
+    fontFamily: bodyFont,
+    fontSize: 12.5,
+    color: 'rgba(238,242,236,0.8)',
   },
 
   options: { marginTop: 20, gap: 11 },

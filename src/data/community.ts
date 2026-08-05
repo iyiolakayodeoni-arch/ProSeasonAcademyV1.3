@@ -414,19 +414,18 @@ export function startMockTraffic(coach: Coach) {
   const L = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms));
   const coachHandle = 'coach';
 
-  L(1600, () => setTypingOf('general', 'kojo', true));
+  // HONESTY RULE (P1): nobody ever *appears* to type. A typing indicator is a
+  // claim that a human is on the other end right now — and nobody is. The
+  // scripted room just posts messages, like a feed; the day a real person
+  // (the founder, live members) is composing, their typing is real and the
+  // indicator can mean something again. Until then: no theatre.
   L(4300, () => {
-    setTypingOf('general', 'kojo', false);
     append('general', { id: mid(), authorId: 'kojo', at: Date.now(), text: 'gg on the icon pull @PLAYER_44 — bring that luck to the film room' });
   });
-  L(11000, () => setTypingOf('general', 'uche', true));
   L(13900, () => {
-    setTypingOf('general', 'uche', false);
     append('general', { id: mid(), authorId: 'uche', at: Date.now(), text: 'lane change rep count: 40 today. thumbs are cooked but the clips look filthy' });
   });
-  L(20500, () => setTypingOf('general', coachHandle, true));
   L(23200, () => {
-    setTypingOf('general', coachHandle, false);
     append('general', {
       id: mid(),
       authorId: coachHandle,
@@ -438,10 +437,8 @@ export function startMockTraffic(coach: Coach) {
   L(8000, () => append('wins', { id: mid(), authorId: 'dre', at: Date.now(), text: '3–0 night back from the dead. scan passed with room to spare' }));
   L(18000, () => append('coach-updates', { id: mid(), authorId: coachHandle, at: Date.now(), text: 'TOMORROW 6PM — group review. one loss clip each. nobody watches alone.' }));
   L(27000, () => append('losses', { id: mid(), authorId: 'p9', at: Date.now(), text: '1–3 tonight. the press break is NOT clicking for me yet' }));
-  // coach DMs you after the film room kicks off
-  L(31000, () => setTypingOf('dm-coach', coachHandle, true));
+  // coach DMs you after the film room kicks off — it just lands, no fake composing
   L(33600, () => {
-    setTypingOf('dm-coach', coachHandle, false);
     append('dm-coach', { id: mid(), authorId: coachHandle, at: Date.now(), text: 'grass is quiet. the lane change reps you did in ranked? more of that. less sprint.' });
   });
 
@@ -480,9 +477,8 @@ function maybeReply(threadId: string) {
   replyBudget = { ...replyBudget, [threadId]: uses + 1 };
   const pool = DM_REPLIES[dm.userId] ?? DM_REPLIES.p12;
   const line = pool[uses % pool.length];
-  setTimeout(() => setTypingOf(threadId, dm.userId, true), 1200);
+  // the reply lands after a natural pause — but nobody pretends to type
   setTimeout(() => {
-    setTypingOf(threadId, dm.userId, false);
     append(threadId, { id: mid(), authorId: dm.userId, at: Date.now(), text: line });
   }, 3600);
 }

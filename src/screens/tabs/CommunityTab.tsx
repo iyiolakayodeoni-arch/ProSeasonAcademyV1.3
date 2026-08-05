@@ -8,9 +8,14 @@ import {
   TextInput,
   Image,
   ImageSourcePropType,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideInLeft, SlideInRight, SlideOutDown, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
+import ArtBand from '../../components/ArtBand';
+
+// the huddle — the boot room's face: the standard sits on the team, not on chrome
+const HUDDLE = require('../../../assets/art/community-huddle.jpg');
 import {
   ChevronLeftIcon,
   EyeIcon,
@@ -51,7 +56,7 @@ import {
 import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
 import PricingTable from '../PricingTable';
-import { colors, monoFont } from '../../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../../theme';
 import { isValidReflection } from '../../data/honestyGuard';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
@@ -175,6 +180,8 @@ function Dot({ delay }: { delay: number }) {
 // ── main component ────────────────────────────────────────────
 
 export default function CommunityTab({ coach }: { coach: Coach }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430) - 24; // standard card margins are 12 a side
   const st = useCommunityState();
   const cloud = useCloud();
   const users: Record<string, UserWithAvatar> = useMemo(() => {
@@ -395,15 +402,23 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </View>
       ) : null}
 
-      {/* ── THE CHINEDU WAY: ACADEMY COMMUNITY STANDARD ── */}
-      <View style={{ marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 10, backgroundColor: 'rgba(57,255,106,0.03)', paddingHorizontal: 12, paddingVertical: 8 }}>
-        <Text style={{ fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.2, color: colors.primary, textAlign: 'center' }}>
+      {/* ── THE CHINEDU WAY: ACADEMY COMMUNITY STANDARD — riding on the huddle ── */}
+      <ArtBand
+        source={HUDDLE}
+        width={bandW}
+        height={96}
+        veil="light"
+        warmAt={{ x: bandW * 0.24, y: 26, r: bandW * 0.55 }}
+        style={{ marginHorizontal: 12, marginTop: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' }}
+        overlayStyle={{ paddingHorizontal: 13, paddingBottom: 11 }}
+      >
+        <Text style={{ fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.2, color: colors.primary }}>
           THE CHINEDU WAY · PEN TO PAPER BEFORE YOU TYPE
         </Text>
-        <Text style={{ marginTop: 3, fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, color: 'rgba(143,184,155,0.8)', textAlign: 'center' }}>
-          Record & watch · Pen your moments on paper · 24–30m cool-down · Type your truth into your database. The hard way is the easy way.
+        <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.82)' }}>
+          Record & watch · pen your moments first · cool down 24–30m · then log your truth.
         </Text>
-      </View>
+      </ArtBand>
 
       {/* ── message list ── */}
       <ScrollView
@@ -855,8 +870,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(57,255,106,0.5)', backgroundColor: 'rgba(10,26,15,0.85)',
     borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11,
   },
-  consultTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-  consultTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+  consultTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
+  consultTxt: { marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.3, color: 'rgba(238,242,236,0.9)' },
 
   founderWeek: {
     marginHorizontal: 12,
@@ -868,8 +883,8 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 11,
   },
-  founderWeekTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078' },
-  founderWeekTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+  founderWeekTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: '#f2c078' },
+  founderWeekTxt: { marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.3, color: 'rgba(238,242,236,0.9)' },
   flex: { flex: 1 },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 9 },
@@ -886,15 +901,15 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1 },
   titleCol: { flex: 1 },
   titleChannel: {
-    fontFamily: monoFont,
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 0.6,
+    fontFamily: displayFont,
+    fontSize: 22,
+    letterSpacing: 1,
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.5)',
     textShadowRadius: 9,
+    textTransform: 'uppercase',
   },
-  titleName: { fontFamily: monoFont, fontSize: 13.5, fontWeight: '900', letterSpacing: 1 },
+  titleName: { fontFamily: displayFont, fontSize: 19, letterSpacing: 1, textTransform: 'uppercase' },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   liveDot: {
     width: 4.5,
@@ -906,21 +921,21 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 0 },
   },
-  subText: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.6, color: 'rgba(143,184,155,0.75)' },
+  subText: { fontFamily: bodyFontBold, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.75)' },
   headerRule: { height: 1, backgroundColor: 'rgba(57,255,106,0.28)', shadowColor: colors.primary, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
   gateBanner: { marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 10, backgroundColor: 'rgba(242,192,120,0.07)', paddingHorizontal: 12, paddingVertical: 9 },
-  gateBannerTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.2, color: colors.warm, textAlign: 'center', lineHeight: 12 },
+  gateBannerTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 0.8, color: colors.warm, textAlign: 'center', lineHeight: 15 },
 
   searchWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  searchInput: { flex: 1, fontFamily: monoFont, fontSize: 11, color: colors.fg, paddingVertical: 4 },
-  searchCount: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  searchInput: { flex: 1, fontFamily: bodyFontStrong, fontSize: 13, color: colors.fg, paddingVertical: 4 },
+  searchCount: { fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
 
   list: { paddingHorizontal: 13, paddingTop: 12, paddingBottom: 6 },
   dateDivider: {
     alignSelf: 'center',
     marginBottom: 12,
     fontFamily: monoFont,
-    fontSize: 6.2,
+    fontSize: 9,
     letterSpacing: 2.2,
     color: 'rgba(143,184,155,0.55)',
   },
@@ -930,7 +945,7 @@ const styles = StyleSheet.create({
   groupSpacer: { width: 28 },
   msgCol: { flex: 1, marginLeft: 9 },
   msgHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2.5 },
-  handle: { fontSize: 11.5, fontWeight: '900', letterSpacing: 0.3 },
+  handle: { fontFamily: bodyFontBold, fontSize: 12.5, letterSpacing: 0.3 },
   coachBadge: {
     borderWidth: 1,
     borderColor: 'rgba(242,192,120,0.6)',
@@ -938,9 +953,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1.5,
   },
-  coachBadgeTxt: { fontFamily: monoFont, fontSize: 5, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
-  time: { fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
-  body: { fontSize: 11.6, lineHeight: 16.5, color: '#d3ded6' },
+  coachBadgeTxt: { fontFamily: bodyFontHeavy, fontSize: 8, letterSpacing: 1.2, color: colors.accent },
+  time: { fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
+  body: { fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#d3ded6' },
   bodyMuted: { color: 'rgba(143,184,155,0.45)', fontStyle: 'italic' },
   mention: { fontWeight: '900' },
 
@@ -957,16 +972,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.6)',
   },
   pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillCount: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', color: colors.primary },
+  pillCount: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '900', color: colors.primary },
 
   coachDividerRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 6, marginBottom: 12 },
   divLineGlow: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.28)' },
-  coachDividerTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 2.2, color: colors.primary },
+  coachDividerTxt: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 2.2, color: colors.primary },
 
   typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 3 },
   dotsRow: { flexDirection: 'row', gap: 3.5, alignItems: 'center' },
   dot: { width: 3.6, height: 3.6, borderRadius: 2, backgroundColor: colors.primary, opacity: 0.25 },
-  typingTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.75)' },
+  typingTxt: { fontFamily: bodyFontItalic, fontSize: 10, letterSpacing: 1, color: 'rgba(143,184,155,0.75)' },
 
   newPill: {
     position: 'absolute',
@@ -983,7 +998,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  newPillTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
+  newPillTxt: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
 
   squidRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 13, paddingBottom: 6 },
   squadPill: {
@@ -1001,7 +1016,7 @@ const styles = StyleSheet.create({
     shadowRadius: 9,
     shadowOffset: { width: 0, height: 0 },
   },
-  squadPillTxt: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  squadPillTxt: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.8, color: colors.primary },
 
   composer: {
     marginHorizontal: 11,
@@ -1021,7 +1036,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   composeBtn: { padding: 3 },
-  input: { flex: 1, fontFamily: monoFont, fontSize: 10.5, color: colors.fg, paddingVertical: 3 },
+  input: { flex: 1, fontFamily: bodyFontStrong, fontSize: 13, color: colors.fg, paddingVertical: 3 },
   sendBtn: {
     width: 30,
     height: 30,
@@ -1044,13 +1059,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
   },
-  readOnlyTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.8, color: 'rgba(143,184,155,0.6)' },
+  readOnlyTxt: { fontFamily: bodyFontBold, fontSize: 9.5, letterSpacing: 1.6, color: 'rgba(143,184,155,0.6)' },
 
   plusRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingBottom: 7 },
   plusAction: {
-    fontFamily: monoFont,
-    fontSize: 6.6,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 9,
     letterSpacing: 1.5,
     color: colors.primary,
     borderWidth: 1,
@@ -1063,7 +1077,7 @@ const styles = StyleSheet.create({
 
   recWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.loss },
-  recTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 1.4, color: colors.loss },
+  recTxt: { fontFamily: bodyFontBold, fontSize: 10.5, letterSpacing: 1.2, color: colors.loss },
 
   voiceWrap: {
     flexDirection: 'row',

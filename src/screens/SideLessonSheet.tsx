@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import ScreenFlash from '../components/ScreenFlash';
 import LessonAnimation from '../components/LessonAnimation';
+
+// the mirror drill — a side note is a quiet technique, practiced alone
+const MIRROR_ART = require('../../assets/art/mirror-drill.jpg');
 import {
   ArrowOutIcon,
   ChevronLeftIcon,
@@ -16,7 +20,7 @@ import { Coach } from '../data/coaches';
 import { SideLesson } from '../data/sideLesson';
 import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // SIDE LESSON SHEET — the SIDE QUEST, read INSIDE the academy.
@@ -57,6 +61,8 @@ type Props = {
 
 export default function SideLessonSheet({ coach, lesson, origin, onClose }: Props) {
   const coachFirst = coach.name.split(' ')[0];
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   // ── clip countdown, same pattern as the stage room player ──
   const clipTotal = (() => {
@@ -85,17 +91,17 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
     <Animated.View entering={FadeIn.duration(220)} style={styles.root}>
       <GridBackground />
       <ScreenFlash />
+      {/* header — the mirror band carries the side note's name */}
+      <ArtBand source={MIRROR_ART} width={bandW} height={132} warmAt={{ x: bandW * 0.26, y: 40, r: bandW * 0.5 }} style={{ marginTop: -50 }}>
+        <Text style={styles.eyebrow}>
+          {origin === 'home' ? 'HOME · LIVE FEED' : 'STAGE ROOM'} — SIDE QUEST
+        </Text>
+        <Text style={styles.bandTitle}>THE SIDE NOTE</Text>
+        <Text style={styles.subtitle}>
+          RESEARCHED BY THE BOT · APPROVED FOR {coachFirst.toUpperCase()}'S PLAYERS · THE MAIN QUEST IS STILL YOURS
+        </Text>
+      </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        {/* header */}
-        <View style={styles.headerWrap}>
-          <Text style={styles.eyebrow}>
-            {origin === 'home' ? 'HOME · LIVE FEED' : 'STAGE ROOM'} — SIDE QUEST
-          </Text>
-          <Text style={styles.title}>THE SIDE NOTE</Text>
-          <Text style={styles.subtitle}>
-            RESEARCHED BY THE BOT · APPROVED FOR {coachFirst.toUpperCase()}'S PLAYERS · THE MAIN QUEST IS STILL YOURS
-          </Text>
-        </View>
 
         {/* the animated board */}
         <View style={[styles.lessonCard, { marginTop: 14 }]}>
@@ -233,10 +239,9 @@ const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50 },
   scroll: { paddingHorizontal: 16, paddingBottom: 26 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
-  subtitle: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.6, color: colors.primary, textAlign: 'center', lineHeight: 10.5, paddingHorizontal: 10 },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(238,242,236,0.85)' },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 30, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.5)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(238,242,236,0.85)', lineHeight: 10.5 },
 
   lessonCard: {
     borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 16,
