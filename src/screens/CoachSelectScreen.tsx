@@ -16,7 +16,7 @@ import RoleModelCard from '../components/RoleModelCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { getCoach } from '../data/coaches';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold, bodyFontHeavy } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -191,24 +191,24 @@ const styles = StyleSheet.create({
   chev: { fontFamily: monoFont, fontSize: 18, color: 'rgba(143,184,155,0.65)', marginTop: -2 },
 
   eyebrow: {
-    fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 3.2, color: colors.accent,
+    fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 3.2, color: colors.accent,
     textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 8,
   },
   headline: {
-    marginTop: 10, fontSize: 17, fontWeight: '900', letterSpacing: 1.6, color: colors.fg, textAlign: 'center',
+    marginTop: 10, fontFamily: displayFont, fontSize: 27, lineHeight: 27, letterSpacing: 1.2, color: colors.fg, textAlign: 'center', textTransform: 'uppercase',
   },
   sub: {
-    marginTop: 8, fontFamily: monoFont, fontSize: 7.4, lineHeight: 12, letterSpacing: 1.3,
-    color: 'rgba(143,184,155,0.78)', textAlign: 'center', paddingHorizontal: 8,
+    marginTop: 9, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.4,
+    color: 'rgba(143,184,155,0.85)', textAlign: 'center', paddingHorizontal: 8,
   },
 
   cardHolder: { alignItems: 'center', justifyContent: 'center', marginTop: 18, paddingVertical: 8 },
 
-  name: { marginTop: 16, fontSize: 20, fontWeight: '900', letterSpacing: 1.2, color: colors.fg, textAlign: 'center' },
-  role: { marginTop: 5, fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 2, color: colors.accent, textAlign: 'center' },
-  meta: { marginTop: 4, fontFamily: monoFont, fontSize: 6.8, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+  name: { marginTop: 16, fontFamily: displayFont, fontSize: 26, letterSpacing: 1.2, color: colors.fg, textAlign: 'center', textTransform: 'uppercase' },
+  role: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 2, color: colors.accent, textAlign: 'center' },
+  meta: { marginTop: 4, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
   quote: {
-    marginTop: 12, paddingHorizontal: 16, fontStyle: 'italic', fontSize: 11, lineHeight: 16,
+    marginTop: 12, paddingHorizontal: 16, fontFamily: bodyFontItalic, fontSize: 13, lineHeight: 19,
     color: '#cdd9cf', textAlign: 'center',
   },
 
@@ -216,9 +216,9 @@ const styles = StyleSheet.create({
     marginTop: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1,
     borderColor: 'rgba(242,192,120,0.4)', borderRadius: 12, backgroundColor: 'rgba(38,30,12,0.45)',
   },
-  benchmarkTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  benchmarkTag: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.6, color: colors.accent },
   benchmarkBody: {
-    marginTop: 7, fontFamily: monoFont, fontSize: 6.8, lineHeight: 11, letterSpacing: 1, color: 'rgba(238,242,236,0.82)',
+    marginTop: 7, fontFamily: bodyFont, fontSize: 11, lineHeight: 16.5, letterSpacing: 0.4, color: 'rgba(238,242,236,0.85)',
   },
 
   bar: { marginTop: 8 },
@@ -228,11 +228,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.5, shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 }, elevation: 6,
   },
-  lockBtnTxt: { fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 2.4, color: '#05130a' },
+  lockBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 13, letterSpacing: 2.4, color: '#05130a' },
 
   micro: {
-    marginTop: 7, textAlign: 'center', fontFamily: monoFont, fontSize: 6.3, letterSpacing: 1.3,
-    color: 'rgba(143,184,155,0.5)',
+    marginTop: 9, textAlign: 'center', fontFamily: bodyFont, fontSize: 10, letterSpacing: 0.9,
+    color: 'rgba(143,184,155,0.55)',
   },
   footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 2 },
   footer: { fontFamily: monoFont, fontSize: 8, letterSpacing: 2.5, color: 'rgba(143,184,155,0.42)' },
@@ -244,21 +244,21 @@ const styles = StyleSheet.create({
     width: '88%', backgroundColor: colors.surface, borderWidth: 1, borderRadius: 18, padding: 18,
     shadowColor: colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.18, shadowRadius: 24,
   },
-  lockKicker: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 2.6, color: colors.accent },
-  lockTitle: { marginTop: 8, fontSize: 18, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
-  lockBody: { marginTop: 10, fontFamily: monoFont, fontSize: 9.5, lineHeight: 15, color: '#c4d4c8', letterSpacing: 0.3 },
-  lockBodyHot: { color: colors.fg, fontWeight: '800' },
+  lockKicker: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 2.6, color: colors.accent },
+  lockTitle: { marginTop: 8, fontFamily: displayFont, fontSize: 24, letterSpacing: 1.2, color: colors.fg, textTransform: 'uppercase' },
+  lockBody: { marginTop: 10, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 19, color: '#c4d4c8', letterSpacing: 0.3 },
+  lockBodyHot: { color: colors.fg, fontFamily: bodyFontBold },
   sheetBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  ghostBtn: { flex: 1, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  ghostBtnTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '700', letterSpacing: 1.6, color: colors.muted },
+  ghostBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
+  ghostBtnTxt: { fontFamily: bodyFontBold, fontSize: 11, letterSpacing: 1.6, color: colors.muted },
   hotBtn: {
-    flex: 1.3, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+    flex: 1.3, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
   },
-  hotBtnTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1.4, color: '#0a0f0a' },
+  hotBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.4, color: '#0a0f0a' },
 
   lockedFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,11,7,0.97)', alignItems: 'center', justifyContent: 'center' },
-  lockedKicker: { fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 4, color: colors.accent },
-  lockedName: { marginTop: 12, fontSize: 26, fontWeight: '900', letterSpacing: 2, color: colors.fg },
-  lockedSub: { marginTop: 10, fontFamily: monoFont, fontSize: 8, letterSpacing: 2.4, color: colors.muted },
+  lockedKicker: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 4, color: colors.accent },
+  lockedName: { marginTop: 12, fontFamily: displayFont, fontSize: 34, letterSpacing: 2, color: colors.fg, textTransform: 'uppercase' },
+  lockedSub: { marginTop: 10, fontFamily: bodyFont, fontSize: 11, letterSpacing: 2.2, color: colors.muted },
 });

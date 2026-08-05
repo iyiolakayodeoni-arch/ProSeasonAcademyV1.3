@@ -310,6 +310,17 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
-  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  root: { flex: 1, backgroundColor: '#000' },
+  // phone column on wide screens (web preview); full-bleed on actual phones
+  fill: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 430,
+    backgroundColor: colors.bg,
+  },
 });

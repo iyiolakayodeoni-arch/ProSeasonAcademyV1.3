@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import ScreenFlash from '../components/ScreenFlash';
 import RoleModelCard from '../components/RoleModelCard';
 import { ChevronLeftIcon, LockIcon, RouteIcon } from '../components/Icons';
@@ -11,7 +12,10 @@ import { useJourneyProgress } from '../data/progress';
 import { useMatches } from '../data/matches';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
+
+// the tunnel — the finish of the path is a walk-out, not a menu item
+const TUNNEL = require('../../assets/art/journey-tunnel.jpg');
 
 // ─────────────────────────────────────────────────────────────
 // ROLE MODEL SHEET — STAGE 7, THE FINISH.
@@ -74,6 +78,8 @@ type Props = {
 export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props) {
   const prog = useJourneyProgress();
   const vault = useMatches();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const thread = useLessonThread();
   const SEASON = journeySeasonFor(coach.id);
   const cleared = prog.completedCount >= SEASON.totalStages;
@@ -84,12 +90,13 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
     <Animated.View entering={FadeIn.duration(240)} style={styles.root}>
       <GridBackground />
       <ScreenFlash />
+      {/* the tunnel band — the finish is somewhere you walk out to */}
+      <ArtBand source={TUNNEL} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 42, r: bandW * 0.6 }} style={{ marginTop: -50 }}>
+        <Text style={styles.eyebrow}>STAGE {SEASON.totalStages + 1} OF {SEASON.totalStages} · THE FINISH</Text>
+        <Text style={styles.bandTitle}>THE ROLE MODEL</Text>
+        <Text style={styles.subtitle}>{SEASON.title} — WHERE THIS PATH ENDS</Text>
+      </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.headerWrap}>
-          <Text style={styles.eyebrow}>STAGE {SEASON.totalStages + 1} OF {SEASON.totalStages} · THE FINISH</Text>
-          <Text style={styles.title}>THE ROLE MODEL</Text>
-          <Text style={styles.subtitle}>{SEASON.title} — WHERE THIS PATH ENDS</Text>
-        </View>
 
         {/* the card itself, centered */}
         <Animated.View entering={FadeInUp.delay(120).duration(380)} style={styles.cardWrap}>
@@ -263,10 +270,9 @@ const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50 },
   scroll: { paddingHorizontal: 16, paddingBottom: 26 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
-  subtitle: { marginTop: 5, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: colors.primary, textAlign: 'center' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(238,242,236,0.85)' },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 30, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.45)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(238,242,236,0.85)' },
 
   cardWrap: { marginTop: 18, alignItems: 'center' },
   cardHint: { marginTop: 13, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.8, color: 'rgba(143,184,155,0.6)', textAlign: 'center' },

@@ -16,11 +16,13 @@ import Svg, { Circle } from 'react-native-svg';
 import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
 import BadgeMark, { BADGE_LABELS } from '../components/BadgeMark';
+import EdgeGradient from '../components/EdgeGradient';
+import ButtonGlyph from '../components/ButtonGlyph';
 import { CheckRingIcon, ChevronRightIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import { JourneyStage } from '../data/journey';
 import { ScanResult } from '../hooks/useMatchScan';
-import { colors, monoFont, glow, gradeColor } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy, glow, gradeColor } from '../theme';
 import { PLAYER_CARD } from '../data/playerCard';
 
 // ─────────────────────────────────────────────────────────────
@@ -107,6 +109,15 @@ export default function StageClearedSheet({
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
+      {/* the light shaft — the reveal grammar: one angled beam catching the
+          badge as it seals. Quiet, one beat, earned. */}
+      <LinearGradient
+        colors={['rgba(57,255,106,0.14)', 'rgba(57,255,106,0.05)', 'rgba(57,255,106,0)']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.shaft}
+        pointerEvents="none"
+      />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         <Animated.View entering={FadeIn.duration(360)} style={styles.eyebrowWrap}>
           <Text style={styles.eyebrow}>THE EVIDENCE HOLDS</Text>
@@ -160,7 +171,8 @@ export default function StageClearedSheet({
         </View>
 
         {/* the card step — rating counts up by the honest delta */}
-        <Animated.View entering={FadeIn.delay(560).duration(420)} style={styles.cardStep}>
+        <EdgeGradient radius={14} style={{ width: '100%', marginTop: 18 }}>
+        <Animated.View entering={FadeIn.delay(560).duration(420)} style={[styles.cardStep, { borderWidth: 0, marginTop: 0, borderRadius: 13 }]}>
           <Text style={styles.cardStepTag}>YOUR CARD</Text>
           <View style={styles.cardStepRow}>
             <View style={styles.cardStepPrev}>
@@ -180,6 +192,7 @@ export default function StageClearedSheet({
             <Text style={styles.xpAscent}>ASCENT {Math.round(ascentBefore * 100)}% → {Math.round(ascentAfter * 100)}%</Text>
           </View>
         </Animated.View>
+        </EdgeGradient>
 
         {/* the next door — what just opened, honestly */}
         <Animated.View entering={FadeIn.delay(660).duration(420)} style={styles.nextDoor}>
@@ -197,6 +210,8 @@ export default function StageClearedSheet({
 
         <Pressable onPress={onContinue} hitSlop={8}>
           <View style={styles.cta}>
+            {/* glyph-in-pill — the console's signature "press to proceed" beat */}
+            <ButtonGlyph button="CROSS" size={17} />
             <Text style={styles.ctaTxt}>{isFinal ? 'RETURN TO THE MAP ›' : 'BACK TO THE MAP ›'}</Text>
           </View>
         </Pressable>
@@ -245,8 +260,14 @@ const styles = StyleSheet.create({
 
   eyebrowWrap: { alignItems: 'center' },
   eyebrow: {
-    fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 3.4, color: colors.primary,
+    fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 3.4, color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.5)', textShadowRadius: 10,
+  },
+
+  shaft: {
+    position: 'absolute', top: -60, alignSelf: 'center',
+    width: 320, height: 420, borderRadius: 60,
+    transform: [{ rotate: '-16deg' }],
   },
 
   sealWrap: { alignItems: 'center', justifyContent: 'center', marginTop: 18, height: 150, width: 150 },
@@ -256,11 +277,11 @@ const styles = StyleSheet.create({
   },
 
   headline: {
-    marginTop: 14, fontFamily: monoFont, fontSize: 24, fontWeight: '900', letterSpacing: 3,
-    color: colors.fg, textAlign: 'center',
+    marginTop: 14, fontFamily: displayFont, fontSize: 32, letterSpacing: 1.5,
+    color: colors.fg, textAlign: 'center', textTransform: 'uppercase',
   },
   stageName: {
-    marginTop: 6, fontSize: 14, fontWeight: '800', letterSpacing: 2.4, color: colors.primary, textAlign: 'center',
+    marginTop: 7, fontFamily: bodyFontHeavy, fontSize: 14, letterSpacing: 2.6, color: colors.primary, textAlign: 'center', textTransform: 'uppercase',
   },
 
   attest: {
@@ -270,50 +291,51 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.6)',
   },
   attestAvatar: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)' },
-  attestTxt: { flex: 1, fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, letterSpacing: 0.8, fontWeight: '700', color: '#c4d4c8' },
+  attestTxt: { flex: 1, fontFamily: bodyFont, fontSize: 11, lineHeight: 16, letterSpacing: 0.3, color: '#c4d4c8' },
 
   receiptsCard: {
     width: '100%', marginTop: 18, padding: 14,
     borderWidth: 1.1, borderColor: 'rgba(57,255,106,0.4)', borderRadius: 14,
     backgroundColor: 'rgba(12,20,14,0.9)',
   },
-  receiptsTitle: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.8, color: colors.accent, marginBottom: 10 },
-  receiptsEmpty: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
+  receiptsTitle: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.8, color: colors.accent, marginBottom: 10 },
+  receiptsEmpty: { fontFamily: bodyFont, fontSize: 11, letterSpacing: 0.5, color: 'rgba(143,184,155,0.6)' },
   receiptRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  receiptLabel: { flex: 1, fontSize: 10, fontWeight: '700', color: '#cdd9cf' },
-  receiptCount: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+  receiptLabel: { flex: 1, fontFamily: bodyFontBold, fontSize: 12.5, color: '#cdd9cf' },
+  receiptCount: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 1, color: colors.primary },
 
   cardStep: {
     width: '100%', marginTop: 18, padding: 14,
     borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 14,
     backgroundColor: 'rgba(12,20,14,0.94)', ...glow.held,
   },
-  cardStepTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.8, color: colors.muted },
+  cardStepTag: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.8, color: colors.muted },
   cardStepRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 12 },
   cardStepPrev: { alignItems: 'center' },
-  cardStepPrevNum: { fontFamily: monoFont, fontSize: 18, fontWeight: '900', color: 'rgba(143,184,155,0.7)' },
-  cardStepPrevLbl: { fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.4, color: 'rgba(143,184,155,0.5)', marginTop: 2 },
+  cardStepPrevNum: { fontFamily: monoFont, fontSize: 20, fontWeight: '900', color: 'rgba(143,184,155,0.7)' },
+  cardStepPrevLbl: { fontFamily: monoFont, fontSize: 8, letterSpacing: 1.4, color: 'rgba(143,184,155,0.5)', marginTop: 2 },
   cardStepArrow: { alignItems: 'center', gap: 2 },
-  cardStepDelta: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  cardStepDelta: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 0.8 },
   cardStepNext: { alignItems: 'center' },
   xpRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
-  xpTag: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
-  xpAscent: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1, color: colors.muted },
+  xpTag: { fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  xpAscent: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1, color: colors.muted },
 
   nextDoor: {
     width: '100%', marginTop: 16, paddingHorizontal: 14, paddingVertical: 11,
     borderLeftWidth: 2, borderLeftColor: colors.accent,
   },
-  nextDoorTxt: { fontFamily: monoFont, fontSize: 7.4, lineHeight: 12, letterSpacing: 0.8, fontWeight: '700', color: colors.fg },
+  nextDoorTxt: { fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16.5, letterSpacing: 0.3, color: colors.fg },
 
   cta: {
-    marginTop: 22, height: 48, borderRadius: 13, width: '100%',
+    marginTop: 22, height: 50, borderRadius: 25, width: '100%',
+    flexDirection: 'row', gap: 8,
     alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary,
     shadowColor: colors.primary, shadowOpacity: 0.55, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 6,
   },
-  ctaTxt: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 2.4, color: '#05130a' },
+  ctaTxt: { fontFamily: bodyFontHeavy, fontSize: 13, letterSpacing: 2.2, color: '#05130a' },
 
-  foot: { marginTop: 16, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 2.2, color: 'rgba(143,184,155,0.45)' },
+  foot: { marginTop: 16, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2.2, color: 'rgba(143,184,155,0.45)' },
 
   // AscentRing internals
   ringWrap: { alignItems: 'center', justifyContent: 'center', width: 76, height: 76 },

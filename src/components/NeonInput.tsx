@@ -6,7 +6,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, monoFont } from '../theme';
+import { colors, bodyFontStrong } from '../theme';
 
 const BLUR_BORDER = 'rgba(57,255,106,0.3)';
 
@@ -54,11 +54,11 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   input: {
-    height: 52,
+    height: 54,
     paddingHorizontal: 16,
-    fontFamily: monoFont,
-    fontSize: 11,
-    letterSpacing: 2,
+    fontFamily: bodyFontStrong,
+    fontSize: 14,
+    letterSpacing: 0.5,
     color: colors.fg,
   },
 });

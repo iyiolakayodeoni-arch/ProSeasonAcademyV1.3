@@ -6,8 +6,23 @@ import { LOOP_PATH_LENGTH } from '../hooks/useSplashAnimation';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-// The twin-arc journey crest: two neon loops + winding white trail + gold flag.
-// `loopProps`/`glowStyle` come from useTrailLoop (or useSplashAnimation on the splash).
+// ─────────────────────────────────────────────────────────────────────────
+// THE FLOODLIGHT CREST — ProSeasonAcademy's club mark.
+//
+// Three elements, each earned (nothing decorative):
+//   • an angular console-era shield in neon — the esports silhouette,
+//   • a gold floodlight head — night training; the grind under lights,
+//   • a ball and an ascent trail with waypoints rising toward the light —
+//     the journey IS the evidence. The white trail is the same animated
+//     draw/erase loop the previous mark ran (`loopProps` from useTrailLoop).
+//
+// API unchanged: every screen that renders <LogoMark/> swaps to the crest.
+// ─────────────────────────────────────────────────────────────────────────
+
+// the shield — flat top, chamfered shoulders, pointed base (tall club cut)
+const SHIELD = 'M 30 16 H 70 L 76 21 V 52 L 50 84 L 24 52 V 21 Z';
+// the road to the light — the animated white trail
+const TRAIL = 'M 33 63 C 36 57, 42 55, 45 50 C 49 44, 56 43, 60 38 C 62 36, 64 35, 65 34';
 
 type Props = {
   size?: number;
@@ -19,37 +34,29 @@ export default function LogoMark({ size = 132, loopProps, glowStyle }: Props) {
   return (
     <Animated.View style={glowStyle}>
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        {/* left loop — layered strokes for the neon glow */}
-        <Path
-          d="M 44 36 C 38 26, 30 24, 22 24 C 10 24, 4 36, 4 50 C 4 64, 10 76, 22 76 C 30 76, 38 74, 44 64"
-          stroke={colors.primary} strokeWidth="9" strokeLinecap="round" fill="none" opacity={0.22}
-        />
-        <Path
-          d="M 44 36 C 38 26, 30 24, 22 24 C 10 24, 4 36, 4 50 C 4 64, 10 76, 22 76 C 30 76, 38 74, 44 64"
-          stroke={colors.primary} strokeWidth="6.5" strokeLinecap="round" fill="none" opacity={0.5}
-        />
-        <Path
-          d="M 44 36 C 38 26, 30 24, 22 24 C 10 24, 4 36, 4 50 C 4 64, 10 76, 22 76 C 30 76, 38 74, 44 64"
-          stroke={colors.primary} strokeWidth="4.6" strokeLinecap="round" fill="none"
-        />
-        {/* right loop */}
-        <Path
-          d="M 56 36 C 62 26, 70 24, 78 24 C 90 24, 96 36, 96 50 C 96 64, 90 76, 78 76 C 70 76, 62 74, 56 64"
-          stroke={colors.primary} strokeWidth="9" strokeLinecap="round" fill="none" opacity={0.22}
-        />
-        <Path
-          d="M 56 36 C 62 26, 70 24, 78 24 C 90 24, 96 36, 96 50 C 96 64, 90 76, 78 76 C 70 76, 62 74, 56 64"
-          stroke={colors.primary} strokeWidth="6.5" strokeLinecap="round" fill="none" opacity={0.5}
-        />
-        <Path
-          d="M 56 36 C 62 26, 70 24, 78 24 C 90 24, 96 36, 96 50 C 96 64, 90 76, 78 76 C 70 76, 62 74, 56 64"
-          stroke={colors.primary} strokeWidth="4.6" strokeLinecap="round" fill="none"
-        />
-        {/* winding white journey trail — animates in/out forever */}
+        {/* the shield — three layered strokes build the neon glow */}
+        <Path d={SHIELD} stroke={colors.primary} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="rgba(57,255,106,0.05)" opacity={0.22} />
+        <Path d={SHIELD} stroke={colors.primary} strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" fill="rgba(57,255,106,0.05)" opacity={0.5} />
+        <Path d={SHIELD} stroke={colors.primary} strokeWidth="4.4" strokeLinecap="round" strokeLinejoin="round" fill="rgba(57,255,106,0.05)" />
+
+        {/* the floodlight — gold mast, angled lamp rail with three heads, two rays */}
+        <Path d="M 50 36 L 50 28.5" stroke={colors.accent} strokeWidth="1.8" strokeLinecap="round" />
+        <Path d="M 38 30 L 62 27" stroke={colors.accent} strokeWidth="1.8" strokeLinecap="round" />
+        <Circle cx="41" cy="29.5" r="1.9" fill={colors.accent} />
+        <Circle cx="50" cy="28.6" r="1.9" fill={colors.accent} />
+        <Circle cx="59" cy="27.7" r="1.9" fill={colors.accent} />
+        <Path d="M 40 33 L 36.5 39.5" stroke={colors.accent} strokeWidth="1" strokeLinecap="round" opacity={0.55} />
+        <Path d="M 60 31 L 63.5 37.5" stroke={colors.accent} strokeWidth="1" strokeLinecap="round" opacity={0.55} />
+
+        {/* the ball — where every season starts */}
+        <Circle cx="33" cy="66" r="3.4" stroke={colors.fg} strokeWidth="1.6" fill="none" />
+        <Circle cx="33" cy="66" r="1" fill={colors.fg} />
+
+        {/* the ascent trail — draws on and off forever */}
         <AnimatedPath
-          d="M 30 82 C 12 62, 48 58, 48 48 C 48 38, 84 34, 68 14"
+          d={TRAIL}
           stroke={colors.fg}
-          strokeWidth="3.4"
+          strokeWidth="2.4"
           strokeLinecap="round"
           fill="none"
           strokeDasharray={`${LOOP_PATH_LENGTH} ${LOOP_PATH_LENGTH}`}
@@ -59,13 +66,10 @@ export default function LogoMark({ size = 132, loopProps, glowStyle }: Props) {
           animatedProps={loopProps}
           opacity={0.95}
         />
-        {/* waypoint dots + gold destination flag */}
-        <Circle cx="30" cy="82" r="3.6" fill={colors.fg} opacity={0.5} />
-        <Circle cx="38" cy="62" r="2.8" fill={colors.fg} />
-        <Circle cx="48" cy="48" r="2.8" fill={colors.fg} />
-        <Circle cx="62" cy="32" r="2.8" fill={colors.fg} />
-        <Circle cx="68" cy="14" r="4.6" fill={colors.accent} />
-        <Path d="M 68 14 L 71.5 9.5 L 75 14 L 71.5 18.5 Z" fill={colors.accent} />
+        {/* waypoints up the climb + the gold destination under the light */}
+        <Circle cx="47" cy="50" r="1.7" fill={colors.fg} />
+        <Circle cx="58" cy="41.5" r="1.7" fill={colors.fg} />
+        <Circle cx="64.5" cy="34" r="2.1" fill={colors.accent} />
       </Svg>
     </Animated.View>
   );

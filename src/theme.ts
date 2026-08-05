@@ -31,6 +31,22 @@ export const colors = {
 
 export const monoFont = 'monospace';
 
+// ── FACES (visual POC, splash v2). The monospace stays the voice of the
+//    LEDGER — numbers, receipts, versions. These two faces carry the HUMAN
+//    voice: a heavy condensed display face for the wordmark/headlines
+//    (the sports-broadcast register) and a humanist sans for prose/status.
+//    Loaded via expo-font (@expo-google-fonts/anton & /barlow); the splash
+//    gates its progress bar on these being ready, so nothing ever flashes
+//    in a fallback face.
+export const displayFont = 'Anton_400Regular';
+export const bodyFont = 'Barlow_500Medium';
+export const bodyFontItalic = 'Barlow_500Medium_Italic';
+export const bodyFontStrong = 'Barlow_600SemiBold';
+export const bodyFontBold = 'Barlow_700Bold';
+export const bodyFontHeavy = 'Barlow_800ExtraBold';
+// NOTE — the splash's useFonts list gates on all six Barlow/Anton faces above
+// being ready; if a face is added here, add it to SplashScreen's list too.
+
 // ── Semantic roles. Named for meaning, not hex, so a future re-skin is one
 //    edit. They point at the palette above so the whole app stays coherent.
 export const role = {

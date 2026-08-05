@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking, Platform, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import LogoMark from '../components/LogoMark';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { CheckRingIcon, ChevronLeftIcon } from '../components/Icons';
@@ -10,7 +11,10 @@ import { PSA_DOWNLOAD_URL } from '../config';
 import { sendContact } from '../data/backend';
 import { getSettings } from '../data/settings';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy } from '../theme';
+
+// the dressing room — install help is just getting your own boots on
+const LOCKERS = require('../../assets/art/locker-room.jpg');
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -61,6 +65,8 @@ export default function SideloadAssistant({ onClose }: { onClose: () => void }) 
   const [stuckNote, setStuckNote] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   const markDone = (n: number) => {
     sfx('tap');
@@ -94,16 +100,17 @@ export default function SideloadAssistant({ onClose }: { onClose: () => void }) 
         <ChevronLeftIcon size={15} color={colors.fg} />
       </Pressable>
 
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.crestWrap}>
-          <LogoMark size={54} loopProps={loopProps} glowStyle={glowStyle} />
-        </View>
+      {/* the dressing-room band — getting in is just getting your boots on */}
+      <ArtBand source={LOCKERS} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 38, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
+        <LogoMark size={34} loopProps={loopProps} glowStyle={glowStyle} />
         <Text style={styles.eyebrow}>INSTALL HELP</Text>
-        <Text style={styles.headline}>GET IN IN FOUR STEPS</Text>
+        <Text style={styles.bandTitle}>GET IN IN FOUR STEPS</Text>
         <Text style={styles.sub}>
-          NO APP STORE — YOU INSTALL THE FILE YOURSELF. IT IS ONE FILE AND IT IS SAFE. FOLLOW THESE
-          IN ORDER. STUCK ON A STEP? TELL THE FOUNDER AT THE BOTTOM — HE WALKS YOU THROUGH IT.
+          No app store — you install one file yourself, in this order. Stuck? The founder is at the bottom.
         </Text>
+      </ArtBand>
+
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
 
         {STEPS.map((s, i) => {
           const on = active === s.n;
@@ -171,12 +178,11 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   scroll: { paddingHorizontal: 16, paddingBottom: 20 },
-  crestWrap: { alignItems: 'center', marginBottom: 8 },
-  eyebrow: { textAlign: 'center', fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 3, color: colors.accent },
-  headline: { textAlign: 'center', marginTop: 6, fontSize: 19, fontWeight: '900', letterSpacing: 2, color: colors.fg },
+  eyebrow: { marginTop: 6, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 3, color: colors.accent },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 27, lineHeight: 28, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.45)', textShadowRadius: 10 },
   sub: {
-    marginTop: 8, textAlign: 'center', fontFamily: monoFont, fontSize: 7, lineHeight: 12, letterSpacing: 1.1,
-    color: 'rgba(143,184,155,0.78)', paddingHorizontal: 6, marginBottom: 16,
+    marginTop: 7, fontFamily: bodyFont, fontSize: 12, lineHeight: 16.5,
+    color: 'rgba(238,242,236,0.85)',
   },
   step: {
     borderWidth: 1.1, borderColor: 'rgba(31,56,38,0.9)', borderRadius: 14, backgroundColor: 'rgba(12,20,14,0.7)',
@@ -191,13 +197,13 @@ const styles = StyleSheet.create({
   },
   stepNumDone: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.12)' },
   stepNumTxt: { fontFamily: monoFont, fontSize: 12, fontWeight: '900', color: colors.primary },
-  stepTitle: { flex: 1, fontSize: 13, fontWeight: '900', letterSpacing: 0.6, color: colors.fg },
-  stepBody: { marginTop: 8, fontSize: 10.5, lineHeight: 16, color: '#c4d4c8' },
+  stepTitle: { flex: 1, fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.4, color: colors.fg },
+  stepBody: { marginTop: 8, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18.5, color: '#c4d4c8' },
   dlBtn: {
     marginTop: 10, borderWidth: 1.1, borderColor: colors.primary, borderRadius: 10, backgroundColor: 'rgba(57,255,106,0.08)',
     paddingVertical: 10, alignItems: 'center',
   },
-  dlBtnTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  dlBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 12.5, letterSpacing: 0.8, color: colors.primary },
   stepFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
   ghostBtn: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
   linkBtn: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
@@ -207,7 +213,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(38,30,12,0.5)', padding: 14,
   },
   stuckTag: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.8, color: colors.accent },
-  stuckBody: { marginTop: 7, fontFamily: monoFont, fontSize: 6.6, lineHeight: 11, letterSpacing: 0.9, color: 'rgba(238,242,236,0.82)' },
+  stuckBody: { marginTop: 7, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: 'rgba(238,242,236,0.82)' },
   stuckBtn: {
     marginTop: 11, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },

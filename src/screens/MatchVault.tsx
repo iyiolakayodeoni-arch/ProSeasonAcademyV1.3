@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import { colors, monoFont } from '../theme';
+import ArtBand from '../components/ArtBand';
+import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy } from '../theme';
+
+// the match moment — the vault's face: receipts are earned under these lights
+const VAULT_ART = require('../../assets/art/vault-match.jpg');
 import { Coach } from '../data/coaches';
 import {
   MATCH_MODES,
@@ -72,6 +76,8 @@ function Stepper({ value, onChange, min, max, accent }: { value: number; onChang
 export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: () => void }) {
   const v = useMatches();
   const coachFirst = coach.name.split(' ')[0].toUpperCase();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   // ── composer state ──
   const [gf, setGf] = useState(0);
@@ -145,11 +151,18 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
     <Animated.View entering={FadeIn.duration(200)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.headerWrap}>
+      {/* the match band — the vault's face: every receipt below was earned here */}
+      <ArtBand
+        source={VAULT_ART}
+        width={bandW}
+        height={158}
+        warmAt={{ x: bandW * 0.22, y: 44, r: bandW * 0.55 }}
+        style={{ marginTop: -50, marginHorizontal: -16 }}
+      >
         <Text style={styles.eyebrow}>{coachFirst} GRADES WHAT YOU LOG</Text>
-        <Text style={styles.title}>MATCH VAULT</Text>
+        <Text style={styles.bandTitle}>MATCH VAULT</Text>
         <Text style={styles.subtitle}>HONOR-SYSTEM INGEST — MANUAL CONSOLE LOG</Text>
-      </View>
+      </ArtBand>
 
       {/* stats */}
       <View style={styles.statStrip}>
@@ -187,7 +200,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
           </View>
           <Text style={styles.watchTagline}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
           <Text style={styles.watchNote}>
-            There is a special connection a biro has to a book that cannot be typed. Watch your match recording, then pen the key moments and unusual things that happened in your match on paper. Let your mind cool down for 24–30 minutes, then open the app and type your results so we can store them in your database. In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way — tech is meant to elevate and not make you dormant. That is the Chinedu Way.
+            Watch your match back. Pen the key moments, cool down 24–30 minutes, then type your truth in. The hard way is the easy way — tech should elevate you, never make you dormant.
           </Text>
         </View>
 
@@ -446,7 +459,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   watchHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  watchTitle: { color: colors.fg, fontFamily: monoFont, fontSize: 11, letterSpacing: 1.6, flex: 1 },
+  watchTitle: { color: colors.fg, fontFamily: bodyFontHeavy, fontSize: 12, letterSpacing: 0.6, flex: 1 },
   watchTagline: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, lineHeight: 13 },
   watchLive: {
     color: '#0a0f0a',
@@ -459,7 +472,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  watchNote: { color: colors.muted, fontFamily: monoFont, fontSize: 10, lineHeight: 16, letterSpacing: 0.4 },
+  watchNote: { marginTop: 7, color: '#c4d4c8', fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18 },
   watchErr: { color: colors.loss, fontFamily: monoFont, fontSize: 10 },
   watchBtn: {
     backgroundColor: colors.primary,
@@ -501,10 +514,9 @@ const styles = StyleSheet.create({
 
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
-  subtitle: { marginTop: 4, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: colors.muted, textAlign: 'center' },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.primary },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 31, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.5)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(238,242,236,0.85)' },
 
   statStrip: {
     flexDirection: 'row', marginTop: 16, marginBottom: 12,

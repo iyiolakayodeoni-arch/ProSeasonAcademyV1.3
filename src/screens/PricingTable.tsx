@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy } from '../theme';
 import * as backend from '../data/backend';
 import { getSettings } from '../data/settings';
 
@@ -211,19 +211,19 @@ export default function PricingTable({ onClose }: { onClose: () => void }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
   header: { paddingHorizontal: 18, paddingBottom: 6 },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent, textAlign: 'center' },
-  title: { marginTop: 4, fontFamily: monoFont, fontSize: 15, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
-  sub: { marginTop: 4, fontFamily: monoFont, fontSize: 6, letterSpacing: 1.2, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+  eyebrow: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.2, color: colors.accent, textAlign: 'center' },
+  title: { marginTop: 4, fontFamily: displayFont, fontSize: 26, letterSpacing: 1.6, color: colors.fg, textAlign: 'center', textTransform: 'uppercase' },
+  sub: { marginTop: 6, fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 1, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
   scroll: { paddingHorizontal: 15, paddingTop: 10 },
 
   introCard: {
     borderWidth: 1, borderColor: 'rgba(242,192,120,0.35)',
     backgroundColor: 'rgba(34,27,12,0.55)', borderRadius: 11, padding: 12, marginBottom: 12,
   },
-  introTxt: { fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, color: 'rgba(238,242,236,0.9)' },
-  progress: { marginTop: 8, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
+  introTxt: { fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, color: 'rgba(238,242,236,0.9)' },
+  progress: { marginTop: 8, fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.5, color: '#f2c078' },
 
-  empty: { marginTop: 20, textAlign: 'center', fontFamily: monoFont, fontSize: 6.8, lineHeight: 11, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
+  empty: { marginTop: 20, textAlign: 'center', fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.5, color: 'rgba(143,184,155,0.65)' },
 
   card: {
     borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)',
@@ -235,13 +235,13 @@ const styles = StyleSheet.create({
   doneChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 7, paddingVertical: 3 },
   doneTxt: { fontFamily: monoFont, fontSize: 5.4, fontWeight: '900', letterSpacing: 1, color: '#05130a' },
 
-  prompt: { marginTop: 6, fontFamily: monoFont, fontSize: 9, fontWeight: '900', lineHeight: 13.5, letterSpacing: 0.4, color: colors.fg },
-  helper: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: 'rgba(143,184,155,0.75)' },
+  prompt: { marginTop: 6, fontFamily: bodyFontBold, fontSize: 13, lineHeight: 18, letterSpacing: 0.3, color: colors.fg },
+  helper: { marginTop: 4, fontFamily: bodyFont, fontSize: 11, lineHeight: 16, color: 'rgba(143,184,155,0.75)' },
 
   opts: { marginTop: 9, gap: 5 },
   opt: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.28)', borderRadius: 9, paddingVertical: 9, paddingHorizontal: 11 },
   optOn: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.13)' },
-  optTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.1, color: 'rgba(238,242,236,0.85)' },
+  optTxt: { fontFamily: bodyFontBold, fontSize: 11, letterSpacing: 1, color: 'rgba(238,242,236,0.85)' },
   optTxtOn: { color: colors.primary },
 
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },
@@ -261,10 +261,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,15,10,0.6)',
   },
 
-  saveBtn: { marginTop: 10, fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  saveBtn: { marginTop: 10, fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 1.4, color: colors.primary },
   saveOff: { color: 'rgba(143,184,155,0.4)' },
 
-  foot: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, lineHeight: 9.5, letterSpacing: 1, color: 'rgba(143,184,155,0.55)' },
+  foot: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, letterSpacing: 1, color: 'rgba(143,184,155,0.55)' },
 
   back: {
     position: 'absolute', top: 58, left: 16, width: 34, height: 34, borderRadius: 17,

@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput, Linking } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Image, TextInput, Linking, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, { FadeIn, FadeInUp, SlideInUp, SlideOutDown, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
-import { colors, monoFont } from '../../theme';
+import ArtBand from '../../components/ArtBand';
+import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy } from '../../theme';
+
+// the dressing room — the control room's face
+const LOCKERS = require('../../../assets/art/locker-room.jpg');
 import { Coach } from '../../data/coaches';
 import { journeySeasonFor } from '../../data/journey';
 import { useJourneyProgress, wipeProgress } from '../../data/progress';
@@ -155,6 +159,8 @@ export default function SettingsTab({
 }) {
   const s = useSettings();
   const progress = useJourneyProgress();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430) - 32; // page padding is 16 a side
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [nameDraft, setNameDraft] = useState('');
   const [ticketOpen, setTicketOpen] = useState(false);
@@ -253,8 +259,12 @@ export default function SettingsTab({
     <View style={styles.flex}>
       <GridBackground />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
-        {/* header */}
+        {/* header — the dressing-room band carries the title */}
         <Animated.View entering={FadeInUp.duration(320)}>
+          <ArtBand source={LOCKERS} width={bandW} height={104} style={styles.setBand} warmAt={{ x: bandW * 0.5, y: 30, r: bandW * 0.55 }}>
+            <Text style={styles.title} numberOfLines={1}>SETTINGS</Text>
+            <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
+          </ArtBand>
           <View style={styles.topLine}>
             <View>
               <Text style={styles.brand}>PROSEASONACADEMY</Text>
@@ -262,8 +272,6 @@ export default function SettingsTab({
             </View>
             <Text style={styles.controlRoom}>CONTROL ROOM</Text>
           </View>
-          <Text style={styles.title}>SETTINGS</Text>
-          <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
         </Animated.View>
 
         {/* ── update checker — Supabase config.latest_version/latest_apk_url ── */}
@@ -387,7 +395,7 @@ export default function SettingsTab({
             <Text style={[styles.profileName, { fontSize: 11, color: colors.primary }]}>
               THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE
             </Text>
-            <Text style={{ marginTop: 8, fontFamily: monoFont, fontSize: 9.5, lineHeight: 15, color: 'rgba(143,184,155,0.9)' }}>
+            <Text style={{ marginTop: 8, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, color: 'rgba(143,184,155,0.9)' }}>
               1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
               {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
               {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
@@ -422,7 +430,7 @@ export default function SettingsTab({
             <Row
               icon={<AtIcon size={15} color="#57d07c" />}
               title="Community mentions"
-              sub="@PINGS IN #GENERAL AND SQUAD CHANNELS"
+              sub="@PINGS IN YOUR ROOMS"
               right={<Toggle on={s.toggles.communityMentions} onFlip={() => flip('communityMentions')} />}
             />
             <Row
@@ -894,12 +902,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 26 },
 
-  topLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 },
-  brand: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 2.4, color: colors.fg },
+  topLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14, marginBottom: 12 },
+  brand: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.4, color: colors.fg },
   brandRule: { marginTop: 3, height: 2, width: '70%', backgroundColor: colors.primary, borderRadius: 1 },
-  controlRoom: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
-  title: { textAlign: 'center', fontSize: 21, fontWeight: '900', letterSpacing: 5, color: colors.fg },
-  subtitle: { marginTop: 5, textAlign: 'center', fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 2, color: colors.muted },
+  controlRoom: { fontFamily: bodyFontBold, fontSize: 9.5, letterSpacing: 2, color: colors.muted },
+  setBand: { marginTop: 8, borderRadius: 15 },
+  title: { fontFamily: displayFont, fontSize: 28, lineHeight: 29, letterSpacing: 1.2, color: colors.fg, textTransform: 'uppercase', textShadowColor: 'rgba(57,255,106,0.4)', textShadowRadius: 9 },
+  subtitle: { marginTop: 6, fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.8, color: 'rgba(238,242,236,0.85)' },
 
   card: {
     marginTop: 14,
@@ -924,9 +933,9 @@ const styles = StyleSheet.create({
   },
   avatarBadge: { position: 'absolute', right: -2, bottom: -2 },
   profileText: { flex: 1, marginLeft: 13 },
-  profileName: { fontSize: 16, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
-  profileId: { marginTop: 2, fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 1.6, color: colors.muted },
-  profilePath: { marginTop: 3, fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  profileName: { fontFamily: displayFont, fontSize: 19, letterSpacing: 1.4, color: colors.fg, textTransform: 'uppercase' },
+  profileId: { marginTop: 2, fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 1.6, color: colors.muted },
+  profilePath: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 9.5, letterSpacing: 1.4, color: colors.primary },
 
   statStrip: {
     flexDirection: 'row',
@@ -938,8 +947,8 @@ const styles = StyleSheet.create({
   },
   statCell: { flex: 1, alignItems: 'center', paddingVertical: 10 },
   statCellBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(57,255,106,0.14)' },
-  statValue: { fontSize: 13.5, fontWeight: '900', letterSpacing: 0.6, color: colors.primary },
-  statLabel: { marginTop: 3, fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.5, color: colors.muted },
+  statValue: { fontFamily: displayFont, fontSize: 17, letterSpacing: 0.6, color: colors.primary },
+  statLabel: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 8.5, letterSpacing: 1.5, color: colors.muted },
 
   editBtn: {
     margin: 12,
@@ -953,9 +962,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.4)',
   },
-  editBtnTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 2.4, color: '#7ed793' },
+  editBtnTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 2.4, color: '#7ed793' },
 
-  sectionLabel: { marginTop: 18, marginLeft: 3, fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
+  sectionLabel: { marginTop: 18, marginLeft: 3, fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.2, color: colors.muted },
 
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, paddingVertical: 11, gap: 10 },
   rowDivider: { borderBottomWidth: 1, borderBottomColor: 'rgba(57,255,106,0.1)' },
@@ -971,11 +980,11 @@ const styles = StyleSheet.create({
   },
   rowIconDanger: { borderColor: 'rgba(224,96,92,0.3)', backgroundColor: 'rgba(224,96,92,0.06)' },
   rowText: { flex: 1, minWidth: 0 },
-  rowTitle: { fontSize: 12.5, fontWeight: '700', letterSpacing: 0.4, color: colors.fg },
-  rowSub: { marginTop: 2, fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.1, color: colors.muted },
+  rowTitle: { fontFamily: bodyFontBold, fontSize: 13, letterSpacing: 0.3, color: colors.fg },
+  rowSub: { marginTop: 2, fontFamily: bodyFont, fontSize: 10.5, letterSpacing: 0.5, color: colors.muted },
 
   valueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  valueTxt: { fontFamily: monoFont, fontSize: 7.8, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  valueTxt: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
   coachChip: { width: 20, height: 20, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
 
   toggleTrack: { width: 38, height: 21, borderRadius: 11, borderWidth: 1, justifyContent: 'center' },
@@ -1001,12 +1010,12 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: 'rgba(242,192,120,0.22)',
   },
-  updateBadgeTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
-  updateTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: colors.accent },
-  updateSub: { marginTop: 3, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1, color: 'rgba(242,192,120,0.65)' },
+  updateBadgeTxt: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.accent },
+  updateTitle: { fontFamily: bodyFontBold, fontSize: 12, letterSpacing: 1, color: colors.accent },
+  updateSub: { marginTop: 3, fontFamily: bodyFont, fontSize: 10, letterSpacing: 0.5, color: 'rgba(242,192,120,0.7)' },
 
-  footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 6.5, fontWeight: '700', letterSpacing: 2, color: colors.muted },
-  footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },
+  footVersion: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 2, color: colors.muted },
+  footNote: { marginTop: 4, textAlign: 'center', fontFamily: monoFont, fontSize: 8, fontWeight: '700', letterSpacing: 1.6, color: '#42584a' },
 
   // sheet
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(4,8,5,0.72)' },
@@ -1026,12 +1035,12 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   sheetHandle: { alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: '#1f3826', marginBottom: 12 },
-  sheetEyebrow: { fontFamily: monoFont, fontSize: 7, fontWeight: '800', letterSpacing: 2.4, color: colors.primary },
-  sheetTitle: { marginTop: 6, fontSize: 15, fontWeight: '900', letterSpacing: 1.6, color: colors.fg },
-  sheetBody: { marginTop: 9, fontFamily: monoFont, fontSize: 8.6, lineHeight: 15, letterSpacing: 0.5, color: '#9db4a3', marginBottom: 8 },
+  sheetEyebrow: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.4, color: colors.primary },
+  sheetTitle: { marginTop: 6, fontFamily: displayFont, fontSize: 22, letterSpacing: 1.4, color: colors.fg, textTransform: 'uppercase' },
+  sheetBody: { marginTop: 9, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, letterSpacing: 0.3, color: '#9db4a3', marginBottom: 8 },
   sheetCoachRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 10 },
   sheetCoachImg: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: colors.primary },
-  sheetCoachSub: { marginTop: 3, fontFamily: monoFont, fontSize: 7, fontWeight: '700', letterSpacing: 1.4, color: colors.muted },
+  sheetCoachSub: { marginTop: 3, fontFamily: bodyFont, fontSize: 10.5, letterSpacing: 1, color: colors.muted },
   sheetFootnote: { marginTop: 10, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.4, color: '#42584a' },
   sheetBtn: {
     marginTop: 12,

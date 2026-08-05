@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
   FadeInUp,
@@ -11,6 +11,13 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
+import PhotoVeil from '../../components/PhotoVeil';
+import EdgeGradient from '../../components/EdgeGradient';
+import AuroraVein from '../../components/AuroraVein';
+import ArtBand from '../../components/ArtBand';
+
+// the worn boots — the daily ritual stands on honest ground
+const BOOTS = require('../../../assets/art/scan-boots.jpg');
 import UpdateBanner from '../../components/UpdateBanner';
 import { InputCombo, ControllerButton } from '../../components/ButtonGlyph';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
@@ -32,9 +39,12 @@ import { useSettings } from '../../data/settings';
 import * as backend from '../../data/backend';
 import { sfx } from '../../audio/sound';
 import StoreSheet from '../StoreSheet';
-import { colors, monoFont } from '../../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold, bodyFontHeavy } from '../../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+
+// the night pitch photograph the greeting band sits on
+const PITCH = require('../../../assets/art/home-pitch.png');
 
 const COMBO_MAP: Record<string, ControllerButton[]> = {
   'controlled-sprint': ['R1', 'LS'],
@@ -78,6 +88,8 @@ function LiveDot() {
 }
 
 export default function HomeTab({ coach }: { coach: Coach }) {
+  const { width: winW } = useWindowDimensions();
+  const colW = Math.min(winW, 430); // App.tsx frames the column on wide screens
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
   const [access, setAccess] = useState<backend.MyAccess | null>(null);
@@ -182,13 +194,43 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           </Text>
         )}
 
-        <View style={styles.greetRow}>
-          <Text style={styles.greet}>{greetingLine(settings.displayName, nowStamp())}</Text>
-          <View style={styles.livePill}>
+        {/* the greeting band — the night pitch, the player's name in the
+            display face, the live pill. The photo dissolves into the page
+            through the veil; the ticker below stays terminal on purpose. */}
+        <View style={[styles.greetBand, { width: colW }]}>
+          <Image source={PITCH} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <PhotoVeil width={colW} height={176} weight="light" warmAt={{ x: colW * 0.18, y: 42, r: colW * 0.5 }} />
+          <View style={styles.greetInBand}>
+            <Text style={styles.greetBig} numberOfLines={2}>
+              {greetingLine(settings.displayName, nowStamp())}
+            </Text>
+          </View>
+          <View style={[styles.livePill, styles.liveInBand]}>
             <LiveDot />
             <Text style={styles.liveTxt}>LIVE FEED</Text>
           </View>
         </View>
+
+        {/* the console grammar: this week's state as label-above-value triads.
+            Real numbers only — the row hides entirely when the ledger is offline. */}
+        {access && (
+          <Animated.View entering={FadeInUp.duration(320)} style={styles.triad}>
+            <View style={styles.triadCell}>
+              <Text style={styles.triadLbl}>PASS</Text>
+              <Text style={styles.triadVal}>{access.tier.toUpperCase()}</Text>
+            </View>
+            <View style={styles.triadDiv} />
+            <View style={styles.triadCell}>
+              <Text style={styles.triadLbl}>DAYS LEFT</Text>
+              <Text style={styles.triadVal}>{access.daysLeft != null ? access.daysLeft : '—'}</Text>
+            </View>
+            <View style={styles.triadDiv} />
+            <View style={styles.triadCell}>
+              <Text style={styles.triadLbl}>SEASON</Text>
+              <Text style={styles.triadVal}>ONE</Text>
+            </View>
+          </Animated.View>
+        )}
 
         <View style={styles.ticker}>
           <Marquee>
@@ -233,7 +275,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
         )}
 
         {chip !== 'FOUNDER' && chip !== 'NEWS' && (
-          <Animated.View entering={FadeInUp.duration(350)} style={styles.hero}>
+          <EdgeGradient radius={16} style={{ marginTop: 14 }}>
+          <Animated.View entering={FadeInUp.duration(350)} style={[styles.hero, { borderWidth: 0, marginTop: 0, borderRadius: 15 }]}>
             <Pressable
               onPress={() => {
                 if (!hero?.sideLesson) return;
@@ -246,7 +289,10 @@ export default function HomeTab({ coach }: { coach: Coach }) {
                 {hero && <Text style={styles.heroTagLive}>● FRESH</Text>}
               </View>
               <View style={styles.heroThumb}>
-                <MiniPitch width={318} height={150} variant={hero?.sideLesson?.clip.variant ?? 'pitchRun'} showPlay />
+                <View style={styles.heroThumbClip}>
+                  <AuroraVein width={318} height={150} opacity={0.6} warm />
+                  <MiniPitch width={318} height={150} variant={hero?.sideLesson?.clip.variant ?? 'pitchRun'} showPlay />
+                </View>
                 <View style={styles.heroDuration}>
                   <Text style={styles.heroDurationTxt}>
                     {hero?.sideLesson?.clip.duration ?? HERO_FALLBACK.duration}
@@ -255,6 +301,10 @@ export default function HomeTab({ coach }: { coach: Coach }) {
               </View>
               <Text style={styles.heroHeadline}>
                 {hero?.headline ?? HERO_FALLBACK.headline}
+              </Text>
+              {/* the console grammar: facts as one dot-separated line, one accent */}
+              <Text style={styles.heroMetaLine}>
+                {hero?.kind?.replace(/_/g, ' ') ?? 'TRICK OF THE WEEK'} · {hero?.sideLesson?.clip.duration ?? HERO_FALLBACK.duration} CLIP · READS IN-APP
               </Text>
               {hero?.sideLesson?.topic && COMBO_MAP[hero.sideLesson.topic] && (
                 <View style={styles.heroComboRow}>
@@ -276,6 +326,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
               </View>
             </Pressable>
           </Animated.View>
+          </EdgeGradient>
         )}
 
         <View style={styles.chipsWrap}>
@@ -327,13 +378,21 @@ export default function HomeTab({ coach }: { coach: Coach }) {
           )
         )}
 
-        {/* ── THE CHINEDU WAY: HOME TAB RITUAL REMINDER ── */}
-        <View style={{ padding: 12, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)', marginTop: 16, marginBottom: 8 }}>
-          <Text style={{ fontFamily: monoFont, fontWeight: '900', letterSpacing: 1.4, textAlign: 'center', color: colors.primary, fontSize: 10 }}>THE CHINEDU WAY · PEN TO PAPER</Text>
-          <Text style={{ marginTop: 4, fontFamily: monoFont, fontSize: 9.5, lineHeight: 14.5, color: 'rgba(143,184,155,0.85)', textAlign: 'center' }}>
-            Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your results into your database. The hard way is the easy way, and tech is meant to elevate.
+        {/* ── THE CHINEDU WAY: HOME TAB RITUAL REMINDER — on the ground itself ── */}
+        <ArtBand
+          source={BOOTS}
+          width={colW - 32}
+          height={92}
+          veil="light"
+          warmAt={{ x: (colW - 32) * 0.28, y: 26, r: (colW - 32) * 0.55 }}
+          style={{ marginTop: 16, marginBottom: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' }}
+          overlayStyle={{ paddingHorizontal: 14, paddingBottom: 11 }}
+        >
+          <Text style={{ fontFamily: bodyFontHeavy, letterSpacing: 1.2, color: colors.primary, fontSize: 10.5 }}>THE CHINEDU WAY · PEN TO PAPER</Text>
+          <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.85)' }}>
+            Record & watch · pen your moments first · cool down 24–30m · then log your truth.
           </Text>
-        </View>
+        </ArtBand>
 
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
         <Text style={styles.footTag}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
@@ -565,10 +624,9 @@ const styles = StyleSheet.create({
 
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 2 },
   brand: {
-    fontFamily: monoFont,
-    fontSize: 9.5,
-    fontWeight: '700',
-    letterSpacing: 3,
+    fontFamily: bodyFontHeavy,
+    fontSize: 10.5,
+    letterSpacing: 2.8,
     color: colors.fg,
     borderBottomWidth: 1,
     borderBottomColor: colors.primary,
@@ -589,7 +647,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  bellDotTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', color: '#fff' },
+  bellDotTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', color: '#fff' },
   avatarBtn: {
     width: 22,
     height: 22,
@@ -601,9 +659,8 @@ const styles = StyleSheet.create({
   },
   annSection: { marginTop: 12 },
   annSectionLbl: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 10,
     letterSpacing: 2.2,
     color: colors.accent,
     marginBottom: 6,
@@ -611,10 +668,10 @@ const styles = StyleSheet.create({
   emptyFounder: {
     marginTop: 14,
     textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    lineHeight: 12,
-    letterSpacing: 1,
+    fontFamily: bodyFont,
+    fontSize: 11.5,
+    lineHeight: 17,
+    letterSpacing: 0.5,
     color: colors.muted,
   },
   annCard: {
@@ -633,9 +690,8 @@ const styles = StyleSheet.create({
   },
   annTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   annBadge: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 9.5,
     letterSpacing: 1.8,
     color: colors.accent,
   },
@@ -653,7 +709,7 @@ const styles = StyleSheet.create({
   annBy: {
     marginTop: 8,
     fontFamily: monoFont,
-    fontSize: 6.5,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.4,
     color: 'rgba(242,192,120,0.85)',
@@ -661,35 +717,36 @@ const styles = StyleSheet.create({
   annWhen: {
     marginTop: 2,
     fontFamily: monoFont,
-    fontSize: 6,
+    fontSize: 8.5,
     letterSpacing: 1.2,
     color: 'rgba(143,184,155,0.65)',
   },
   annTitle: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0.3,
+    fontFamily: bodyFontBold,
+    fontSize: 15.5,
+    lineHeight: 20,
+    letterSpacing: 0.2,
     color: colors.fg,
   },
   annBody: {
     marginTop: 6,
-    fontSize: 10.5,
-    lineHeight: 15,
+    fontFamily: bodyFont,
+    fontSize: 12.5,
+    lineHeight: 18.5,
     color: '#c9d6cc',
   },
   annLink: {
     marginTop: 8,
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.5,
+    fontFamily: bodyFontHeavy,
+    fontSize: 11,
+    letterSpacing: 1.4,
     color: colors.accent,
   },
   annType: {
     marginTop: 8,
     fontFamily: monoFont,
-    fontSize: 5.8,
+    fontSize: 8.5,
     fontWeight: '800',
     letterSpacing: 1.6,
     color: 'rgba(143,184,155,0.5)',
@@ -703,22 +760,22 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   newsTag: {
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 9.5,
     letterSpacing: 1.6,
     color: colors.primary,
   },
   newsHeadline: {
     marginTop: 6,
-    fontSize: 13,
-    fontWeight: '800',
+    fontFamily: bodyFontBold,
+    fontSize: 14.5,
     color: colors.fg,
   },
   newsBody: {
     marginTop: 5,
-    fontSize: 9.5,
-    lineHeight: 13.5,
+    fontFamily: bodyFont,
+    fontSize: 12,
+    lineHeight: 17.5,
     color: '#a9bbae',
   },
   newsFoot: {
@@ -729,21 +786,53 @@ const styles = StyleSheet.create({
   },
   newsSource: {
     fontFamily: monoFont,
-    fontSize: 5.8,
+    fontSize: 8.5,
     letterSpacing: 1,
     color: 'rgba(143,184,155,0.6)',
     flex: 1,
   },
   newsCta: {
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 11,
     letterSpacing: 1.2,
     color: colors.primary,
   },
 
-  greetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
-  greet: { flexShrink: 1, marginRight: 8, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.75)' },
+  greetBand: {
+    height: 176,
+    marginHorizontal: -16,
+    marginTop: 12,
+    marginBottom: 12,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    backgroundColor: colors.bg,
+  },
+  greetInBand: { paddingHorizontal: 18, paddingBottom: 14, maxWidth: '78%' },
+  greetBig: {
+    fontFamily: displayFont,
+    fontSize: 27,
+    lineHeight: 27,
+    letterSpacing: 0.6,
+    color: colors.fg,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 12,
+  },
+  liveInBand: { position: 'absolute', right: 16, bottom: 15 },
+
+  // ── the stat triad — label above value, generous air, one beat per fact ──
+  triad: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 2,
+    paddingHorizontal: 4,
+  },
+  triadCell: { flex: 1, alignItems: 'flex-start', gap: 2 },
+  triadDiv: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(143,184,155,0.18)', marginHorizontal: 14 },
+  triadLbl: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 2, color: 'rgba(143,184,155,0.7)' },
+  triadVal: { fontFamily: displayFont, fontSize: 19, letterSpacing: 0.8, color: colors.fg },
+
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -751,12 +840,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.45)',
     borderRadius: 9,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(57,255,106,0.06)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(10,15,10,0.72)',
   },
   liveDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.primary },
-  liveTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  liveTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
 
   ticker: {
     marginTop: 9,
@@ -766,7 +855,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.5)',
     paddingVertical: 6,
   },
-  tickerTxt: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.4, color: 'rgba(238,242,236,0.8)' },
+  tickerTxt: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(238,242,236,0.8)' },
   tickerStar: { color: colors.primary },
   tickerSep: { color: 'rgba(57,255,106,0.35)' },
 
@@ -785,26 +874,25 @@ const styles = StyleSheet.create({
   heroTagRow: { marginBottom: 9, flexDirection: 'row', alignItems: 'center', gap: 8 },
   heroTag: {
     alignSelf: 'flex-start',
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 2,
+    fontFamily: bodyFontHeavy,
+    fontSize: 9.5,
+    letterSpacing: 1.8,
     color: colors.primary,
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.55)',
     borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     backgroundColor: 'rgba(57,255,106,0.08)',
   },
   heroTagLive: {
-    fontFamily: monoFont,
-    fontSize: 6.4,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 9,
     letterSpacing: 1.6,
     color: colors.warm,
   },
   heroThumb: { alignItems: 'center' },
+  heroThumbClip: { borderRadius: 12, overflow: 'hidden' },
   heroDuration: {
     position: 'absolute',
     right: 12,
@@ -816,23 +904,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.35)',
   },
-  heroDurationTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '700', letterSpacing: 1, color: colors.fg },
-  heroHeadline: { marginTop: 11, fontSize: 16.5, fontWeight: '800', letterSpacing: 0.2, color: colors.fg },
+  heroDurationTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 1, color: colors.fg },
+  heroHeadline: { marginTop: 11, fontFamily: bodyFontBold, fontSize: 18.5, lineHeight: 23, letterSpacing: 0.1, color: colors.fg },
   heroComboRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 },
-  heroComboLabel: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
-  heroBody: { marginTop: 7, fontSize: 10.5, lineHeight: 15.5, color: '#b9cabe' },
+  heroComboLabel: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.2, color: colors.accent },
+  heroBody: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18.5, color: '#b9cabe' },
+  heroMetaLine: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.8, color: 'rgba(57,255,106,0.85)' },
   heroFoot: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroCta: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 1.6, color: colors.primary },
-  heroMeta: { color: 'rgba(143,184,155,0.7)', fontWeight: '400' },
+  heroCta: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.2, color: colors.primary },
+  heroMeta: { fontFamily: bodyFont, fontSize: 10.5, color: 'rgba(143,184,155,0.7)' },
 
   chipsWrap: { marginTop: 12, marginBottom: 2 },
   chipsRow: { flexDirection: 'row', gap: 7, paddingRight: 26 },
   chip: {
     borderWidth: 1,
     borderColor: 'rgba(31,56,38,0.9)',
-    borderRadius: 14,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    borderRadius: 16,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
     backgroundColor: 'rgba(15,26,19,0.55)',
   },
   chipOn: {
@@ -843,7 +932,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  chipTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '700', letterSpacing: 1.4, color: colors.muted },
+  chipTxt: { fontFamily: bodyFontBold, fontSize: 10.5, letterSpacing: 1.3, color: colors.muted },
   chipTxtOn: { color: colors.primary },
   chipFade: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 34 },
 
@@ -858,17 +947,17 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', alignItems: 'center' },
   thumbSpace: { width: 84, marginRight: 10 },
   cardTopText: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '800', letterSpacing: 1.8 },
-  cardTime: { fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
+  cardTag: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.6 },
+  cardTime: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
   liveNow: { color: colors.primary, fontWeight: '800' },
   cardMain: { flexDirection: 'row', marginTop: 6 },
   thumb: { marginRight: 10, marginTop: -22 },
   cardAvatar: { width: 30, height: 30, borderRadius: 15, marginRight: 10, marginTop: 4, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
   cardBody: { flex: 1 },
-  cardHandle: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
-  cardHeadline: { fontSize: 12.5, fontWeight: '800', letterSpacing: 0.1, color: colors.fg },
+  cardHandle: { fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 1.6, color: 'rgba(143,184,155,0.65)', marginBottom: 4 },
+  cardHeadline: { fontFamily: bodyFontBold, fontSize: 13.5, letterSpacing: 0.1, color: colors.fg },
   cardComboRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  cardText: { marginTop: 5, fontSize: 9.5, lineHeight: 13.5, color: '#a9bbae' },
+  cardText: { marginTop: 5, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: '#a9bbae' },
   lockBox: {
     marginTop: 7,
     borderWidth: 1,
@@ -877,17 +966,17 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     padding: 9,
   },
-  lockTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
-  lockBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.6, color: 'rgba(238,242,236,0.82)' },
-  lockCta: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
+  lockTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.5, color: '#f2c078' },
+  lockBody: { marginTop: 4, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16.5, letterSpacing: 0.2, color: 'rgba(238,242,236,0.82)' },
+  lockCta: { marginTop: 7, fontFamily: bodyFontHeavy, fontSize: 11, letterSpacing: 1.3, color: '#f2c078' },
   unlockErr: { marginTop: 8, marginHorizontal: 14, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.8, color: colors.loss },
 
   cardFoot: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardCta: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '800', letterSpacing: 1.5 },
-  cardMetaRight: { fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
+  cardCta: { fontFamily: bodyFontHeavy, fontSize: 11, letterSpacing: 1.2 },
+  cardMetaRight: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.2, color: 'rgba(143,184,155,0.6)' },
   spotsLeft: { color: '#e0605c' },
   reaction: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  reactionCount: { fontFamily: monoFont, fontSize: 7, fontWeight: '700', color: 'rgba(143,184,155,0.7)' },
+  reactionCount: { fontFamily: monoFont, fontSize: 10, fontWeight: '700', color: 'rgba(143,184,155,0.7)' },
 
   loadMore: {
     marginTop: 13,
@@ -899,20 +988,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: 'rgba(57,255,106,0.05)',
   },
-  loadMoreTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '800', letterSpacing: 2, color: colors.primary },
+  loadMoreTxt: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.6, color: colors.primary },
   caughtUp: {
     marginTop: 13,
     textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 6.8,
-    letterSpacing: 2,
-    color: 'rgba(143,184,155,0.45)',
+    fontFamily: bodyFontItalic,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: 'rgba(143,184,155,0.5)',
   },
   footVersion: {
     marginTop: 12,
     textAlign: 'center',
     fontFamily: monoFont,
-    fontSize: 6.3,
+    fontSize: 8.5,
     letterSpacing: 2.6,
     color: 'rgba(143,184,155,0.4)',
   },
@@ -921,14 +1010,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     textAlign: 'center',
     fontFamily: monoFont,
-    fontSize: 5.6,
+    fontSize: 8,
     letterSpacing: 2.2,
     color: 'rgba(143,184,155,0.28)',
   },
   mutter: {
     marginTop: 6,
     fontFamily: monoFont,
-    fontSize: 6.2,
+    fontSize: 9.5,
     letterSpacing: 1.6,
     color: colors.warm,
     textShadowColor: 'rgba(242,192,120,0.4)',
@@ -955,22 +1044,22 @@ const styles = StyleSheet.create({
   rmTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rmTagWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   rmTag: {
-    fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
-    borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2.5,
+    fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.4, color: colors.accent,
+    borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3,
     backgroundColor: 'rgba(242,192,120,0.07)',
   },
-  rmLive: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
-  rmTime: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
+  rmLive: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  rmTime: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
   rmHeader: { flexDirection: 'row', marginTop: 9, gap: 9 },
   rmAvatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', marginTop: 2 },
   rmHeaderTxt: { flex: 1 },
-  rmHandle: { fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(242,192,120,0.6)' },
-  rmHeadline: { marginTop: 3, fontSize: 13.5, fontWeight: '900', lineHeight: 18, color: colors.fg },
+  rmHandle: { fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(242,192,120,0.6)' },
+  rmHeadline: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 15, lineHeight: 20, color: colors.fg },
   rmStatLine: {
     marginTop: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)',
     borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: 'rgba(10,17,12,0.5)',
   },
-  rmStatLineTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
-  rmBody: { marginTop: 7, fontSize: 9.6, lineHeight: 13.5, color: '#d8cfc0' },
-  rmCta: { marginTop: 8, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.5, color: colors.warm },
+  rmStatLineTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  rmBody: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#d8cfc0' },
+  rmCta: { marginTop: 8, fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.3, color: colors.warm },
 });

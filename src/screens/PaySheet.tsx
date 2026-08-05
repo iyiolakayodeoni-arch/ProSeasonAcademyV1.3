@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Clipboard, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Clipboard, Linking, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import { ChevronLeftIcon, CheckIcon } from '../components/Icons';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold } from '../theme';
+
+// the empty seats — paying buys a seat; the screen says what one looks like
+const SEATS = require('../../assets/art/seats-till.jpg');
 import * as backend from '../data/backend';
 import { getSettings } from '../data/settings';
 import { sfx } from '../audio/sound';
@@ -38,6 +42,8 @@ export default function PaySheet({
   payLink?: string | null;
   onClose: () => void;
 }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const [methods, setMethods] = useState<backend.PayMethod[] | null>(null);
   const [pick, setPick] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -164,10 +170,17 @@ export default function PaySheet({
     <Animated.View entering={FadeIn.duration(200)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.header}>
+      {/* the seats band — the amount on the door of the seat it opens */}
+      <ArtBand
+        source={SEATS}
+        width={bandW}
+        height={148}
+        warmAt={{ x: bandW * 0.8, y: 44, r: bandW * 0.5 }}
+        style={{ marginTop: -46 }}
+      >
         <Text style={styles.eyebrow}>{title}</Text>
         <Text style={styles.price}>{price}</Text>
-      </View>
+      </ArtBand>
 
       <ScrollView
         style={{ flex: 1 }}
@@ -404,24 +417,23 @@ export default function PaySheet({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
-  header: { paddingHorizontal: 18, paddingBottom: 8, alignItems: 'center' },
   eyebrow: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 2, color: colors.accent },
-  price: { marginTop: 4, fontFamily: monoFont, fontSize: 20, fontWeight: '900', letterSpacing: 1.4, color: colors.fg },
-  scroll: { paddingHorizontal: 15, paddingTop: 10 },
+  price: { marginTop: 4, fontFamily: displayFont, fontSize: 34, lineHeight: 34, letterSpacing: 1, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 10 },
+  scroll: { paddingHorizontal: 15, paddingTop: 12 },
 
   doneCard: {
     borderWidth: 1, borderColor: colors.primary,
     backgroundColor: 'rgba(10,32,17,0.9)', borderRadius: 12, padding: 14, marginBottom: 11,
   },
   doneTag: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2, color: colors.primary },
-  doneBody: { marginTop: 7, fontFamily: monoFont, fontSize: 7.6, lineHeight: 12, color: 'rgba(238,242,236,0.92)' },
+  doneBody: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: 'rgba(238,242,236,0.92)' },
 
   autoCard: {
     borderWidth: 1, borderColor: 'rgba(57,255,106,0.5)',
     backgroundColor: 'rgba(10,26,15,0.85)', borderRadius: 12, padding: 13, marginBottom: 11,
   },
   autoTag: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
-  autoBody: { marginTop: 6, fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, color: 'rgba(238,242,236,0.9)' },
+  autoBody: { marginTop: 6, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: 'rgba(238,242,236,0.9)' },
   autoCta: { marginTop: 11, backgroundColor: colors.primary, borderRadius: 11, paddingVertical: 14, alignItems: 'center' },
   autoCtaTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.8, color: '#05130a' },
   autoFine: { marginTop: 8, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1, color: 'rgba(143,184,155,0.65)' },
@@ -433,7 +445,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(30,22,8,0.85)', borderRadius: 12, padding: 13, marginBottom: 11,
   },
   helpTag: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.8, color: 'rgb(240,180,60)' },
-  helpStep: { marginTop: 8, fontFamily: monoFont, fontSize: 6.8, lineHeight: 11, color: 'rgba(238,242,236,0.82)' },
+  helpStep: { marginTop: 8, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 17.5, color: 'rgba(238,242,236,0.82)' },
   helpCta: {
     marginTop: 12, borderWidth: 1, borderColor: 'rgb(240,180,60)',
     borderRadius: 11, paddingVertical: 13, alignItems: 'center',
@@ -449,8 +461,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,20,13,0.72)', borderRadius: 12, padding: 12, marginBottom: 11,
   },
   step: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.7, color: 'rgba(143,184,155,0.9)' },
-  body: { marginTop: 6, fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, color: 'rgba(238,242,236,0.88)' },
-  dim: { marginTop: 8, fontFamily: monoFont, fontSize: 6.6, color: 'rgba(143,184,155,0.6)' },
+  body: { marginTop: 6, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: 'rgba(238,242,236,0.88)' },
+  dim: { marginTop: 8, fontFamily: bodyFont, fontSize: 12, color: 'rgba(143,184,155,0.6)' },
 
   methodRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
   chip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.3)', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6 },
@@ -473,13 +485,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,32,14,0.7)', borderRadius: 9, padding: 10,
   },
   gsTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
-  gsBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.6, lineHeight: 10.4, color: 'rgba(238,242,236,0.9)' },
+  gsBody: { marginTop: 4, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: 'rgba(238,242,236,0.9)' },
   input: {
     marginTop: 9, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 9,
-    paddingHorizontal: 11, paddingVertical: 10, color: colors.fg,
-    fontFamily: monoFont, fontSize: 8, backgroundColor: 'rgba(10,15,10,0.6)',
+    paddingHorizontal: 12, paddingVertical: 11, color: colors.fg,
+    fontFamily: bodyFontStrong, fontSize: 13, backgroundColor: 'rgba(10,15,10,0.6)',
   },
-  error: { marginTop: 8, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: colors.loss },
+  error: { marginTop: 8, fontFamily: bodyFontBold, fontSize: 12, lineHeight: 17, color: colors.loss },
 
   cta: { marginTop: 11, backgroundColor: colors.primary, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
   ctaOff: { opacity: 0.35 },
@@ -491,19 +503,19 @@ const styles = StyleSheet.create({
   },
   waitTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.5, color: '#f2c078' },
   waitRef: { marginTop: 6, fontFamily: monoFont, fontSize: 15, fontWeight: '900', letterSpacing: 2, color: colors.fg },
-  waitBody: { marginTop: 7, fontFamily: monoFont, fontSize: 7.2, lineHeight: 11.5, color: 'rgba(238,242,236,0.88)' },
-  waitFine: { marginTop: 7, fontFamily: monoFont, fontSize: 6.2, lineHeight: 10, color: 'rgba(143,184,155,0.7)' },
+  waitBody: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: 'rgba(238,242,236,0.88)' },
+  waitFine: { marginTop: 7, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16, color: 'rgba(143,184,155,0.75)' },
 
   safeCard: {
     borderLeftWidth: 2, borderLeftColor: colors.primary, paddingLeft: 10, marginBottom: 11,
   },
   safeTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.5, color: colors.primary },
-  safeRow: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, color: 'rgba(143,184,155,0.85)' },
+  safeRow: { marginTop: 4, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: 'rgba(143,184,155,0.9)' },
 
   histRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 9, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.12)', paddingTop: 8 },
   histRef: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.2, color: colors.fg },
   histMeta: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 0.9, color: 'rgba(143,184,155,0.6)' },
-  histNote: { marginTop: 2, fontFamily: monoFont, fontSize: 6, lineHeight: 9.5, color: 'rgba(143,184,155,0.8)' },
+  histNote: { marginTop: 2, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(143,184,155,0.85)' },
   histStatus: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.1, color: '#f2c078' },
 
   back: {

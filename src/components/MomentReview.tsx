@@ -13,7 +13,7 @@ import {
   momentQuestion,
 } from '../data/scanMoments';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // MOMENT REVIEW — the shared key-moment block of the MATCH SCAN.
@@ -158,7 +158,7 @@ export default function MomentReview({ coach, moments, onChange, cue }: Props) {
 }
 
 const styles = StyleSheet.create({
-  cue: { marginTop: 10, fontFamily: monoFont, fontSize: 6.7, lineHeight: 12.4, fontWeight: '800', letterSpacing: 1.2, color: colors.warm },
+  cue: { marginTop: 10, fontFamily: bodyFontBold, fontSize: 12, lineHeight: 17, color: colors.warm },
 
   tagHeader: { marginTop: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   fieldLabel: { flex: 1, fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.8, color: colors.muted },
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(242,192,120,0.3)', backgroundColor: 'rgba(10,15,10,0.5)',
   },
   chipTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.2, color: colors.muted },
-  emptyHint: { marginTop: 10, fontFamily: monoFont, fontSize: 5.8, lineHeight: 10.5, fontWeight: '700', letterSpacing: 1.1, color: 'rgba(143,184,155,0.5)' },
+  emptyHint: { marginTop: 10, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16.5, color: 'rgba(143,184,155,0.65)' },
 
   momentCard: {
     marginTop: 10, borderWidth: 1.1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 12,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   kindPillEye: { backgroundColor: colors.primary, borderColor: colors.primary },
   kindPillTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.5, color: colors.accent },
-  eyeNote: { marginTop: 5, fontFamily: monoFont, fontSize: 5.6, fontWeight: '700', letterSpacing: 1.1, color: colors.muted },
+  eyeNote: { marginTop: 5, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15, color: colors.muted },
 
   whenRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
   whenChip: {
@@ -196,11 +196,11 @@ const styles = StyleSheet.create({
   whenChipTxtOn: { color: colors.primary },
 
   qLabel: { marginTop: 11, fontFamily: monoFont, fontSize: 5.8, fontWeight: '800', letterSpacing: 1.8, color: colors.muted },
-  qText: { marginTop: 5, fontSize: 10.5, lineHeight: 15.5, fontStyle: 'italic', fontWeight: '700', color: '#e7d9bd' },
+  qText: { marginTop: 5, fontFamily: bodyFontItalic, fontSize: 13, lineHeight: 19, color: '#e7d9bd' },
   input: {
     marginTop: 8, borderWidth: 1, borderColor: 'rgba(242,192,120,0.35)', backgroundColor: '#0a0f0a',
-    borderRadius: 10, color: colors.fg, fontFamily: monoFont, fontSize: 10.5, lineHeight: 15,
-    padding: 9, minHeight: 50, textAlignVertical: 'top',
+    borderRadius: 10, color: colors.fg, fontFamily: bodyFontStrong, fontSize: 13, lineHeight: 18,
+    padding: 10, minHeight: 52, textAlignVertical: 'top',
   },
   count: { marginTop: 4, fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1, textAlign: 'right', color: colors.muted },
 });

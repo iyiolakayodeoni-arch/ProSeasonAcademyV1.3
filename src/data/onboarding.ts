@@ -44,7 +44,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'chinedu-way',
     eyebrow: 'THE CHINEDU WAY',
     title: 'PEN TO PAPER BEFORE YOU TYPE',
-    body: 'There is a special connection a biro has to a book that cannot be typed. Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 mins after full time, then type your truth into your database. The hard way is the easy way; tech is meant to elevate.',
+    body: 'A biro and a book hold what typing forgets. Record your match, watch the tape, pen your key moments, cool down 24–30 minutes, then type your truth into your database. The hard way is the easy way.',
     tone: 'green',
   },
   {
@@ -69,7 +69,7 @@ export const ONBOARD_CARDS: OnboardCard[] = [
     id: 'community',
     eyebrow: 'COMMUNITY',
     title: 'THE CLUBHOUSE',
-    body: 'Channels, direct messages, reactions and squads. Share your match receipts, read the founder’s official word, keep it real. The founder reads the serious stuff himself.',
+    body: 'Real rooms, real players — no bots, no scripts. Share your match receipts, read the founder’s official word, keep it real. The founder reads the serious stuff himself.',
   },
   {
     id: 'till',

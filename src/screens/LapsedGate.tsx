@@ -8,7 +8,7 @@ import ContactSheet from './ContactSheet';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import * as backend from '../data/backend';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // THE LAPSED GATE — the door when a pass runs out.
@@ -134,16 +134,16 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20 },
   crest: { alignItems: 'center', marginBottom: 18 },
 
-  eyebrow: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 2.4, color: colors.accent, textAlign: 'center' },
-  title: { marginTop: 6, fontFamily: monoFont, fontSize: 17, fontWeight: '900', letterSpacing: 1.6, lineHeight: 23, color: colors.fg, textAlign: 'center' },
-  expired: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.6, color: 'rgba(143,184,155,0.6)', textAlign: 'center' },
+  eyebrow: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.4, color: colors.accent, textAlign: 'center' },
+  title: { marginTop: 6, fontFamily: displayFont, fontSize: 27, letterSpacing: 1.2, lineHeight: 28, color: colors.fg, textAlign: 'center', textTransform: 'uppercase' },
+  expired: { marginTop: 8, fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 1.2, color: 'rgba(143,184,155,0.65)', textAlign: 'center' },
 
   keepCard: {
     marginTop: 18, borderWidth: 1, borderColor: 'rgba(57,255,106,0.34)',
     backgroundColor: 'rgba(10,24,15,0.8)', borderRadius: 12, padding: 13,
   },
-  keepTag: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.7, color: colors.primary },
-  keepBody: { marginTop: 6, fontFamily: monoFont, fontSize: 7.4, lineHeight: 12, letterSpacing: 0.4, color: 'rgba(238,242,236,0.9)' },
+  keepTag: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.7, color: colors.primary },
+  keepBody: { marginTop: 6, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.3, color: 'rgba(238,242,236,0.9)' },
 
   coachRow: { flexDirection: 'row', gap: 9, marginTop: 14 },
   coachImg: { width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)' },
@@ -151,16 +151,16 @@ const styles = StyleSheet.create({
     flex: 1, borderWidth: 1, borderColor: 'rgba(242,192,120,0.3)',
     backgroundColor: 'rgba(32,26,12,0.6)', borderRadius: 11, padding: 11,
   },
-  coachTxt: { fontFamily: monoFont, fontSize: 7.4, lineHeight: 12, color: 'rgba(238,242,236,0.92)' },
-  coachWho: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 1.3, color: '#f2c078' },
+  coachTxt: { fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, color: 'rgba(238,242,236,0.92)' },
+  coachWho: { marginTop: 6, fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.3, color: '#f2c078' },
 
   whyCard: { marginTop: 14, borderLeftWidth: 2, borderLeftColor: 'rgba(143,184,155,0.35)', paddingLeft: 10 },
-  whyTag: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.5, color: 'rgba(143,184,155,0.85)' },
-  whyBody: { marginTop: 4, fontFamily: monoFont, fontSize: 6.8, lineHeight: 11, letterSpacing: 0.3, color: 'rgba(143,184,155,0.85)' },
+  whyTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.5, color: 'rgba(143,184,155,0.85)' },
+  whyBody: { marginTop: 4, fontFamily: bodyFont, fontSize: 11, lineHeight: 16.5, letterSpacing: 0.3, color: 'rgba(143,184,155,0.85)' },
 
-  cta: { marginTop: 20, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  ctaTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 2.2, color: '#05130a' },
+  cta: { marginTop: 20, backgroundColor: colors.primary, borderRadius: 25, paddingVertical: 15, alignItems: 'center' },
+  ctaTxt: { fontFamily: bodyFontHeavy, fontSize: 13, letterSpacing: 2.2, color: '#05130a' },
 
-  ghost: { marginTop: 13, textAlign: 'center', fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.3, color: 'rgba(143,184,155,0.8)' },
-  foot: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 5.8, lineHeight: 9.5, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
+  ghost: { marginTop: 14, textAlign: 'center', fontFamily: bodyFontBold, fontSize: 10.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.8)' },
+  foot: { marginTop: 18, textAlign: 'center', fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
 });

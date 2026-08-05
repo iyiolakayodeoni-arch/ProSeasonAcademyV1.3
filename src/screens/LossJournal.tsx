@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, TextInput, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import { colors, monoFont } from '../theme';
+import ArtBand from '../components/ArtBand';
+import { colors, monoFont, displayFont } from '../theme';
+
+// the boots on the chalk line — a loss journal stands on honest ground
+const BOOTS = require('../../assets/art/scan-boots.jpg');
 import { Coach } from '../data/coaches';
 import {
   LOSS_TAGS,
@@ -25,6 +29,8 @@ import { isValidReflection } from '../data/honestyGuard';
 // ─────────────────────────────────────────────────────────────
 
 export default function LossJournal({ coach, onClose }: { coach: Coach; onClose: () => void }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const j = useJournal();
   const [text, setText] = useState('');
   const [tag, setTag] = useState<LossTag>('COMPOSURE');
@@ -60,11 +66,18 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
     <Animated.View entering={FadeIn.duration(200)} style={styles.root}>
       <GridBackground />
 
-      <View style={styles.headerWrap}>
+      {/* the boots band — one honest line a day, from the ground you played on */}
+      <ArtBand
+        source={BOOTS}
+        width={bandW}
+        height={130}
+        warmAt={{ x: bandW * 0.3, y: 36, r: bandW * 0.5 }}
+        style={{ marginTop: -50, marginHorizontal: -16 }}
+      >
         <Text style={styles.eyebrow}>{coachFirst}'S RULE — ONE LINE PER LOSS</Text>
-        <Text style={styles.title}>LOSS JOURNAL</Text>
+        <Text style={styles.bandTitle}>LOSS JOURNAL</Text>
         <Text style={styles.subtitle}>NOT A DIARY — A PATTERN HE CAN FIX</Text>
-      </View>
+      </ArtBand>
 
       {/* stats */}
       <View style={styles.statStrip}>
@@ -202,10 +215,9 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
 const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50, paddingHorizontal: 16 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4.5, color: colors.fg },
-  subtitle: { marginTop: 4, fontFamily: monoFont, fontSize: 6.4, fontWeight: '700', letterSpacing: 1.8, color: colors.muted },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(238,242,236,0.85)' },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 30, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.5)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 6.4, fontWeight: '700', letterSpacing: 1.8, color: 'rgba(238,242,236,0.85)' },
 
   statStrip: {
     flexDirection: 'row', marginTop: 16,

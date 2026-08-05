@@ -1,9 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ArtBand from '../components/ArtBand';
 import ScreenFlash from '../components/ScreenFlash';
 import RoleModelCard from '../components/RoleModelCard';
+
+// the match moment — the stream is an ongoing night, not a lesson plan
+const VAULT_ART = require('../../assets/art/vault-match.jpg');
 import { ChevronLeftIcon, LockIcon, PlayIcon, CheckRingIcon, RouteIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import {
@@ -16,7 +20,7 @@ import {
 import { SideLesson } from '../data/sideLesson';
 import SideLessonSheet from './SideLessonSheet';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // ROLE MODEL FEED — Chinedu's ongoing, serialized story stream.
@@ -63,18 +67,20 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
   const feed = useMemo(() => roleModelFeed(coach), [coach]);
   const [lesson, setLesson] = useState<SideLesson | null>(null);
   const coachFirst = coach.name.split(' ')[0];
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   return (
     <Animated.View entering={FadeIn.duration(240)} style={styles.root}>
       <GridBackground />
       <ScreenFlash />
+      {/* the match band — persistent ROLE MODEL STORY label, on the night itself */}
+      <ArtBand source={VAULT_ART} width={bandW} height={140} warmAt={{ x: bandW * 0.22, y: 42, r: bandW * 0.55 }} style={{ marginTop: -50 }}>
+        <Text style={styles.eyebrow}>ROLE MODEL STORY · SERIALIZED</Text>
+        <Text style={styles.bandTitle}>CHINEDU'S STREAM</Text>
+        <Text style={styles.subtitle}>{coach.name.toUpperCase()} · {coach.title} — AN ONGOING STORY, NOT A LESSON</Text>
+      </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
-        {/* header — persistent ROLE MODEL STORY label */}
-        <View style={styles.headerWrap}>
-          <Text style={styles.eyebrow}>ROLE MODEL STORY · SERIALIZED</Text>
-          <Text style={styles.title}>CHINEDU'S STREAM</Text>
-          <Text style={styles.subtitle}>{coach.name.toUpperCase()} · {coach.title} — AN ONGOING STORY, NOT A LESSON</Text>
-        </View>
 
         {/* the card + the honest note that this is a character, not a real athlete */}
         <Animated.View entering={FadeInUp.delay(100).duration(380)} style={styles.cardWrap}>
@@ -225,10 +231,9 @@ const styles = StyleSheet.create({
   root: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.bg, paddingTop: 50 },
   scroll: { paddingHorizontal: 16, paddingBottom: 26 },
 
-  headerWrap: { alignItems: 'center' },
-  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: colors.muted },
-  title: { marginTop: 6, fontSize: 20, fontWeight: '900', letterSpacing: 4, color: colors.fg },
-  subtitle: { marginTop: 5, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.4, color: colors.accent, textAlign: 'center', lineHeight: 10.5, paddingHorizontal: 10 },
+  eyebrow: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '800', letterSpacing: 2.4, color: 'rgba(238,242,236,0.85)' },
+  bandTitle: { marginTop: 5, fontFamily: displayFont, fontSize: 30, lineHeight: 31, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.45)', textShadowRadius: 10 },
+  subtitle: { marginTop: 7, fontFamily: monoFont, fontSize: 5.8, fontWeight: '700', letterSpacing: 1.4, color: 'rgba(238,242,236,0.85)', lineHeight: 10.5 },
 
   cardWrap: { marginTop: 18, alignItems: 'center' },
   fictPill: {

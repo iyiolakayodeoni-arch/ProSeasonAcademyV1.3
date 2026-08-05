@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Image, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import LogoMark from '../components/LogoMark';
+import ArtBand from '../components/ArtBand';
 import { Coach } from '../data/coaches';
 import { BASELINE_SCRIPTS } from '../data/baselineScan';
 import { ChevronRightIcon } from '../components/Icons';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontHeavy } from '../theme';
+
+// the touchline — where every coach in this academy actually lives
+const TOUCHLINE = require('../../assets/art/coach-touchline.jpg');
 
 // ─────────────────────────────────────────────────────────────
 // COACH INTRO — first screen after the path lock. He tells you
@@ -18,6 +21,8 @@ import { colors, monoFont } from '../theme';
 export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const first = coach.name.split(' ')[0].toUpperCase();
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
 
   // each line of his speech lands with a soft pop, on its animation beat
   useEffect(() => {
@@ -30,13 +35,14 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
   return (
     <View style={styles.root}>
       <GridBackground />
-      <View style={styles.crest}>
-        <LogoMark size={30} />
-      </View>
+
+      {/* the touchline band — he speaks from where he stands, not from a crest */}
+      <ArtBand source={TOUCHLINE} width={bandW} height={176} warmAt={{ x: bandW * 0.76, y: 40, r: bandW * 0.5 }}>
+        <Text style={styles.eyebrow}>PATH LOCKED — YOUR COACH SPEAKS FIRST</Text>
+      </ArtBand>
 
       <Animated.View entering={FadeIn.duration(350)} style={styles.sheet}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.eyebrow}>PATH LOCKED — YOUR COACH SPEAKS FIRST</Text>
 
           <Animated.View entering={FadeInUp.delay(150).duration(320)} style={styles.headRow}>
             <Image source={coach.portrait} style={styles.portrait} />
@@ -72,11 +78,10 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  crest: { alignItems: 'center', paddingTop: 58 },
-  sheet: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
+  sheet: { flex: 1, paddingHorizontal: 20, paddingTop: 12 },
   scroll: { paddingBottom: 40 },
-  eyebrow: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center' },
-  headRow: { flexDirection: 'row', alignItems: 'center', marginTop: 18, marginBottom: 8 },
+  eyebrow: { color: 'rgba(238,242,236,0.9)', fontFamily: monoFont, fontSize: 9, letterSpacing: 2 },
+  headRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 8 },
   portrait: {
     width: 74,
     height: 74,
@@ -85,22 +90,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  name: { color: colors.fg, fontFamily: monoFont, fontSize: 16, fontWeight: '700', letterSpacing: 1.2 },
-  title: { fontFamily: monoFont, fontSize: 10, letterSpacing: 2, marginTop: 3 },
-  rating: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, marginTop: 3 },
+  name: { color: colors.fg, fontFamily: displayFont, fontSize: 24, lineHeight: 25, letterSpacing: 0.6 },
+  title: { fontFamily: bodyFontHeavy, fontSize: 11, letterSpacing: 1.4, marginTop: 4 },
+  rating: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, marginTop: 4 },
   beat: { flexDirection: 'row', marginTop: 14, gap: 12 },
   quoteBar: { width: 3, borderRadius: 2, opacity: 0.7 },
-  beatTxt: { flex: 1, color: colors.fg, fontFamily: monoFont, fontSize: 12, lineHeight: 20, letterSpacing: 0.3 },
-  signoff: { color: colors.muted, fontFamily: monoFont, fontSize: 11, letterSpacing: 0.6, marginTop: 18, textAlign: 'right', fontStyle: 'italic' },
+  beatTxt: { flex: 1, color: '#dbe7dd', fontFamily: bodyFont, fontSize: 13.5, lineHeight: 21 },
+  signoff: { color: colors.muted, fontFamily: bodyFontItalic, fontSize: 12.5, marginTop: 18, textAlign: 'right' },
   cta: {
     marginTop: 22,
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 25,
+    paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  ctaTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 12, letterSpacing: 1.6, fontWeight: '700' },
+  ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.8 },
 });

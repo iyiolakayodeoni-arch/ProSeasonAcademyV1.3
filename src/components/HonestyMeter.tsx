@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { checkHonesty, HonestyOptions } from '../data/honestyGuard';
 import { EvidenceMeter } from './StatReadout';
-import { colors, monoFont, gradeColor, role } from '../theme';
+import { colors, monoFont, gradeColor, role, bodyFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // HONESTY METER — the honesty check, made visible.
@@ -97,8 +97,8 @@ const styles = StyleSheet.create({
   warnTag: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.4, color: role.danger },
   okTag: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
   pct: { fontFamily: monoFont, fontSize: 9, fontWeight: '900' },
-  feedback: { marginTop: 6, fontFamily: monoFont, fontSize: 8, lineHeight: 12, letterSpacing: 0.7, fontWeight: '700', color: colors.accent },
-  okNote: { marginTop: 6, fontFamily: monoFont, fontSize: 7.5, lineHeight: 11, letterSpacing: 0.7, fontWeight: '700', color: colors.primary },
+  feedback: { marginTop: 6, fontFamily: bodyFont, fontSize: 12, lineHeight: 16.5, color: colors.accent },
+  okNote: { marginTop: 6, fontFamily: bodyFont, fontSize: 12, lineHeight: 16.5, color: colors.primary },
   prov: { marginTop: 4, fontFamily: monoFont, fontSize: 6, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
   empty: { fontFamily: monoFont, fontSize: 7, letterSpacing: 1.2, color: 'rgba(143,184,155,0.62)' },
 });

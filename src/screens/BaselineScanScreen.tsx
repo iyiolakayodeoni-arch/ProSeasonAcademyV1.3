@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
-import LogoMark from '../components/LogoMark';
+import ArtBand from '../components/ArtBand';
+import CoachPresence from '../components/CoachPresence';
+
+// the worn boots on the chalk line — the scan's face: it starts from where you actually stand
+const BOOTS = require('../../assets/art/scan-boots.jpg');
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
@@ -42,7 +46,7 @@ import { CheckIcon, EyeIcon, LockIcon } from '../components/Icons';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // BASELINE WEEK — the honest 7-day gate.
@@ -126,6 +130,8 @@ function hms(ms: number): string {
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430);
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
@@ -312,9 +318,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   return (
     <View style={styles.root}>
       <GridBackground />
-      <View style={styles.crest}>
-        <LogoMark size={30} />
-      </View>
+      {/* the boots strip — the week starts from where you actually stand */}
+      <ArtBand source={BOOTS} width={bandW} height={118} warmAt={{ x: bandW * 0.3, y: 34, r: bandW * 0.5 }} grain={0.05} />
 
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
@@ -325,8 +330,11 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.title}>THE BASELINE WEEK</Text>
               <Text style={styles.sub}>ONE MATCH A DAY · SEVEN DAYS · NO SHORTCUTS</Text>
 
+
               <View style={styles.coachRow}>
-                <Image source={coach.portrait} style={styles.coachFace} />
+                <CoachPresence size={44}>
+                  <Image source={coach.portrait} style={styles.coachFace} />
+                </CoachPresence>
                 <Text style={styles.coachName}>{first} · ON THE GATE</Text>
               </View>
 
@@ -340,11 +348,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <Animated.View entering={FadeInUp.delay(200 + script.talk.length * 260).duration(300)} style={styles.bluffBox}>
                 <Text style={styles.bluffLabel}>HOW THIS WEEK WORKS</Text>
                 <Text style={styles.bluffTxt}>
-                  Five matches, one per day, over seven days. Each day: play the match, then WATCH the recording and name
-                  the moments where you failed, then analyse each one — how you were thinking, what made you fail, what
-                  you could have done differently. The next day unlocks 24 hours after you finish the review. That gap is
-                  the point — it gives you time to actually think. Nobody is forcing you, and nobody is waiting with a
-                  whip. The academy just doesn't carry passengers.
+                  One match a day, five days, a week to do it. Play it, watch the recording, name the moments you
+                  failed, then answer for each one honestly. The next day only unlocks 24 hours later — the gap is
+                  the point. It gives you time to think. The academy doesn't carry passengers.
                 </Text>
               </Animated.View>
 
@@ -846,33 +852,32 @@ function MiniStat({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  crest: { alignItems: 'center', paddingTop: 58 },
-  scroll: { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 42 },
+  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 42 },
   eyebrow: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center' },
-  title: { color: colors.fg, fontFamily: monoFont, fontSize: 24, fontWeight: '800', letterSpacing: 2, textAlign: 'center', marginTop: 8 },
-  sub: { color: colors.accent, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 6, marginBottom: 6 },
+  title: { color: colors.fg, fontFamily: displayFont, fontSize: 34, lineHeight: 35, letterSpacing: 0.8, textAlign: 'center', marginTop: 8 },
+  sub: { color: colors.accent, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 6 },
   coachRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, marginBottom: 4 },
   coachFace: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface },
   coachName: { color: colors.muted, fontFamily: monoFont, fontSize: 10, letterSpacing: 1.6 },
   beat: { flexDirection: 'row', marginTop: 12, gap: 12 },
   quoteBar: { width: 3, borderRadius: 2, opacity: 0.6 },
-  beatTxt: { flex: 1, color: colors.fg, fontFamily: monoFont, fontSize: 11.5, lineHeight: 19, letterSpacing: 0.3 },
+  beatTxt: { flex: 1, color: '#dbe7dd', fontFamily: bodyFont, fontSize: 13, lineHeight: 20 },
   bluffBox: { marginTop: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, padding: 14 },
   bluffLabel: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2 },
-  bluffTxt: { color: colors.fg, fontFamily: monoFont, fontSize: 11, lineHeight: 18, marginTop: 6, fontStyle: 'italic' },
+  bluffTxt: { color: '#dbe7dd', fontFamily: bodyFont, fontSize: 12.5, lineHeight: 19, marginTop: 6 },
   cta: {
     marginTop: 20,
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 25,
+    paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  ctaTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 11.5, letterSpacing: 1.5, fontWeight: '700' },
-  skipLink: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.6, textAlign: 'center', marginTop: 14 },
-  notReadyTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 10, lineHeight: 16, letterSpacing: 0.4, marginTop: 10, textAlign: 'center' },
+  ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.8 },
+  skipLink: { color: colors.muted, fontFamily: bodyFont, fontSize: 11.5, letterSpacing: 0.4, textAlign: 'center', marginTop: 14 },
+  notReadyTxt: { color: colors.muted, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, marginTop: 10, textAlign: 'center' },
 
   // ── week strip ──
   weekStrip: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, marginBottom: 4 },

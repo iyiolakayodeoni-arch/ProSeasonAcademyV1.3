@@ -8,9 +8,14 @@ import {
   TextInput,
   Image,
   ImageSourcePropType,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideInLeft, SlideInRight, SlideOutDown, SlideOutLeft, SlideOutRight } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
+import ArtBand from '../../components/ArtBand';
+
+// the huddle — the boot room's face: the standard sits on the team, not on chrome
+const HUDDLE = require('../../../assets/art/community-huddle.jpg');
 import {
   ChevronLeftIcon,
   EyeIcon,
@@ -20,7 +25,6 @@ import {
   PlusIcon,
   SearchIcon,
   SendIcon,
-  TargetGlyphIcon,
   XMarkIcon,
 } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
@@ -30,18 +34,11 @@ import {
   CHANNELS,
   ChatMessage,
   ChatUser,
-  dmUser,
   hhmm,
-  isDm,
-  joinSquad,
-  openDm,
-  postSquadCard,
-  previewOf,
   ReactionIcon,
   sendText,
   setActiveThread,
   shareScanResult,
-  startMockTraffic,
   startLiveRooms,
   getRemoteUsers,
   toggleMute,
@@ -51,10 +48,15 @@ import {
 import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
 import PricingTable from '../PricingTable';
-import { colors, monoFont } from '../../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../../theme';
 import { isValidReflection } from '../../data/honestyGuard';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
+
+/** Safety net for a message whose author isn't in the roster — should
+ *  never happen (authors join the map with their message), but the UI
+ *  must never crash on a shape surprise from the wire. */
+const FALLBACK_USER: ChatUser = { id: 'unknown', handle: 'PLAYER', color: '#8fb89b', role: 'member', online: false, tagline: '' };
 
 // ── tiny helpers ──────────────────────────────────────────────
 
@@ -175,31 +177,24 @@ function Dot({ delay }: { delay: number }) {
 // ── main component ────────────────────────────────────────────
 
 export default function CommunityTab({ coach }: { coach: Coach }) {
+  const { width: winW } = useWindowDimensions();
+  const bandW = Math.min(winW, 430) - 24; // standard card margins are 12 a side
   const st = useCommunityState();
   const cloud = useCloud();
   const users: Record<string, UserWithAvatar> = useMemo(() => {
-    const u = buildUsers(coach);
-    // real players from the live rooms join the same map the UI renders
-    return { ...u, ...getRemoteUsers(), coach: { ...u.coach, avatar: coach.portrait } };
-  }, [coach, st.messages, st.live]);
+    // You + whoever has actually spoken in the live rooms. That IS the
+    // whole roster — nobody fictional padding the benches. (P1 honesty)
+    return { ...buildUsers(), ...getRemoteUsers() };
+  }, [st.messages, st.live]);
 
-  // LIVE first: if the academy cloud answers, the public channels mirror
-  // real Supabase rooms. Only a genuinely offline hall gets the scripted
-  // engine, so the room never looks abandoned on a dead network.
+  // REAL OR CLOSED: if the academy cloud answers, the channels mirror
+  // real Supabase rooms. If it doesn't, they stay closed and SAY so —
+  // an honest empty hall beats a scripted crowd, every single time.
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const live = await startLiveRooms(backend.getMe());
-      if (!cancelled && !live) startMockTraffic(coach);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [coach, cloud.status]);
+    void startLiveRooms(backend.getMe());
+  }, [cloud.status]);
 
-  const inDm = isDm(st.activeThreadId, st.dms);
   const channel = CHANNELS.find((c) => c.id === st.activeThreadId);
-  const otherUser = inDm ? users[dmUser(st.activeThreadId, st.dms)] : undefined;
 
   // ── composer state ──
   const [draft, setDraft] = useState('');
@@ -218,15 +213,10 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
   const [profileUser, setProfileUser] = useState<UserWithAvatar | null>(null);
-  const [picker, setPicker] = useState(false);
-  const [pickerQuery, setPickerQuery] = useState('');
 
   // ── search ──
   const [searchMode, setSearchMode] = useState(false);
   const [query, setQuery] = useState('');
-
-  // ── squad action ──
-  const [squadBusy, setSquadBusy] = useState(false);
 
   // ── scroll management ──
   const scrollRef = useRef<ScrollView>(null);
@@ -237,7 +227,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const messages = useMemo(() => {
     if (!searchMode || !query.trim()) return rawMessages;
     const q = query.trim().toLowerCase();
-    return rawMessages.filter((m) => m.text.toLowerCase().includes(q) && m.kind !== 'squad');
+    return rawMessages.filter((m) => m.text.toLowerCase().includes(q));
   }, [rawMessages, searchMode, query]);
   const msgCount = messages.length;
 
@@ -261,19 +251,11 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
   // ── actions ──
   const submit = () => {
+    if (!st.live) return; // closed rooms take no words — never a fake send
     const text = draft.trim();
     if (!text || !isValidReflection(text, { minLength: 2, minWords: 1 })) return;
     sendText(st.activeThreadId, text);
     setDraft('');
-  };
-
-  const findSquad = () => {
-    if (squadBusy) return;
-    setSquadBusy(true);
-    setTimeout(() => {
-      postSquadCard(st.activeThreadId, ['UCHEPRO', 'KOJO_9'], 2);
-      setSquadBusy(false);
-    }, 1800);
   };
 
   const shareMyScan = () => {
@@ -287,7 +269,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
     const [stage, c] = done[done.length - 1];
     shareScanResult(
       st.activeThreadId,
-      `scan receipt: STAGE ${stage} CLEARED · +${c.xp} XP${c.badge ? ` · ${c.badge}` : ''}. the coach watched it happen live.`,
+      `scan receipt: STAGE ${stage} CLEARED · +${c.xp} XP${c.badge ? ` · ${c.badge}` : ''}. logged it, scanned it, cleared it — the receipt speaks.`,
     );
   };
 
@@ -305,10 +287,10 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   let coachDividerShown = false;
   const rows = messages.map((m, i) => {
     const prev = messages[i - 1];
-    const author = users[m.authorId] ?? users.p12;
-    const grouped = !!prev && prev.authorId === m.authorId && m.at - prev.at < 120000 && m.kind !== 'squad';
+    const author = users[m.authorId] ?? FALLBACK_USER;
+    const grouped = !!prev && prev.authorId === m.authorId && m.at - prev.at < 120000;
     const isCoachMsg = author.role === 'coach';
-    const showCoachDivider = isCoachMsg && !coachDividerShown && !inDm;
+    const showCoachDivider = isCoachMsg && !coachDividerShown;
     if (isCoachMsg) coachDividerShown = true;
     return { m, author, grouped, showCoachDivider, key: m.id };
   });
@@ -319,7 +301,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
       {/* ── header ── */}
       <View style={styles.header}>
-        <Pressable onPress={() => (inDm ? setActiveThread('general') : setPanel(null))} hitSlop={8} style={styles.headerBtn}>
+        <Pressable onPress={() => setPanel(null)} hitSlop={8} style={styles.headerBtn}>
           <ChevronLeftIcon size={14} color={colors.fg} />
         </Pressable>
 
@@ -338,24 +320,15 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               <XMarkIcon size={10} color="rgba(143,184,155,0.8)" />
             </Pressable>
           </View>
-        ) : inDm && otherUser ? (
-          <Pressable onPress={() => setProfileUser(otherUser)} style={styles.titleWrap} hitSlop={4}>
-            <Ring color={otherUser.color} online={otherUser.online} avatar={otherUser.avatar} initials={initialsOf(otherUser.handle)} size={30} />
-            <View style={styles.titleCol}>
-              <Text style={[styles.titleName, { color: otherUser.color }]}>{otherUser.handle}</Text>
-              <View style={styles.subRow}>
-                {otherUser.online && <View style={styles.liveDot} />}
-                <Text style={styles.subText}>{otherUser.online ? 'ONLINE · PRIVATE CHAT' : 'LAST SEEN TODAY · PRIVATE CHAT'}</Text>
-              </View>
-            </View>
-          </Pressable>
         ) : (
           <Pressable onPress={() => setPanel('channels')} style={styles.titleWrap} hitSlop={4}>
             <Text style={styles.titleChannel}>#{channel?.name ?? 'general'}</Text>
             <View style={styles.subRow}>
-              <View style={styles.liveDot} />
+              <View style={[styles.liveDot, !st.live && styles.liveDotOff]} />
               <Text style={styles.subText}>
-                {channel?.desc} · {st.presence[channel?.id ?? 'general'] ?? 0} ONLINE
+                {st.live
+                  ? `${channel?.desc} · ${st.presence[channel?.id ?? 'general'] ?? 0} ONLINE`
+                  : 'OFFLINE — ROOMS OPEN WHEN THE CLOUD ANSWERS'}
               </Text>
             </View>
           </Pressable>
@@ -395,15 +368,28 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </View>
       ) : null}
 
-      {/* ── THE CHINEDU WAY: ACADEMY COMMUNITY STANDARD ── */}
-      <View style={{ marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 10, backgroundColor: 'rgba(57,255,106,0.03)', paddingHorizontal: 12, paddingVertical: 8 }}>
-        <Text style={{ fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.2, color: colors.primary, textAlign: 'center' }}>
+      {/* ── ACADEMY COMMUNITY STANDARD — riding on the huddle. Not chrome:
+          this strip is the room's constitution — how you talk, and who is
+          (and is NOT) allowed to exist in here. ── */}
+      <ArtBand
+        source={HUDDLE}
+        width={bandW}
+        height={108}
+        veil="light"
+        warmAt={{ x: bandW * 0.24, y: 26, r: bandW * 0.55 }}
+        style={{ marginHorizontal: 12, marginTop: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' }}
+        overlayStyle={{ paddingHorizontal: 13, paddingBottom: 11 }}
+      >
+        <Text style={{ fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.2, color: colors.primary }}>
           THE CHINEDU WAY · PEN TO PAPER BEFORE YOU TYPE
         </Text>
-        <Text style={{ marginTop: 3, fontFamily: monoFont, fontSize: 8.5, lineHeight: 13, color: 'rgba(143,184,155,0.8)', textAlign: 'center' }}>
-          Record & watch · Pen your moments on paper · 24–30m cool-down · Type your truth into your database. The hard way is the easy way.
+        <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.82)' }}>
+          Record & watch · pen your moments first · cool down 24–30m · then log your truth.
         </Text>
-      </View>
+        <Text style={{ marginTop: 5, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.8, color: 'rgba(242,192,120,0.9)' }}>
+          NO BOTS · NO SCRIPTS — EVERY NAME IN HERE IS A REAL PLAYER
+        </Text>
+      </ArtBand>
 
       {/* ── message list ── */}
       <ScrollView
@@ -419,9 +405,19 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         }}
         scrollEventThrottle={60}
       >
-        <Text style={styles.dateDivider}>
-          TODAY · {inDm ? `@${otherUser?.handle}` : `#${channel?.name?.toUpperCase()}`}
-        </Text>
+        <Text style={styles.dateDivider}>TODAY · #{channel?.name?.toUpperCase() ?? 'GENERAL'}</Text>
+
+        {/* the honest room: empty is a STATE, not a failure worth faking over */}
+        {rows.length === 0 && (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTag}>{st.live ? 'REAL ROOM · ZERO MESSAGES' : 'ROOM CLOSED · OFFLINE'}</Text>
+            <Text style={styles.emptyTxt}>
+              {st.live
+                ? 'Quiet in here — no bots, no scripts, no fake crowd warming the bench. When a real player speaks, it lands here. The first word can be yours.'
+                : 'The academy cloud is unreachable, so the rooms are shut — nothing here pretends to send, and nobody here is pretend.'}
+            </Text>
+          </View>
+        )}
 
         {rows.map(({ m, author, grouped, showCoachDivider }) => (
           <React.Fragment key={m.id}>
@@ -458,17 +454,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
                 {m.kind === 'voice' ? (
                   <VoiceNote secs={m.voiceSecs ?? 0} accent={author.color} />
-                ) : m.kind === 'squad' && m.squad ? (
-                  <View style={styles.squadCard}>
-                    <Text style={styles.squadTitle}>
-                      SQUAD OPEN · {m.squad.slots} SLOTS — {m.squad.members.join(', ')}
-                    </Text>
-                    <Pressable onPress={() => joinSquad(st.activeThreadId)} disabled={!!st.joinedSquads[st.activeThreadId]}>
-                      <View style={[styles.squadJoin, st.joinedSquads[st.activeThreadId] && styles.squadJoined]}>
-                        <Text style={styles.squadJoinTxt}>{st.joinedSquads[st.activeThreadId] ? 'YOU’RE IN — READY UP SOON' : 'JOIN ›'}</Text>
-                      </View>
-                    </Pressable>
-                  </View>
                 ) : (
                   <MessageBody text={m.text} users={users} muted={st.muted.includes(author.id)} />
                 )}
@@ -520,22 +505,11 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         </Pressable>
       )}
 
-      {/* FIND A SQUAD — quick action pill (channels only) */}
-      {!inDm && (
-        <View style={styles.squidRow}>
-          <Pressable onPress={findSquad} hitSlop={6}>
-            <View style={[styles.squadPill, squadBusy && { opacity: 0.6 }]}>
-              <TargetGlyphIcon size={11} color={colors.primary} />
-              <Text style={styles.squadPillTxt}>{squadBusy ? 'SEARCHING…' : 'FIND A SQUAD'}</Text>
-            </View>
-          </Pressable>
-        </View>
-      )}
-
-      {/* ── composer ── */}
-      {channel?.readOnly ? (
+      {/* ── composer — open only while the room is REAL. Offline there is
+          nobody to talk to, so the door is honestly shut. ── */}
+      {!st.live ? (
         <View style={styles.readOnlyBar}>
-          <Text style={styles.readOnlyTxt}>READ ONLY — ONLY COACHES POST IN THIS ROOM</Text>
+          <Text style={styles.readOnlyTxt}>ROOMS SHUT WHILE OFFLINE — NOTHING HERE PRETENDS TO SEND</Text>
         </View>
       ) : (
         <View>
@@ -558,7 +532,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               onChangeText={setDraft}
               onSubmitEditing={submit}
               returnKeyType="send"
-              placeholder={inDm ? `> message @${otherUser?.handle}…` : `> message #${channel?.name}…`}
+              placeholder={`> message #${channel?.name}…`}
               placeholderTextColor="rgba(143,184,155,0.5)"
               style={styles.input}
             />
@@ -599,7 +573,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                       <Text style={styles.chanDesc}>{c.desc}</Text>
                     </View>
                     <View style={styles.chanMeta}>
-                      <Text style={styles.chanCount}>{c.baseCount}</Text>
+                      <Text style={styles.chanCount}>{st.presence[c.id] ?? 0} IN</Text>
                       {unread > 0 && (
                         <View style={styles.unreadDot}>
                           <Text style={styles.unreadTxt}>{unread}</Text>
@@ -611,52 +585,13 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
               );
             })}
 
-            <View style={styles.dmHeadRow}>
-              <Text style={styles.panelSection}>DIRECT MESSAGES</Text>
-              <Pressable onPress={() => setPicker(true)} hitSlop={6}>
-                <Text style={styles.dmNew}>＋ NEW</Text>
-              </Pressable>
-            </View>
-            {[...st.dms]
-              .sort(
-                (a, b) =>
-                  (st.messages[b.id]?.[st.messages[b.id].length - 1]?.at ?? 0) -
-                  (st.messages[a.id]?.[st.messages[a.id].length - 1]?.at ?? 0),
-              )
-              .map((d) => {
-                const u = users[d.userId];
-                if (!u) return null;
-                const unread = st.unreads[d.id] ?? 0;
-                return (
-                  <Pressable
-                    key={d.id}
-                    onPress={() => {
-                      setActiveThread(d.id);
-                      setPanel(null);
-                    }}
-                  >
-                    <View style={[styles.chanRow, d.id === st.activeThreadId && styles.chanRowActive]}>
-                      <Ring color={u.color} online={u.online} avatar={u.avatar} initials={initialsOf(u.handle)} size={26} />
-                      <View style={[styles.chanMain, { marginLeft: 9 }]}>
-                        <Text style={[styles.chanName, unread > 0 && { color: colors.fg }]}>{u.handle}</Text>
-                        <Text style={styles.chanDesc} numberOfLines={1}>
-                          {previewOf(d.id, st.messages[d.id])}
-                        </Text>
-                      </View>
-                      <View style={styles.chanMeta}>
-                        <Text style={styles.chanCount}>
-                          {st.messages[d.id]?.length ? hhmm(st.messages[d.id][st.messages[d.id].length - 1].at) : ''}
-                        </Text>
-                        {unread > 0 && (
-                          <View style={styles.unreadDot}>
-                            <Text style={styles.unreadTxt}>{unread}</Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
+            {/* DMs deliberately absent in v1: a private message that can
+                never reach the other person is just an echo in a costume.
+                Squad cards are benched too — a squad tool with nobody in
+                the seats is a toy. Both return when they're real. */}
+            <Text style={styles.panelNote}>
+              DIRECT MESSAGES RETURN IN V2 — WITH REAL DELIVERY. SQUADS RETURN WHEN REAL PLAYERS FILL THE SEATS. UNTIL THEN, @ SOMEONE IN THE OPEN ROOM.
+            </Text>
           </Animated.View>
         </View>
       )}
@@ -669,22 +604,26 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Animated.View>
           <Animated.View entering={SlideInRight} exiting={SlideOutRight} style={styles.panelRight}>
             <Text style={styles.panelTitle}>IN THE ROOM</Text>
-            <Text style={styles.panelSection}>COACHES</Text>
-            {[users.coach].map((u) => (
-              <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
-            ))}
-            <Text style={styles.panelSection}>ONLINE — {Object.values(users).filter((u) => u.online && u.role !== 'coach').length}</Text>
+            {/* a name appears here ONLY because that person really posted.
+                Presence numbers live in the header; this is the roll of
+                real speakers — no fictional bench-warmers. */}
+            {Object.values(users).filter((u) => u.role === 'coach').length > 0 && (
+              <>
+                <Text style={styles.panelSection}>FOUNDER</Text>
+                {Object.values(users)
+                  .filter((u) => u.role === 'coach')
+                  .map((u) => (
+                    <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
+                  ))}
+              </>
+            )}
+            <Text style={styles.panelSection}>SPOKEN IN THE ROOMS — {Object.values(users).filter((u) => u.role !== 'coach').length}</Text>
             {Object.values(users)
-              .filter((u) => u.online && u.role !== 'coach')
+              .filter((u) => u.role !== 'coach')
               .map((u) => (
                 <MemberRow key={u.id} u={u} onPress={() => setProfileUser(u)} />
               ))}
-            <Text style={styles.panelSection}>OFFLINE</Text>
-            {Object.values(users)
-              .filter((u) => !u.online)
-              .map((u) => (
-                <MemberRow key={u.id} u={u} dim onPress={() => setProfileUser(u)} />
-              ))}
+            <Text style={styles.panelNote}>NAMES APPEAR WHEN REAL PLAYERS SPEAK. THE LIVE COUNT SITS IN THE HEADER.</Text>
           </Animated.View>
         </View>
       )}
@@ -703,16 +642,18 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                 <Text style={styles.sheetTag}>{profileUser.tagline}</Text>
               </View>
             </View>
-            {profileUser.role !== 'you' && (
+            {/* Reach a real player the only way that actually reaches
+                them in v1: a public @-mention in the live room. */}
+            {profileUser.role !== 'you' && st.live && (
               <Pressable
                 onPress={() => {
-                  openDm(profileUser.id);
+                  setDraft(`@${profileUser.handle} `);
                   setProfileUser(null);
                   setPanel(null);
                 }}
               >
                 <View style={styles.sheetAction}>
-                  <Text style={styles.sheetActionTxt}>MESSAGE ›</Text>
+                  <Text style={styles.sheetActionTxt}>CALL OUT IN THE ROOM ›</Text>
                 </View>
               </Pressable>
             )}
@@ -735,49 +676,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
                 </View>
               </Pressable>
             )}
-          </Animated.View>
-        </View>
-      )}
-
-      {/* ── new DM picker sheet ── */}
-      {picker && (
-        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.backdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setPicker(false)} />
-          </Animated.View>
-          <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={styles.sheet}>
-            <Text style={styles.panelSection}>NEW MESSAGE — PICK A PLAYER</Text>
-            <TextInput
-              value={pickerQuery}
-              onChangeText={setPickerQuery}
-              placeholder="> search the clubhouse…"
-              placeholderTextColor="rgba(143,184,155,0.5)"
-              style={[styles.input, styles.pickerInput]}
-              autoFocus
-            />
-            {Object.values(users)
-              .filter((u) => u.role !== 'you' && u.handle.toLowerCase().includes(pickerQuery.toLowerCase()))
-              .map((u) => (
-                <Pressable
-                  key={u.id}
-                  onPress={() => {
-                    openDm(u.id);
-                    setPicker(false);
-                    setPickerQuery('');
-                    setPanel(null);
-                  }}
-                >
-                  <View style={styles.pickerRow}>
-                    <Ring color={u.color} online={u.online} avatar={u.avatar} initials={initialsOf(u.handle)} size={26} />
-                    <View style={[styles.chanMain, { marginLeft: 9 }]}>
-                      <Text style={styles.chanName}>{u.handle}</Text>
-                      <Text style={styles.chanDesc} numberOfLines={1}>
-                        {u.tagline}
-                      </Text>
-                    </View>
-                  </View>
-                </Pressable>
-              ))}
           </Animated.View>
         </View>
       )}
@@ -855,8 +753,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(57,255,106,0.5)', backgroundColor: 'rgba(10,26,15,0.85)',
     borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11,
   },
-  consultTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-  consultTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+  consultTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
+  consultTxt: { marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.3, color: 'rgba(238,242,236,0.9)' },
 
   founderWeek: {
     marginHorizontal: 12,
@@ -868,8 +766,8 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 11,
   },
-  founderWeekTag: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.6, color: '#f2c078' },
-  founderWeekTxt: { marginTop: 3, fontFamily: monoFont, fontSize: 6.4, lineHeight: 10, letterSpacing: 0.9, color: 'rgba(238,242,236,0.9)' },
+  founderWeekTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: '#f2c078' },
+  founderWeekTxt: { marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.3, color: 'rgba(238,242,236,0.9)' },
   flex: { flex: 1 },
 
   header: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 9 },
@@ -886,15 +784,15 @@ const styles = StyleSheet.create({
   titleWrap: { flex: 1 },
   titleCol: { flex: 1 },
   titleChannel: {
-    fontFamily: monoFont,
-    fontSize: 17,
-    fontWeight: '900',
-    letterSpacing: 0.6,
+    fontFamily: displayFont,
+    fontSize: 22,
+    letterSpacing: 1,
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.5)',
     textShadowRadius: 9,
+    textTransform: 'uppercase',
   },
-  titleName: { fontFamily: monoFont, fontSize: 13.5, fontWeight: '900', letterSpacing: 1 },
+  titleName: { fontFamily: displayFont, fontSize: 19, letterSpacing: 1, textTransform: 'uppercase' },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
   liveDot: {
     width: 4.5,
@@ -906,21 +804,36 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 0 },
   },
-  subText: { fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.6, color: 'rgba(143,184,155,0.75)' },
+  subText: { fontFamily: bodyFontBold, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.75)' },
+  liveDotOff: { backgroundColor: colors.loss, shadowColor: colors.loss },
   headerRule: { height: 1, backgroundColor: 'rgba(57,255,106,0.28)', shadowColor: colors.primary, shadowOpacity: 0.6, shadowRadius: 4, shadowOffset: { width: 0, height: 0 } },
+
+  emptyWrap: {
+    marginTop: 46,
+    marginHorizontal: 18,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(143,184,155,0.3)',
+    borderRadius: 14,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+  },
+  emptyTag: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 2.2, color: colors.accent },
+  emptyTxt: { marginTop: 8, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, textAlign: 'center', color: 'rgba(238,242,236,0.72)' },
   gateBanner: { marginHorizontal: 12, marginTop: 8, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 10, backgroundColor: 'rgba(242,192,120,0.07)', paddingHorizontal: 12, paddingVertical: 9 },
-  gateBannerTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '800', letterSpacing: 1.2, color: colors.warm, textAlign: 'center', lineHeight: 12 },
+  gateBannerTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 0.8, color: colors.warm, textAlign: 'center', lineHeight: 15 },
 
   searchWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  searchInput: { flex: 1, fontFamily: monoFont, fontSize: 11, color: colors.fg, paddingVertical: 4 },
-  searchCount: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
+  searchInput: { flex: 1, fontFamily: bodyFontStrong, fontSize: 13, color: colors.fg, paddingVertical: 4 },
+  searchCount: { fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 1.4, color: colors.primary },
 
   list: { paddingHorizontal: 13, paddingTop: 12, paddingBottom: 6 },
   dateDivider: {
     alignSelf: 'center',
     marginBottom: 12,
     fontFamily: monoFont,
-    fontSize: 6.2,
+    fontSize: 9,
     letterSpacing: 2.2,
     color: 'rgba(143,184,155,0.55)',
   },
@@ -930,7 +843,7 @@ const styles = StyleSheet.create({
   groupSpacer: { width: 28 },
   msgCol: { flex: 1, marginLeft: 9 },
   msgHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2.5 },
-  handle: { fontSize: 11.5, fontWeight: '900', letterSpacing: 0.3 },
+  handle: { fontFamily: bodyFontBold, fontSize: 12.5, letterSpacing: 0.3 },
   coachBadge: {
     borderWidth: 1,
     borderColor: 'rgba(242,192,120,0.6)',
@@ -938,9 +851,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 1.5,
   },
-  coachBadgeTxt: { fontFamily: monoFont, fontSize: 5, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
-  time: { fontFamily: monoFont, fontSize: 5.4, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
-  body: { fontSize: 11.6, lineHeight: 16.5, color: '#d3ded6' },
+  coachBadgeTxt: { fontFamily: bodyFontHeavy, fontSize: 8, letterSpacing: 1.2, color: colors.accent },
+  time: { fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1, color: 'rgba(143,184,155,0.5)' },
+  body: { fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#d3ded6' },
   bodyMuted: { color: 'rgba(143,184,155,0.45)', fontStyle: 'italic' },
   mention: { fontWeight: '900' },
 
@@ -957,21 +870,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.6)',
   },
   pillOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillCount: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', color: colors.primary },
+  pillCount: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '900', color: colors.primary },
 
   coachDividerRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 6, marginBottom: 12 },
   divLineGlow: { flex: 1, height: 1, backgroundColor: 'rgba(57,255,106,0.28)' },
-  coachDividerTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 2.2, color: colors.primary },
+  coachDividerTxt: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 2.2, color: colors.primary },
 
   typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 3 },
   dotsRow: { flexDirection: 'row', gap: 3.5, alignItems: 'center' },
   dot: { width: 3.6, height: 3.6, borderRadius: 2, backgroundColor: colors.primary, opacity: 0.25 },
-  typingTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.6, color: 'rgba(143,184,155,0.75)' },
+  typingTxt: { fontFamily: bodyFontItalic, fontSize: 10, letterSpacing: 1, color: 'rgba(143,184,155,0.75)' },
 
   newPill: {
     position: 'absolute',
     alignSelf: 'center',
-    bottom: 118,
+    bottom: 88,
     borderWidth: 1.1,
     borderColor: colors.primary,
     borderRadius: 12,
@@ -983,25 +896,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  newPillTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.6, color: colors.primary },
-
-  squidRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 13, paddingBottom: 6 },
-  squadPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1.2,
-    borderColor: colors.primary,
-    borderRadius: 17,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(10,17,12,0.9)',
-    shadowColor: colors.primary,
-    shadowOpacity: 0.55,
-    shadowRadius: 9,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  squadPillTxt: { fontFamily: monoFont, fontSize: 7.2, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  newPillTxt: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
 
   composer: {
     marginHorizontal: 11,
@@ -1021,7 +916,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   composeBtn: { padding: 3 },
-  input: { flex: 1, fontFamily: monoFont, fontSize: 10.5, color: colors.fg, paddingVertical: 3 },
+  input: { flex: 1, fontFamily: bodyFontStrong, fontSize: 13, color: colors.fg, paddingVertical: 3 },
   sendBtn: {
     width: 30,
     height: 30,
@@ -1044,13 +939,12 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     alignItems: 'center',
   },
-  readOnlyTxt: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '800', letterSpacing: 1.8, color: 'rgba(143,184,155,0.6)' },
+  readOnlyTxt: { fontFamily: bodyFontBold, fontSize: 9.5, letterSpacing: 1.6, color: 'rgba(143,184,155,0.6)' },
 
   plusRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingBottom: 7 },
   plusAction: {
-    fontFamily: monoFont,
-    fontSize: 6.6,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 9,
     letterSpacing: 1.5,
     color: colors.primary,
     borderWidth: 1,
@@ -1063,7 +957,7 @@ const styles = StyleSheet.create({
 
   recWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
   recDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.loss },
-  recTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', letterSpacing: 1.4, color: colors.loss },
+  recTxt: { fontFamily: bodyFontBold, fontSize: 10.5, letterSpacing: 1.2, color: colors.loss },
 
   voiceWrap: {
     flexDirection: 'row',
@@ -1094,19 +988,6 @@ const styles = StyleSheet.create({
   voiceBar: { width: 2.2, borderRadius: 1.5 },
   voiceDur: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '800', color: 'rgba(143,184,155,0.85)' },
 
-  squadCard: {
-    borderWidth: 1.2,
-    borderColor: 'rgba(57,255,106,0.5)',
-    borderRadius: 13,
-    padding: 11,
-    backgroundColor: 'rgba(12,20,14,0.9)',
-    gap: 9,
-  },
-  squadTitle: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.3, color: colors.primary },
-  squadJoin: { borderRadius: 9, backgroundColor: colors.primary, alignItems: 'center', paddingVertical: 8 },
-  squadJoined: { backgroundColor: 'rgba(31,122,61,1)' },
-  squadJoinTxt: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 2, color: '#05130a' },
-
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(4,8,5,0.72)' },
 
   panelLeft: {
@@ -1135,6 +1016,7 @@ const styles = StyleSheet.create({
   },
   panelTitle: { fontFamily: monoFont, fontSize: 8.4, fontWeight: '900', letterSpacing: 2.6, color: colors.fg, marginBottom: 14 },
   panelSection: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: 'rgba(143,184,155,0.6)', marginTop: 14, marginBottom: 8 },
+  panelNote: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '700', letterSpacing: 1.3, lineHeight: 12, color: 'rgba(242,192,120,0.75)', marginTop: 18, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(143,184,155,0.18)' },
 
   chanRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 8, borderRadius: 10 },
   chanRowActive: { backgroundColor: 'rgba(57,255,106,0.08)' },

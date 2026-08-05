@@ -3,7 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { checkForUpdate, UpdateInfo } from '../data/updateChecker';
 import { openInPackageManager, PSA_APP_ID } from '../data/packageManager';
 import { sfx } from '../audio/sound';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, bodyFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────
 // UPDATE BANNER — shown when a newer build exists.
@@ -56,6 +56,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   tag: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
   open: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
-  body: { marginTop: 5, fontFamily: monoFont, fontSize: 7, lineHeight: 11, letterSpacing: 0.6, color: '#e6d9bf' },
+  body: { marginTop: 5, fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: '#e6d9bf' },
   hint: { marginTop: 6, fontFamily: monoFont, fontSize: 5.8, lineHeight: 9, letterSpacing: 1, color: 'rgba(143,184,155,0.6)' },
 });

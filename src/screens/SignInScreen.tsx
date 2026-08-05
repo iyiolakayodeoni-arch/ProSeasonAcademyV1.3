@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Image,
   KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
@@ -21,11 +22,14 @@ import ScreenFlash from '../components/ScreenFlash';
 import LogoMark from '../components/LogoMark';
 import CoachCard from '../components/CoachCard';
 import NeonInput from '../components/NeonInput';
+import PhotoVeil from '../components/PhotoVeil';
 import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES } from '../data/coaches';
 import SideloadAssistant from './SideloadAssistant';
-import { colors, monoFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
+
+const HERO = require('../../assets/art/splash-hero.png');
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
 import { COUNTRY_OPTIONS, optionForLabel, verifyLocation } from '../data/location';
 import * as backend from '../data/backend';
@@ -41,10 +45,59 @@ type Props = {
   onSignedIn?: () => void;
 };
 
+// ── THE DOOR'S FACE — the floodlit photograph, the crest, and the two-line
+//    wordmark. The photo dissolves into the page through PhotoVeil so the
+//    whole screen reads as one continuous surface, not a header banner. ──
+function DoorHero({
+  width,
+  lines,
+  sub,
+  bleed = true,
+  loopProps,
+  glowStyle,
+}: {
+  width: number;
+  lines: [string, string];
+  sub?: string;
+  /** stretch edge-to-edge over the scroll padding (false on padded roots) */
+  bleed?: boolean;
+  loopProps?: any;
+  glowStyle?: any;
+}) {
+  const H = 252;
+  return (
+    <View
+      style={[
+        styles.heroBand,
+        bleed && { marginHorizontal: -PAGE_PAD, marginTop: -54 },
+        { width, height: H },
+      ]}
+    >
+      {/* bias the crop toward the night sky + floodlight; the player sits low */}
+      <Image
+        source={HERO}
+        style={{ position: 'absolute', top: -70, left: 0, width, aspectRatio: 768 / 1344 }}
+        resizeMode="cover"
+      />
+      <PhotoVeil width={width} height={H} warmAt={{ x: width * 0.72, y: H * 0.3, r: width * 0.55 }} />
+      <View style={styles.heroCrest}>
+        <LogoMark size={54} loopProps={loopProps} glowStyle={glowStyle} />
+      </View>
+      <View style={styles.heroText}>
+        <Text style={styles.heroHead}>{lines[0]}</Text>
+        <Text style={[styles.heroHead, styles.heroHeadAccent]}>{lines[1]}</Text>
+        {!!sub && <Text style={styles.heroSub}>{sub}</Text>}
+      </View>
+    </View>
+  );
+}
+
 export default function SignInScreen({ onSignedIn }: Props) {
   const { width } = useWindowDimensions();
+  // never wider than the phone column App.tsx frames on desktop/web
+  const doorWidth = Math.min(width, 430);
   // one coach — give the card the full width instead of splitting for two
-  const cardWidth = Math.min(width - PAGE_PAD * 2, 232);
+  const cardWidth = Math.min(doorWidth - PAGE_PAD * 2, 232);
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -168,11 +221,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
       <View style={styles.flex}>
         <GridBackground />
         <ScreenFlash />
-        <View style={styles.crestWrap}>
-          <View style={{ marginTop: 120 }}>
-            <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
-          </View>
-        </View>
+        <DoorHero
+          width={doorWidth}
+          lines={['THE SEASON', 'IS FULL']}
+          bleed={false}
+          loopProps={loopProps}
+          glowStyle={glowStyle}
+        />
         <View style={styles.fullCard}>
           <Text style={styles.fullTag}>{seasonFull.season} — FULL</Text>
           <Text style={styles.fullCount}>
@@ -199,10 +254,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
         <GridBackground />
         <ScreenFlash />
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
-          <View style={styles.crestWrap}>
-            <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
-          </View>
-          <Text style={styles.headline}>YOUR SEAT IS LIVE</Text>
+          <DoorHero
+            width={doorWidth}
+            lines={['YOUR SEAT', 'IS LIVE']}
+            sub="Your reference token is below — the founder finds you with it."
+            loopProps={loopProps}
+            glowStyle={glowStyle}
+          />
           <View style={styles.tokenCard}>
             <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
             <Text style={styles.tokenHint}>
@@ -250,11 +308,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
           keyboardShouldPersistTaps="handled"
           bounces={false}
         >
-          <View style={styles.crestWrap}>
-            <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
-          </View>
-
-          <Text style={styles.headline}>YOUR COACH IS WAITING</Text>
+          <DoorHero
+            width={doorWidth}
+            lines={['YOUR COACH', 'IS WAITING']}
+            sub={'Rooms and the till light up for you when your seat opens.'}
+            loopProps={loopProps}
+            glowStyle={glowStyle}
+          />
 
           <View style={styles.cardsRow}>
             {COACHES.map((c, i) => (
@@ -468,17 +528,35 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
   },
   crestWrap: { alignItems: 'center', marginBottom: 6 },
-  headline: {
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 15,
-    fontWeight: '900',
-    letterSpacing: 4.5,
-    color: colors.primary,
-    marginTop: 8,
-    marginBottom: 16,
-    textShadowColor: 'rgba(57,255,106,0.6)',
+  // ── the photographic head ──
+  heroBand: {
+    marginBottom: 18,
+    overflow: 'hidden',
+    backgroundColor: colors.bg,
+  },
+  heroCrest: { position: 'absolute', top: 20, alignSelf: 'center' },
+  heroText: { position: 'absolute', left: 22, right: 22, bottom: 15 },
+  heroHead: {
+    fontFamily: displayFont,
+    fontSize: 35,
+    lineHeight: 33,
+    letterSpacing: 0.6,
+    color: colors.fg,
+    textTransform: 'uppercase',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 12,
+  },
+  heroHeadAccent: { color: colors.primary, letterSpacing: 2 },
+  heroSub: {
+    marginTop: 9,
+    fontFamily: bodyFont,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: 'rgba(238,242,236,0.84)',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   cardsRow: {
     flexDirection: 'row',
@@ -489,20 +567,19 @@ const styles = StyleSheet.create({
   modeChip: {
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    borderRadius: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
   modeChipOn: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.1)' },
-  modeTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: colors.muted },
+  modeTxt: { fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 1.6, color: colors.muted },
   modeTxtOn: { color: colors.primary },
   form: {},
   fieldGap: { height: 11 },
   geoTitle: {
-    fontFamily: monoFont,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 2.2,
+    fontFamily: bodyFontHeavy,
+    fontSize: 10.5,
+    letterSpacing: 2,
     color: colors.warm,
     textAlign: 'center',
     marginBottom: 10,
@@ -511,40 +588,39 @@ const styles = StyleSheet.create({
   geoChip: {
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.3)',
-    borderRadius: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
+    borderRadius: 9,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     backgroundColor: 'rgba(10,15,10,0.5)',
   },
   geoChipOn: { borderColor: colors.accent, backgroundColor: 'rgba(242,192,120,0.1)' },
-  geoChipTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: colors.muted },
+  geoChipTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 1.1, color: colors.muted },
   geoChipTxtOn: { color: colors.accent },
   geoNote: {
-    fontFamily: monoFont,
-    fontSize: 5.8,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-    color: colors.muted,
+    fontFamily: bodyFont,
+    fontSize: 11.5,
+    letterSpacing: 0.3,
+    color: 'rgba(143,184,155,0.85)',
     textAlign: 'center',
-    lineHeight: 11,
+    lineHeight: 17,
     marginBottom: 16,
+    marginTop: 4,
   },
   seatLiveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 14 },
   seatLiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 5 },
-  seatLiveTxt: { fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 2, color: colors.primary },
+  seatLiveTxt: { fontFamily: monoFont, fontSize: 9.5, fontWeight: '900', letterSpacing: 2, color: colors.primary },
   seatNote: {
-    marginTop: 9,
-    fontFamily: monoFont,
-    fontSize: 5.6,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    color: 'rgba(143,184,155,0.6)',
+    marginTop: 10,
+    fontFamily: bodyFont,
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    color: 'rgba(143,184,155,0.65)',
     textAlign: 'center',
-    lineHeight: 11,
+    lineHeight: 15,
   },
-  installLinkWrap: { marginTop: 12, alignSelf: 'center' },
+  installLinkWrap: { marginTop: 14, alignSelf: 'center' },
   installLink: {
-    fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+    fontFamily: bodyFontBold, fontSize: 12, letterSpacing: 1.2, color: colors.accent,
     borderBottomWidth: 1, borderBottomColor: 'rgba(242,192,120,0.5)', paddingBottom: 2,
   },
   fullCard: {
@@ -555,18 +631,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15,26,19,0.92)',
     padding: 18,
   },
-  fullTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 2.4, color: colors.accent, textAlign: 'center' },
-  fullCount: { marginTop: 7, fontSize: 17, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
+  fullTag: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.4, color: colors.accent, textAlign: 'center' },
+  fullCount: { marginTop: 8, fontFamily: displayFont, fontSize: 24, letterSpacing: 2, color: colors.fg, textAlign: 'center' },
   fullBody: {
     marginTop: 12,
     marginBottom: 14,
-    fontFamily: monoFont,
-    fontSize: 6.8,
-    fontWeight: '700',
-    letterSpacing: 1.1,
+    fontFamily: bodyFont,
+    fontSize: 12,
+    letterSpacing: 0.4,
     color: colors.muted,
     textAlign: 'center',
-    lineHeight: 13.5,
+    lineHeight: 18,
   },
   tokenCard: {
     borderWidth: 1.2,
@@ -577,19 +652,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   tokenTag: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
+    fontFamily: bodyFontHeavy,
+    fontSize: 10,
     letterSpacing: 2.4,
     color: colors.primary,
     textAlign: 'center',
   },
   tokenHint: {
     marginTop: 10,
-    fontFamily: monoFont,
-    fontSize: 6.6,
-    lineHeight: 12,
-    letterSpacing: 1,
+    fontFamily: bodyFont,
+    fontSize: 12,
+    lineHeight: 18,
+    letterSpacing: 0.3,
     color: colors.muted,
     textAlign: 'center',
   },
@@ -612,20 +686,18 @@ const styles = StyleSheet.create({
   },
   tokenFine: {
     marginTop: 10,
-    fontFamily: monoFont,
-    fontSize: 5.6,
-    letterSpacing: 1.2,
+    fontFamily: bodyFont,
+    fontSize: 10,
+    letterSpacing: 0.9,
     color: 'rgba(143,184,155,0.65)',
     textAlign: 'center',
   },
   cta: {
-    height: 52,
-    borderRadius: 13,
+    height: 54,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(57,255,106,0.06)',
-    borderWidth: 1.3,
-    borderColor: colors.primary,
+    backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     elevation: 6,
@@ -633,31 +705,28 @@ const styles = StyleSheet.create({
   ctaBusy: { opacity: 0.75 },
   ctaOff: { opacity: 0.4 },
   doorError: {
-    marginTop: 10,
-    fontFamily: monoFont,
-    fontSize: 6.6,
-    lineHeight: 10.5,
-    letterSpacing: 1,
+    marginTop: 12,
+    fontFamily: bodyFontStrong,
+    fontSize: 12,
+    lineHeight: 17,
+    letterSpacing: 0.3,
     color: colors.loss,
     textAlign: 'center',
   },
   infoNote: {
-    marginTop: 10,
-    fontFamily: monoFont,
-    fontSize: 6.6,
-    lineHeight: 10.5,
-    letterSpacing: 1,
+    marginTop: 12,
+    fontFamily: bodyFontStrong,
+    fontSize: 12,
+    lineHeight: 17,
+    letterSpacing: 0.3,
     color: colors.primary,
     textAlign: 'center',
   },
   ctaText: {
-    fontFamily: monoFont,
-    fontSize: 10.5,
-    fontWeight: '900',
-    letterSpacing: 4,
-    color: colors.primary,
-    textShadowColor: 'rgba(57,255,106,0.7)',
-    textShadowRadius: 8,
+    fontFamily: bodyFontHeavy,
+    fontSize: 13.5,
+    letterSpacing: 2.4,
+    color: '#07130b',
   },
   footerRow: {
     flexDirection: 'row',
@@ -666,7 +735,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     fontFamily: monoFont,
-    fontSize: 6.5,
+    fontSize: 9,
     letterSpacing: 2.4,
     color: 'rgba(143,184,155,0.5)',
   },

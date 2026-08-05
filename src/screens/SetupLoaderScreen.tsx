@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
+import PhotoVeil from '../components/PhotoVeil';
 import { useSplashAnimation } from '../hooks/useSplashAnimation';
 import { colors, monoFont } from '../theme';
+
+// the same night the splash opened on — the boot keeps the world continuous
+const HERO = require('../../assets/art/splash-hero.png');
 
 // Version comes from app.json at runtime — never hardcode it here.
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -24,6 +28,7 @@ type Props = {
  */
 export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
   const [statusIdx, setStatusIdx] = useState(0);
+  const { width: scrW, height: scrH } = useWindowDimensions();
 
   const statuses = useMemo(
     () => [
@@ -61,6 +66,11 @@ export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
   return (
     <View style={styles.root}>
       <GridBackground />
+
+      {/* the splash's night, dimmed — booting feels like staying inside the
+          same room, not a jump to a progress screen */}
+      <Image source={HERO} style={{ position: 'absolute', width: scrW, height: scrH, opacity: 0.42 }} resizeMode="cover" />
+      <PhotoVeil width={scrW} height={scrH} warmAt={{ x: scrW * 0.5, y: scrH * 0.34, r: scrW * 0.8 }} grain={0.05} />
 
       {/* what this loader is for — small kicker over the crest */}
       <Text style={styles.kicker}>SETTING UP THE MAIN APP</Text>
