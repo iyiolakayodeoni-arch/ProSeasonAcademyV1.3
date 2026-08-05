@@ -632,6 +632,21 @@ export async function tillSubscribe(key: string, academyId: string, plan: 'pro' 
   return r?.ok === true;
 }
 
+/** issue a refund via the founder-desk (action: 'refund')
+ * key = founder session key (bearer token is attached automatically by founderFn)
+ * paymentIntent or charge required
+ */
+export async function founderRefund(key: string, paymentIntent?: string | null, charge?: string | null, amount?: number | null, reason?: string | null): Promise<any | null> {
+  if (!paymentIntent && !charge) return null;
+  const body: any = { action: 'refund' } as any;
+  if (paymentIntent) body.payment_intent = paymentIntent;
+  if (charge) body.charge = charge;
+  if (amount) body.amount = amount;
+  if (reason) body.reason = reason;
+  const r = await founderFn('founder-desk', key, body);
+  return r ?? null;
+}
+
 // ── realtime rooms (presence + live message fan-out) ────────
 export type CloudEvent =
   | { type: 'message'; channel: string; message: ServerMessage }

@@ -1,0 +1,38 @@
+# Template: Staging integration smoke pipeline
+# Copy to .github/workflows/staging-smoke.yml and provide secrets to run.
+
+name: Staging smoke run (template)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  staging-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: Run unit & webhook smoke tests
+        run: npm run test && npm run test:ci-smoke
+
+      # Optional staging checks (requires secrets below)
+      - name: Staging smoke: run SQL migrations against staging
+        if: ${{ secrets.STAGING_SUPABASE_URL && secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        env:
+          SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          echo "Staging secrets present — would run lightweight smoke SQL checks here."
+
+# Required secrets when enabling staging checks:
+#  STAGING_SUPABASE_URL
+#  STAGING_SUPABASE_SERVICE_ROLE_KEY (CI-only, never in client)
+#  (Optional) STAGING_STRIPE_SECRET, STAGING_STRIPE_WEBHOOK_SECRET
+
+# This template includes a gated step that only runs if STAGING_SUPABASE_* secrets are set in GitHub.
+# To enable: copy to .github/workflows/staging-smoke.yml, add secrets to repo, and run workflow manually.

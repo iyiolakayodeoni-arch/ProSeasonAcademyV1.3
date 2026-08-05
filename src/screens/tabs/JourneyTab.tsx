@@ -32,6 +32,11 @@ import LossJournal from '../LossJournal';
 import MarketingShareCard from '../../components/MarketingShareCard';
 import { JourneyStage } from '../../data/journey';
 import { useCloud } from '../../data/cloudSync';
+import PlayerCard from '../../components/PlayerCard';
+import StatRing from '../../components/StatRing';
+import { playerCardData, evidenceFromVault } from '../../data/playerCard';
+import { useJourneyProgress } from '../../data/progress';
+import { useLessonThread } from '../../data/lessonThread';
 import {
   addBenchmarkCheckpoint,
   benchmarkGap,
@@ -181,15 +186,6 @@ function Kpi({ label, value, accent = false }: { label: string; value: string; a
   );
 }
 
-function MetricPill({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.metricPill}>
-      <Text style={styles.metricPillLabel}>{label}</Text>
-      <Text style={styles.metricPillValue}>{value}</Text>
-    </View>
-  );
-}
-
 function DeltaPill({
   label,
   value,
@@ -302,10 +298,10 @@ function SnapshotCard({
       </View>
 
       <View style={styles.metricWrap}>
-        <MetricPill label="POSS" value={`${snapshot.summary.avgPossession.toFixed(1)}%`} />
-        <MetricPill label="ON TARGET" value={snapshot.summary.avgShotsOnTarget.toFixed(1)} />
-        <MetricPill label="SHOT ACC" value={`${snapshot.summary.shotAccuracy.toFixed(1)}%`} />
-        <MetricPill label="TACKLES" value={snapshot.summary.avgTacklesWon.toFixed(1)} />
+        <StatRing label="POSS" value={snapshot.summary.avgPossession} suffix="%" size={56} />
+        <StatRing label="ON TARGET" value={snapshot.summary.avgShotsOnTarget} size={56} />
+        <StatRing label="SHOT ACC" value={snapshot.summary.shotAccuracy} suffix="%" size={56} />
+        <StatRing label="TACKLES" value={snapshot.summary.avgTacklesWon} size={56} />
       </View>
 
       {delta && (
@@ -443,6 +439,25 @@ export default function JourneyTab({ coach }: { coach: Coach; onOpenStage: (_sta
       if (count > 0) setCloudNote(`SYNCED ${count} UNSENT CHECKPOINT${count === 1 ? '' : 'S'} TO SUPABASE.`);
     });
   }, [cloud.online, coach.id]);
+
+  // PlayerCard wiring: derive the card from local ledger + progress + thread
+  const progress = useJourneyProgress();
+  const threadState = useLessonThread();
+  const evidence = evidenceFromVault({
+    played: vault.played,
+    w: vault.w,
+    d: vault.d,
+    l: vault.l,
+    ga: vault.ga,
+    cleanSheets: vault.cleanSheets,
+    matches: vault.matches.map((m) => ({ composure: m.composure, ledAt75: m.ledAt75, decisive: m.decisive, note: m.note })),
+    journalTotal: journal.total,
+    journalStreakDays: journal.streakDays,
+    threadSettled: (threadState.heldCount ?? 0) + (threadState.brokeCount ?? 0) + (threadState.current ? 1 : 0),
+    threadHeld: threadState.heldCount ?? 0,
+    threadBroke: threadState.brokeCount ?? 0,
+  });
+  const playerCard = playerCardData(progress, evidence);
 
   const sideOf = (matchId: string): OcrSide => playerSides[matchId] ?? 'left';
 
@@ -997,6 +1012,23 @@ export default function JourneyTab({ coach }: { coach: Coach; onOpenStage: (_sta
             </View>
           </View>
 
+          {/* Inserted PlayerCard component wired to the local ledger + progress */}
+          <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 8 }}>
+            <PlayerCard
+              rating={playerCard.rating}
+              stats={playerCard.stats}
+              stageN={playerCard.stageN}
+              totalStages={playerCard.totalStages}
+              clearedCount={playerCard.clearedCount}
+              ascent={playerCard.ascent}
+              displayName={settings.displayName}
+              onPress={() => {
+                /* small affordance: open Match Vault when pressing the card */
+                setSheet('vault');
+              }}
+            />
+          </View>
+
           <View style={styles.proofStrip}>
             <Text style={styles.proofStripLabel}>{liveProof.label}</Text>
             <Text style={styles.proofStripSub}>{liveProof.sublabel}</Text>
@@ -1033,14 +1065,14 @@ export default function JourneyTab({ coach }: { coach: Coach; onOpenStage: (_sta
           </View>
 
           <View style={styles.metricWrap}>
-            <MetricPill label="POSS" value={`${liveSummary.avgPossession.toFixed(1)}%`} />
-            <MetricPill label="SHOTS" value={liveSummary.avgShots.toFixed(1)} />
-            <MetricPill label="ON TARGET" value={liveSummary.avgShotsOnTarget.toFixed(1)} />
-            <MetricPill label="PASS" value={`${liveSummary.avgPassAccuracy.toFixed(1)}%`} />
-            <MetricPill label="SHOT ACC" value={`${liveSummary.shotAccuracy.toFixed(1)}%`} />
-            <MetricPill label="TACKLES" value={liveSummary.avgTacklesWon.toFixed(1)} />
-            <MetricPill label="SAVES" value={liveSummary.avgSaves.toFixed(1)} />
-            <MetricPill label="CLEAN SHEETS" value={String(liveSummary.cleanSheets)} />
+            <StatRing label="POSS" value={liveSummary.avgPossession} suffix="%" size={64} />
+            <StatRing label="SHOTS" value={liveSummary.avgShots} size={64} />
+            <StatRing label="ON TARGET" value={liveSummary.avgShotsOnTarget} size={64} />
+            <StatRing label="PASS" value={liveSummary.avgPassAccuracy} suffix="%" size={64} />
+            <StatRing label="SHOT ACC" value={liveSummary.shotAccuracy} suffix="%" size={64} />
+            <StatRing label="TACKLES" value={liveSummary.avgTacklesWon} size={64} />
+            <StatRing label="SAVES" value={liveSummary.avgSaves} size={64} />
+            <StatRing label="CLEAN SHEETS" value={liveSummary.cleanSheets} size={64} />
           </View>
 
           <View style={styles.premiumPanel}>
@@ -1560,7 +1592,7 @@ const styles = StyleSheet.create({
   },
   kpiValue: { fontFamily: bodyFontHeavy, fontSize: 18, color: colors.primary },
   kpiLabel: { marginTop: 4, fontFamily: monoFont, fontSize: 5.6, letterSpacing: 1.2, color: colors.muted },
-  metricWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  metricWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 12, alignItems: 'center', justifyContent: 'flex-start' },
   metricPill: {
     width: '47%',
     borderWidth: 1,
