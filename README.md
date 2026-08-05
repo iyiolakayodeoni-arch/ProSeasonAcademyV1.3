@@ -2,7 +2,7 @@
 
 **Onliversity's ProSeasonAcademy — Pro Season, the EA SPORTS FC 26/27 Console Pro development programme.**
 
-**Version 1.3.0** · `com.onliversity.proseasonacademy` · Expo SDK 57 / React Native 0.86 · Android APK (sideloaded — deliberately not on any store)
+**Version 1.3.0** · `com.onliversity.proseasonacademy` · Expo SDK 57 / React Native 0.86 · Android APK (private distribution — deliberately not on any public store)
 
 You lock in **one coach — permanently** — as your voice, guide and accountability presence on a
 **universal six-stage development journey** (See Yourself → Control Yourself → Read the Game →
@@ -25,8 +25,9 @@ Across the entire application — from **The Baseline Week** to **The Journey (O
 5. **The 7-Day Cadence:** Days 1–3 build momentum with Matches 1, 2, and 3; Day 4 is Rest Day 1 (mid-week rest & reflection, no match played); Day 5 is Match 4; Day 6 is Rest Day 2 (pre-finale rest & preparation, no match played); Day 7 is Match 5 (The Finale) & Profile Card seal.
 6. **The Philosophy:** *"In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way."*
 
-**Private enterprise software.** Distributed inside the Onliversity ecosystem — not on any
-app store. **Season One is capped at 1,000 seats**, enforced in the database, so coaching
+**Private enterprise software.** Distributed inside the Onliversity ecosystem — its own
+**Package Manager** companion app (`onliversity-pm/`) plus direct APK sideload — never on any
+public app store. **Season One is capped at 1,000 seats**, enforced in the database, so coaching
 stays personal and every member can actually be tracked and spoken to.
 
 ---
@@ -57,27 +58,50 @@ the full build ledger, entry by entry):
   substantive reflections earn a green **HONEST LEDGER** verification. Enforced at every
   submission gate (Mirror Session, Baseline Week, Stage Scan, Loss Journal, Match Vault,
   Community, Contact) with live `HonestyBadge` feedback under every text box.
+- **The v14 platform — real accounts, announcements, news, push, location pricing**
+  *(05 Aug 2026)* — anonymous sessions are gone: members now register with **email + academy
+  name + password** through the `auth-register` / `auth-login` / `auth-reset` / `auth-delete`
+  edge functions (open registration, up to the 1,000-seat cap; the academy ID token is shown
+  exactly once at sign-up). Founder announcements reach the Home feed with read state
+  (`founder_announcements`), MetaBot findings land in `news_drafts` for founder approval and
+  surface as **FC 26/27 CONSOLE NEWS**, Expo push tokens register into `push_tokens` and are
+  drained by the `push-dispatch` cron, and pricing became **location-aware**: the ₦ naira
+  shelf is **Nigeria-only** (soft IP verify, founder override on the Desk) — every other
+  country, including the rest of Africa, sees the world shelf. The till stays closed until
+  the founder opens it from the Desk. Full rollout steps in `DEPLOY_V14.md`.
+- **Onliversity Package Manager + two-lane releases** *(05 Aug 2026)* — a private app-store
+  companion (`onliversity-pm/`) that reads one catalog manifest and installs/updates every
+  Onliversity app through the Android system installer (every install is one honest tap —
+  silent install is impossible, and the PM walks the user through Android 13+'s Restricted
+  Settings trap). PSA deep-links updates into the PM (`src/data/packageManager.ts`,
+  `onliversitypm://update?app=proseasonacademy`) and falls back to the direct APK when the
+  PM isn't installed; CI (`docs/release-onliversity.yml` + `scripts/publish-onliversity.mjs`)
+  builds the APK, uploads it to Supabase Storage, bumps the catalog and the `config` update
+  rows in one push. Pure-JS fixes ship instantly over the second lane — Expo Updates OTA.
+  See `RELEASE_PIPELINE.md` and `ONLIVERSITY_PM.md`.
 - **Season One money path, live in the database** — regional pricing is seeded and enforced:
-  Africa pays in naira credit packs (₦3,900 / ₦7,800 / ₦25,000, a deliberate subsidy versus
-  world prices), the rest of the world pays GBP subscriptions (£7.99 / £15.99 / £47.99).
-  The price is computed **by Postgres at checkout**, never by the phone. Doors: card
-  (Stripe), OPay manual transfer with holder-name verification, and a one-tap
-  "talk to me" rescue path. See `WHERE_WE_ARE.md`, `PAYMENTS.md`, `STRIPE_SETUP.md`.
+  **Nigeria** pays in naira credit packs (₦3,900 / ₦7,800 / ₦25,000, a deliberate subsidy
+  versus world prices), the rest of the world pays GBP subscriptions (£7.99 / £15.99 / £47.99).
+  The price is computed **by Postgres at checkout**, never by the phone, and every charge
+  leaves in **GBP** (PayPal cannot take naira directly — the member is shown both figures and
+  told plainly which one leaves their account). Doors: card (Stripe), PayPal where
+  configured (and a PayPal-only mode — `paypal-only.sql`), OPay manual
+  transfer with holder-name verification, and a one-tap "talk to me" rescue path. See
+  `WHERE_WE_ARE.md`, `PAYMENTS.md`, `STRIPE_SETUP.md`, `PAYPAL_SETUP.md`.
 - **Benchmark Tracker + stats-screen OCR** — the player's six-month record is built backward
   from evidence: each checkpoint is a 7-match batch of post-match stats screens. Screenshots
   are the proof; on-device OCR (`tesseract.js`) reads the numbers, and the record syncs to
   the cloud when there's signal.
-- **Founder announcements & the update system** — official founder posts reach the Home feed
-  (not chat), and every installed app checks `config.latest_version` on boot: a newer release
-  shows an amber UPDATE AVAILABLE banner pointing at the GitHub-Release APK. Full pipeline in
-  `UPDATE_SYSTEM.md` / `RELEASE_PIPELINE.md`.
 
 ---
 
 ## The member's path, screen by screen
 
-1. **Splash → Sign In** — anonymous-style auth inside the app; the 11-chip country picker at
-   sign-up routes the member to the Africa (credits) or World (subscription) money note.
+1. **Splash → Sign In** — real accounts inside the app: email + academy name + password
+   (register / login / reset), the academy ID token shown once at sign-up, and the 11-chip
+   country picker that sets the pricing shelf — Nigeria unlocks the naira credit packs,
+   everywhere else sees the world subscriptions. A built-in **Sideload Assistant** walks
+   anyone through "allow unknown apps" so nobody drops off at the door.
 2. **Coach Selection — the courtroom** — both coaches pitch in a one-way chat, banter and
    scout files included, then **"I'M WITH COACH X" → LOCK IT IN**. Permanent by design.
 3. **Coach Intro → Week Orientation → Baseline Week** — the coach's backstory in his voice,
@@ -93,7 +117,8 @@ the full build ledger, entry by entry):
 7. **Community — the halls** — `#general`, `#wins`, `#losses` plus read-only coach channels,
    DMs, reactions, typing, find-a-squad, live over Supabase Realtime with presence.
 8. **The Till & Founder Desk** — seats, plans, credits and the founder's command centre
-   (unlock: Settings → tap VERSION ×5 → paste the admin key).
+   (unlock: Settings → tap VERSION ×5 → paste the admin key). The till stays closed until
+   the founder opens it; "CARD REFUSED — THEY WANT TO PAY" sits above everything else.
 
 ---
 
@@ -114,9 +139,10 @@ npm start                 # Expo dev server
 | `npm run fix:gradle` | re-applies the Gradle-9 deprecation fixes (also runs on `postinstall`) |
 | `npx eas build --platform android --profile production` | **signed APK** → see `BUILD.md` |
 
-Local runs read `.env` (gitignored). Copy `.env.example` and fill in the Supabase URL + anon
-key (and optionally the OCR host). Cloud builds read them from `eas.json` instead — both are
-needed. `BUILD.md` explains why.
+Local runs read `.env` (gitignored). Copy `.env.example` and fill in
+`EXPO_PUBLIC_PSA_SUPABASE_URL` + `EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY` (and optionally the
+`EXPO_PUBLIC_PSA_OCR_URL` OCR host). Cloud builds read them from `eas.json` instead — both
+are needed. `BUILD.md` explains why.
 
 ---
 
@@ -134,33 +160,51 @@ PHONE — Expo SDK 57 / React Native 0.86
         │
         ▼
 SUPABASE  ymnkphqgjxexsnbgtqvk  ← the one live backend
-  ├─ Auth ............. anonymous sign-in (no passwords, ever)
-  ├─ Postgres ......... profiles · matches · channels · messages · wallets ·
-  │                     ledger · products · config · waitlist · benchmarks ·
-  │                     announcements · consult · strikes  (~26 tables, ~52 functions)
+  ├─ Accounts ......... email + academy name + password via the auth-* functions
+  │                     (register / login / reset / delete); open registration up
+  │                     to the seat cap. ensure-profile survives as the legacy gate
+  ├─ Postgres ......... profiles · matches · channels · messages · wallets · ledger ·
+  │                     products · tiers · entitlements · config · waitlist · strikes ·
+  │                     flagged_messages · contact_messages · consult_questions/answers ·
+  │                     fx_rates · pay_methods · payment_claims · benchmark_checkpoints ·
+  │                     founder_announcements · announcement_reads · news_drafts ·
+  │                     push_tokens · notification_queue · tos · notice_log · audit_log
+  │                     · banned_terms · pack_items · unlocks  (~31 tables, ~66 functions)
   ├─ RLS .............. players touch only their own rows; a forged
   │                     founder message is rejected by the database
   ├─ Realtime ......... live rooms from message INSERTs + presence
-  └─ Edge Functions ... 16 — ensure-profile (seat gate) · pay-start · pay-webhook ·
-                        refresh-fx · till-topup · till-subscribe · founder-desk ·
-                        founder-broadcast · admin-summary · push-dispatch · geo-verify ·
-                        auth-register/login/reset/delete · health
+  └─ Edge Functions ... 16 — auth-register/login/reset/delete · ensure-profile (seat
+                        gate, legacy) · geo-verify · push-dispatch · pay-start ·
+                        pay-webhook · refresh-fx · till-topup · till-subscribe ·
+                        founder-desk · founder-broadcast · admin-summary · health
 ```
 
 **`server/` is a backup only.** A complete self-hosted Node/SQLite backend, kept as a proven
 ₦0 escape hatch and as the behavioural map of what the database must do. Nothing in the app
 imports it. ⚠️ It does **not** implement the 1,000-seat gate — read `server/DEPLOYMENT.md`
-before ever switching to it.
+and `server/SWITCHING.md` before ever switching to it.
 
 **`metabot/`** is the scout: a keyless Node pipeline that reads EA news, YouTube, RSS and
 guide sites, composes lesson candidates, and waits for **your approval** before anything
-reaches a player. Its output is `src/data/liveFeed.json`, which feeds the Home feed, the
-stage-room mechanic lessons and the Side Quests.
+reaches a player. `npm run export` writes `src/data/liveFeed.json` (feeds the Home feed, the
+stage-room mechanic lessons and the Side Quests) **and** upserts the same candidates into
+`news_drafts`, where the founder approves them in the Desk before they appear on Home as
+**FC 26/27 CONSOLE NEWS** — nothing auto-publishes, ever.
+
+**`onliversity-pm/`** is the private app store: a companion Expo app
+(`com.onliversity.packagemanager`) that reads one catalog manifest
+(`onliversity-catalog.json` in the public `onliversity` Storage bucket), shows update state
+per app, and installs via the Android system installer — SHA-256 verified, one honest tap,
+with a first-run walkthrough for Android 13+ Restricted Settings. PSA deep-links into it for
+updates and falls back to the direct APK when it isn't installed. Design + hard truths in
+`ONLIVERSITY_PM.md`.
 
 **`supabase/`** is the database brain under version control: `schema.sql` plus the ordered
-migrations (seat gate, security, packs, tiers, access, consult, enforcement, notices, FX,
-payments, update system), `RUN_ALL.sql` to apply them in one paste, the 16 edge functions,
-and a test battery. `GO_LIVE.md` and `console-steps.md` walk the dashboard clicks.
+migrations (seat gate, security, packs, tiers, access, consult, enforcement, notices,
+FX ×3, Stripe, PayPal-only, rescue, claims, benchmark tracker, FINISH_PAYMENTS, update
+system), `RUN_ALL.sql` to apply them in one paste, **`v14-platform.sql`** on top (accounts,
+announcements, news drafts, push, location pricing — see `DEPLOY_V14.md`), the 16 edge
+functions, and a test battery. `GO_LIVE.md` and `console-steps.md` walk the dashboard clicks.
 
 **`src/audio/`** is the academy's ear. `sound.ts` owns every noise the app makes: short UI
 sounds (bubble pops, the referee whistle at lock-in and stage pass, the till), the 24-second
@@ -210,10 +254,13 @@ terms shown before anything else (`TermsSheet`, `LapsedGate`).
 
 **Payments:** the price is computed by the database at checkout — a tampered app cannot buy
 PRO for a penny — and every grant flows through one `grant_tier` path, one audit trail.
-Doors: card (Stripe webhook), OPay manual transfer verified against the registered holder
-name, PayPal where configured, and a one-tap rescue that sends the founder the member's ID,
-product and price. Setup docs: `STRIPE_SETUP.md`, `PAYPAL_SETUP.md`, `NIGERIA_PAYMENTS.md`,
-`MERCHANT_ACCOUNTS.md`, `PAYMENT_OPTIONS.md`.
+Doors: card (Stripe webhook), PayPal where configured, OPay manual transfer verified against
+the registered holder name, and a one-tap rescue that sends the founder the member's ID,
+product and price.
+The naira shelf is **Nigeria-only** (`pricing_region_for` + `geo-verify`, founder override
+on the Desk), and every charge leaves in GBP with the ₦ headline shown beside it. Setup
+docs: `STRIPE_SETUP.md`, `PAYPAL_SETUP.md`, `NIGERIA_PAYMENTS.md`, `MERCHANT_ACCOUNTS.md`,
+`PAYMENT_OPTIONS.md`.
 
 ---
 
@@ -223,13 +270,19 @@ product and price. Setup docs: `STRIPE_SETUP.md`, `PAYPAL_SETUP.md`, `NIGERIA_PA
 |---|---|---|
 | progress | `psa.progress.v1.<user>.<coachId>` | stages cleared, XP, badges, lesson refs |
 | session | `psa.session.v1` | signed-in, **the permanent coach lock**, intro, orientation, baseline |
+| settings | `psa.settings.v1` | name, country/region, platform, toggles |
 | baseline | `psa.baseline.v1` | the Baseline Week schedule, seals, moments, profile card |
 | mirror | `psa.mirror.v1` | Mirror Session state: intentions, checkpoints, moments, reviews |
 | thread | `psa.thread.v1` | the sworn lessons and how they held or broke |
 | vault | `psa.match-vault.v1` | every logged match (graded by the scan) |
 | journal | `psa.loss-journal.v1` | loss-journal lines |
 | benchmark | `psa.benchmark-tracker.v1` | six-month record: 7-match checkpoints + stats screens |
-| settings | `psa.settings.v1` | name, country/region, platform, toggles |
+| academy token | `psa.academy.token.v1` | the one-time sign-up token cache |
+| announcements | `psa.announcements.read.v1` | which founder posts were read |
+| cloud sync | `psa.cloud.handle.v1` · `.outbox.v1` · `.token.v1` | device handle, queued writes, cloud session |
+| onboarding | `psa.onboarding.done.v1` | the tour flag (reset by Delete Account) |
+| push | `psa.push.token.v1` · `.quiet.v1` | Expo push token + quiet hours |
+| canned replies | `psa.canned-replies.v1` | the founder's saved answers |
 
 Progress is keyed **per coach**, so the two journeys can never contaminate each other, and it
 survives a force-quit. The vault syncs to Supabase when there's signal and queues in an
@@ -237,14 +290,25 @@ outbox when there isn't — the app is offline-first throughout.
 
 ---
 
-## Shipping updates (no store, by design)
+## Shipping updates (no public store, by design)
 
-Members sideload APKs, and the founder controls the whole chain: tag a release → EAS builds
-the signed APK → upload to GitHub Releases → two `config` rows in Supabase
-(`latest_version`, `latest_apk_url`) → every app shows an amber update banner on boot.
-`UPDATE_SYSTEM.md` documents the pipeline end to end; `RELEASE_PIPELINE.md` and `BUILD.md`
-cover the signing and build steps; `GRADLE9_DEPRECATIONS.md` keeps the native build ahead of
-Gradle 9 (enforced by a test and a `postinstall` fixer).
+Two lanes, founder-controlled end to end (full picture in `RELEASE_PIPELINE.md`):
+
+1. **Full APK release** — push to `main` (or tag `v*`) → GitHub Actions
+   (`docs/release-onliversity.yml`) builds the signed APK via EAS →
+   `scripts/publish-onliversity.mjs` uploads it to the public `onliversity` Storage bucket,
+   upserts the PM catalog, and bumps the `config` rows (`latest_version`, `latest_apk_url`,
+   `latest_update_note`). Every installed app checks those rows on boot: the amber
+   UPDATE AVAILABLE banner appears, deep-links into the **Onliversity PM** when it's
+   installed (`onliversitypm://update?app=proseasonacademy`), and falls back to the direct
+   APK download otherwise. Members always tap INSTALL once — that's Android, not us.
+2. **JS OTA lane** — for pure-JavaScript fixes, Expo Updates pushes a new bundle that
+   applies on next launch. No download, no install prompt.
+
+The manual path still works without CI: `eas build` → upload the APK to GitHub Releases →
+set the two `config` rows by hand (`UPDATE_SYSTEM.md`). `BUILD.md` covers signing and
+builds; `GRADLE9_DEPRECATIONS.md` keeps the native build ahead of Gradle 9 (enforced by a
+test and a `postinstall` fixer); `ONLIVERSITY_PM.md` documents the store app itself.
 
 ---
 
@@ -256,17 +320,23 @@ Gradle 9 (enforced by a test and a `postinstall` fixer).
 | **`MIRROR_DIRECTION.md`** | the applied product direction: one Journey, The Standard, the Mirror Session |
 | `WHERE_WE_ARE.md` | the honest audit — what is live in the database right now, what's left |
 | `PROJECT_STATUS.md` | the long feature ledger, screen by screen, with the changelog |
+| `DEPLOY_V14.md` | the v14 platform rollout: accounts, announcements, news, push, location pricing |
+| `RELEASE_PIPELINE.md` | the two-lane release system: CI → Package Manager, and Expo Updates OTA |
+| `ONLIVERSITY_PM.md` | the private app store: design, hard truths, production checklist |
+| `ONLIVERSITY_WEBSITE_COPY.md` | ready-to-paste website copy for the Onliversity platform |
 | `GO_LIVE.md` / `console-steps.md` | Supabase SQL + dashboard setup, click by click |
 | `SUPABASE_MIGRATION.md` | the backend design and the reasoning behind it |
 | `SETUP.md` / `DEPLOY.md` | environment setup and deployment paths |
-| `UPDATE_SYSTEM.md` / `RELEASE_PIPELINE.md` | the sideload update pipeline |
+| `UPDATE_SYSTEM.md` | the sideload update pipeline, end to end |
 | `SEAT_CAP.md` | how the 1,000-seat gate is made unfudgeable |
 | `PAYMENTS.md` & friends | money: Stripe · PayPal · OPay/Paystack · merchant accounts · options |
 | `MATCH_SCAN_RITUAL.md` | the scan ritual, step by step |
 | `DESIGN_SYSTEM.md` | the visual language |
 | `SECURITY.md` | keys, RLS and threat model |
 | `ROADMAP.md` | the founder's direction — quality over quantity, seasons, no store |
+| `GRADLE9_DEPRECATIONS.md` | staying ahead of Gradle 9 on the native build |
 | `docs/JOURNEY_CURRENT_STATE.md` | deep documentation of the Journey as implemented |
+| `server/SWITCHING.md` | what it would actually take to fall back to the self-hosted server |
 | `RELEASE_CHECKLIST.md` | store-era notes, kept for the keystore history |
 
 ---
@@ -275,9 +345,12 @@ Gradle 9 (enforced by a test and a `postinstall` fixer).
 
 - The **anon key** is public by design and safe in `eas.json` — every table is behind RLS.
 - The **`service_role` key** must never appear in this repo or any build. It lives only in
-  Supabase → Edge Functions → Secrets. Verify with:
+  Supabase → Edge Functions → Secrets and as a **CI-only** repo secret for the release
+  pipeline. Verify the app bundle with:
   `grep -c 'service_role' dist/_expo/static/js/web/index-*.js` → must be `0`.
 - The **founder key** gates every admin action and is checked server-side; the app stores it
   on-device only after Supabase has confirmed it.
 - **Prices are server-computed** and every tier grant flows through one database function,
   so neither a tampered client nor a forged webhook can mint access silently.
+- APK updates are **SHA-256 verified** by the Package Manager before the system installer
+  ever sees them.
