@@ -150,7 +150,7 @@ in §3 is *not* used as a wash; only a whisper of cool steel appears on fine car
 | §3 FC 26 rests on a muted teal/blue-steel + neon accents | Reframed: the app keeps its own green-family resting chrome. A single `steel` neutral is used only on the RoleModelCard gradient edge + inset hairline; a neon `flash` is a one-beat live transition cue. No teal wash. |
 | §4 Condensed heavy uppercase headers + data face | Shared display-header `type` tokens applied to major headers; monospace kept for data readouts (Home/Journey/Feed) |
 | §4/§2 Multicolour gradient border animation (Siri-like) | `RoleModelCard` outer hairline is a gradient border — but in OUR palette (cool steel → brand green → coach gold), so it's the *treatment* inspired by the cue, not a colour copy |
-| §5 Sliding transitions + neon flash | Full-screen sheets + feed get a brief `ScreenFlash` live cue on entry |
+| §5 Sliding transitions + neon flash | Full-screen surfaces get a brief `ScreenFlash` live cue on entry — the full-screen sheets/feed, the earned-reveal sheet, and the SignIn entry screens (season-full / token / sign-in branches), so the "entering a screen" moment is consistent app-wide |
 | §6 Rivals Stages / Win Streak / Checkpoint + 15-rank Champs | `RivalsRankLadder` + a 15-rank Champions ladder in JourneyTab — the STRUCTURE mirrors the real ranked format; colours stay ProSeasonAcademy green/gold |
 | §2 Rating count-up reveal (Country→…→Rating) | Already present in `StageClearedSheet`; kept, with the flash finish |
 

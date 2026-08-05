@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
+import ScreenFlash from '../components/ScreenFlash';
 import LogoMark from '../components/LogoMark';
 import CoachCard from '../components/CoachCard';
 import NeonInput from '../components/NeonInput';
@@ -166,6 +167,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     return (
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <View style={styles.crestWrap}>
           <View style={{ marginTop: 120 }}>
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
@@ -195,6 +197,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     return (
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
           <View style={styles.crestWrap}>
             <LogoMark size={86} loopProps={loopProps} glowStyle={glowStyle} />
@@ -240,6 +243,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     >
       <View style={styles.flex}>
         <GridBackground />
+        <ScreenFlash />
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
