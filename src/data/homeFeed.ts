@@ -99,7 +99,7 @@ export function handAuthored(coach: Coach): FeedCardData[] {
       time: 'PINNED',
       headline: 'Mainline FC 26 competitive training sandbox.',
       body:
-        'We do not build for FC Mobile or casual touch-tap styles. This academy is calibrated exclusively for PS5 and Xbox Series X|S competitive play. Every tactic, controller button-combo, and Match Scan targets the mainline console gameplay — Division Rivals, Champions, and Clubs session debriefs.',
+        'This academy is calibrated exclusively for PS5 and Xbox Series X|S competitive play. Every tactic, controller button-combo, and Match Scan targets the mainline console gameplay — Division Rivals, Champions, and Clubs session debriefs.',
       cta: 'SWEAR THE CONSOLE STANDARD ›',
       metaRight: 'MAINLINE FC 26',
       accent: 'gold',

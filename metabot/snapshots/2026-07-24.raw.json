@@ -3,15 +3,6 @@
   "note": "Demo batch — REAL findings pulled from live web searches on 2026-07-24 ( EA official patch notes, r/EASportsFC, Sportskeeda, EA Forums, YouTube tutorial transcripts). In production the Anthropic web_search step produces this same shape automatically.",
   "findings": [
     {
-      "topicKey": "fc-mobile-26-patch-notes",
-      "kind": "PATCH_NOTE",
-      "patchVersion": "FC 26/27 Console",
-      "summary": "The EA SPORTS FC 26/27 Console season update changed core H2H gameplay: defenders react faster after kickoff, lofted through passes depend on passer attributes and distance, crossing and headers favour positioning and timing, small bumps are no longer automatic fouls, and seven new formations were added across H2H, VS Attack and Manager Mode.",
-      "whyItMatters": "Every mechanic the old season's meta was built on has shifted.",
-      "sourceUrl": "https://www.ea.com/en/games/ea-sports-fc/news/fc-26-patch-notes",
-      "sourceName": "EA SPORTS FC 26/27 Console — official patch notes"
-    },
-    {
       "topicKey": "kickoff-rush-remaining-window",
       "kind": "EXPLOIT",
       "patchVersion": "FC 26/27 Console",
@@ -46,15 +37,6 @@
       "whyItMatters": "Skill-move priorities feed the Trick of the Week slot.",
       "sourceUrl": "https://www.youtube.com/watch?v=yQ_KreuaZmk",
       "sourceName": "FC 26/27 Console complete tutorial (YouTube)"
-    },
-    {
-      "topicKey": "fc-mobile-26-patch-notes",
-      "kind": "PATCH_NOTE",
-      "patchVersion": "FC 26/27 Console",
-      "summary": "Third-party coverage of the same FC 26/27 Console update — duplicate of the official patch-notes finding above, included to demonstrate de-duplication by topic+patch instead of by URL.",
-      "whyItMatters": "Duplicate — the pipeline must drop this.",
-      "sourceUrl": "https://www.sportskeeda.com/esports/ea-fc-26-console-update-patch-notes-all-fixes-improvements-explored",
-      "sourceName": "Sportskeeda"
     }
   ]
 }

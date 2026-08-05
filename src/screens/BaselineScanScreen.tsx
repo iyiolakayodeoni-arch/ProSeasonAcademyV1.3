@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image } from 
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import LogoMark from '../components/LogoMark';
-import { RecordingPlayer, SECONDS_PER_MATCH_MIN } from '../components/RecordingPlayer';
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
@@ -66,7 +65,7 @@ import { colors, monoFont } from '../theme';
 const MIN_ANSWER = 12;
 
 type Phase = 'talk' | 'day' | 'locked' | 'reflection' | 'ambition' | 'card';
-type DayStep = 'arm' | 'match' | 'review' | 'analysis' | 'dayq';
+type DayStep = 'start' | 'match' | 'review' | 'analysis' | 'dayq';
 
 interface DraftMoment {
   id: string;
@@ -130,7 +129,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
-  const [step, setStep] = useState<DayStep>('arm');
+  const [step, setStep] = useState<DayStep>('start');
   const [notReady, setNotReady] = useState(false);
   const [now, setNow] = useState(Date.now());
   const scrollRef = useRef<ScrollView>(null);
@@ -142,9 +141,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [composure, setComposure] = useState<number | null>(null);
   const [moments, setMoments] = useState<DraftMoment[]>([]);
   const [dayAnswer, setDayAnswer] = useState('');
-  const [recPath, setRecPath] = useState<string | null>(null);
-  const [playbackSec, setPlaybackSec] = useState(0);
-  const [seekToSec, setSeekToSec] = useState<number | undefined>(undefined);
   const [momentName, setMomentName] = useState('');
   const [momentStart, setMomentStart] = useState(0);
   const [momentEnd, setMomentEnd] = useState(5);
@@ -218,9 +214,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
         answer: dayAnswer.trim(),
         moments: filed,
       },
-      recPath,
     );
-    sealBaselineDay(day, { recordingPath: recPath });
+    sealBaselineDay(day);
     // reset the day's drafts
     setGf(0);
     setGa(0);
@@ -228,11 +223,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setComposure(null);
     setMoments([]);
     setDayAnswer('');
-    setRecPath(null);
     setMomentName('');
     setMomentStart(0);
     setMomentEnd(5);
-    setStep('arm');
+    setStep('start');
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
       const d = currentBaselineDay(s);
@@ -277,7 +271,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setSealing(false);
   };
 
-  /** begin the match: manual observation only — no automated watchers */
+  /** begin the console match; all evidence is logged manually */
   const startMatch = async () => {
     sfx('whoosh');
     setStep('match');
@@ -359,7 +353,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Text style={styles.bluffTxt}>“{script.bluff}”</Text>
               </Animated.View>
 
-              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('arm'); }} style={styles.cta}>
+              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('start'); }} style={styles.cta}>
                 <Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text>
               </Pressable>
               <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}>
@@ -389,7 +383,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               )}
 
               {/* ── ARM (PRE-MATCH MANUAL BRIEFING) ── */}
-              {step === 'arm' && (
+              {step === 'start' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
                   <Text style={styles.heroLine}>THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE.</Text>
                   <Text style={styles.heroSub}>
@@ -466,23 +460,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
                     give each one a name. Then we analyse them one at a time.
                   </Text>
-                  {recPath ? (
-                    <>
-                      <RecordingPlayer uri={recPath} seekToSeconds={seekToSec} onCurrentSecond={setPlaybackSec} />
-                      <View style={styles.markRow}>
-                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentStart(Math.min(44, Math.max(0, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
-                          <Text style={styles.markBtnTxt}>MARK START ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
-                        </Pressable>
-                        <Pressable style={styles.markBtn} onPress={() => { sfx('pop'); setMomentEnd(Math.max(momentStart + 1, Math.min(45, Math.round(playbackSec / SECONDS_PER_MATCH_MIN)))); }}>
-                          <Text style={styles.markBtnTxt}>MARK END ≈ {Math.round(playbackSec / SECONDS_PER_MATCH_MIN)}’</Text>
-                        </Pressable>
-                      </View>
-                    </>
-                  ) : (
-                    <View style={styles.armNote}>
-                      <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS & UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MIN COOL-DOWN.</Text>
-                    </View>
-                  )}
+                  <View style={styles.armNote}>
+                    <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS AND UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MINUTE COOL-DOWN.</Text>
+                  </View>
 
                   <View style={styles.momentCard}>
                     <Text style={styles.qLabel}>NAME THE MOMENT (YOUR WORDS)</Text>
@@ -564,11 +544,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         <EyeIcon size={12} color={colors.accent} />
                         <Text style={styles.analysisHeadTxt}>MOMENT {mi + 1} · {m.startMin}’–{m.endMin}’ · {m.name.toUpperCase()}</Text>
                       </View>
-                      {recPath && (
-                        <Pressable hitSlop={8} onPress={() => setSeekToSec(m.startMin * SECONDS_PER_MATCH_MIN)}>
-                          <Text style={styles.playTxt}>▶ WATCH THIS MOMENT AGAIN</Text>
-                        </Pressable>
-                      )}
                       <View style={styles.armNote}>
                         <Text style={styles.armNoteTxt}>
                           THE CHINEDU WAY: Have your paper notes in front of you. You formulated your answers with pen on paper after your 24–30 min cool-down — now type your written truth into your database.

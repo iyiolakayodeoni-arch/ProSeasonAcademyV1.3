@@ -349,19 +349,6 @@
       }
     },
     {
-      "id": "mb-2026-07-24-006",
-      "origin": "metabot",
-      "kind": "PATCH_NOTE",
-      "headline": "FC 26/27 CONSOLE UPDATE",
-      "body": "the lab notes just dropped. the new fc 26/27 console 26 update brings new gameplay improvements, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
-      "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC 26/27 Console",
-      "discoveredAt": "2026-07-24",
-      "sourceName": "EA SPORTS FC 26/27 Console — official news",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-26-patch-notes",
-      "lifecycle": "fresh"
-    },
-    {
       "id": "mb-2026-07-24-002",
       "origin": "metabot",
       "kind": "PATCH_NOTE",
@@ -372,19 +359,6 @@
       "discoveredAt": "2026-07-24",
       "sourceName": "EA SPORTS FC 26/27 Console — official news",
       "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/playstyles-deep-dive",
-      "lifecycle": "fresh"
-    },
-    {
-      "id": "mb-2026-07-24-001",
-      "origin": "metabot",
-      "kind": "PATCH_NOTE",
-      "headline": "THE WORLD’S GAME UPDATE",
-      "body": "fresh patch, straight from the source. the new fc 26/27 console the world’s game update brings new global football tournament mode, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
-      "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC 26/27 Console",
-      "discoveredAt": "2026-07-24",
-      "sourceName": "EA SPORTS FC 26/27 Console — official news",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-worlds-game-update",
       "lifecycle": "fresh"
     }
   ]

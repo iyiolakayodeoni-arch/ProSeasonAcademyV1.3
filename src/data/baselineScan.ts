@@ -122,7 +122,6 @@ export interface BaselineDay {
   /** epoch ms when this day opened (day 1 = session start; later days = prev seal + 24h) */
   unlockedAt: number;
   entryIndex?: number; // match days: index into entries[]
-  recordingPath?: string | null; // the day's local recording, if any
   reflection?: { repeated: string; changed: string }; // day 6
 }
 
@@ -388,14 +387,14 @@ async function persist() {
 
 /** record one debriefed match; also lands in the real vault. The day whose
  *  match this is gets its entry index + recording path linked automatically. */
-export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>, recordingPath?: string | null): void {
+export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
   if (!session) return;
   const at = Date.now();
   session = { ...session, entries: [...session.entries, { ...entry, at }] };
   const idx = session.entries.length - 1;
   const matchDay = entryIndexToDay(idx);
   const days = session.days.map((d) =>
-    d.day === matchDay ? { ...d, entryIndex: idx, recordingPath: recordingPath ?? null } : d,
+    d.day === matchDay ? { ...d, entryIndex: idx } : d,
   );
   session = { ...session, days };
   const momentLine = entry.moments.length

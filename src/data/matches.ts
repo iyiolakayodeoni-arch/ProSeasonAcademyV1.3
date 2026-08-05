@@ -37,7 +37,7 @@ export type DecisiveWindow = 'EARLY' | 'AFTER 60' | 'AFTER 80';
 export interface MatchEntry {
   id: string;
   at: number; // epoch ms
-  source: 'manual' | 'scan' | 'watcher'; // 'watcher' = auto-logged by the on-device Match Watcher
+  source: 'manual' | 'scan';
   gf: number; // goals you scored
   ga: number; // goals you conceded
   mode: MatchMode;
@@ -157,10 +157,7 @@ export function removeMatch(id: string) {
   set({ matches: state.matches.filter((m) => m.id !== id) });
 }
 
-/** attach/update a self-rated head state on an existing receipt (THE MIND
- *  is semi-automatic by design: the machine counts goals, the player owns
- *  the psychology — the Mirror Session writes it after the full-time
- *  reflection, before the review). */
+/** attach/update a self-rated head state on an existing receipt. */
 export function setMatchComposure(id: string, composure: number) {
   const c = Math.max(1, Math.min(5, Math.round(composure)));
   set({
@@ -197,7 +194,7 @@ export function mergeServerMatches(rows: ServerMatchRowLike[]) {
     fresh.push({
       id: r.client_id,
       at: r.at,
-      source: r.source === 'watcher' ? 'watcher' : 'manual',
+      source: r.source === 'scan' ? 'scan' : 'manual',
       gf: clampGoals(r.gf),
       ga: clampGoals(r.ga),
       mode: (MATCH_MODES as readonly string[]).includes(r.mode ?? '') ? (r.mode as MatchMode) : 'RANKED',

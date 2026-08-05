@@ -60,7 +60,7 @@ export default function HearAboutScreen({ onDone }: Props) {
     [onDone],
   );
 
-  const armed = selected !== null;
+  const ready = selected !== null;
 
   return (
     <View style={styles.flex}>
@@ -105,13 +105,13 @@ export default function HearAboutScreen({ onDone }: Props) {
         {/* CTA */}
         <Animated.View entering={FadeInUp.delay(600).duration(320)}>
           <Pressable
-            disabled={!armed}
+            disabled={!ready}
             onPress={() => finish(selected)}
             onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
             onPressOut={() => (press.value = withSpring(0))}
           >
-            <Animated.View style={[styles.cta, ctaStyle, !armed && styles.ctaDim]}>
-              <Text style={[styles.ctaText, !armed && styles.ctaTextDim]}>ENTER THE ACADEMY</Text>
+            <Animated.View style={[styles.cta, ctaStyle, !ready && styles.ctaDim]}>
+              <Text style={[styles.ctaText, !ready && styles.ctaTextDim]}>ENTER THE ACADEMY</Text>
             </Animated.View>
           </Pressable>
           <Pressable onPress={() => finish(null)} hitSlop={8} style={styles.skipWrap}>

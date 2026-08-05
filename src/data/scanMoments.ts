@@ -17,7 +17,7 @@ import { isValidReflection } from './honestyGuard';
 
 // ── vocabulary ────────────────────────────────────────────────
 
-/** moments the EYE drops in by itself (score changed) */
+/** goal moments the player can choose to record during manual review */
 export const AUTO_MOMENTS = ['GOAL FOR', 'GOAL AGAINST'] as const;
 
 /** moments the player tags while reviewing their own match */
@@ -49,8 +49,8 @@ export interface TaggedMoment {
   kind: KeyMomentKind;
   when: MomentWindow | null; // null only on EYE-autos before the player sets it
   answer: string; // the player's reasoning under the coach's question
-  auto?: boolean; // tagged by THE EYE, not the player
-  eyeNote?: string; // EYE detail line, e.g. "spotted 12:47 in"
+  auto?: boolean; // retained for legacy records; new entries are manual
+  eyeNote?: string; // retained for legacy records
 }
 
 /** a review is complete when every tag has a window + a real answer */

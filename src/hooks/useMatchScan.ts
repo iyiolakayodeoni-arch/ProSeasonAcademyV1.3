@@ -3,7 +3,7 @@ import { JourneyStage } from '../data/journey';
 import { MatchEntry, objectiveCount } from '../data/matches';
 
 // ─────────────────────────────────────────────────────────────
-// MATCH SCAN state machine — armed → scanning → passed | failed.
+// MATCH SCAN state machine — ready → scanning → passed | failed.
 //
 // The scan is REAL: it grades the player's own Match Vault against
 // this stage's machine-checkable objectives. Nothing passes because
@@ -15,7 +15,7 @@ import { MatchEntry, objectiveCount } from '../data/matches';
 // Manual observation is where mental resilience is forged.
 // ─────────────────────────────────────────────────────────────
 
-export type ScanStatus = 'armed' | 'scanning' | 'passed' | 'failed';
+export type ScanStatus = 'ready' | 'scanning' | 'passed' | 'failed';
 
 export interface ScanTargetSpec {
   label: string;
@@ -70,7 +70,7 @@ export function useMatchScan(
   onPassed?: (r: ScanResult) => void,
   threadTotal = 0,
 ) {
-  const [status, setStatus] = useState<ScanStatus>('armed');
+  const [status, setStatus] = useState<ScanStatus>('ready');
   const [result, setResult] = useState<ScanResult | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // keep the freshest ledger without restarting an in-flight read
@@ -86,7 +86,7 @@ export function useMatchScan(
     [onPassed],
   );
 
-  /** arm the scan → read the vault → verdict */
+  /** start the scan → read the vault → verdict */
   const start = useCallback(() => {
     if (status === 'scanning') return;
     setStatus('scanning');
@@ -111,7 +111,7 @@ export function useMatchScan(
 
   const reset = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
-    setStatus('armed');
+    setStatus('ready');
     setResult(null);
   }, []);
 

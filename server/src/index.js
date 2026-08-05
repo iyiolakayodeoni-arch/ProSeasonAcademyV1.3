@@ -235,7 +235,7 @@ const server = http.createServer(async (req, res) => {
       return res.end(`<!doctype html><meta charset="utf-8"><title>PSA ADMIN</title>
 <body style="background:#0a0f0a;color:#eef2ec;font-family:monospace;padding:32px;max-width:960px;margin:auto">
 <h1 style="color:#39FF6A">PROSEASONACADEMY · ADMIN DESK</h1>
-<p>players <b>${s.users}</b> · matches <b>${s.matches}</b> (${s.watcherMatches} via THE EYE) · messages <b>${s.messages}</b> · matches this week <b>${s.matchesThisWeek}</b></p>
+<p>players <b>${s.users}</b> · matches <b>${s.matches}</b> · messages <b>${s.messages}</b> · matches this week <b>${s.matchesThisWeek}</b></p>
 <p style="color:#f2c078">JAN 1 SPLIT → AFRICA (credits): <b>${s.regions.africa}</b> · WORLD (subscription): <b>${s.regions.world}</b> · region unset: <b>${s.regions.unset}</b></p>
 <p style="color:#f2c078">TILL → wallets <b>${s.till.wallets}</b> · credits in players' hands <b>${s.till.creditsOut}</b> · PRO subs <b>${s.till.proSubs}</b> · store <b>${tillLive() ? 'OPEN' : 'OPENS ' + esc(GO_LIVE.slice(0, 10))}</b></p>
 <h2 style="color:#f2c078">TOP SCORERS — 7 DAYS</h2><ul>${top || '<li>none yet</li>'}</ul>

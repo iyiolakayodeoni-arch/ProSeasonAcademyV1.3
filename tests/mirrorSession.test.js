@@ -15,30 +15,33 @@ const root = path.join(__dirname, '..');
 
 // compile the mirror engine (and its dependency chain) to commonjs
 execSync(
-  `npx tsc --ignoreConfig src/data/mirrorSession.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0`,
+  `npx tsc --ignoreConfig src/data/mirrorSession.ts --outDir tests/.build --module commonjs --target es2019 --skipLibCheck --esModuleInterop --moduleResolution node --ignoreDeprecations 6.0 --types node`,
   { cwd: root, stdio: 'inherit' }
 );
 
 // the cloud uplink is a runtime concern here — remove it so the vault's
 // dynamic require fails soft (which addMatch is designed to survive)
-try { fs.unlinkSync(path.join(__dirname, '.build', 'cloudSync.js')); } catch {}
+try { fs.unlinkSync(path.join(__dirname, '.build', 'data', 'cloudSync.js')); } catch {}
 
 // stub the two react-native-touching modules for the plain-node runtime
 const stubDir = path.join(__dirname, '.build', 'node_modules');
 fs.mkdirSync(path.join(stubDir, 'react-native'), { recursive: true });
 fs.writeFileSync(
   path.join(stubDir, 'react-native', 'index.js'),
-  `module.exports = { NativeModules: {}, NativeEventEmitter: class { addListener() { return { remove() {} }; } }, Platform: { OS: 'ios' } };`
+  `module.exports = { NativeModules: {}, NativeEventEmitter: class { addListener() { return { remove() {} }; } }, Platform: { OS: 'ios', select: (options) => options.ios ?? options.default } };`
 );
 fs.mkdirSync(path.join(stubDir, '@react-native-async-storage', 'async-storage'), { recursive: true });
 fs.writeFileSync(
   path.join(stubDir, '@react-native-async-storage', 'async-storage', 'index.js'),
   `module.exports = { getItem: async () => null, setItem: async () => {}, removeItem: async () => {} };`
 );
+// react-native-url-polyfill is a no-op in this plain-node state-machine test.
+fs.mkdirSync(path.join(stubDir, 'react-native-url-polyfill'), { recursive: true });
+fs.writeFileSync(path.join(stubDir, 'react-native-url-polyfill', 'auto.js'), '');
 
-const M = require('./.build/mirrorSession.js');
-const T = require('./.build/lessonThread.js');
-const V = require('./.build/matches.js');
+const M = require('./.build/data/mirrorSession.js');
+const T = require('./.build/data/lessonThread.js');
+const V = require('./.build/data/matches.js');
 
 function fullHalf() {
   return {
@@ -102,9 +105,7 @@ async function main() {
   console.log('PASS 3 · intention captured; BEFORE version holds the player’s words');
 
   // ══ T4 · the full session sequence ══
-  const armed = await M.armMirrorSession();
-  assert.equal(M.getMirrorSession().phase, 'armed', 'arm → armed (capture optional, manual mode is first-class)');
-  assert.equal(armed, false, 'watcher unavailable on this runtime → manual mode is the fallback');
+  assert.equal(M.getMirrorSession().phase, 'intention', 'saved intention → ready to start the console match');
   M.beginMatch();
   assert.equal(M.getMirrorSession().phase, 'live', 'begin → live');
   M.atHalfTime();
@@ -149,7 +150,7 @@ async function main() {
   assert.equal(done.receipts[0].moments, 2, 'receipt counts reviewed moments');
   const carriedNow = T.getThread().entries.find((e) => e.status === 'carried');
   assert.ok(carriedNow && carriedNow.lesson.includes('rushed passes'), 'the sworn lesson takes the Thread');
-  console.log('PASS 4 · full sequence: arm → live → half-time → second half → score → memory → division → review → compare → lesson → receipt');
+  console.log('PASS 4 · full sequence: start → live → half-time → second half → score → memory → division → review → compare → lesson → receipt');
 
   // ══ T5 · a new session opens by asking about the lesson that was just sworn ══
   M.startMirrorSession(2);

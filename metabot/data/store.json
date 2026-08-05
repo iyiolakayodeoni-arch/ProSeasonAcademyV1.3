@@ -18,22 +18,6 @@
   ],
   "posts": [
     {
-      "id": "mb-2026-07-24-001",
-      "origin": "metabot",
-      "kind": "PATCH_NOTE",
-      "headline": "THE WORLD’S GAME UPDATE",
-      "body": "fresh patch, straight from the source. the new fc 26/27 console the world’s game update brings new global football tournament mode, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
-      "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC 26/27 Console",
-      "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-worlds-game-update",
-      "sourceName": "EA SPORTS FC 26/27 Console — official news",
-      "status": "approved",
-      "lifecycle": "fresh",
-      "fingerprint": "3318fd9c2b3d2767",
-      "reviewedAt": "2026-07-24T21:21:08.933Z"
-    },
-    {
       "id": "mb-2026-07-24-002",
       "origin": "metabot",
       "kind": "PATCH_NOTE",
@@ -78,37 +62,6 @@
       "status": "pending_review",
       "lifecycle": "fresh",
       "fingerprint": "787224f881caf471"
-    },
-    {
-      "id": "mb-2026-07-24-005",
-      "origin": "metabot",
-      "kind": "PATCH_NOTE",
-      "headline": "FC 26/27 CONSOLE UPDATE",
-      "body": "the lab notes just dropped. new community-driven gameplay is coming in the fc 26/27 console 26 update. improvements to kickoff rush, referees, new face scans and formations. we went through the changes so you play the update, not read it.",
-      "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC 26/27 Console",
-      "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-26-update-gameplay",
-      "sourceName": "EA SPORTS FC 26/27 Console — official news",
-      "status": "pending_review",
-      "lifecycle": "fresh",
-      "fingerprint": "c7d7a11434413e00"
-    },
-    {
-      "id": "mb-2026-07-24-006",
-      "origin": "metabot",
-      "kind": "PATCH_NOTE",
-      "headline": "FC 26/27 CONSOLE UPDATE",
-      "body": "the lab notes just dropped. the new fc 26/27 console 26 update brings new gameplay improvements, new features, and upgraded visuals! we went through the changes so you play the update, not read it.",
-      "cta": "READ THE BREAKDOWN ›",
-      "patchVersion": "FC 26/27 Console",
-      "discoveredAt": "2026-07-24",
-      "sourceUrl": "https://www.ea.com/games/ea-sports-fc/news/fc-mobile-26-patch-notes",
-      "sourceName": "EA SPORTS FC 26/27 Console — official news",
-      "status": "approved",
-      "lifecycle": "fresh",
-      "fingerprint": "5eef290b560af4f2",
-      "reviewedAt": "2026-07-24T21:21:09.012Z"
     },
     {
       "id": "mb-2026-07-24-007",

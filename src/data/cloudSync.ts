@@ -59,7 +59,7 @@ async function writeOutbox(ids: string[]) {
   await AsyncStorage.setItem(OUTBOX_KEY, JSON.stringify(ids)).catch(() => {});
 }
 
-/** called by the vault after every manual/watcher save (dynamic, see matches.ts) */
+/** called by the vault after every manual save (dynamic, see matches.ts) */
 export function pushMatch(entry: MatchEntry) {
   if (state.status !== 'online') {
     void readOutbox().then((ids) => {
@@ -89,7 +89,7 @@ function entryToWire(m: MatchEntry) {
     mechanicsUsed: m.mechanicsUsed,
     ledAt75: m.ledAt75,
     decisive: m.decisive,
-    source: m.source === 'watcher' ? 'watcher' : 'manual',
+    source: m.source === 'scan' ? 'scan' : 'manual',
     composure: m.composure,
     note: m.note,
   };

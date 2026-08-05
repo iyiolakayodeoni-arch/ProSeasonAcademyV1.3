@@ -124,7 +124,7 @@ function ScanRing() {
   );
 }
 
-function ScanStatusIcon({ status }: { status: 'armed' | 'scanning' | 'passed' | 'failed' }) {
+function ScanStatusIcon({ status }: { status: 'ready' | 'scanning' | 'passed' | 'failed' }) {
   if (status === 'scanning') return <ScanRing />;
   if (status === 'passed') return <CheckRingIcon size={15} color={colors.primary} />;
   if (status === 'failed') return <XMarkIcon size={11} color={colors.loss} />;
@@ -343,7 +343,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const ctaLabel =
     status === 'scanning'
       ? 'READING THE VAULT…'
-      : status === 'passed' || (cleared && status === 'armed')
+      : status === 'passed' || (cleared && status === 'ready')
         ? 'BACK TO THE MAP ›'
         : status === 'failed'
           ? 'RUN IT BACK — START A NEW MIRROR SESSION ›'
@@ -371,7 +371,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
 
   const handleCta = () => {
     if (scanDisabled) return;
-    if (status === 'passed' || (cleared && status === 'armed')) return onClose();
+    if (status === 'passed' || (cleared && status === 'ready')) return onClose();
     sfx('whoosh');
     setMirrorOpen(true); // the full Mirror Session: intention → evidence → lesson
   };
@@ -736,7 +736,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             <ScanStatusIcon status={status} />
             <View style={styles.scanStatusText}>
               <Text style={[styles.scanStatusTitle, status === 'failed' && { color: colors.loss }]}>
-                {status === 'armed'
+                {status === 'ready'
                   ? cleared
                     ? `STAGE ${stage.n} CLEARED — THE EVIDENCE HOLDS`
                     : 'READY FOR YOUR MIRROR SESSION'
@@ -747,7 +747,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
                       : 'OBJECTIVES NOT MET — RUN IT BACK'}
               </Text>
               <Text style={styles.scanStatusSub}>
-                {status === 'armed'
+                {status === 'ready'
                   ? `THE RESULT IS GRADED FROM YOUR VAULT — ${coach.name} NEVER READS YOUR HEAD`
                   : status === 'scanning'
                     ? 'THE VAULT IS BEING GRADED — HOLD TIGHT'

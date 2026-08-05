@@ -194,12 +194,10 @@ update the next time they open the app.
 ## Why not Expo Updates (OTA)?
 
 Expo Updates can push JavaScript changes over the air instantly — but only
-JavaScript. If you add a native module (like THE EYE MatchWatcher), change
 permissions, or update a native dependency, OTA updates cannot deliver it.
 You would need a full APK build anyway, and now you have two update paths
 to explain and debug.
 
-For a private, sideloaded app with native modules, direct APK distribution
 is simpler: one path, one truth, one kind of update that always works.
 
 ---
