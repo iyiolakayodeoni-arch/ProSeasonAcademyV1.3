@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CURRENT_STAGE, JOURNEY_SEASON } from './journey';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
 // JOURNEY PROGRESS STORE — the single source of truth for where
@@ -32,9 +33,13 @@ export interface ProgressState {
 }
 
 const KEY_BASE = 'psa.progress.v1';
-/** progress is per-coach: the lock is permanent, so is his ledger */
+/** progress is isolated per verified user + coach */
 let coachKey = 'unset';
-const storageKey = () => `${KEY_BASE}.${coachKey}`;
+const storageKey = () => {
+  const me = backend.getMe();
+  const userPart = me?.id ? me.id : 'anon';
+  return `${KEY_BASE}.${userPart}.${coachKey}`;
+};
 
 const EMPTY: ProgressState = {
   currentStage: CURRENT_STAGE,

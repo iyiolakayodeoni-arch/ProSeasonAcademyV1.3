@@ -21,8 +21,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addMatch } from './matches';
 import { isValidReflection } from './honestyGuard';
+import * as backend from './backend';
 
 const KEY = 'psa.baseline.v1';
+
+function baselineStorageKey(): string {
+  const me = backend.getMe();
+  return me?.id ? `${KEY}.${me.id}` : KEY;
+}
 
 export type MatchResult = 'W' | 'D' | 'L';
 
@@ -238,7 +244,7 @@ export async function loadBaseline(coachId: string): Promise<BaselineSession> {
   if (!hydrated) {
     hydrated = true;
     try {
-      const raw = await AsyncStorage.getItem(KEY);
+      const raw = await AsyncStorage.getItem(baselineStorageKey());
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<BaselineSession>;
         session = {
@@ -377,7 +383,7 @@ export function getBaseline(): BaselineSession | null {
 }
 
 async function persist() {
-  await AsyncStorage.setItem(KEY, JSON.stringify(session)).catch(() => {});
+  await AsyncStorage.setItem(baselineStorageKey(), JSON.stringify(session)).catch(() => {});
 }
 
 /** record one debriefed match; also lands in the real vault. The day whose
@@ -471,7 +477,7 @@ function coachReadFor(coachId: string, avg: number, w: number, l: number): strin
 export async function resetBaselineForDev(): Promise<void> {
   session = null;
   hydrated = false;
-  await AsyncStorage.removeItem(KEY).catch(() => {});
+  await AsyncStorage.removeItem(baselineStorageKey()).catch(() => {});
 }
 
 // ═════════════════════════════════════════════════════════════

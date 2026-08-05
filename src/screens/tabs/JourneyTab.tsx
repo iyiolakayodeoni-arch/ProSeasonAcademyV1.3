@@ -372,6 +372,7 @@ export default function JourneyTab({
                       duration: sq.duration,
                       isSideQuest: true,
                       parentStageN: s.n,
+                      id: sq.id,
                       internalSource: sq.internalSource,
                       internalPatchVersion: sq.internalPatchVersion,
                       coachExplanation: sq.coachExplanation,

@@ -14,7 +14,7 @@ import {
 } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import { SideLesson } from '../data/sideLesson';
-import InputCombo, { ControllerButton } from '../components/ButtonGlyph';
+import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { sfx } from '../audio/sound';
 import { colors, monoFont } from '../theme';
 

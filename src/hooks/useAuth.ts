@@ -23,8 +23,6 @@ export type AuthApi = {
   }) => Promise<authApi.AuthResult | authApi.AuthFail>;
   login: (email: string, password: string) => Promise<authApi.AuthResult | authApi.AuthFail>;
   requestReset: (email: string) => Promise<{ ok: true; message: string } | authApi.AuthFail>;
-  /** legacy anonymous path — kept for offline/dev */
-  enterAcademy: (handle: string) => Promise<backend.CloudUser | null>;
 };
 
 function applyProfile(profile: authApi.AuthProfile) {
@@ -86,26 +84,6 @@ export function useAuth(): AuthApi {
     return authApi.requestPasswordReset(email);
   }, []);
 
-  const enterAcademy = useCallback(
-    async (handle: string): Promise<backend.CloudUser | null> => {
-      if (loading) return null;
-      setLoading(true);
-      try {
-        const s = getSettings();
-        const name = handle.trim() || s.displayName;
-        const me = await backend.ensureAuth(name, '', s.platform, s.geo);
-        if (me) {
-          setDisplayName(me.handle);
-          setAcademyId(me.academyId);
-        }
-        return me;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loading],
-  );
-
   return {
     loading,
     lastError,
@@ -113,6 +91,5 @@ export function useAuth(): AuthApi {
     register,
     login,
     requestReset,
-    enterAcademy,
   };
 }

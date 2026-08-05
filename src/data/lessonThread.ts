@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as backend from './backend';
 
 // ─────────────────────────────────────────────────────────────
 // THE THREAD — the lesson ledger. The MAIN QUEST of the academy.
@@ -35,7 +36,10 @@ export interface ThreadState {
 
 const KEY_BASE = 'psa.thread.v1';
 let coachKey = 'unset';
-const storageKey = () => `${KEY_BASE}.${coachKey}`;
+const storageKey = () => {
+  const me = backend.getMe();
+  return me?.id ? `${KEY_BASE}.${me.id}.${coachKey}` : `${KEY_BASE}.${coachKey}`;
+};
 
 let state: ThreadState = { entries: [] };
 let hydrated = false;

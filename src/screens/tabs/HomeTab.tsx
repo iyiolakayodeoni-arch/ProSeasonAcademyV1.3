@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Marquee from '../../components/Marquee';
 import MiniPitch from '../../components/MiniPitch';
 import UpdateBanner from '../../components/UpdateBanner';
-import InputCombo, { ControllerButton, ButtonGlyph } from '../../components/ButtonGlyph';
+import { InputCombo, ControllerButton } from '../../components/ButtonGlyph';
 import { BellIcon, HeartIcon, BookmarkIcon, PersonIcon } from '../../components/Icons';
 import GridBackground from '../../components/GridBackground';
 import { Coach } from '../../data/coaches';
