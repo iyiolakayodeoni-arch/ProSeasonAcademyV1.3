@@ -19,6 +19,7 @@ import { Coach } from '../../data/coaches';
 import { buildFeed, buildTicker, HERO_FALLBACK, FeedCardData } from '../../data/homeFeed';
 import { SideLesson } from '../../data/sideLesson';
 import SideLessonSheet from '../SideLessonSheet';
+import RoleModelFeedSheet from '../RoleModelFeedSheet';
 import {
   formatAnnouncementWhen,
   markAnnouncementRead,
@@ -44,7 +45,7 @@ const COMBO_MAP: Record<string, ControllerButton[]> = {
   'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
 };
 
-const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'COACH & GROUP'] as const;
+const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'ROLE MODEL STORY', 'COACH & GROUP'] as const;
 type Chip = (typeof CHIPS)[number];
 
 const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null | 'FOUNDER' | 'NEWS'> = {
@@ -52,6 +53,7 @@ const CHIP_KINDS: Record<Chip, FeedCardData['kind'][] | null | 'FOUNDER' | 'NEWS
   FOUNDER: 'FOUNDER',
   NEWS: 'NEWS',
   'META WATCH': ['EXPLOIT', 'SKILL_MOVE', 'TRICK_OF_THE_WEEK', 'PATCH_NOTE', 'META_SHIFT'],
+  'ROLE MODEL STORY': ['ROLE_MODEL'],
   'COACH & GROUP': ['COACH_UPDATE'],
 };
 
@@ -96,6 +98,8 @@ export default function HomeTab({ coach }: { coach: Coach }) {
   const [tillOpen, setTillOpen] = useState(false);
   // the SIDE NOTE — a bot trick opened as an in-app lesson + blog
   const [side, setSide] = useState<SideLesson | null>(null);
+  // the ROLE MODEL FEED — Chinedu's ongoing story, opened from a cross-post
+  const [feedOpen, setFeedOpen] = useState(false);
 
   // ── the founder mutters when you poke the wordmark enough ──
   const [brandTaps, setBrandTaps] = useState(0);
@@ -309,6 +313,7 @@ export default function HomeTab({ coach }: { coach: Coach }) {
             locked={isTrick(card.kind) && !trickOpen(card.id)}
             onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
             onOpenLesson={(l) => { setSide(l); sfx('whoosh'); }}
+            onOpenRoleFeed={() => { sfx('whoosh'); setFeedOpen(true); }}
           />
         ))}
 
@@ -344,6 +349,13 @@ export default function HomeTab({ coach }: { coach: Coach }) {
       {side && (
         <View style={StyleSheet.absoluteFill}>
           <SideLessonSheet coach={coach} lesson={side} origin="home" onClose={() => { setSide(null); sfx('tap'); }} />
+        </View>
+      )}
+
+      {/* the ROLE MODEL FEED — Chinedu's ongoing story, from a Home cross-post */}
+      {feedOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <RoleModelFeedSheet coach={coach} onClose={() => { setFeedOpen(false); sfx('tap'); }} />
         </View>
       )}
     </View>
@@ -409,6 +421,7 @@ function FeedCard({
   locked = false,
   onUnlock,
   onOpenLesson,
+  onOpenRoleFeed,
 }: {
   card: FeedCardData;
   coach: Coach;
@@ -420,9 +433,15 @@ function FeedCard({
   onUnlock?: () => void;
   /** a trick carrying a SIDE NOTE — open the lesson + blog inside the app */
   onOpenLesson?: (lesson: SideLesson) => void;
+  /** a ROLE MODEL cross-post — open Chinedu's ongoing story feed */
+  onOpenRoleFeed?: () => void;
 }) {
   const a = ACCENT[card.accent];
   const open = () => {
+    if (card.kind === 'ROLE_MODEL' && onOpenRoleFeed) {
+      onOpenRoleFeed(); // the role model story opens the feed, never a link
+      return;
+    }
     if (card.sideLesson && onOpenLesson) {
       onOpenLesson(card.sideLesson); // the side note reads INSIDE the academy
       return;
@@ -433,6 +452,40 @@ function FeedCard({
       console.log(`[home] "${card.cta ?? card.tag}" on ${card.id} (hub screens land in a next build)`);
     }
   };
+
+  // ── ROLE MODEL STORY — a distinct cross-post card. Warm gold story look
+  //    (never the green "coaching aimed at me" tone) so the ongoing story is
+  //    immediately tellable apart from the sourced FC 26 intel. ──
+  if (card.kind === 'ROLE_MODEL') {
+    return (
+      <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={[styles.rmCard, card.live && styles.rmCardLive]}>
+        <Pressable onPress={open}>
+          <View style={styles.rmTop}>
+            <View style={styles.rmTagWrap}>
+              <Text style={styles.rmTag}>{card.tag}</Text>
+              {card.live && <Text style={styles.rmLive}>● LIVE</Text>}
+            </View>
+            <Text style={styles.rmTime}>{card.time}</Text>
+          </View>
+          <View style={styles.rmHeader}>
+            {card.avatar === 'coach' && <Image source={coach.portrait} style={styles.rmAvatar} />}
+            <View style={styles.rmHeaderTxt}>
+              <Text style={styles.rmHandle}>{card.authorHandle}</Text>
+              <Text style={styles.rmHeadline}>{card.headline}</Text>
+            </View>
+          </View>
+          {card.metaRight && (
+            <View style={styles.rmStatLine}>
+              <Text style={styles.rmStatLineTxt}>{card.metaRight}</Text>
+            </View>
+          )}
+          <Text style={styles.rmBody} numberOfLines={4}>{card.body}</Text>
+          <Text style={styles.rmCta}>{card.cta}</Text>
+        </Pressable>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View entering={FadeInUp.delay(delay).duration(320)} style={[styles.card, { borderColor: a.soft }]}>
       {/* top row: tag + time (and LIVE badge) */}
@@ -881,4 +934,43 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(242,192,120,0.4)',
     textShadowRadius: 5,
   },
+
+  // ── ROLE MODEL STORY cross-post card — warm gold, distinct from coaching ──
+  rmCard: {
+    marginTop: 8,
+    borderWidth: 1.2,
+    borderColor: 'rgba(242,192,120,0.45)',
+    borderRadius: 14,
+    backgroundColor: 'rgba(24,18,8,0.72)',
+    padding: 12,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  rmCardLive: {
+    borderColor: colors.accent,
+    shadowOpacity: 0.22,
+  },
+  rmTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rmTagWrap: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  rmTag: {
+    fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.6, color: colors.accent,
+    borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2.5,
+    backgroundColor: 'rgba(242,192,120,0.07)',
+  },
+  rmLive: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.4, color: colors.primary },
+  rmTime: { fontFamily: monoFont, fontSize: 6.4, letterSpacing: 1.4, color: 'rgba(143,184,155,0.55)' },
+  rmHeader: { flexDirection: 'row', marginTop: 9, gap: 9 },
+  rmAvatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', marginTop: 2 },
+  rmHeaderTxt: { flex: 1 },
+  rmHandle: { fontFamily: monoFont, fontSize: 6, fontWeight: '700', letterSpacing: 1.5, color: 'rgba(242,192,120,0.6)' },
+  rmHeadline: { marginTop: 3, fontSize: 13.5, fontWeight: '900', lineHeight: 18, color: colors.fg },
+  rmStatLine: {
+    marginTop: 8, alignSelf: 'flex-start', borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)',
+    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: 'rgba(10,17,12,0.5)',
+  },
+  rmStatLineTxt: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  rmBody: { marginTop: 7, fontSize: 9.6, lineHeight: 13.5, color: '#d8cfc0' },
+  rmCta: { marginTop: 8, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.5, color: colors.warm },
 });

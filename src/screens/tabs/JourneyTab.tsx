@@ -42,6 +42,7 @@ import MatchVault from '../MatchVault';
 import LossJournal from '../LossJournal';
 import StoreSheet from '../StoreSheet';
 import RoleModelSheet from '../RoleModelSheet';
+import RoleModelFeedSheet from '../RoleModelFeedSheet';
 import { colors, monoFont } from '../../theme';
 
 type StageOrigin = { x: number; y: number };
@@ -134,7 +135,7 @@ export default function JourneyTab({
     }).length;
     return Math.round((met / objs.length) * 100);
   }, [selected, vault.matches, journal.entries.length, threadSettled]);
-  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | null>(null);
+  const [sheet, setSheet] = useState<'vault' | 'journal' | 'till' | 'rolemodel' | 'feed' | null>(null);
 
   // ── ACCESS — one ladder: FREE / ACADEMY / PRO ──
   // Identical rungs in every country; only the currency differs.
@@ -239,11 +240,11 @@ export default function JourneyTab({
             coach={coach}
             onPress={() => {
               sfx('whoosh');
-              setSheet('rolemodel');
+              setSheet('feed');
             }}
           />
           <Text style={styles.heroHint}>
-            PRESS [A/CROSS] — THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
+            PRESS [A/CROSS] — FOLLOW HIS ONGOING STORY · THE FINISH IS A PERSON TO LOOK UP TO, NOT A PATH TO COPY
           </Text>
         </View>
 
@@ -645,6 +646,13 @@ export default function JourneyTab({
             setSheet(null);
             zoomFromCard();
           }}
+        />
+      )}
+      {sheet === 'feed' && (
+        <RoleModelFeedSheet
+          coach={coach}
+          onClose={() => setSheet(null)}
+          onOpenFinish={() => setSheet('rolemodel')}
         />
       )}
     </View>
