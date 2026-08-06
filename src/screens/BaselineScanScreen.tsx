@@ -125,7 +125,7 @@ const GUIDE_KEY = 'psa.baseline.guide.v1';
 const GUIDE_STEPS = [
   ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
   ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
-  ['ANSWER THE EVIDENCE', 'Use the score, head-state choices and reflection fields to describe what actually happened — especially a mistake, setback, or decision you would change.'],
+  ['CAPTURE THE MOMENT', 'Use the score, head-state choices and reflection fields to describe what actually happened — especially a mistake, setback, or decision you would change.'],
   ['SAVE & RETURN', 'Each completed scan adds evidence to your starting profile. Seal the day, then return when the next match unlocks.'],
 ] as const;
 
@@ -454,7 +454,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── MATCH: score + head state ── */}
               {step === 'match' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>PLAYED. FULL TIME — WHAT WAS THE SCORE?</Text>
+                  <Text style={styles.heroLine}>FULL TIME. LET’S CAPTURE THE MATCH.</Text>
                   <View style={styles.scoreCard}>
                     <View style={styles.scoreSide}>
                       <Text style={styles.scoreLabel}>YOU</Text>
@@ -489,7 +489,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         ))}
                       </View>
                       <Pressable onPress={logScore} style={styles.cta}>
-                        <Text style={styles.ctaTxt}>FULL TIME — UNLOCK THE EVIDENCE ›</Text>
+                        <Text style={styles.ctaTxt}>CONTINUE TO YOUR REFLECTION ›</Text>
                       </Pressable>
                     </>
                   )}
@@ -500,10 +500,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── REVIEW: watch the recording, NAME the moments where you failed ── */}
               {step === 'review' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>WATCH THE EVIDENCE. NAME THE MOMENTS WHERE YOU FAILED.</Text>
+                  <Text style={styles.heroLine}>REVISIT THE MOMENTS THAT STAYED WITH YOU.</Text>
                   <Text style={styles.heroSub}>
-                    Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
-                    give each one a name. Then we analyse them one at a time.
+                    There are no marks here. Watch back if you can, pause at the moments that changed the match, and give them a name in your own words. We will gently unpack them together.
                   </Text>
                   <HelpCard title="WRITE THIS IMMEDIATELY AFTER FULL TIME">Before you replay or explain the result away, write the turning point in your own words. Then say how you felt and what you believe caused it: pressure, panic, rushing, a forced pass, loss of focus or something else.</HelpCard>
                   <View style={styles.armNote}>
@@ -568,10 +567,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     onPress={() => { sfx('whoosh'); setStep('analysis'); }}
                     style={[styles.cta, moments.length === 0 && { opacity: 0.35 }]}
                   >
-                    <Text style={styles.ctaTxt}>MY MOMENTS ARE NAMED — ANALYSE THEM ›</Text>
+                    <Text style={styles.ctaTxt}>I’VE NOTED THE MOMENTS — REFLECT ›</Text>
                   </Pressable>
                   {moments.length === 0 && (
-                    <Text style={styles.requireTxt}>NAME AT LEAST ONE MOMENT WHERE YOU FAILED — THAT IS THE DAY'S WORK.</Text>
+                    <Text style={styles.requireTxt}>START WITH ONE MOMENT THAT CHANGED THE MATCH — a mistake, a turning point, or something you noticed.</Text>
                   )}
                 </Animated.View>
               )}
@@ -579,10 +578,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── ANALYSIS: every moment, every question, your words ── */}
               {step === 'analysis' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>EVERY MOMENT, ANALYSED BY YOU.</Text>
+                  <Text style={styles.heroLine}>LET’S MAKE SENSE OF THE MOMENTS.</Text>
                   <Text style={styles.heroSub}>
-                    The app never writes your psychology. It just keeps the questions in front of you, one moment at a
-                    time, until your own answers say what actually happened.
+                    This is a private reflection, not an exam. Take one moment at a time. Short, honest notes are enough — the words and meaning stay yours.
                   </Text>
                   {moments.map((m, mi) => (
                     <View key={m.id} style={styles.analysisBlock}>
@@ -619,14 +617,14 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                             multiline
                           />
                           <Text style={styles.aqCount}>
-                            {((m.analysis[q.key] ?? '').trim().length)}/{BASELINE_MOMENT_MIN_ANSWER}+
+                            {((m.analysis[q.key] ?? '').trim().length) ? 'A real detail makes this more useful.' : 'A few honest words are enough to begin.'}
                           </Text>
                         </View>
                       ))}
                       {momentComplete(m) ? (
-                        <Text style={styles.momentDoneTxt}>✓ MOMENT {mi + 1} ANALYSED</Text>
+                        <Text style={styles.momentDoneTxt}>✓ MOMENT {mi + 1} CAPTURED</Text>
                       ) : (
-                        <Text style={styles.requireTxt}>ANSWER EVERY QUESTION ({BASELINE_MOMENT_MIN_ANSWER}+ CHARACTERS EACH)</Text>
+                        <Text style={styles.requireTxt}>Add a little more to any note that still feels unfinished.</Text>
                       )}
                     </View>
                   ))}
@@ -634,7 +632,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     onPress={() => { sfx('whoosh'); setStep('dayq'); }}
                     style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}
                   >
-                    <Text style={styles.ctaTxt}>ANALYSIS DONE — THE DAY QUESTION ›</Text>
+                    <Text style={styles.ctaTxt}>REFLECTION COMPLETE — ONE FINAL CHECK-IN ›</Text>
                   </Pressable>
                 </Animated.View>
               )}
@@ -642,7 +640,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── DAY QUESTION + SEAL ── */}
               {step === 'dayq' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>ONE LAST QUESTION FOR DAY {day}.</Text>
+                  <Text style={styles.heroLine}>ONE FINAL CHECK-IN FOR DAY {day}.</Text>
                   <View style={styles.questionCard}>
                     <Image source={coach.portrait} style={styles.beatFace} />
                     <Text style={styles.questionTxt}>{question}</Text>
@@ -651,7 +649,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   <TextInput
                     value={dayAnswer}
                     onChangeText={(t) => setDayAnswer(t.slice(0, 500))}
-                    placeholder="THINK. THEN ANSWER — YOUR WORDS, NOT OURS."
+                    placeholder="A SHORT, HONEST NOTE IN YOUR OWN WORDS."
                     placeholderTextColor={colors.muted}
                     style={styles.input}
                     multiline
@@ -670,7 +668,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </Pressable>
                   {!canSealDay && (
                     <Text style={styles.requireTxt}>
-                      ANSWER THE QUESTION ({MIN_ANSWER}+), FINISH EVERY MOMENT ANALYSIS, PICK YOUR HEAD STATE — THEN WE MOVE
+                      A couple of reflections are still waiting. Add what feels true, then you can continue.
                     </Text>
                   )}
                 </Animated.View>
