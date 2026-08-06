@@ -116,6 +116,11 @@ function WeekStrip({ session, now }: { session: BaselineSession | null; now: num
   );
 }
 
+const REFLECTION_STARTERS: Partial<Record<BaselineAnalysisKey, string[]>> = {
+  feel: ['PRESSURE', 'PANIC', 'FRUSTRATION', 'RUSHED', 'CALM', 'CONFIDENT', 'ANGRY', 'UNCERTAIN'],
+  cause: ['FORCED PASS', 'LOSS OF FOCUS', 'RUSHING', 'POOR POSITIONING', 'PANIC', 'MISREAD THE PLAY', 'FATIGUE', 'OTHER'],
+};
+
 const GUIDE_KEY = 'psa.baseline.guide.v1';
 const GUIDE_STEPS = [
   ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
@@ -594,6 +599,17 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         <View key={q.key} style={styles.aqCard}>
                           <Text style={styles.aqLabel}>{q.label}</Text>
                           <Text style={styles.aqHint}>Think about the decision, feeling or trigger in this exact moment. There is no correct answer — write what was true.</Text>
+                          {REFLECTION_STARTERS[q.key] && <>
+                            <Text style={styles.starterLabel}>OPTIONAL STARTING POINT — TAP ONE, THEN EXPLAIN IT IN YOUR OWN WORDS</Text>
+                            <View style={styles.starterRow}>
+                              {REFLECTION_STARTERS[q.key]!.map((starter) => <Pressable key={starter} onPress={() => {
+                                const current = m.analysis[q.key] ?? '';
+                                if (!current.trim()) setMomentAnalysis(m.id, q.key, q.key === 'feel' ? `I felt ${starter.toLowerCase()} because ` : `I think ${starter.toLowerCase()} caused it because `);
+                              }} style={[styles.starterChip, (m.analysis[q.key] ?? '').toUpperCase().includes(starter) && styles.starterChipOn]}>
+                                <Text style={[styles.starterTxt, (m.analysis[q.key] ?? '').toUpperCase().includes(starter) && styles.starterTxtOn]}>{starter}</Text>
+                              </Pressable>)}
+                            </View>
+                          </>}
                           <TextInput
                             value={m.analysis[q.key] ?? ''}
                             onChangeText={(t) => setMomentAnalysis(m.id, q.key, t)}
@@ -988,6 +1004,8 @@ const styles = StyleSheet.create({
   momentChip: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 9, backgroundColor: 'rgba(10,20,13,0.7)', paddingHorizontal: 11, paddingVertical: 9 },
   momentChipTxt: { fontFamily: monoFont, fontSize: 6.8, letterSpacing: 0.9, color: '#c4d4c8', flex: 1 },
   removeTxt: { color: colors.loss, fontFamily: monoFont, fontSize: 11 },
+
+  starterLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 0.8, lineHeight: 10, marginTop: 8 }, starterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }, starterChip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.35)', borderRadius: 9, paddingHorizontal: 8, paddingVertical: 5, backgroundColor: 'rgba(10,20,13,0.7)' }, starterChipOn: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.1)' }, starterTxt: { color: '#b9cabe', fontFamily: monoFont, fontSize: 6.5, letterSpacing: 0.7 }, starterTxtOn: { color: colors.primary },
 
   // ── analysis ──
   analysisBlock: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.6)', padding: 12 },
