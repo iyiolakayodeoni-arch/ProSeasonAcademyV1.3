@@ -31,6 +31,7 @@ import {
   isWeekComplete,
   loadBaseline,
   matchNumberForDay,
+  momentAskFor,
   nextUnlockAt,
   recordBaselineMatch,
   saveBaselineReflection,
@@ -575,13 +576,17 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 </Animated.View>
               )}
 
-              {/* ── ANALYSIS: every moment, every question, your words ── */}
+              {/* ── ANALYSIS: he walks you through every moment — an interview, not a form ── */}
               {step === 'analysis' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>LET’S MAKE SENSE OF THE MOMENTS.</Text>
+                  <Text style={styles.heroLine}>{first} WALKS YOU THROUGH THE MOMENTS.</Text>
                   <Text style={styles.heroSub}>
-                    This is a private reflection, not an exam. Take one moment at a time. Short, honest notes are enough — the words and meaning stay yours.
+                    This is a private reflection, not an exam — but it is a conversation. Answer him like he is across the table; he reads every word.
                   </Text>
+                  <View style={styles.dayIntro}>
+                    <Image source={coach.portrait} style={styles.beatFace} />
+                    <Text style={styles.dayIntroTxt}>{script.analysisIntro}</Text>
+                  </View>
                   {moments.map((m, mi) => (
                     <View key={m.id} style={styles.analysisBlock}>
                       <View style={styles.analysisHead}>
@@ -594,9 +599,18 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         </Text>
                       </View>
                       {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (
-                        <View key={q.key} style={styles.aqCard}>
+                        <View key={q.key}>
+                          {!!script.momentInterludes[qi] && (
+                            <Text style={styles.interludeTxt}>— {script.momentInterludes[qi]} —</Text>
+                          )}
+                          <View style={styles.askRow}>
+                            <Image source={coach.portrait} style={styles.askFace} />
+                            <Text style={styles.askTxt}>
+                              {momentAskFor(script, q.key, qi > 0 ? m.analysis[BASELINE_MOMENT_QUESTIONS[qi - 1].key] : undefined)}
+                            </Text>
+                          </View>
+                          <View style={styles.aqCard}>
                           <Text style={styles.aqLabel}>{q.label}</Text>
-                          <Text style={styles.aqHint}>Think about the decision, feeling or trigger in this exact moment. There is no correct answer — write what was true.</Text>
                           {REFLECTION_STARTERS[q.key] && <>
                             <Text style={styles.starterLabel}>OPTIONAL STARTING POINT — TAP ONE, THEN EXPLAIN IT IN YOUR OWN WORDS</Text>
                             <View style={styles.starterRow}>
@@ -619,6 +633,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                           <Text style={styles.aqCount}>
                             {((m.analysis[q.key] ?? '').trim().length) ? 'A real detail makes this more useful.' : 'A few honest words are enough to begin.'}
                           </Text>
+                          </View>
                         </View>
                       ))}
                       {momentComplete(m) ? (
@@ -637,13 +652,19 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 </Animated.View>
               )}
 
-              {/* ── DAY QUESTION + SEAL ── */}
+              {/* ── DAY QUESTION + SEAL — he picks it FOR today's result ── */}
               {step === 'dayq' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
                   <Text style={styles.heroLine}>ONE FINAL CHECK-IN FOR DAY {day}.</Text>
-                  <View style={styles.questionCard}>
+                  <Text style={styles.questionPick}>
+                    {first}’S QUESTION — CHOSEN FOR THIS {result === 'W' ? 'WIN' : result === 'D' ? 'DRAW' : 'DEFEAT'}
+                  </Text>
+                  <View style={[styles.questionCard, { marginTop: 8 }]}>
                     <Image source={coach.portrait} style={styles.beatFace} />
-                    <Text style={styles.questionTxt}>{question}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.questionIntroTxt}>{script.dayQuestionIntro[result]}</Text>
+                      <Text style={styles.questionTxt}>{question}</Text>
+                    </View>
                   </View>
                   <HelpCard>Use a real example from this match. We are looking for the pattern behind the result, not the answer that sounds strongest.</HelpCard>
                   <TextInput
@@ -1009,14 +1030,20 @@ const styles = StyleSheet.create({
   analysisBlock: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.6)', padding: 12 },
   analysisHead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   analysisHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 8, letterSpacing: 1.6, fontWeight: '700', flex: 1 },
-  aqCard: { marginTop: 12 },
+  askRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 14 },
+  askFace: { width: 22, height: 22, borderRadius: 11, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, marginTop: 1 },
+  askTxt: { flex: 1, color: colors.warm, fontFamily: bodyFont, fontStyle: 'italic', fontSize: 11.5, lineHeight: 17 },
+  interludeTxt: { marginTop: 16, color: 'rgba(157,180,163,0.75)', fontFamily: bodyFont, fontStyle: 'italic', fontSize: 10, textAlign: 'center', letterSpacing: 0.3 },
+  aqCard: { marginTop: 6 },
   aqLabel: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '800', letterSpacing: 1.1, color: colors.fg, lineHeight: 11 },
   aqCount: { marginTop: 4, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1, color: 'rgba(143,184,155,0.6)', textAlign: 'right' },
   momentDoneTxt: { marginTop: 10, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4, color: colors.primary, textAlign: 'center' },
   playTxt: { marginTop: 8, fontFamily: monoFont, fontSize: 7.6, fontWeight: '900', letterSpacing: 1, color: colors.primary },
 
   // ── day question ──
+  questionPick: { color: colors.accent, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.6, marginTop: 14 },
   questionCard: { flexDirection: 'row', gap: 10, marginTop: 14, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
+  questionIntroTxt: { color: '#b9cabe', fontFamily: bodyFont, fontStyle: 'italic', fontSize: 10.5, lineHeight: 16, marginBottom: 6 },
   questionTxt: { flex: 1, color: colors.fg, fontFamily: monoFont, fontSize: 13, lineHeight: 20, letterSpacing: 0.3 },
   input: { marginTop: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: '#0a0f0a', borderRadius: 12, color: colors.fg, fontFamily: monoFont, fontSize: 11.5, lineHeight: 18, padding: 12, minHeight: 90, textAlignVertical: 'top' },
   countTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, marginTop: 6, textAlign: 'right' },
