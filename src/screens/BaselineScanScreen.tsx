@@ -428,10 +428,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   <Text style={styles.heroSub}>
                     1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
                     {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Write down your key moments, unusual things that happened, and answer the guiding questions on paper first.
-                    {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after the match.
-                    {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your written answers into your database.
+                    {'\n'}3. WRITE IT STRAIGHT AWAY: Immediately after full time, write what happened, how it made you feel and what you think caused it — before the details fade.
+                    {'\n'}4. LOG TO DATABASE: Open the app and type your honest notes into your database while the match is still fresh.
                   </Text>
-                  <HelpCard title="YOUR MATCH-DAY CHECKLIST">Play normally. After full time, cool down, revisit the moments that changed the match, then return here and log the evidence. A loss or mistake is useful evidence — not a failed day.</HelpCard>
+                  <HelpCard title="YOUR MATCH-DAY CHECKLIST">Play normally. Immediately after full time, write the moments that changed the match, how you felt and what may have caused them. Then return here and log the evidence. A loss or mistake is useful evidence — not a failed day.</HelpCard>
                   <View style={styles.armNote}>
                     <Text style={styles.armNoteTxt}>
                       IN A WORLD LOOKING FOR THE EASY WAY OUT: THE HARD WAY IS THE EASY WAY, AND THE EASY WAY IS THE HARD WAY. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.
@@ -500,9 +500,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
                     give each one a name. Then we analyse them one at a time.
                   </Text>
-                  <HelpCard title="WHAT TO THINK ABOUT">Look for turning points: a rushed pass, missed chance, concession, forced shot, loss of patience, or a moment you handled well. Name what happened in your own words.</HelpCard>
+                  <HelpCard title="WRITE THIS IMMEDIATELY AFTER FULL TIME">Before you replay or explain the result away, write the turning point in your own words. Then say how you felt and what you believe caused it: pressure, panic, rushing, a forced pass, loss of focus or something else.</HelpCard>
                   <View style={styles.armNote}>
-                    <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS AND UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MINUTE COOL-DOWN.</Text>
+                    <Text style={styles.armNoteTxt}>OPEN YOUR IMMEDIATE NOTES: Watch your own tape, then type the key moments, how you felt and what you think caused each one while the match is still clear.</Text>
                   </View>
 
                   <View style={styles.momentCard}>
@@ -587,7 +587,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                       </View>
                       <View style={styles.armNote}>
                         <Text style={styles.armNoteTxt}>
-                          THE CHINEDU WAY: Have your paper notes in front of you. You formulated your answers with pen on paper after your 24–30 min cool-down — now type your written truth into your database.
+                          THE CHINEDU WAY: Have the notes you wrote immediately after full time in front of you. Type your truth about what happened, how you felt and what you believe caused it.
                         </Text>
                       </View>
                       {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (

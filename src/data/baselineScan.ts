@@ -66,8 +66,8 @@ export type BaselineAnalysisKey =
 export const BASELINE_MOMENT_QUESTIONS: { key: BaselineAnalysisKey; label: string }[] = [
   { key: 'happened', label: 'WHAT HAPPENED?' },
   { key: 'thinking', label: 'WHAT WERE YOU THINKING IN THAT MOMENT?' },
-  { key: 'feel', label: 'WHAT WERE YOU FEELING?' },
-  { key: 'cause', label: 'WHAT MADE YOU FAIL THERE?' },
+  { key: 'feel', label: 'HOW DID YOU FEEL IN THAT MOMENT?' },
+  { key: 'cause', label: 'WHAT DO YOU THINK CAUSED THIS MOMENT?' },
   { key: 'why', label: 'WHY DID THIS MOMENT TURN AGAINST YOU?' },
   { key: 'noticed', label: 'WHAT DID YOU NOTICE BEFORE THE DECISION?' },
   { key: 'missed', label: 'WHAT DID YOU FAIL TO NOTICE?' },
