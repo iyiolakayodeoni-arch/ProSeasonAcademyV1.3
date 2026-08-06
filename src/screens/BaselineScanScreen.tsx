@@ -13,12 +13,10 @@ import {
   BASELINE_SCRIPTS,
   BASELINE_DAYS,
   BASELINE_DAY_INTRO,
-  BASELINE_DAY_MS,
   BASELINE_MATCHES,
   BASELINE_MOMENT_MIN_ANSWER,
   BASELINE_MOMENT_QUESTIONS,
   BASELINE_MOMENT_TAGS,
-  BASELINE_REST_LINES,
   BaselineAnalysisKey,
   BaselineDayStatus,
   BaselineMoment,
@@ -32,7 +30,6 @@ import {
   loadBaseline,
   matchNumberForDay,
   momentAskFor,
-  nextUnlockAt,
   recordBaselineMatch,
   saveBaselineReflection,
   sealBaseline,
@@ -43,8 +40,7 @@ import {
 
 import { getSettings } from '../data/settings';
 import { COMPOSURE_LABELS, resultOf } from '../data/matches';
-import { scheduleBaselineUnlock } from '../data/notifications';
-import { CheckIcon, EyeIcon, LockIcon } from '../components/Icons';
+import { CheckIcon, EyeIcon } from '../components/Icons';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
 import { sfx } from '../audio/sound';
@@ -61,16 +57,14 @@ import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy } from '../theme
 //             reflection, no match.
 //   DAY 7     the ambition question, then the sealed profile card.
 //
-// Nothing is bombarded: the next day unlocks 24h after the previous
-// one is sealed, so there is always a full day to think. Lateness is
-// never punished — the academy just waits.
+// Complete each task honestly, then move to the next day whenever you are ready.
 // Phases: TALK → ×5 DAY (ARM → MATCH → WATCH/NAME → ANALYSE → DAY Q)
 //         → REST → WEEK REFLECTION → AMBITION → SEALED CARD.
 // ─────────────────────────────────────────────────────────────
 
 const MIN_ANSWER = 12;
 
-type Phase = 'talk' | 'day' | 'locked' | 'reflection' | 'ambition' | 'card';
+type Phase = 'talk' | 'day' | 'reflection' | 'ambition' | 'card';
 type DayStep = 'start' | 'match' | 'review' | 'analysis' | 'dayq';
 
 interface DraftMoment {
@@ -96,8 +90,8 @@ function Stepper({ value, onChange, accent }: { value: number; onChange: (n: num
   );
 }
 
-/** the week strip — 7 pills: done / today / locked / future */
-function WeekStrip({ session, now }: { session: BaselineSession | null; now: number }) {
+/** the week strip — 7 pills: done / current / future */
+function WeekStrip({ session }: { session: BaselineSession | null }) {
   return (
     <View style={styles.weekStrip}>
       {Array.from({ length: BASELINE_DAYS }).map((_, i) => {
@@ -127,7 +121,7 @@ const GUIDE_STEPS = [
   ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
   ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
   ['CAPTURE THE MOMENT', 'Use the score, head-state choices and reflection fields to describe what actually happened — especially a mistake, setback, or decision you would change.'],
-  ['SAVE & RETURN', 'Each completed scan adds evidence to your starting profile. Seal the day, then return when the next match unlocks.'],
+  ['KEEP GOING WHEN READY', 'Each completed scan adds evidence to your starting profile. Seal a day and continue straight to the next one whenever you want.'],
 ] as const;
 
 function BaselineGuide({ index, onNext, onBack, onSkip }: { index: number; onNext: () => void; onBack: () => void; onSkip: () => void }) {
@@ -153,13 +147,6 @@ function momentComplete(m: DraftMoment): boolean {
   );
 }
 
-function hms(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const { width: winW } = useWindowDimensions();
@@ -169,7 +156,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [phase, setPhase] = useState<Phase>('talk');
   const [step, setStep] = useState<DayStep>('start');
   const [notReady, setNotReady] = useState(false);
-  const [now, setNow] = useState(Date.now());
   const scrollRef = useRef<ScrollView>(null);
 
   // ── the day's local drafts ──
@@ -202,21 +188,16 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       if (s.card) setPhase('card');
       else if (currentBaselineDay(s) > BASELINE_DAYS) setPhase('ambition');
       else if (isBaselineRestDay(currentBaselineDay(s))) {
-        setPhase(dayStatus(s, currentBaselineDay(s)) === 'locked' ? 'locked' : 'reflection');
+        setPhase('reflection');
       } else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) {
-        setPhase(dayStatus(s, currentBaselineDay(s)) === 'locked' ? 'locked' : 'day');
+        setPhase('day');
       } else {
         setPhase(s.entries.length > 0 ? 'day' : 'talk');
       }
     });
   }, [coach.id]);
 
-  // tick for the REST-day countdown
-  useEffect(() => {
-    if (phase !== 'locked') return;
-    const id = setInterval(() => setNow(Date.now()), 15000);
-    return () => clearInterval(id);
-  }, [phase]);
+
 
   const first = coach.name.split(' ')[0].toUpperCase();
   const result = resultOf({ gf, ga });
@@ -229,8 +210,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const allMomentsDone = moments.length > 0 && moments.every(momentComplete);
   const canSealDay =
     composure !== null && allMomentsDone && isValidReflection(dayAnswer, { minLength: MIN_ANSWER, minWords: 2, prompt: question });
-  const unlockAt = nextUnlockAt(session);
-  const lastEntry = session?.entries[session.entries.length - 1] ?? null;
 
   /** seal the day: file the match + the named moments, then REST */
   const sealDay = () => {
@@ -276,19 +255,14 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       if (d > BASELINE_DAYS) {
         setPhase('ambition');
       } else {
-        setPhase('locked'); // the next day unlocks tomorrow
+        setPhase(isBaselineRestDay(d) ? 'reflection' : 'day');
       }
-      // schedule the nudge for the day that just unlocked (fires at its
-      // unlock time even if the app is closed — fails soft if denied)
-      const nxt = nextUnlockAt(s);
-      if (d <= BASELINE_DAYS && nxt != null) {
-        void scheduleBaselineUnlock(d, nxt);
-      }
+
       scrollRef.current?.scrollTo({ y: 0, animated: false });
     });
   };
 
-  /** day 6 — seal the week's reflection, day 7 unlocks tomorrow */
+  /** day 6 — seal the week's reflection and continue to day 7 */
   const sealReflection = () => {
     if (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 }) || !session) return;
     sfx('whoosh');
@@ -296,9 +270,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     sealBaselineDay(6);
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
-      setPhase('locked'); // day 7 unlocks tomorrow
-      const nxt = nextUnlockAt(s);
-      if (nxt != null) void scheduleBaselineUnlock(7, nxt); // DAY 7 — THE LAST QUESTION
+      setPhase('day');
     });
   };
 
@@ -385,9 +357,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <Animated.View entering={FadeInUp.delay(200 + script.talk.length * 260).duration(300)} style={styles.bluffBox}>
                 <Text style={styles.bluffLabel}>HOW THIS WEEK WORKS</Text>
                 <Text style={styles.bluffTxt}>
-                  One match a day, five days, a week to do it. Play it, watch the recording, name the moments you
-                  failed, then answer for each one honestly. The next day only unlocks 24 hours later — the gap is
-                  the point. It gives you time to think. The academy doesn't carry passengers.
+                  Five matches and two reflection days, completed at your pace. Play it, watch the recording, name
+                  the moments you failed, then answer for each one honestly. Seal a day and continue whenever you
+                  are ready. The academy doesn't carry passengers.
                 </Text>
               </Animated.View>
 
@@ -416,7 +388,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
           {phase === 'day' && day <= BASELINE_DAYS && (
             <>
               <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES}</Text>
-              <WeekStrip session={session} now={now} />
+              <WeekStrip session={session} />
               {guideStep !== null && <BaselineGuide index={guideStep} onBack={() => setGuideStep(n => Math.max(0, (n ?? 0) - 1))} onNext={() => { if (guideStep >= GUIDE_STEPS.length - 1) dismissGuide(); else setGuideStep(guideStep + 1); }} onSkip={dismissGuide} />}
               <Pressable onPress={() => setGuideStep(0)} hitSlop={8}><Text style={styles.replayGuide}>?  SHOW ME HOW BASELINE WEEK WORKS</Text></Pressable>
 
@@ -445,9 +417,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </View>
                   <Pressable onPress={() => void startMatch()} style={[styles.cta, { opacity: 0.95 }]}>
                     <Text style={styles.ctaTxt}>I HAVE READ THE RITUAL — START THE MATCH ›</Text>
-                  </Pressable>
-                  <Pressable onPress={() => setPhase('locked')} style={styles.ghostCtaWrap} hitSlop={6}>
-                    <Text style={styles.ghostCta}>REST DAY — COME BACK TOMORROW</Text>
                   </Pressable>
                 </Animated.View>
               )}
@@ -684,7 +653,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   />
                   <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}>
                     <Text style={styles.ctaTxt}>
-                      {day >= BASELINE_MATCHES ? 'SEAL DAY 5 — THE WEEK SO FAR UNLOCKS TOMORROW' : `SEAL DAY ${day} — MATCH ${day + 1} UNLOCKS TOMORROW`}
+                      {day >= BASELINE_MATCHES ? 'SEAL DAY 5 — CONTINUE TO THE WEEK SO FAR' : `SEAL DAY ${day} — CONTINUE TO MATCH ${day + 1}`}
                     </Text>
                   </Pressable>
                   {!canSealDay && (
@@ -697,44 +666,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
             </>
           )}
 
-          {/* ════ REST — the 24h gap, on purpose ════ */}
-          {phase === 'locked' && (
-            <Animated.View entering={FadeInUp.duration(300)} style={styles.restCard}>
-              <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS}</Text>
-              <View style={styles.restIcon}>
-                <LockIcon size={16} color={colors.accent} />
-              </View>
-              <Text style={styles.restTitle}>REST. THE WORK NEEDS TONIGHT.</Text>
-              <Text style={styles.restLine}>{BASELINE_REST_LINES[coach.id] ?? BASELINE_REST_LINES.chinedu}</Text>
-              {unlockAt != null && (
-                <View style={styles.countdownBox}>
-                  <Text style={styles.countdownLabel}>DAY {day} UNLOCKS IN</Text>
-                  <Text style={styles.countdownTxt}>{hms(unlockAt - now)}</Text>
-                  <Text style={styles.countdownNote}>ONE TASK A DAY IS THE CONTRACT. NOTHING IS FORCED — THE ACADEMY JUST WAITS.</Text>
-                </View>
-              )}
-              <WeekStrip session={session} now={now} />
-              <View style={styles.nextBox}><Text style={styles.nextLabel}>WHAT HAPPENS NEXT</Text><Text style={styles.nextText}>Your last scan is now part of your starting profile. Play your next normal match, then return here while the moments are still fresh.</Text></View>
-
-              {/* yesterday's review, still warm */}
-              {lastEntry && (
-                <View style={styles.lastReview}>
-                  <Text style={styles.lastReviewTag}>YOUR LAST REVIEW — DAY {session?.days.find((d) => d.entryIndex === session.entries.length - 1)?.day ?? day - 1}</Text>
-                  <Text style={styles.lastReviewScore}>
-                    {lastEntry.result} {lastEntry.gf}–{lastEntry.ga} · HEAD {lastEntry.composure}/5
-                  </Text>
-                  {(lastEntry.moments ?? []).map((m) => (
-                    <Text key={m.id} style={styles.lastReviewMoment}>
-                      · {m.startMin}’–{m.endMin}’ {m.name.toUpperCase()}
-                    </Text>
-                  ))}
-                  <Text style={styles.lastReviewQ}>“{lastEntry.question}”</Text>
-                  <Text style={styles.lastReviewA}>{lastEntry.answer}</Text>
-                </View>
-              )}
-            </Animated.View>
-          )}
-
           {/* ════ DAY 4 / DAY 6 — THE REST & REFLECTION DAYS (NO MATCH) ════ */}
           {phase === 'reflection' && (
             <Animated.View entering={FadeInUp.duration(300)}>
@@ -743,7 +674,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   ? `BASELINE WEEK · DAY 4 OF ${BASELINE_DAYS} · REST DAY 1 (NO MATCH TODAY)`
                   : `BASELINE WEEK · DAY 6 OF ${BASELINE_DAYS} · REST DAY 2 (PRE-FINALE PREPARATION)`}
               </Text>
-              <WeekStrip session={session} now={now} />
+              <WeekStrip session={session} />
               <Text style={styles.heroLine}>
                 {day === 4
                   ? 'MOMENTUM IS BUILT. TODAY YOU REST AND REFLECT.'
@@ -825,8 +756,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               >
                 <Text style={styles.ctaTxt}>
                   {day === 4
-                    ? 'SEAL REST DAY 1 — MATCH 4 UNLOCKS TOMORROW'
-                    : 'SEAL REST DAY 2 — MATCH 5 (THE FINALE) UNLOCKS TOMORROW'}
+                    ? 'SEAL REST DAY 1 — CONTINUE TO MATCH 4'
+                    : 'SEAL REST DAY 2 — CONTINUE TO MATCH 5 (THE FINALE)'}
                 </Text>
               </Pressable>
             </Animated.View>
@@ -836,7 +767,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
           {phase === 'ambition' && (
             <>
               <Text style={styles.eyebrow}>BASELINE WEEK · DAY 7 · THE LAST QUESTION</Text>
-              <WeekStrip session={session} now={now} />
+              <WeekStrip session={session} />
               <View style={styles.coachRow}>
                 <Image source={coach.portrait} style={styles.coachFace} />
                 <Text style={styles.beatTxt}>{script.ambitionAsk}</Text>
@@ -975,8 +906,6 @@ const styles = StyleSheet.create({
   dayIntroTxt: { flex: 1, color: colors.warm, fontFamily: monoFont, fontSize: 11, lineHeight: 17, letterSpacing: 0.3 },
   armNote: { marginTop: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 11, backgroundColor: colors.surface, padding: 12 },
   armNoteTxt: { fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
-  ghostCtaWrap: { marginTop: 12 },
-  ghostCta: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.4, textAlign: 'center', textDecorationLine: 'underline' },
 
   // ── score ──
   scoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, paddingVertical: 16, paddingHorizontal: 20, marginTop: 14 },
@@ -1047,22 +976,6 @@ const styles = StyleSheet.create({
   questionTxt: { flex: 1, color: colors.fg, fontFamily: monoFont, fontSize: 13, lineHeight: 20, letterSpacing: 0.3 },
   input: { marginTop: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: '#0a0f0a', borderRadius: 12, color: colors.fg, fontFamily: monoFont, fontSize: 11.5, lineHeight: 18, padding: 12, minHeight: 90, textAlignVertical: 'top' },
   countTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, marginTop: 6, textAlign: 'right' },
-
-  // ── rest day ──
-  restCard: { alignItems: 'center' },
-  restIcon: { marginTop: 18, width: 44, height: 44, borderRadius: 22, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.6)', alignItems: 'center', justifyContent: 'center' },
-  restTitle: { marginTop: 14, fontFamily: monoFont, fontSize: 15, fontWeight: '900', letterSpacing: 2, color: colors.fg, textAlign: 'center' },
-  restLine: { marginTop: 8, fontSize: 10.5, lineHeight: 16, color: '#9db4a3', textAlign: 'center', fontStyle: 'italic' },
-  countdownBox: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.45)', borderRadius: 13, backgroundColor: 'rgba(38,30,12,0.5)', paddingVertical: 14, paddingHorizontal: 18, alignItems: 'center', alignSelf: 'stretch' },
-  countdownLabel: { fontFamily: monoFont, fontSize: 7, letterSpacing: 2, color: colors.accent },
-  countdownTxt: { marginTop: 6, fontFamily: monoFont, fontSize: 26, fontWeight: '900', letterSpacing: 3, color: colors.accent },
-  countdownNote: { marginTop: 6, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.2, color: 'rgba(143,184,155,0.65)', textAlign: 'center' },
-  lastReview: { marginTop: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 13, backgroundColor: colors.surface, padding: 13, alignSelf: 'stretch' },
-  lastReviewTag: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.8, color: colors.accent },
-  lastReviewScore: { marginTop: 7, fontFamily: monoFont, fontSize: 9, fontWeight: '800', letterSpacing: 1.2, color: colors.fg },
-  lastReviewMoment: { marginTop: 4, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 0.8, color: '#c4d4c8' },
-  lastReviewQ: { marginTop: 10, fontSize: 10, lineHeight: 15, fontStyle: 'italic', color: colors.fg },
-  lastReviewA: { marginTop: 4, fontSize: 9.5, lineHeight: 14, color: '#9db4a3' },
 
   // ── day 6 receipts ──
   receiptBox: { marginTop: 14, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.5)', padding: 13 },
