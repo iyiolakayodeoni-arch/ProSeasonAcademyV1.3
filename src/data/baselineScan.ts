@@ -33,13 +33,12 @@ function baselineStorageKey(): string {
 export type MatchResult = 'W' | 'D' | 'L';
 
 // ─────────────────────────────────────────────────────────────
-// THE BASELINE WEEK — 5 matches across 7 calendar-paced days.
+// THE BASELINE WEEK — 5 matches and 2 reflection days, at the player’s pace.
 //
-// The point of the pacing is HONESTY and RESILIENCE: three matches
+// Players progress through the week at their own pace: three matches
 // build momentum, then a rest day to reflect; one match, then a
-// rest day to prepare; finally Match 5 (The Finale). The next day
-// unlocks 24h after the previous one is sealed, so the player
-// always has time to think and let their mind cool down.
+// rest day to prepare; finally Match 5 (The Finale). Completing a day
+// immediately opens the next one.
 //
 //   DAY 1, 2, 3   Matches 1, 2, 3 + review each (watch → pen → database)
 //   DAY 4         Rest Day 1 — mid-week reflection on matches 1–3
@@ -49,7 +48,6 @@ export type MatchResult = 'W' | 'D' | 'L';
 // ─────────────────────────────────────────────────────────────
 export const BASELINE_MATCHES = 5;
 export const BASELINE_DAYS = 7;
-export const BASELINE_DAY_MS = 24 * 60 * 60 * 1000;
 
 /** the per-moment analysis of a failing moment (the day's core task) */
 export type BaselineAnalysisKey =
@@ -119,7 +117,7 @@ export function baselineMomentComplete(m: BaselineMoment): boolean {
 export interface BaselineDay {
   day: number; // 1..7
   sealedAt: number | null;
-  /** epoch ms when this day opened (day 1 = session start; later days = prev seal + 24h) */
+  /** epoch ms when this day opened (kept for saved-session compatibility) */
   unlockedAt: number;
   entryIndex?: number; // match days: index into entries[]
   reflection?: { repeated: string; changed: string }; // day 6
@@ -215,9 +213,8 @@ export function entryIndexToDay(idx: number): number {
   }
 }
 
-/** build the 7-day schedule. Day 1 opens at the session start; each next day
- *  opens 24h after the previous one is sealed. Old sessions (pre-week) are
- *  migrated from their existing entries so no one is reset mid-baseline. */
+/** Build the 7-day schedule. Each next day opens as soon as the prior day is
+ * sealed. Old sessions are migrated without losing progress. */
 function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   const days: BaselineDay[] = [];
   let prevSeal = startedAt;
@@ -232,7 +229,7 @@ function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
     } else if (day === 6 && entries.length >= 5) {
       sealedAt = entries[3].at + 1000;
     }
-    const unlock = day === 1 ? startedAt : prevSeal + BASELINE_DAY_MS;
+    const unlock = day === 1 ? startedAt : prevSeal;
     days.push({ day, sealedAt, unlockedAt: unlock, entryIndex });
     if (sealedAt != null) prevSeal = sealedAt;
   }
@@ -288,13 +285,6 @@ export function isWeekComplete(s: BaselineSession | null): boolean {
   return currentBaselineDay(s) > BASELINE_DAYS;
 }
 
-/** when the current unsealed day unlocks (null when the week is complete) */
-export function nextUnlockAt(s: BaselineSession | null): number | null {
-  const day = currentBaselineDay(s);
-  if (day > BASELINE_DAYS) return null;
-  return (s?.days ?? []).find((d) => d.day === day)?.unlockedAt ?? s?.startedAt ?? 0;
-}
-
 export type BaselineDayStatus = 'done' | 'today' | 'locked' | 'future';
 
 export function dayStatus(s: BaselineSession | null, day: number): BaselineDayStatus {
@@ -303,15 +293,16 @@ export function dayStatus(s: BaselineSession | null, day: number): BaselineDaySt
   if (d?.sealedAt) return 'done';
   const cur = currentBaselineDay(s);
   if (day > cur) return 'future';
-  return Date.now() >= (d?.unlockedAt ?? 0) ? 'today' : 'locked';
+  // A current unsealed day is always available, including legacy sessions that
+  // retain timestamps from the former timed gate.
+  return 'today';
 }
 
 // ── THE WEEK — day actions ───────────────────────────────────
 
 /**
- * Seal a day of the week. The next day unlocks 24h from THIS seal —
- * that enforced gap is the honesty mechanism: it gives the player a
- * full day to sit with the review before the next match.
+ * Seal a day of the week. The next day opens immediately, so players can
+ * continue their Baseline Week whenever they are ready.
  */
 export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void {
   if (!session) return;
@@ -319,7 +310,7 @@ export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void
   const days = session.days.map((d) => (d.day === day ? { ...d, ...extra, sealedAt } : d));
   const nextIdx = days.findIndex((d) => d.day === day + 1);
   if (nextIdx >= 0 && !days[nextIdx].sealedAt) {
-    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt + BASELINE_DAY_MS };
+    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt };
   }
   session = { ...session, days };
   void persist();
@@ -754,10 +745,4 @@ export const BASELINE_DAY_INTRO: Record<string, Record<number, string>> = {
     5: 'The last trial match, little one. Play it like the mirror is kind — because it is, and it does not forget.',
     6: 'Rest today. The week has been speaking to you — today we listen to it together.',
   },
-};
-
-/** what the coach says on the REST day (the 24h gap between tasks) */
-export const BASELINE_REST_LINES: Record<string, string> = {
-  chinedu: 'Rest is part of the work. The match will be here tomorrow — your review needs tonight.',
-  obinna: 'Sit with today’s review, little one. The match will still be here tomorrow — and so will I.',
 };

@@ -1,10 +1,9 @@
-// Pure-node unit tests for the BASELINE WEEK — the honest 7-day gate.
+// Pure-node unit tests for the BASELINE WEEK — a player-paced 7-day gate.
 // Run: npm test (compiles the TS engine, then executes).
 //
-// These tests prove the pacing contract: day 1 opens immediately,
-// every later day unlocks 24h AFTER the previous day is sealed (the
-// enforced gap that gives the player time to think), lateness is
-// never punished, old sessions migrate without losing progress, and
+// These tests prove the player-paced flow: day 1 opens immediately and every
+// later day opens as soon as the previous one is sealed. Old sessions migrate
+// without losing progress, and
 // the day's moment analysis must be genuinely complete before the
 // day can be sealed.
 const assert = require('node:assert/strict');
@@ -46,8 +45,6 @@ fs.writeFileSync(path.join(stubDir, 'react-native-url-polyfill', 'auto.js'), '')
 
 const B = require('./.build/data/baselineScan.js');
 
-const DAY = B.BASELINE_DAY_MS;
-
 function entry(at, moments = []) {
   return {
     gf: 1,
@@ -86,27 +83,27 @@ async function main() {
   assert.equal(B.isWeekComplete(fresh), false, 'the week is not complete');
   console.log('PASS 1 · fresh week opens on DAY 1, days 2–7 are future');
 
-  // ══ T2 · sealing day 1 unlocks day 2 exactly 24h later ══
+  // ══ T2 · sealing day 1 immediately opens day 2 ══
   B.recordBaselineMatch(entry(Date.now()), null);
   B.sealBaselineDay(1);
   const after1 = await B.loadBaseline('chinedu');
   assert.equal(B.currentBaselineDay(after1), 2, 'day 1 sealed → day 2 is current');
-  assert.equal(B.dayStatus(after1, 2), 'locked', 'day 2 is locked (unlock in 24h)');
+  assert.equal(B.dayStatus(after1, 2), 'today', 'day 2 is available immediately');
   const d2 = after1.days.find((d) => d.day === 2);
   const d1 = after1.days.find((d) => d.day === 1);
-  assert.equal(d2.unlockedAt - d1.sealedAt, DAY, 'day 2 unlocks exactly 24h after day 1 was sealed');
+  assert.equal(d2.unlockedAt, d1.sealedAt, 'day 2 opens when day 1 is sealed');
   assert.equal(d1.entryIndex, 0, 'day 1 is linked to its vault entry');
-  console.log('PASS 2 · sealing day 1 unlocks day 2 exactly 24h later (the honesty gap)');
+  console.log('PASS 2 · sealing day 1 immediately opens day 2');
 
-  // ══ T3 · lateness is not punished — sealing late still unlocks +24h from THAT seal ══
+  // ══ T3 · every completed day immediately opens the next one ══
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(2);
   const after2 = await B.loadBaseline('chinedu');
   const d3 = after2.days.find((d) => d.day === 3);
   const d2s = after2.days.find((d) => d.day === 2);
-  assert.equal(d3.unlockedAt - d2s.sealedAt, DAY, 'day 3 unlocks 24h after the (late) day-2 seal');
+  assert.equal(d3.unlockedAt, d2s.sealedAt, 'day 3 opens when day 2 is sealed');
   assert.equal(B.currentBaselineDay(after2), 3, 'day 3 is current even when late');
-  console.log('PASS 3 · lateness is never punished — the gap is always 24h from the actual seal');
+  console.log('PASS 3 · sealing any day immediately opens the next');
 
   // ══ T4 · a moment analysis is only complete when EVERY question is answered ══
   const full = namedMoment('CONCEDED AFTER A PANIC PASS');
@@ -132,7 +129,7 @@ async function main() {
   assert.equal(B.currentBaselineDay(migrated), 3, 'migration: 2 sealed entries → day 3 current');
   assert.equal(B.dayStatus(migrated, 1), 'done', 'day 1 done after migration');
   assert.equal(B.dayStatus(migrated, 2), 'done', 'day 2 done after migration');
-  assert.equal(B.dayStatus(migrated, 3), 'locked', 'day 3 locked (unlock = day-2 seal + 24h)');
+  assert.equal(B.dayStatus(migrated, 3), 'today', 'day 3 is available after migration');
   assert.equal(migrated.entries.length, 2, 'no progress lost');
   console.log('PASS 5 · pre-week sessions migrate to the 7-day schedule without losing progress');
 
@@ -159,12 +156,12 @@ async function main() {
   assert.equal(B.matchNumberForDay(after6, 7), 5, 'day 7 corresponds to match number 5');
   const d7 = after6.days.find((d) => d.day === 7);
   assert.equal(d7.sealedAt, null, 'day 7 not yet sealed');
-  assert.equal(B.dayStatus(after6, 7), 'locked', 'day 7 unlocks 24h after rest day 2');
+  assert.equal(B.dayStatus(after6, 7), 'today', 'day 7 is available immediately after rest day 2');
   const refl4 = after6.days.find((d) => d.day === 4).reflection;
   assert.ok(refl4 && refl4.repeated.includes('rushing'), 'day 4 reflection persisted');
   const refl6 = after6.days.find((d) => d.day === 6).reflection;
   assert.ok(refl6 && refl6.repeated.includes('standard'), 'day 6 reflection persisted');
-  console.log('PASS 6 · the week flows Matches 1–3 → Rest 1 → Match 4 → Rest 2 → Match 5 Finale, each gated by 24h');
+  console.log('PASS 6 · the week flows Matches 1–3 → Rest 1 → Match 4 → Rest 2 → Match 5 Finale without waits');
 
   await B.resetBaselineForDev();
   console.log('\nALL BASELINE WEEK TESTS PASS');
