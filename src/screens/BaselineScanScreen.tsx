@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, useWindowDimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import ArtBand from '../components/ArtBand';
@@ -115,6 +116,36 @@ function WeekStrip({ session, now }: { session: BaselineSession | null; now: num
   );
 }
 
+const REFLECTION_STARTERS: Partial<Record<BaselineAnalysisKey, string[]>> = {
+  feel: ['PRESSURE', 'PANIC', 'FRUSTRATION', 'RUSHED', 'CALM', 'CONFIDENT', 'ANGRY', 'UNCERTAIN'],
+  cause: ['FORCED PASS', 'LOSS OF FOCUS', 'RUSHING', 'POOR POSITIONING', 'PANIC', 'MISREAD THE PLAY', 'FATIGUE', 'OTHER'],
+};
+
+const GUIDE_KEY = 'psa.baseline.guide.v1';
+const GUIDE_STEPS = [
+  ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
+  ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
+  ['CAPTURE THE MOMENT', 'Use the score, head-state choices and reflection fields to describe what actually happened — especially a mistake, setback, or decision you would change.'],
+  ['SAVE & RETURN', 'Each completed scan adds evidence to your starting profile. Seal the day, then return when the next match unlocks.'],
+] as const;
+
+function BaselineGuide({ index, onNext, onBack, onSkip }: { index: number; onNext: () => void; onBack: () => void; onSkip: () => void }) {
+  const [title, body] = GUIDE_STEPS[index];
+  return <View style={styles.guideBox} accessibilityRole="summary">
+    <Text style={styles.guideArrow}>↓</Text>
+    <View style={styles.guideCopy}><Text style={styles.guideKicker}>QUICK TOUR · {index + 1}/{GUIDE_STEPS.length}</Text><Text style={styles.guideTitle}>{title}</Text><Text style={styles.guideBody}>{body}</Text></View>
+    <View style={styles.guideActions}>
+      {index > 0 && <Pressable onPress={onBack} hitSlop={8}><Text style={styles.guideBack}>‹ BACK</Text></Pressable>}
+      <Pressable onPress={onNext} style={styles.guideNext}><Text style={styles.guideNextTxt}>{index === GUIDE_STEPS.length - 1 ? 'GOT IT' : 'NEXT ›'}</Text></Pressable>
+    </View>
+    <Pressable onPress={onSkip} hitSlop={8}><Text style={styles.guideSkip}>SKIP TOUR</Text></Pressable>
+  </View>;
+}
+
+function HelpCard({ title = 'WHY WE ASK THIS', children }: { title?: string; children: React.ReactNode }) {
+  return <View style={styles.helpCard}><Text style={styles.helpTitle}>?  {title}</Text><Text style={styles.helpText}>{children}</Text></View>;
+}
+
 function momentComplete(m: DraftMoment): boolean {
   return BASELINE_MOMENT_QUESTIONS.every(
     (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
@@ -153,10 +184,15 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [reflection, setReflection] = useState({ repeated: '', changed: '' });
   const [ambition, setAmbition] = useState('');
   const [sealing, setSealing] = useState(false);
+  const [guideStep, setGuideStep] = useState<number | null>(null);
   const seq = useRef(1);
 
   const day = currentBaselineDay(session);
   const complete = isWeekComplete(session);
+
+  useEffect(() => { void AsyncStorage.getItem(GUIDE_KEY).then((seen) => { if (!seen) setGuideStep(0); }); }, []);
+
+  const dismissGuide = () => { setGuideStep(null); void AsyncStorage.setItem(GUIDE_KEY, 'seen'); };
 
   // ── boot: restore where the player left off ──
   useEffect(() => {
@@ -380,6 +416,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
             <>
               <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES}</Text>
               <WeekStrip session={session} now={now} />
+              {guideStep !== null && <BaselineGuide index={guideStep} onBack={() => setGuideStep(n => Math.max(0, (n ?? 0) - 1))} onNext={() => { if (guideStep >= GUIDE_STEPS.length - 1) dismissGuide(); else setGuideStep(guideStep + 1); }} onSkip={dismissGuide} />}
+              <Pressable onPress={() => setGuideStep(0)} hitSlop={8}><Text style={styles.replayGuide}>?  SHOW ME HOW BASELINE WEEK WORKS</Text></Pressable>
 
               {day > 1 && (
                 <View style={styles.dayIntro}>
@@ -395,9 +433,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   <Text style={styles.heroSub}>
                     1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
                     {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Write down your key moments, unusual things that happened, and answer the guiding questions on paper first.
-                    {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after the match.
-                    {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your written answers into your database.
+                    {'\n'}3. WRITE IT STRAIGHT AWAY: Immediately after full time, write what happened, how it made you feel and what you think caused it — before the details fade.
+                    {'\n'}4. LOG TO DATABASE: Open the app and type your honest notes into your database while the match is still fresh.
                   </Text>
+                  <HelpCard title="YOUR MATCH-DAY CHECKLIST">Play normally. Immediately after full time, write the moments that changed the match, how you felt and what may have caused them. Then return here and log the evidence. A loss or mistake is useful evidence — not a failed day.</HelpCard>
                   <View style={styles.armNote}>
                     <Text style={styles.armNoteTxt}>
                       IN A WORLD LOOKING FOR THE EASY WAY OUT: THE HARD WAY IS THE EASY WAY, AND THE EASY WAY IS THE HARD WAY. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.
@@ -415,7 +454,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── MATCH: score + head state ── */}
               {step === 'match' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>PLAYED. FULL TIME — WHAT WAS THE SCORE?</Text>
+                  <Text style={styles.heroLine}>FULL TIME. LET’S CAPTURE THE MATCH.</Text>
                   <View style={styles.scoreCard}>
                     <View style={styles.scoreSide}>
                       <Text style={styles.scoreLabel}>YOU</Text>
@@ -450,7 +489,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                         ))}
                       </View>
                       <Pressable onPress={logScore} style={styles.cta}>
-                        <Text style={styles.ctaTxt}>FULL TIME — UNLOCK THE EVIDENCE ›</Text>
+                        <Text style={styles.ctaTxt}>CONTINUE TO YOUR REFLECTION ›</Text>
                       </Pressable>
                     </>
                   )}
@@ -461,13 +500,13 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── REVIEW: watch the recording, NAME the moments where you failed ── */}
               {step === 'review' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>WATCH THE EVIDENCE. NAME THE MOMENTS WHERE YOU FAILED.</Text>
+                  <Text style={styles.heroLine}>REVISIT THE MOMENTS THAT STAYED WITH YOU.</Text>
                   <Text style={styles.heroSub}>
-                    Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
-                    give each one a name. Then we analyse them one at a time.
+                    There are no marks here. Watch back if you can, pause at the moments that changed the match, and give them a name in your own words. We will gently unpack them together.
                   </Text>
+                  <HelpCard title="WRITE THIS IMMEDIATELY AFTER FULL TIME">Before you replay or explain the result away, write the turning point in your own words. Then say how you felt and what you believe caused it: pressure, panic, rushing, a forced pass, loss of focus or something else.</HelpCard>
                   <View style={styles.armNote}>
-                    <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS AND UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MINUTE COOL-DOWN.</Text>
+                    <Text style={styles.armNoteTxt}>OPEN YOUR IMMEDIATE NOTES: Watch your own tape, then type the key moments, how you felt and what you think caused each one while the match is still clear.</Text>
                   </View>
 
                   <View style={styles.momentCard}>
@@ -528,10 +567,10 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     onPress={() => { sfx('whoosh'); setStep('analysis'); }}
                     style={[styles.cta, moments.length === 0 && { opacity: 0.35 }]}
                   >
-                    <Text style={styles.ctaTxt}>MY MOMENTS ARE NAMED — ANALYSE THEM ›</Text>
+                    <Text style={styles.ctaTxt}>I’VE NOTED THE MOMENTS — REFLECT ›</Text>
                   </Pressable>
                   {moments.length === 0 && (
-                    <Text style={styles.requireTxt}>NAME AT LEAST ONE MOMENT WHERE YOU FAILED — THAT IS THE DAY'S WORK.</Text>
+                    <Text style={styles.requireTxt}>START WITH ONE MOMENT THAT CHANGED THE MATCH — a mistake, a turning point, or something you noticed.</Text>
                   )}
                 </Animated.View>
               )}
@@ -539,10 +578,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── ANALYSIS: every moment, every question, your words ── */}
               {step === 'analysis' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>EVERY MOMENT, ANALYSED BY YOU.</Text>
+                  <Text style={styles.heroLine}>LET’S MAKE SENSE OF THE MOMENTS.</Text>
                   <Text style={styles.heroSub}>
-                    The app never writes your psychology. It just keeps the questions in front of you, one moment at a
-                    time, until your own answers say what actually happened.
+                    This is a private reflection, not an exam. Take one moment at a time. Short, honest notes are enough — the words and meaning stay yours.
                   </Text>
                   {moments.map((m, mi) => (
                     <View key={m.id} style={styles.analysisBlock}>
@@ -552,12 +590,24 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                       </View>
                       <View style={styles.armNote}>
                         <Text style={styles.armNoteTxt}>
-                          THE CHINEDU WAY: Have your paper notes in front of you. You formulated your answers with pen on paper after your 24–30 min cool-down — now type your written truth into your database.
+                          THE CHINEDU WAY: Have the notes you wrote immediately after full time in front of you. Type your truth about what happened, how you felt and what you believe caused it.
                         </Text>
                       </View>
                       {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (
                         <View key={q.key} style={styles.aqCard}>
                           <Text style={styles.aqLabel}>{q.label}</Text>
+                          <Text style={styles.aqHint}>Think about the decision, feeling or trigger in this exact moment. There is no correct answer — write what was true.</Text>
+                          {REFLECTION_STARTERS[q.key] && <>
+                            <Text style={styles.starterLabel}>OPTIONAL STARTING POINT — TAP ONE, THEN EXPLAIN IT IN YOUR OWN WORDS</Text>
+                            <View style={styles.starterRow}>
+                              {REFLECTION_STARTERS[q.key]!.map((starter) => <Pressable key={starter} onPress={() => {
+                                const current = m.analysis[q.key] ?? '';
+                                if (!current.trim()) setMomentAnalysis(m.id, q.key, q.key === 'feel' ? `I felt ${starter.toLowerCase()} because ` : `I think ${starter.toLowerCase()} caused it because `);
+                              }} style={[styles.starterChip, (m.analysis[q.key] ?? '').toUpperCase().includes(starter) && styles.starterChipOn]}>
+                                <Text style={[styles.starterTxt, (m.analysis[q.key] ?? '').toUpperCase().includes(starter) && styles.starterTxtOn]}>{starter}</Text>
+                              </Pressable>)}
+                            </View>
+                          </>}
                           <TextInput
                             value={m.analysis[q.key] ?? ''}
                             onChangeText={(t) => setMomentAnalysis(m.id, q.key, t)}
@@ -567,14 +617,14 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                             multiline
                           />
                           <Text style={styles.aqCount}>
-                            {((m.analysis[q.key] ?? '').trim().length)}/{BASELINE_MOMENT_MIN_ANSWER}+
+                            {((m.analysis[q.key] ?? '').trim().length) ? 'A real detail makes this more useful.' : 'A few honest words are enough to begin.'}
                           </Text>
                         </View>
                       ))}
                       {momentComplete(m) ? (
-                        <Text style={styles.momentDoneTxt}>✓ MOMENT {mi + 1} ANALYSED</Text>
+                        <Text style={styles.momentDoneTxt}>✓ MOMENT {mi + 1} CAPTURED</Text>
                       ) : (
-                        <Text style={styles.requireTxt}>ANSWER EVERY QUESTION ({BASELINE_MOMENT_MIN_ANSWER}+ CHARACTERS EACH)</Text>
+                        <Text style={styles.requireTxt}>Add a little more to any note that still feels unfinished.</Text>
                       )}
                     </View>
                   ))}
@@ -582,7 +632,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     onPress={() => { sfx('whoosh'); setStep('dayq'); }}
                     style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}
                   >
-                    <Text style={styles.ctaTxt}>ANALYSIS DONE — THE DAY QUESTION ›</Text>
+                    <Text style={styles.ctaTxt}>REFLECTION COMPLETE — ONE FINAL CHECK-IN ›</Text>
                   </Pressable>
                 </Animated.View>
               )}
@@ -590,15 +640,16 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               {/* ── DAY QUESTION + SEAL ── */}
               {step === 'dayq' && (
                 <Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>ONE LAST QUESTION FOR DAY {day}.</Text>
+                  <Text style={styles.heroLine}>ONE FINAL CHECK-IN FOR DAY {day}.</Text>
                   <View style={styles.questionCard}>
                     <Image source={coach.portrait} style={styles.beatFace} />
                     <Text style={styles.questionTxt}>{question}</Text>
                   </View>
+                  <HelpCard>Use a real example from this match. We are looking for the pattern behind the result, not the answer that sounds strongest.</HelpCard>
                   <TextInput
                     value={dayAnswer}
                     onChangeText={(t) => setDayAnswer(t.slice(0, 500))}
-                    placeholder="THINK. THEN ANSWER — YOUR WORDS, NOT OURS."
+                    placeholder="A SHORT, HONEST NOTE IN YOUR OWN WORDS."
                     placeholderTextColor={colors.muted}
                     style={styles.input}
                     multiline
@@ -617,7 +668,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </Pressable>
                   {!canSealDay && (
                     <Text style={styles.requireTxt}>
-                      ANSWER THE QUESTION ({MIN_ANSWER}+), FINISH EVERY MOMENT ANALYSIS, PICK YOUR HEAD STATE — THEN WE MOVE
+                      A couple of reflections are still waiting. Add what feels true, then you can continue.
                     </Text>
                   )}
                 </Animated.View>
@@ -642,6 +693,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 </View>
               )}
               <WeekStrip session={session} now={now} />
+              <View style={styles.nextBox}><Text style={styles.nextLabel}>WHAT HAPPENS NEXT</Text><Text style={styles.nextText}>Your last scan is now part of your starting profile. Play your next normal match, then return here while the moments are still fresh.</Text></View>
 
               {/* yesterday's review, still warm */}
               {lastEntry && (
@@ -825,6 +877,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Text style={styles.cardAmbTxt}>“{session.card.ambition}”</Text>
               </View>
 
+              <View style={styles.nextBox}><Text style={styles.nextLabel}>BASELINE COMPLETE</Text><Text style={styles.nextText}>You have finished the evidence-gathering phase. Your profile now gives tracking and coaching a truthful place to start.</Text></View>
               <Pressable onPress={onDone} style={styles.cta}>
                 <CheckIcon size={12} color="#0a0f0a" />
                 <Text style={styles.ctaTxt}>PROFILE SEALED — CONTINUE</Text>
@@ -878,6 +931,10 @@ const styles = StyleSheet.create({
   ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.8 },
   skipLink: { color: colors.muted, fontFamily: bodyFont, fontSize: 11.5, letterSpacing: 0.4, textAlign: 'center', marginTop: 14 },
   notReadyTxt: { color: colors.muted, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, marginTop: 10, textAlign: 'center' },
+
+  guideBox: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.55)', borderRadius: 13, backgroundColor: 'rgba(14,30,18,0.98)', padding: 13 },
+  guideArrow: { color: colors.primary, fontSize: 23, lineHeight: 22, textAlign: 'center' }, guideCopy: { marginTop: 3 }, guideKicker: { color: colors.primary, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.7 }, guideTitle: { color: colors.fg, fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 5 }, guideBody: { color: '#b9cabe', fontFamily: bodyFont, fontSize: 11, lineHeight: 16, marginTop: 5 }, guideActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, guideBack: { color: colors.muted, fontFamily: monoFont, fontSize: 8, letterSpacing: 1 }, guideNext: { backgroundColor: colors.primary, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 15 }, guideNextTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1 }, guideSkip: { color: colors.muted, fontFamily: monoFont, fontSize: 7.5, textAlign: 'right', letterSpacing: 1, marginTop: 9 }, replayGuide: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, textAlign: 'center', letterSpacing: 1.2, marginTop: 10 },
+  helpCard: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.accent, borderRadius: 8, backgroundColor: 'rgba(242,192,120,0.07)', padding: 11 }, helpTitle: { color: colors.accent, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4 }, helpText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 }, aqHint: { color: '#9db4a3', fontFamily: bodyFont, fontSize: 9.5, lineHeight: 13, marginTop: 4 }, nextBox: { marginTop: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 12, backgroundColor: 'rgba(57,255,106,0.06)', padding: 12 }, nextLabel: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.5 }, nextText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 },
 
   // ── week strip ──
   weekStrip: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, marginBottom: 4 },
@@ -945,6 +1002,8 @@ const styles = StyleSheet.create({
   momentChip: { marginTop: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', borderRadius: 9, backgroundColor: 'rgba(10,20,13,0.7)', paddingHorizontal: 11, paddingVertical: 9 },
   momentChipTxt: { fontFamily: monoFont, fontSize: 6.8, letterSpacing: 0.9, color: '#c4d4c8', flex: 1 },
   removeTxt: { color: colors.loss, fontFamily: monoFont, fontSize: 11 },
+
+  starterLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 0.8, lineHeight: 10, marginTop: 8 }, starterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 }, starterChip: { borderWidth: 1, borderColor: 'rgba(143,184,155,0.35)', borderRadius: 9, paddingHorizontal: 8, paddingVertical: 5, backgroundColor: 'rgba(10,20,13,0.7)' }, starterChipOn: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.1)' }, starterTxt: { color: '#b9cabe', fontFamily: monoFont, fontSize: 6.5, letterSpacing: 0.7 }, starterTxtOn: { color: colors.primary },
 
   // ── analysis ──
   analysisBlock: { marginTop: 16, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 13, backgroundColor: 'rgba(20,18,10,0.6)', padding: 12 },
