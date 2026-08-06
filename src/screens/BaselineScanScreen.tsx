@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, useWindowDimensions } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import ArtBand from '../components/ArtBand';
@@ -115,6 +116,31 @@ function WeekStrip({ session, now }: { session: BaselineSession | null; now: num
   );
 }
 
+const GUIDE_KEY = 'psa.baseline.guide.v1';
+const GUIDE_STEPS = [
+  ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
+  ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
+  ['ANSWER THE EVIDENCE', 'Use the score, head-state choices and reflection fields to describe what actually happened — especially a mistake, setback, or decision you would change.'],
+  ['SAVE & RETURN', 'Each completed scan adds evidence to your starting profile. Seal the day, then return when the next match unlocks.'],
+] as const;
+
+function BaselineGuide({ index, onNext, onBack, onSkip }: { index: number; onNext: () => void; onBack: () => void; onSkip: () => void }) {
+  const [title, body] = GUIDE_STEPS[index];
+  return <View style={styles.guideBox} accessibilityRole="summary">
+    <Text style={styles.guideArrow}>↓</Text>
+    <View style={styles.guideCopy}><Text style={styles.guideKicker}>QUICK TOUR · {index + 1}/{GUIDE_STEPS.length}</Text><Text style={styles.guideTitle}>{title}</Text><Text style={styles.guideBody}>{body}</Text></View>
+    <View style={styles.guideActions}>
+      {index > 0 && <Pressable onPress={onBack} hitSlop={8}><Text style={styles.guideBack}>‹ BACK</Text></Pressable>}
+      <Pressable onPress={onNext} style={styles.guideNext}><Text style={styles.guideNextTxt}>{index === GUIDE_STEPS.length - 1 ? 'GOT IT' : 'NEXT ›'}</Text></Pressable>
+    </View>
+    <Pressable onPress={onSkip} hitSlop={8}><Text style={styles.guideSkip}>SKIP TOUR</Text></Pressable>
+  </View>;
+}
+
+function HelpCard({ title = 'WHY WE ASK THIS', children }: { title?: string; children: React.ReactNode }) {
+  return <View style={styles.helpCard}><Text style={styles.helpTitle}>?  {title}</Text><Text style={styles.helpText}>{children}</Text></View>;
+}
+
 function momentComplete(m: DraftMoment): boolean {
   return BASELINE_MOMENT_QUESTIONS.every(
     (q) => (m.analysis[q.key] ?? '').trim().length >= BASELINE_MOMENT_MIN_ANSWER,
@@ -153,10 +179,15 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [reflection, setReflection] = useState({ repeated: '', changed: '' });
   const [ambition, setAmbition] = useState('');
   const [sealing, setSealing] = useState(false);
+  const [guideStep, setGuideStep] = useState<number | null>(null);
   const seq = useRef(1);
 
   const day = currentBaselineDay(session);
   const complete = isWeekComplete(session);
+
+  useEffect(() => { void AsyncStorage.getItem(GUIDE_KEY).then((seen) => { if (!seen) setGuideStep(0); }); }, []);
+
+  const dismissGuide = () => { setGuideStep(null); void AsyncStorage.setItem(GUIDE_KEY, 'seen'); };
 
   // ── boot: restore where the player left off ──
   useEffect(() => {
@@ -380,6 +411,8 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
             <>
               <Text style={styles.eyebrow}>BASELINE WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES}</Text>
               <WeekStrip session={session} now={now} />
+              {guideStep !== null && <BaselineGuide index={guideStep} onBack={() => setGuideStep(n => Math.max(0, (n ?? 0) - 1))} onNext={() => { if (guideStep >= GUIDE_STEPS.length - 1) dismissGuide(); else setGuideStep(guideStep + 1); }} onSkip={dismissGuide} />}
+              <Pressable onPress={() => setGuideStep(0)} hitSlop={8}><Text style={styles.replayGuide}>?  SHOW ME HOW BASELINE WEEK WORKS</Text></Pressable>
 
               {day > 1 && (
                 <View style={styles.dayIntro}>
@@ -398,6 +431,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after the match.
                     {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your written answers into your database.
                   </Text>
+                  <HelpCard title="YOUR MATCH-DAY CHECKLIST">Play normally. After full time, cool down, revisit the moments that changed the match, then return here and log the evidence. A loss or mistake is useful evidence — not a failed day.</HelpCard>
                   <View style={styles.armNote}>
                     <Text style={styles.armNoteTxt}>
                       IN A WORLD LOOKING FOR THE EASY WAY OUT: THE HARD WAY IS THE EASY WAY, AND THE EASY WAY IS THE HARD WAY. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.
@@ -466,6 +500,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     Your job first — the app never picks your moments for you. Watch, stop at the moments that cost you,
                     give each one a name. Then we analyse them one at a time.
                   </Text>
+                  <HelpCard title="WHAT TO THINK ABOUT">Look for turning points: a rushed pass, missed chance, concession, forced shot, loss of patience, or a moment you handled well. Name what happened in your own words.</HelpCard>
                   <View style={styles.armNote}>
                     <Text style={styles.armNoteTxt}>OPEN YOUR PAPER NOTES: WATCH YOUR OWN TAPE, THEN TYPE THE KEY MOMENTS AND UNUSUAL THINGS YOU PENNED AFTER YOUR 24–30 MINUTE COOL-DOWN.</Text>
                   </View>
@@ -558,6 +593,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                       {BASELINE_MOMENT_QUESTIONS.map((q, qi) => (
                         <View key={q.key} style={styles.aqCard}>
                           <Text style={styles.aqLabel}>{q.label}</Text>
+                          <Text style={styles.aqHint}>Think about the decision, feeling or trigger in this exact moment. There is no correct answer — write what was true.</Text>
                           <TextInput
                             value={m.analysis[q.key] ?? ''}
                             onChangeText={(t) => setMomentAnalysis(m.id, q.key, t)}
@@ -595,6 +631,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Image source={coach.portrait} style={styles.beatFace} />
                     <Text style={styles.questionTxt}>{question}</Text>
                   </View>
+                  <HelpCard>Use a real example from this match. We are looking for the pattern behind the result, not the answer that sounds strongest.</HelpCard>
                   <TextInput
                     value={dayAnswer}
                     onChangeText={(t) => setDayAnswer(t.slice(0, 500))}
@@ -642,6 +679,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 </View>
               )}
               <WeekStrip session={session} now={now} />
+              <View style={styles.nextBox}><Text style={styles.nextLabel}>WHAT HAPPENS NEXT</Text><Text style={styles.nextText}>Your last scan is now part of your starting profile. Play your next normal match, then return here while the moments are still fresh.</Text></View>
 
               {/* yesterday's review, still warm */}
               {lastEntry && (
@@ -825,6 +863,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                 <Text style={styles.cardAmbTxt}>“{session.card.ambition}”</Text>
               </View>
 
+              <View style={styles.nextBox}><Text style={styles.nextLabel}>BASELINE COMPLETE</Text><Text style={styles.nextText}>You have finished the evidence-gathering phase. Your profile now gives tracking and coaching a truthful place to start.</Text></View>
               <Pressable onPress={onDone} style={styles.cta}>
                 <CheckIcon size={12} color="#0a0f0a" />
                 <Text style={styles.ctaTxt}>PROFILE SEALED — CONTINUE</Text>
@@ -878,6 +917,10 @@ const styles = StyleSheet.create({
   ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.8 },
   skipLink: { color: colors.muted, fontFamily: bodyFont, fontSize: 11.5, letterSpacing: 0.4, textAlign: 'center', marginTop: 14 },
   notReadyTxt: { color: colors.muted, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, marginTop: 10, textAlign: 'center' },
+
+  guideBox: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.55)', borderRadius: 13, backgroundColor: 'rgba(14,30,18,0.98)', padding: 13 },
+  guideArrow: { color: colors.primary, fontSize: 23, lineHeight: 22, textAlign: 'center' }, guideCopy: { marginTop: 3 }, guideKicker: { color: colors.primary, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.7 }, guideTitle: { color: colors.fg, fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 5 }, guideBody: { color: '#b9cabe', fontFamily: bodyFont, fontSize: 11, lineHeight: 16, marginTop: 5 }, guideActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, guideBack: { color: colors.muted, fontFamily: monoFont, fontSize: 8, letterSpacing: 1 }, guideNext: { backgroundColor: colors.primary, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 15 }, guideNextTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1 }, guideSkip: { color: colors.muted, fontFamily: monoFont, fontSize: 7.5, textAlign: 'right', letterSpacing: 1, marginTop: 9 }, replayGuide: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, textAlign: 'center', letterSpacing: 1.2, marginTop: 10 },
+  helpCard: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.accent, borderRadius: 8, backgroundColor: 'rgba(242,192,120,0.07)', padding: 11 }, helpTitle: { color: colors.accent, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4 }, helpText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 }, aqHint: { color: '#9db4a3', fontFamily: bodyFont, fontSize: 9.5, lineHeight: 13, marginTop: 4 }, nextBox: { marginTop: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 12, backgroundColor: 'rgba(57,255,106,0.06)', padding: 12 }, nextLabel: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.5 }, nextText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 },
 
   // ── week strip ──
   weekStrip: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, marginBottom: 4 },
