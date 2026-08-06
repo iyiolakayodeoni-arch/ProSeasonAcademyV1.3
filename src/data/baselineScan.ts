@@ -498,6 +498,23 @@ export interface CoachScript {
   beats: Record<BeatKey, string>;
   /** the ambition ask — final question before the card seals */
   ambitionAsk: string;
+  /** his scene-setter at the top of the moment analysis — "take notes out,
+   *  he is across the table" — so the 9 questions read as an interview */
+  analysisIntro: string;
+  /** how HE asks each moment question — his phrasing, not a form label.
+   *  The short ALL-CAPS label stays as the field's anchor device. */
+  momentAsks: Record<BaselineAnalysisKey, string>;
+  /** stage directions between questions — index = the question it precedes.
+   *  A few well-placed lines turn a form into a conversation. */
+  momentInterludes: Record<number, string>;
+  /** templates for questions that build on the previous answer — {snippet}
+   *  is replaced with a quote of the player's own words from the question
+   *  before, so the next ask visibly grows out of what they just said. */
+  momentFollowUps: Partial<Record<BaselineAnalysisKey, string>>;
+  /** his acknowledgment of the result, spoken right before the day question —
+   *  so the W/D/L rotation reads as HIS choice for today's scoreline,
+   *  not a random draw from a question bank. */
+  dayQuestionIntro: Record<MatchResult, string>;
 }
 
 export type BeatKey = 'winBig' | 'winTight' | 'drawGoals' | 'drawNill' | 'lossBig' | 'lossTight';
@@ -506,6 +523,42 @@ export function beatKey(gf: number, ga: number): BeatKey {
   if (gf === ga) return gf === 0 ? 'drawNill' : 'drawGoals';
   if (gf > ga) return gf - ga >= 3 ? 'winBig' : 'winTight';
   return ga - gf >= 3 ? 'lossBig' : 'lossTight';
+}
+
+// ── THE COACH ASKS — helpers that turn question banks into an interview ──
+
+/**
+ * How the coach asks one moment question — with the follow-up template when
+ * the previous answer gives him something quotable. `prevAnswer` is the
+ * player's answer to the question before this one (BASELINE_MOMENT_QUESTIONS
+ * order); when it carries real words, the ask opens by quoting them back.
+ */
+export function momentAskFor(
+  script: CoachScript,
+  key: BaselineAnalysisKey,
+  prevAnswer?: string,
+): string {
+  const base = script.momentAsks[key];
+  const tpl = script.momentFollowUps[key];
+  const snippet = tpl ? quoteSnippet(prevAnswer) : '';
+  if (tpl && snippet) return tpl.replace('{snippet}', snippet);
+  return base;
+}
+
+/**
+ * Trim the player's answer to a quotable fragment: first sentence or first
+ * ~64 chars at a word boundary, safe to drop into “…”. Empty when the
+ * answer has no real content — callers fall back to the plain ask.
+ */
+export function quoteSnippet(answer: string | undefined | null): string {
+  const clean = (answer ?? '').replace(/\s+/g, ' ').trim();
+  if (clean.length < 12) return '';
+  // prefer the first sentence — it usually holds the admission
+  const first = clean.split(/[.!?]/)[0] ?? clean;
+  const candidate = first.length >= 12 ? first : clean;
+  if (candidate.length <= 64) return candidate.replace(/[.,;:]+$/, '');
+  const cut = candidate.slice(0, 64);
+  return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
 
 export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
@@ -564,6 +617,35 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     },
     ambitionAsk:
       'Last question of the baseline, and I want the real one, not the polite one. Where are you going with this? Not “up a division.” Where. I will hold you to it.',
+    analysisIntro:
+      'Paper in front of you. You named the moments — now I walk you through them, one by one. Answer like I am across the table, because I am. I read every word.',
+    momentAsks: {
+      happened: 'Start at the start. What actually happened? No excuses, no commentary — just the event, exactly as it unfolded.',
+      thinking: 'Now open your head for me. What was running through it in that exact second — before the touch?',
+      feel: 'The body keeps the score. What did you feel in that moment — say it plainly.',
+      cause: 'Feelings noted. Now we dig — what actually caused this moment?',
+      why: 'Deeper. Why did this turn against you — you, specifically — and not your opponent?',
+      noticed: 'Reconstruct the picture. What did you actually see before you decided?',
+      missed: 'Nobody sees everything. What did you fail to notice — the thing that mattered?',
+      differently: 'Here is the one the whole week is for. What could you have done differently — not wished differently, DONE differently?',
+      evidence: 'Back yourself. What in the match or in your notes supports that answer?',
+    },
+    momentInterludes: {
+      2: 'Good. Keep going — the easy ones are done.',
+      5: 'Now we get to the uncomfortable part. Do not reach for the comfortable version.',
+      7: 'Almost there. This next one is why this week exists.',
+    },
+    momentFollowUps: {
+      cause: 'You wrote “{snippet}”. Noted — feelings logged. Now tell me what caused it.',
+      why: '“{snippet}” — fine. So why did THAT happen? Go one layer under it.',
+      differently: 'You admit it: “{snippet}”. Honesty — good. So what do you do differently?',
+      evidence: 'You say “{snippet}”. Prove it.',
+    },
+    dayQuestionIntro: {
+      W: 'You won. Good. Do not inhale too deep — a win hides cracks better than a loss exposes them. Here is what I want answered.',
+      D: 'A draw. Two points left on the table, and a draw forgets faster than a loss. You will not forget — answer me this.',
+      L: 'You lost. Fine. Losses are receipts — and we read receipts. Here is my question for you.',
+    },
   },
 
   obinna: {
@@ -621,6 +703,35 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     },
     ambitionAsk:
       'One more thing, little one, and this stays between us until we need it: where do you want your game to BE when we look back a year from now? Tell me the real dream — I will hold it for you.',
+    analysisIntro:
+      'Sit with me, little one. You named the moments — brave work already. Now we take them one by one, slowly. I am not in a hurry, and I read every word.',
+    momentAsks: {
+      happened: 'Take me there, little one. Walk me through exactly what happened — slowly, just the facts first.',
+      thinking: 'Now step inside your own head — what was your mind saying to you in that exact second?',
+      feel: 'And what did your body do with it? Tell me what you felt — gently, honestly.',
+      cause: 'No blame, no excuses — just honestly: what do you think caused this moment?',
+      why: 'Sit with it a moment, little one. Why did it turn against you — and not your opponent?',
+      noticed: 'Rebuild the picture for me. What did you notice before the decision — what did your eyes give you?',
+      missed: 'It is alright — everyone misses something. What quietly slipped past you?',
+      differently: 'If I handed you the same few seconds again — what would you do differently?',
+      evidence: 'Show me your working, little one. What in the match or your notes supports that answer?',
+    },
+    momentInterludes: {
+      2: 'Good — you are doing this honestly. Keep going.',
+      5: 'Now the part most people skip. We do not skip, little one.',
+      7: 'One more deep question. This is the one that changes players.',
+    },
+    momentFollowUps: {
+      cause: 'You wrote “{snippet}” — I hear you. Now, softly: what caused it?',
+      why: '“{snippet}”. Thank you, little one. But why? Let us go one layer under.',
+      differently: 'You have seen it clearly: “{snippet}”. So — what do you do differently?',
+      evidence: 'You believe “{snippet}”. What points to it?',
+    },
+    dayQuestionIntro: {
+      W: 'You won, little one — well done. Enjoy it for one breath. Done? Good. Now answer me this.',
+      D: 'A draw, little one. Not a defeat, not a victory — a lesson wearing a disguise. Come, sit. Answer me this.',
+      L: 'You lost, little one — that hurt. Let it, for a moment. Then we put the hurt to work. Answer this for me.',
+    },
   },
 };
 
