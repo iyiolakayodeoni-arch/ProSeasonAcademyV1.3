@@ -311,7 +311,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           <DoorHero
             width={doorWidth}
             lines={['YOUR COACH', 'IS WAITING']}
-            sub={'Rooms and the till light up for you when your seat opens.'}
+            sub={'Your rooms light up when your seat opens.'}
             loopProps={loopProps}
             glowStyle={glowStyle}
           />
@@ -352,7 +352,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
           {mode === 'register' && (
             <>
-              <Text style={styles.geoTitle}>YOUR COUNTRY — SETS YOUR PRICING</Text>
+              <Text style={styles.geoTitle}>YOUR COUNTRY</Text>
               <View style={styles.geoGrid}>
                 {COUNTRY_OPTIONS.map((o) => {
                   const on = countryPick === o.label;
@@ -366,8 +366,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 })}
               </View>
               <Text style={styles.geoNote}>
-                NIGERIA → NAIRA SHELF · EVERYWHERE ELSE → WORLD SHELF. THE TILL STAYS CLOSED UNTIL
-                THE FOUNDER OPENS PAYMENTS. LOCATION IS CHECKED SOFTLY AFTER SIGN-IN.
+                THIS HELPS KEEP THE COMMUNITY REAL. LOCATION IS CHECKED SOFTLY AFTER SIGN-IN.
               </Text>
 
               <View style={styles.form}>

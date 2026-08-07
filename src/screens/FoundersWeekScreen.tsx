@@ -146,7 +146,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.cardBody}>
                 {fwLive?.note?.trim()
                   ? fwLive.note
-                  : 'You thought this was free, huh? Hah — got you.\n\nBaseline was the interview. Now we do the fair part: we discuss pricing together in the community. I’ll start with a price for each region, you tell me what’s fair in the halls. Take part — that’s how it stays free and fair for everyone.\n\nYour card and vault wait — nothing is deleted.'}
+                  : 'You thought this was free, huh? Hah — got you.\n\nBaseline was the interview. Now we do the fair part: we discuss pricing together in the community before the programme starts properly. Take part in the halls — that’s how it stays free and fair for everyone. Once we agree, we start.\n\nYour card and vault wait — nothing is deleted.'}
               </Text>
             </View>
             {fwLive && (
@@ -193,7 +193,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
             <View style={styles.card}>
               <Text style={styles.cardLabel}>HOW IT WORKS</Text>
               <Text style={styles.cardBody}>
-                I’ll start with a price for each region. You jump into the pricing halls — #division-africa and #division-world — and say what’s fair. Take part. Argue it. That’s how it stays free and fair for everyone, not just my call.
+                We open the pricing halls in community. You say what’s fair — take part, argue it, be honest. That’s how it stays free and fair for everyone, not just my call. Once we agree, the programme starts properly before launch.
               </Text>
             </View>
             <View style={styles.hintBox}>
@@ -224,18 +224,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               </Text>
             </View>
 
-            {isPriced && livePrices && (
-              <View style={styles.pricePreview}>
-                <Text style={styles.pricePreviewLabel}>STARTING PRICES PER REGION</Text>
-                {livePrices.slice(0, 4).map((p) => (
-                  <View key={p.code} style={styles.priceRowLive}>
-                    <Text style={styles.priceTitle}>{p.title}</Text>
-                    <Text style={styles.priceDisplay}>{p.display}</Text>
-                  </View>
-                ))}
-                {livePrices.length > 4 && <Text style={styles.priceMore}>+ {livePrices.length - 4} more after launch</Text>}
-              </View>
-            )}
+            {/* pricing preview hidden until launch — discussion comes first */}
 
             {!isActive && (
               <View style={styles.graceBox}>
