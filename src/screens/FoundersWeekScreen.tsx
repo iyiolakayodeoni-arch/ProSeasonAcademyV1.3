@@ -44,8 +44,8 @@ const TOUR_CARDS = [
   },
   {
     eyebrow: 'THE CLUBHOUSE',
-    title: 'REAL ROOMS. REAL PLAYERS.',
-    body: 'Pricing is decided together, in the open. No DMs, no bots. You vote in the pricing halls, the founder reads every line, and the price you pay is the price the database charges — never the app.',
+    title: 'REAL PEOPLE. REAL TALK.',
+    body: 'Pricing is decided together, out in the open. Everyone gets a say and I read every message. No bots, no tricks.',
     tone: 'gold' as const,
   },
 ];
@@ -146,16 +146,16 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.cardBody}>
                 {fwLive?.note?.trim()
                   ? fwLive.note
-                  : 'You thought this was free, huh? Hah — got you.\n\nBaseline was the interview. Now we do the fair part: we discuss pricing together in the community before the programme starts properly. Take part in the halls — that’s how it stays free and fair for everyone. Once we agree, we start.\n\nYour card and vault wait — nothing is deleted.'}
+                  : 'You thought this was free, huh? Hah — got you.\n\nBaseline was the interview. Now we talk pricing together before the programme starts properly. Join the conversation — that’s how it stays fair for everyone. Once we agree, we start.\n\nYour card and vault wait — nothing is deleted.'}
               </Text>
             </View>
             {fwLive && (
               <View style={styles.metaBox}>
                 <Text style={styles.metaLabel}>
-                  {fwLive.live ? 'FOUNDER IS IN THE HALLS NOW' : fwLive.startsAt ? `WINDOW: ${new Date(fwLive.startsAt).toLocaleDateString()} → ${fwLive.endsAt ? new Date(fwLive.endsAt).toLocaleDateString() : 'TBA'}` : 'PRICING DISCUSSION — IN COMMUNITY'}
+                  {fwLive.live ? 'FOUNDER IS HERE NOW' : fwLive.startsAt ? `WINDOW: ${new Date(fwLive.startsAt).toLocaleDateString()} → ${fwLive.endsAt ? new Date(fwLive.endsAt).toLocaleDateString() : 'TBA'}` : 'LET’S TALK PRICING — TOGETHER'}
                 </Text>
                 <Text style={styles.metaTxt}>
-                  {fwLive.live ? 'Pricing discussion is live in #division-africa + #division-world. Your voice matters now — join the discussion.' : 'I’ll post the starting price per region, you debate it in the halls. Jump in when the window opens.'}
+                  {fwLive.live ? 'We’re talking pricing now in the community. Your voice matters — join in.' : 'I’ll share a starting price, you tell me what feels fair. Jump in when we open the chat.'}
                 </Text>
               </View>
             )}
@@ -193,15 +193,15 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
             <View style={styles.card}>
               <Text style={styles.cardLabel}>HOW IT WORKS</Text>
               <Text style={styles.cardBody}>
-                We open the pricing halls in community. You say what’s fair — take part, argue it, be honest. That’s how it stays free and fair for everyone, not just my call. Once we agree, the programme starts properly before launch.
+                We open a chat in the community. You tell me what feels fair — be honest, say why. That’s how it stays fair for everyone, not just my decision. Once we agree on a price, we start properly before launch.
               </Text>
             </View>
             <View style={styles.hintBox}>
               <Text style={styles.hintLabel}>TAKE PART</Text>
-              <Text style={styles.hintTxt}>Open Community → pricing halls. Say your piece. Even a short “too high / fair / too low + why” matters more than a silent vote. I read every line before the launch date is set.</Text>
+              <Text style={styles.hintTxt}>Just drop a message in the community. Even a short “too high / fair / too low and why” helps. I read every message before we set the date.</Text>
             </View>
             <Pressable onPress={() => setStep('await')} style={styles.cta}><Text style={styles.ctaTxt}>GOT IT — TAKE ME TO WHAT HAPPENS NEXT ›</Text></Pressable>
-            <Pressable onPress={() => setStep('await')} hitSlop={8}><Text style={styles.skip}>I’LL JOIN THE DISCUSSION IN THE HALLS</Text></Pressable>
+            <Pressable onPress={() => setStep('await')} hitSlop={8}><Text style={styles.skip}>I’LL JOIN THE DISCUSSION</Text></Pressable>
           </Animated.View>
         )}
 
@@ -211,7 +211,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
             <Text style={styles.eyebrow}>FOUNDERS WEEK · WHAT HAPPENS NEXT</Text>
             <View style={[styles.statusBox, isActive && styles.statusOk, isGrace && styles.statusGrace]}>
               <Text style={styles.statusLabel}>
-                {isActive ? 'YOU ARE ACTIVE' : isGrace ? `${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} LEFT AFTER LAUNCH` : isPriced ? 'PRICE IS SET — PAY WITHIN 3 DAYS AFTER LAUNCH' : 'FOUNDER IS REVIEWING THE HALLS'}
+                {isActive ? 'YOU ARE ACTIVE' : isGrace ? `${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} LEFT AFTER LAUNCH` : isPriced ? 'PRICE IS SET — PAY WITHIN 3 DAYS AFTER LAUNCH' : 'FOUNDER IS READING YOUR MESSAGES'}
               </Text>
               <Text style={styles.statusBody}>
                 {isActive
@@ -220,7 +220,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
                   ? `Launch has happened. You have ${graceLeft} day${graceLeft === 1 ? '' : 's'} left after launch to pay — nothing is deleted, but access closes after that.`
                   : isPriced
                   ? 'The founder has set the prices. New players will pay to enter. You have 3 days after launch to claim your founders pass.'
-                  : 'You’ve shared your thoughts. The founder is reading every message. Before the launch date, you’ll be notified in the app and in the halls.'}
+                  : 'You’ve shared your thoughts. I’m reading every message. Before the launch date, you’ll get a notification in the app.'}
               </Text>
             </View>
 
@@ -237,7 +237,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
 
             <Pressable onPress={completeFoundersWeek} style={styles.cta}><Text style={styles.ctaTxt}>{isGrace ? `CONTINUE — PAY IN ${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} ›` : 'CONTINUE TO THE FLOOR ›'}</Text></Pressable>
             <Pressable onPress={completeFoundersWeek} hitSlop={8}><Text style={styles.skip}>I’LL PAY FROM SETTINGS AFTER LAUNCH</Text></Pressable>
-            <Text style={styles.footNote}>Founders Week progress is saved. You can always re-vote in Community → pricing halls or Settings → Pricing Discussion.</Text>
+            <Text style={styles.footNote}>Your progress is saved. You can still share your thoughts in the community anytime.</Text>
           </Animated.View>
         )}
       </ScrollView>
