@@ -68,7 +68,7 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
           THE ONE WHO WALKS THE ROAD WITH YOU
         </Animated.Text>
         <Animated.Text entering={FadeIn.delay(160).duration(360)} style={styles.sub}>
-          ONE COACH. PERMANENTLY. HE IS ALSO THE BENCHMARK — THE STANDARD YOU CHASE.
+          ONE COACH FOR YOUR WHOLE TIME HERE. HE GUIDES YOU AND SHOWS YOU WHAT GOOD LOOKS LIKE.
         </Animated.Text>
 
         {/* the foil card — the Standard revealed, who guides you */}
@@ -83,11 +83,9 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
           <Text style={styles.quote}>“{coach.oneLiner}”</Text>
 
           <View style={styles.benchmarkRow}>
-            <Text style={styles.benchmarkTag}>THE BENCHMARK · WORLD #1 ARCHETYPE</Text>
+            <Text style={styles.benchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
             <Text style={styles.benchmarkBody}>
-              COMPOSURE UNDER PRESSURE. CUT-AND-PRESS DEFENDING. A WINNING STREAK BUILT ON
-              DISCIPLINE, NOT LUCK. CLEAN ATTACKING. RUTHLESS WHEN IT MATTERS. THAT IS THE
-              STANDARD HE HOLDS YOU TO — AND WALKS YOU TOWARD.
+              Calm when it gets tough. Clean defending. Winning from good habits, not luck. That’s what he’ll push you towards.
             </Text>
           </View>
         </Animated.View>
