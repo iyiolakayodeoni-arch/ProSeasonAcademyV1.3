@@ -16,6 +16,7 @@ import HearAboutScreen from './src/screens/HearAboutScreen';
 import CoachIntroScreen from './src/screens/CoachIntroScreen';
 import WeekOrientationScreen from './src/screens/WeekOrientationScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
+import FoundersWeekScreen from './src/screens/FoundersWeekScreen';
 import SetupLoaderScreen from './src/screens/SetupLoaderScreen';
 import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
@@ -30,6 +31,7 @@ import {
   hydrateSession,
   lockCoach,
   markBaselineDone,
+  markFoundersWeekDone,
   markIntroDone,
   markOrientationDone,
   markSignedIn,
@@ -78,8 +80,8 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
 }
 
 // SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → WEEK ORIENTATION
-//        → BASELINE SCAN → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
-type Route = 'signin' | 'coach' | 'intro' | 'orientation' | 'scan' | 'hear' | 'setup' | 'hub';
+//        → BASELINE SCAN → FOUNDERS WEEK → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
+type Route = 'signin' | 'coach' | 'intro' | 'orientation' | 'scan' | 'founders' | 'hear' | 'setup' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
@@ -161,6 +163,7 @@ export default function App() {
       else if (!s.introDone) setRoute('intro');
       else if (!s.orientationDone) setRoute('orientation');
       else if (!s.baselineDone) setRoute('scan');
+      else if (!s.foundersWeekDone) setRoute('founders');
       else setRoute('hub');
       setRestored(true);
     })().catch(() => {
@@ -225,7 +228,8 @@ export default function App() {
     markSignedIn();
     const s = getSession();
     // a returning player who already locked in skips straight to his floor
-    if (s.coachId && s.baselineDone) setRoute('hub');
+    if (s.coachId && s.foundersWeekDone) setRoute('hub');
+    else if (s.coachId && s.baselineDone) setRoute('founders');
     else if (s.coachId && s.orientationDone) setRoute('scan');
     else if (s.coachId && s.introDone) setRoute('orientation');
     else if (s.coachId) setRoute('intro');
@@ -254,6 +258,11 @@ export default function App() {
 
   const handleBaselineDone = useCallback(() => {
     markBaselineDone();
+    setRoute('founders');
+  }, []);
+
+  const handleFoundersDone = useCallback(() => {
+    markFoundersWeekDone();
     setRoute('hear');
   }, []);
 
@@ -287,6 +296,7 @@ export default function App() {
               {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
               {route === 'orientation' && <WeekOrientationScreen coach={lockedCoach} onDone={handleOrientationDone} />}
               {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
+              {route === 'founders' && <FoundersWeekScreen coach={lockedCoach} onDone={handleFoundersDone} />}
               {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
               {route === 'setup' && (
                 <SetupLoaderScreen

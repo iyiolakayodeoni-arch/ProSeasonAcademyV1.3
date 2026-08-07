@@ -18,6 +18,7 @@ import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import { resetOnboarding } from '../../data/onboarding';
+import { resetFoundersWeekForDev } from '../../data/foundersWeek';
 import OnboardingScreen from '../OnboardingScreen';
 import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
@@ -799,6 +800,7 @@ export default function SettingsTab({
                     await wipeThread();
                     await wipeMirror();
                     await resetOnboarding(); // a brand-new account gets the tour again
+                    await resetFoundersWeekForDev();
                     await cancelBaselineUnlocks(); // no unlock nags for a dead account
                     await wipeSession();
                     backend.cloudReset();
