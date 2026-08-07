@@ -167,6 +167,9 @@ export default function SettingsTab({
   const [ticketOpen, setTicketOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
+  // The account page opens with only the decisions a member needs. Less-used
+  // delivery, sound and device controls live behind one deliberate reveal.
+  const [showControls, setShowControls] = useState(false);
 
   // ── THE FOUNDER'S DOOR — tap the version line 5× ──
   const [taps, setTaps] = useState(0);
@@ -313,7 +316,7 @@ export default function SettingsTab({
               <Text style={styles.profileName}>{s.displayName}</Text>
               <Text style={styles.profileId}>ACADEMY ID · {s.academyId}</Text>
               <Text style={styles.profilePath}>
-                {pathDone ? `PATH COMPLETE — WALKED ${coachShort}'S WAY` : `STAGE ${stageN} — WALKING ${coachShort}'S PATH`}
+                {pathDone ? `PATH COMPLETE — YOUR RECEIPTS ARE IN` : `STAGE ${stageN} — YOUR JOURNEY`}
               </Text>
             </View>
           </View>
@@ -351,7 +354,7 @@ export default function SettingsTab({
             <Row
               icon={<PersonIcon size={16} color="#57d07c" />}
               title="Your Coach"
-              sub="SWITCHING RESETS YOUR PATH PROGRESS"
+              sub="YOUR VOICE & ACCOUNTABILITY PARTNER THIS SEASON"
               right={
                 <View style={styles.valueRow}>
                   <Image source={coach.portrait} style={styles.coachChip} />
@@ -375,8 +378,8 @@ export default function SettingsTab({
             />
             <Row
               icon={<ScanGlyphIcon size={15} color="#57d07c" />}
-              title="The Chinedu Way ritual"
-              sub="PEN TO PAPER · 24–30 MIN COOL-DOWN BEFORE TYPING"
+              title="Auto-grade new evidence"
+              sub="RUN THE STAGE CHECK AFTER A MIRROR SESSION"
               right={<Toggle on={s.toggles.matchScanAutoRead} onFlip={() => flip('matchScanAutoRead')} />}
             />
             <Row
@@ -389,6 +392,51 @@ export default function SettingsTab({
           </View>
         </Animated.View>
 
+        {/* ── only the account actions that matter day-to-day ── */}
+        <Animated.View entering={FadeInUp.delay(165).duration(340)}>
+          <Text style={styles.sectionLabel}>ACCOUNT & SUPPORT</Text>
+          <View style={styles.card}>
+            <Row
+              icon={<PlanIcon size={15} color="#f2c078" />}
+              title="The Till"
+              sub="YOUR PASS, CREDITS AND PAYMENTS"
+              right={<Chevron />}
+              onPress={() => setTillOpen(true)}
+            />
+            <Row
+              icon={<LockIcon size={14} color="#57d07c" />}
+              title="Security"
+              sub="PASSWORD, SEAT AND ACADEMY TOKEN"
+              right={<Chevron />}
+              onPress={() => open('password')}
+            />
+            <Row
+              icon={<HelpIcon size={15} color="#57d07c" />}
+              title="Help & support"
+              sub="HOW THE PRACTICE WORKS · BUGS · BILLING"
+              right={<Chevron />}
+              onPress={() => open('help')}
+            />
+            <Row
+              icon={<AtIcon size={15} color="#f2c078" />}
+              title="Contact the founder"
+              sub={unreadAcademy > 0 ? 'YOU HAVE A MESSAGE FROM THE ACADEMY' : 'PRIVATE LINE — QUESTIONS, IDEAS, BUGS'}
+              right={unreadAcademy > 0 ? <View style={styles.unreadDot}><Text style={styles.unreadTxt}>{unreadAcademy}</Text></View> : <Chevron />}
+              onPress={() => { setContactOpen(true); void backend.markAcademyRead(); }}
+            />
+            <Row
+              icon={<GamepadIcon size={15} color="#57d07c" />}
+              title={showControls ? 'Hide extra controls' : 'More controls'}
+              sub={showControls ? 'NOTIFICATIONS, SOUND, DEVICE AND PLAN OPTIONS' : 'NOTIFICATIONS, SOUND, DEVICE AND PLAN OPTIONS'}
+              right={<Chevron />}
+              onPress={() => setShowControls((value) => !value)}
+              last
+            />
+          </View>
+        </Animated.View>
+
+        {showControls && (
+          <>
         {/* ── the academy manifesto: the chinedu way ── */}
         <Animated.View entering={FadeInUp.delay(170).duration(340)}>
           <Text style={styles.sectionLabel}>ACADEMY MANIFESTO — THE CHINEDU WAY</Text>
@@ -576,6 +624,9 @@ export default function SettingsTab({
             />
           </View>
         </Animated.View>
+
+          </>
+        )}
 
         {/* ── danger zone ── */}
         <Animated.View entering={FadeInUp.delay(300).duration(340)}>

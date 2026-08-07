@@ -43,7 +43,14 @@ export type MirrorPhase =
   | 'lesson'       // the one line the player is willing to carry forward
   | 'done';
 
-// ── the question banks (universal, from the product direction) ──
+// ── the focused question banks ────────────────────────────────
+//
+// The original ritual collected 27 prompts before a player reached the
+// player-chosen moments. That made a useful review feel like an exam. The
+// Academy still protects sequence and honesty, but each checkpoint now asks
+// only for the thought that moves the next decision forward: 1 before the
+// match, 2 at half-time, 2 at full-time, and 3 per chosen moment.
+// The wider interfaces stay intact so existing saved sessions remain readable.
 
 export interface IntentionAnswers {
   practice: string;   // What are you trying to practise today?
@@ -55,11 +62,11 @@ export interface IntentionAnswers {
 }
 
 export const INTENTION_QUESTIONS: { key: keyof IntentionAnswers; label: string; hint?: string }[] = [
-  { key: 'practice', label: 'WHAT ARE YOU TRYING TO PRACTISE TODAY?', hint: 'one thing. the stage objective or your thread.' },
-  { key: 'pressure', label: 'WHAT DO YOU USUALLY DO WHEN THE MATCH BECOMES DIFFICULT?', hint: 'be honest — the standard does not feel the loss and then forget it.' },
-  { key: 'avoid', label: 'WHAT BEHAVIOUR ARE YOU TRYING TO AVOID?', hint: 'the one you have written in the journal before.' },
-  { key: 'useful', label: 'WHAT WOULD MAKE THIS MATCH USEFUL EVEN IF YOU LOSE?', hint: 'there has to be an answer. write it before the score.' },
-  { key: 'attention', label: 'WHAT WILL YOU PAY ATTENTION TO?', hint: 'you cannot watch everything. pick the one thing.' },
+  {
+    key: 'practice',
+    label: 'WHAT IS THE ONE THING YOU WILL PRACTISE OR NOTICE TODAY?',
+    hint: 'one focus is enough — use the stage objective or your Thread.',
+  },
 ];
 
 export interface HalfTimeAnswers {
@@ -74,13 +81,16 @@ export interface HalfTimeAnswers {
 }
 
 export const HALF_TIME_QUESTIONS: { key: keyof HalfTimeAnswers; label: string; hint?: string }[] = [
-  { key: 'refusing', label: 'WHAT IS THE MATCH ASKING YOU TO DO THAT YOU ARE CURRENTLY REFUSING TO DO?', hint: 'the match is telling you something. what?' },
-  { key: 'rushing', label: 'WHERE ARE YOU RUSHING?', hint: 'point at the minutes, the situations, the touches.' },
-  { key: 'danger', label: 'WHAT HAS CAUSED THE BIGGEST DANGER SO FAR?', hint: 'theirs — and yours.' },
-  { key: 'afterLoss', label: 'WHAT DO YOU DO IMMEDIATELY AFTER LOSING THE BALL?', hint: 'chase the ball or chase the shape? be exact.' },
-  { key: 'following', label: 'ARE YOU FOLLOWING YOUR PRE-MATCH INTENTION?', hint: 'read your own intention above. is that the player in the match?' },
-  { key: 'emotion', label: 'WHAT IS YOUR EMOTIONAL STATE RIGHT NOW?', hint: 'name it. the real one.' },
-  { key: 'secondHalf', label: 'WHAT WILL YOU DELIBERATELY TRY IN THE SECOND HALF?', hint: 'one thing. small enough to actually do.' },
+  {
+    key: 'danger',
+    label: 'WHAT PATTERN IS DECIDING THE MATCH SO FAR?',
+    hint: 'name the danger, space, tempo or decision that keeps repeating.',
+  },
+  {
+    key: 'secondHalf',
+    label: 'WHAT ONE ADJUSTMENT WILL YOU TRY NEXT?',
+    hint: 'small enough to actually do in the second half.',
+  },
 ];
 
 export interface FullTimeAnswers {
@@ -95,13 +105,16 @@ export interface FullTimeAnswers {
 }
 
 export const FULL_TIME_QUESTIONS: { key: keyof FullTimeAnswers; label: string; hint?: string }[] = [
-  { key: 'decided', label: 'WHAT DO YOU THINK DECIDED THE MATCH?', hint: 'your answer before the recording has a vote. so does the recording.' },
-  { key: 'change', label: 'WHAT IS THE FIRST DECISION YOU WOULD CHANGE?', hint: 'the first one. not the tenth.' },
-  { key: 'didWell', label: 'WHAT DID YOU DO WELL?', hint: 'write it down. receipts are for the good too.' },
-  { key: 'repeated', label: 'WHAT DID YOU REPEAT EVEN THOUGH IT WAS NOT WORKING?', hint: 'the pattern you write is the pattern he fixes.' },
-  { key: 'emotions', label: 'WHERE DID YOUR EMOTIONS AFFECT YOUR PLAY?', hint: 'the minute it started, not the moment it exploded.' },
-  { key: 'followed', label: 'DID YOU FOLLOW YOUR INTENTION?', hint: 'compare with the pre-match card above before you answer.' },
-  { key: 'believe', label: 'WHAT DO YOU CURRENTLY BELIEVE ABOUT YOUR PERFORMANCE?', hint: 'this is the memory version. the review comes next.' },
+  {
+    key: 'decided',
+    label: 'WHAT DO YOU THINK DECIDED THE MATCH?',
+    hint: 'answer from memory before you replay the tape.',
+  },
+  {
+    key: 'change',
+    label: 'WHAT IS THE FIRST DECISION YOU WOULD CHANGE?',
+    hint: 'the first one, not the tenth.',
+  },
 ];
 
 /** the review asks per player-chosen key moment (MIRROR DIRECTION §6.7) */
@@ -118,13 +131,8 @@ export interface MomentAnswers {
 
 export const MOMENT_QUESTIONS: { key: keyof MomentAnswers; label: string }[] = [
   { key: 'happened', label: 'WHAT HAPPENED?' },
-  { key: 'trying', label: 'WHAT WERE YOU TRYING TO DO?' },
-  { key: 'did', label: 'WHAT DID YOU ACTUALLY DO?' },
-  { key: 'noticed', label: 'WHAT DID YOU NOTICE BEFORE THE DECISION?' },
-  { key: 'missed', label: 'WHAT DID YOU FAIL TO NOTICE?' },
-  { key: 'feeling', label: 'WHAT WERE YOU FEELING?' },
-  { key: 'differently', label: 'WHAT WOULD YOU DO DIFFERENTLY?' },
-  { key: 'evidence', label: 'WHAT EVIDENCE SUPPORTS YOUR ANSWER?' },
+  { key: 'missed', label: 'WHAT DID YOU MISS OR FAIL TO NOTICE?' },
+  { key: 'differently', label: 'WHAT WILL YOU DO DIFFERENTLY NEXT TIME?' },
 ];
 
 export const MOMENT_MIN_ANSWER = 8;
@@ -442,9 +450,9 @@ export function buildVersions(): { key: VersionKey; label: string; text: string 
     .map((m) => m.answers.differently)
     .find((d) => d && isValidReflection(d, { minLength: MOMENT_MIN_ANSWER, minWords: 2 }));
   return [
-    { key: 'before', label: 'BEFORE THE MATCH', text: i ? i.pressure || i.attention || '—' : '—' },
-    { key: 'half', label: 'HALF-TIME', text: h ? h.emotion || h.following || '—' : '—' },
-    { key: 'full', label: 'AFTER FULL-TIME', text: f ? f.believe || f.decided || '—' : '—' },
+    { key: 'before', label: 'BEFORE THE MATCH', text: i ? i.pressure || i.practice || i.attention || '—' : '—' },
+    { key: 'half', label: 'HALF-TIME', text: h ? h.danger || h.secondHalf || h.emotion || '—' : '—' },
+    { key: 'full', label: 'AFTER FULL-TIME', text: f ? f.believe || f.decided || f.change || '—' : '—' },
     { key: 'review', label: 'AFTER REVIEW', text: reviewed || '—' },
   ];
 }

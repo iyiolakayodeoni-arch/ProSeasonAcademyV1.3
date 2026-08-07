@@ -74,6 +74,13 @@ function momentAnswers() {
 }
 
 async function main() {
+  // ══ T0 · the ritual stays focused instead of becoming a questionnaire ══
+  assert.equal(M.INTENTION_QUESTIONS.length, 1, 'one pre-match focus');
+  assert.equal(M.HALF_TIME_QUESTIONS.length, 2, 'two half-time prompts');
+  assert.equal(M.FULL_TIME_QUESTIONS.length, 2, 'two full-time prompts');
+  assert.equal(M.MOMENT_QUESTIONS.length, 3, 'three prompts per player-chosen moment');
+  console.log('PASS 0 · focused Mirror Session uses 1 + 2 + 2 + 3 prompts');
+
   // ══ T1 · a fresh session opens on INTENTION (no carried lesson) ══
   await M.wipeMirror();
   M.startMirrorSession(1);

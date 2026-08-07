@@ -4,6 +4,10 @@
 
 **Version 1.3.0** · `com.onliversity.proseasonacademy` · Expo SDK 57 / React Native 0.86 · Android APK (private distribution — deliberately not on any public store)
 
+> **The product in one sentence:** ProSeasonAcademy helps an EA SPORTS FC console player turn one played match into one honest lesson to carry into the next match.
+>
+> The member-facing app is now organised around that loop: **Play → Review → Carry**. Today and the Mirror Session are primary; updates, community, advanced stats, and payments are secondary utilities. See **[`PRODUCT_FOCUS.md`](./PRODUCT_FOCUS.md)** before adding another feature or screen.
+
 You lock in **one coach — permanently** — as your voice, guide and accountability presence on a
 **universal six-stage development journey** (See Yourself → Control Yourself → Read the Game →
 Build Discipline → Perform Under Pressure → Prove It). Beside it runs **The Standard** — the

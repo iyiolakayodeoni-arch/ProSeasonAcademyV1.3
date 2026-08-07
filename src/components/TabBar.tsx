@@ -1,30 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { HomeIcon, JourneyIcon, FriendsIcon, GearIcon } from './Icons';
+import { HomeIcon, JourneyIcon, GearIcon } from './Icons';
 import { colors, bodyFontBold } from '../theme';
 
-// ─────────────────────────────────────────────────────────────────────────
-// TAB BAR — four rooms, one live hairline. The indicator is a single
-// traveling light that slides to wherever you are (console shell grammar:
-// you never press a button, you glide between rooms). Icons + labels dim
-// when their room isn't the one you're in.
-// ─────────────────────────────────────────────────────────────────────────
-
-export type MainTab = 'home' | 'journey' | 'community' | 'settings';
+// Three destinations are enough to understand the member app:
+// Today (the next practice), Progress (the evidence), and Me (the account).
+// Community and updates remain useful secondary rooms, not rival products.
+export type MainTab = 'today' | 'journey' | 'settings';
 
 const TABS: { id: MainTab; label: string; Icon: typeof HomeIcon }[] = [
-  { id: 'home', label: 'HOME', Icon: HomeIcon },
-  { id: 'journey', label: 'TRACKING', Icon: JourneyIcon },
-  { id: 'community', label: 'COMMUNITY', Icon: FriendsIcon },
-  { id: 'settings', label: 'SETTINGS', Icon: GearIcon },
+  { id: 'today', label: 'TODAY', Icon: HomeIcon },
+  { id: 'journey', label: 'PROGRESS', Icon: JourneyIcon },
+  { id: 'settings', label: 'ME', Icon: GearIcon },
 ];
 
 const INDICATOR_W = 30;
 
-export default function TabBar({ active, onChange }: { active: MainTab; onChange: (t: MainTab) => void }) {
+export default function TabBar({ active, onChange }: { active: MainTab; onChange: (tab: MainTab) => void }) {
   const [barW, setBarW] = useState(0);
-  const idx = Math.max(0, TABS.findIndex((t) => t.id === active));
+  const idx = Math.max(0, TABS.findIndex((tab) => tab.id === active));
   const x = useSharedValue(idx);
 
   useEffect(() => {
@@ -41,12 +36,11 @@ export default function TabBar({ active, onChange }: { active: MainTab; onChange
   });
 
   return (
-    <View style={styles.bar} onLayout={(e) => setBarW(e.nativeEvent.layout.width)}>
-      {/* the traveling light — one light, wherever the player is */}
+    <View style={styles.bar} onLayout={(event) => setBarW(event.nativeEvent.layout.width)}>
       <Animated.View pointerEvents="none" style={[styles.indicator, indicatorStyle]} />
       {TABS.map(({ id, label, Icon }) => {
-        const on = active === id;
-        const color = on ? colors.primary : 'rgba(143,184,155,0.55)';
+        const activeTab = active === id;
+        const color = activeTab ? colors.primary : 'rgba(143,184,155,0.55)';
         return (
           <Pressable key={id} onPress={() => onChange(id)} style={styles.item} hitSlop={6}>
             <Icon size={19} color={color} />

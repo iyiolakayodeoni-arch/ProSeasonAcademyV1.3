@@ -106,7 +106,9 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           setRefundBusy(null);
           return;
         }
-        const r = await backend.founderRefund(founderKey, null, ref, c.amount ?? null, 'Refund from claim');
+        const parsedAmount = c.amount == null ? null : Number(String(c.amount).replace(/[^0-9.-]/g, ''));
+        const amount = typeof parsedAmount === 'number' && Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : null;
+        const r = await backend.founderRefund(founderKey, null, ref, amount, 'Refund from claim');
         setRefundBusy(null);
         if (!r) setErr('REFUND FAILED');
         else {

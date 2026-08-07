@@ -12,6 +12,7 @@ import Animated, {
 import LogoMark from '../components/LogoMark';
 import TabBar, { MainTab } from '../components/TabBar';
 import HomeTab from './tabs/HomeTab';
+import AcademyUpdatesScreen from './AcademyUpdatesScreen';
 import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
@@ -53,7 +54,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   }, []);
   useEffect(checkAccess, [checkAccess]);
 
-  const [tab, setTabState] = useState<MainTab>('home');
+  const [tab, setTabState] = useState<MainTab>('today');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
   const onboard = useOnboardingGate();
   usePushRegistration(true);
@@ -67,9 +68,14 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     setTabState(t);
   }, []);
 
+  // Secondary destinations are available, but deliberately do not compete
+  // with the core Today → Mirror Session journey in the primary tab bar.
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [hallsOpen, setHallsOpen] = useState(false);
+
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
-  useAmbientAudio(room ? 'film-room' : tab === 'community' ? 'community' : 'home');
+  useAmbientAudio(room ? 'film-room' : hallsOpen ? 'community' : 'home');
   const zoom = useSharedValue(0);
   const { width: W, height: H } = useWindowDimensions();
   const ox = room?.origin.x ?? W / 2;
@@ -142,19 +148,20 @@ export default function MainScreen({ coach, onSignOut }: Props) {
       <View style={styles.body}>
         {/* each tab is its own boundary — one tab crashing shows a reload
             card instead of taking the whole app down */}
-        {tab === 'home' && (
-          <ErrorBoundary key="home">
-            <HomeTab coach={coach} />
+        {tab === 'today' && (
+          <ErrorBoundary key="today">
+            <HomeTab
+              coach={coach}
+              onOpenStage={openStage}
+              onOpenJourney={() => setTab('journey')}
+              onOpenUpdates={() => setUpdatesOpen(true)}
+              onOpenHalls={() => setHallsOpen(true)}
+            />
           </ErrorBoundary>
         )}
         {tab === 'journey' && (
           <ErrorBoundary key="journey">
             <JourneyTab coach={coach} onOpenStage={openStage} />
-          </ErrorBoundary>
-        )}
-        {tab === 'community' && (
-          <ErrorBoundary key="community">
-            <CommunityTab coach={coach} />
           </ErrorBoundary>
         )}
         {tab === 'settings' && (
@@ -198,6 +205,18 @@ export default function MainScreen({ coach, onSignOut }: Props) {
           <Animated.View pointerEvents="none" style={[styles.zoomGhost, { left: ox - 24, top: oy - 24 }, ghostStyle]}>
             <Text style={styles.zoomGhostNum}>{room.stage.n}</Text>
           </Animated.View>
+        </View>
+      )}
+
+      {updatesOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <AcademyUpdatesScreen coach={coach} onClose={() => setUpdatesOpen(false)} />
+        </View>
+      )}
+
+      {hallsOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <CommunityTab coach={coach} onClose={() => setHallsOpen(false)} />
         </View>
       )}
     </View>

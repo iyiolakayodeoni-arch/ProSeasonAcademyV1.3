@@ -12,12 +12,7 @@ import Animated, {
 import SplashScreen from './src/screens/SplashScreen';
 import SignInScreen from './src/screens/SignInScreen';
 import CoachSelectScreen from './src/screens/CoachSelectScreen';
-import HearAboutScreen from './src/screens/HearAboutScreen';
-import CoachIntroScreen from './src/screens/CoachIntroScreen';
-import WeekOrientationScreen from './src/screens/WeekOrientationScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
-import FoundersWeekScreen from './src/screens/FoundersWeekScreen';
-import SetupLoaderScreen from './src/screens/SetupLoaderScreen';
 import MainScreen from './src/screens/MainScreen';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
@@ -31,11 +26,7 @@ import {
   hydrateSession,
   lockCoach,
   markBaselineDone,
-  markFoundersWeekDone,
-  markIntroDone,
-  markOrientationDone,
   markSignedIn,
-  setReferral as persistReferral,
 } from './src/data/session';
 import { restoreSession, signOutRemote } from './src/data/authApi';
 import * as backend from './src/data/backend';
@@ -79,9 +70,10 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
   });
 }
 
-// SPLASH → SIGN IN → COACH SELECTION → COACH INTRO → WEEK ORIENTATION
-//        → BASELINE SCAN → FOUNDERS WEEK → HOW DID YOU HEAR → COACH SETUP LOADER → SEASON HUB
-type Route = 'signin' | 'coach' | 'intro' | 'orientation' | 'scan' | 'founders' | 'hear' | 'setup' | 'hub';
+// SPLASH → SIGN IN → CHOOSE A COACH → BASELINE WEEK → TODAY.
+// The old coach lore, orientation carousel, pricing gate, referral survey and
+// fake setup loader were all extra stops before a player could understand the work.
+type Route = 'signin' | 'coach' | 'scan' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
@@ -160,10 +152,7 @@ export default function App() {
       const signedIn = !!cloud;
       if (!signedIn) setRoute('signin');
       else if (!s.coachId) setRoute('coach');
-      else if (!s.introDone) setRoute('intro');
-      else if (!s.orientationDone) setRoute('orientation');
       else if (!s.baselineDone) setRoute('scan');
-      else if (!s.foundersWeekDone) setRoute('founders');
       else setRoute('hub');
       setRestored(true);
     })().catch(() => {
@@ -228,11 +217,8 @@ export default function App() {
     markSignedIn();
     const s = getSession();
     // a returning player who already locked in skips straight to his floor
-    if (s.coachId && s.foundersWeekDone) setRoute('hub');
-    else if (s.coachId && s.baselineDone) setRoute('founders');
-    else if (s.coachId && s.orientationDone) setRoute('scan');
-    else if (s.coachId && s.introDone) setRoute('orientation');
-    else if (s.coachId) setRoute('intro');
+    if (s.coachId && s.baselineDone) setRoute('hub');
+    else if (s.coachId) setRoute('scan');
     else setRoute('coach');
   }, []);
 
@@ -243,35 +229,13 @@ export default function App() {
     void hydrateProgress(id);
     void hydrateThread(id);
     void hydrateMirror(id);
-    setRoute('intro'); // coach speaks first, then the Baseline Scan gate
-  }, []);
-
-  const handleIntroDone = useCallback(() => {
-    markIntroDone();
-    setRoute('orientation'); // the 30-second handshake before the week
-  }, []);
-
-  const handleOrientationDone = useCallback(() => {
-    markOrientationDone();
-    setRoute('scan');
+    setRoute('scan'); // the programme starts at the baseline, not another intro screen
   }, []);
 
   const handleBaselineDone = useCallback(() => {
     markBaselineDone();
-    setRoute('founders');
+    setRoute('hub');
   }, []);
-
-  const handleFoundersDone = useCallback(() => {
-    markFoundersWeekDone();
-    setRoute('hear');
-  }, []);
-
-  const handleHearDone = useCallback((choice: string | null) => {
-    persistReferral(choice);
-    setRoute('setup');
-  }, []);
-
-  const handleSetupDone = useCallback(() => setRoute('hub'), []);
 
   const handleSignOut = useCallback(() => {
     // the ledger and the coach lock survive — only the floor is left
@@ -293,17 +257,7 @@ export default function App() {
               {route === 'coach' && (
                 <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
               )}
-              {route === 'intro' && <CoachIntroScreen coach={lockedCoach} onDone={handleIntroDone} />}
-              {route === 'orientation' && <WeekOrientationScreen coach={lockedCoach} onDone={handleOrientationDone} />}
               {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
-              {route === 'founders' && <FoundersWeekScreen coach={lockedCoach} onDone={handleFoundersDone} />}
-              {route === 'hear' && <HearAboutScreen onDone={handleHearDone} />}
-              {route === 'setup' && (
-                <SetupLoaderScreen
-                  coachFirstName={lockedCoach.name.split(' ')[0]}
-                  onDone={handleSetupDone}
-                />
-              )}
               {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
             </>
           )}

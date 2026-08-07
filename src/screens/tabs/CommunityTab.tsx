@@ -176,7 +176,7 @@ function Dot({ delay }: { delay: number }) {
 
 // ── main component ────────────────────────────────────────────
 
-export default function CommunityTab({ coach }: { coach: Coach }) {
+export default function CommunityTab({ coach, onClose }: { coach: Coach; onClose?: () => void }) {
   const { width: winW } = useWindowDimensions();
   const bandW = Math.min(winW, 430) - 24; // standard card margins are 12 a side
   const st = useCommunityState();
@@ -301,8 +301,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
       {/* ── header ── */}
       <View style={styles.header}>
-        <Pressable onPress={() => setPanel(null)} hitSlop={8} style={styles.headerBtn}>
+        <Pressable onPress={() => { if (onClose) onClose(); else setPanel(null); }} hitSlop={8} style={[styles.headerBtn, onClose && styles.headerBackBtn]}>
           <ChevronLeftIcon size={14} color={colors.fg} />
+          {onClose && <Text style={styles.headerBackTxt}>TODAY</Text>}
         </Pressable>
 
         {searchMode ? (
@@ -781,6 +782,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerBackBtn: { width: 68, flexDirection: 'row', gap: 3 },
+  headerBackTxt: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '900', letterSpacing: 1, color: colors.fg },
   titleWrap: { flex: 1 },
   titleCol: { flex: 1 },
   titleChannel: {

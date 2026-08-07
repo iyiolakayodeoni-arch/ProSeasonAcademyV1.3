@@ -340,8 +340,8 @@ export default function MirrorSessionScreen({
           {/* ══ INTENTION — before the score changes the emotions ══ */}
           {mirror.phase === 'intention' && !mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>BEFORE THE MATCH — SET THE INTENTION.</Text>
-              <Text style={styles.heroSub}>Answer now, while the score is 0–0 and your head is still yours. The session keeps these answers beside your half-time and full-time ones.</Text>
+              <Text style={styles.heroLine}>BEFORE THE MATCH — PICK ONE FOCUS.</Text>
+              <Text style={styles.heroSub}>Write one useful intention while the score is 0–0. The session keeps it beside what you see later.</Text>
               {INTENTION_QUESTIONS.map((q, i) => (
                 <QuestionCard
                   key={q.key}
@@ -374,12 +374,10 @@ export default function MirrorSessionScreen({
 
           {mirror.phase === 'intention' && mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>INTENTION SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
+              <Text style={styles.heroLine}>FOCUS SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
               <View style={styles.receiptCard}>
-                <Text style={styles.receiptTag}>YOUR INTENTION — READ IT BEFORE YOU PLAY</Text>
-                <Text style={styles.receiptLine}>PRACTISE: {mirror.intention.practice.toUpperCase()}</Text>
-                <Text style={styles.receiptLine}>PAY ATTENTION TO: {mirror.intention.attention.toUpperCase()}</Text>
-                <Text style={styles.receiptLine}>AVOID: {mirror.intention.avoid.toUpperCase()}</Text>
+                <Text style={styles.receiptTag}>YOUR ONE FOCUS — READ IT BEFORE YOU PLAY</Text>
+                <Text style={styles.receiptLine}>FOCUS: {mirror.intention.practice.toUpperCase()}</Text>
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
@@ -387,7 +385,7 @@ export default function MirrorSessionScreen({
                 </Text>
               </View>
               <StepButton
-                label="INTENTION SWORN — BEGIN MATCH ›"
+                label="FOCUS SAVED — BEGIN MATCH ›"
                 onPress={() => {
                   sfx('whoosh');
                   beginMatch();
@@ -441,8 +439,8 @@ export default function MirrorSessionScreen({
           {/* ══ HALF-TIME reflection ══ */}
           {mirror.phase === 'half-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>HALF-TIME. THE MATCH IS STILL EMOTIONALLY ALIVE.</Text>
-              <Text style={styles.heroSub}>The pause exists to make you think while it still matters. The app does not provide the answers.</Text>
+              <Text style={styles.heroLine}>HALF-TIME. NAME THE PATTERN, THEN PICK ONE ADJUSTMENT.</Text>
+              <Text style={styles.heroSub}>Two quick lines while the match is still alive. The app does not provide the answer.</Text>
               {HALF_TIME_QUESTIONS.map((q, i) => (
                 <QuestionCard
                   key={q.key}
@@ -456,7 +454,7 @@ export default function MirrorSessionScreen({
               <SectionTitle>HALF-TIME COMPOSURE</SectionTitle>
               <ComposureChips value={mirror.half?.composure ?? halfComposure} onChange={setHalfComposure} />
               <StepButton
-                label="SEAL THE HALF-TIME ANSWER · SECOND HALF ›"
+                label="SAVE THE ADJUSTMENT · SECOND HALF ›"
                 disabled={!allHalfAnswered}
                 onPress={() => {
                   sfx('whoosh');
@@ -478,8 +476,8 @@ export default function MirrorSessionScreen({
           {/* ══ FULL-TIME reflection — memory BEFORE the recording ══ */}
           {mirror.phase === 'full-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>BEFORE YOU WATCH ANYTHING — WHAT DO YOU BELIEVE?</Text>
-              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
+              <Text style={styles.heroLine}>BEFORE THE TAPE — WHAT DECIDED IT, AND WHAT CHANGES?</Text>
+              <Text style={styles.heroSub}>After your cool-down, write two lines from memory first. Then watch the tape and name the moments that prove or challenge them.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>THE RECEIPT</Text>
                 <Text style={styles.receiptLine}>FINAL SCORE: {mirror.gf} – {mirror.ga}</Text>
@@ -497,7 +495,7 @@ export default function MirrorSessionScreen({
               <SectionTitle>FINAL COMPOSURE</SectionTitle>
               <ComposureChips value={mirror.full?.composure ?? fullComposure} onChange={setFullComposure} />
               <StepButton
-                label="SAVE MY MEMORY · UNLOCK THE EVIDENCE ›"
+                label="SAVE MY FIRST READ · WATCH THE EVIDENCE ›"
                 disabled={!allFullAnswered}
                 onPress={() => {
                   sfx('whoosh');
