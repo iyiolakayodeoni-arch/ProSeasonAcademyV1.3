@@ -238,7 +238,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           STAGE {stage.n} · {stage.key} — MAIN QUEST SESSION
         </Text>
         <Text style={styles.bandTitle}>THE MATCH SCAN</Text>
-        <Text style={styles.subtitle}>YOU PLAY · THE SCANNER TAGS · HE ASKS · YOU WRITE THE LESSON</Text>
+        <Text style={styles.subtitle}>ADD THE SCORE · NAME A MOMENT · WRITE ONE LESSON</Text>
       </ArtBand>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -246,9 +246,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           <>
             <CoachBubble coach={coach} label={coach.name}>
               <Text style={styles.bubbleText}>
-                {stern
-                  ? 'This is not a form, little bro — it is a watched training session. You play, the scanner and I watch. It tags the moments that make or break you — not the score, the MOMENTS — and I ask you about every one of them. Then you write the lesson. That lesson is your next main quest.'
-                  : 'This is a watched session now, little one. Go and play — the scanner and I will be watching for the moments that make or break you. Not the score — the moments the score was made of. I will ask you about each one, and then you will jot the lesson. That lesson becomes your next main quest.'}
+                You finished the match. Good — this path saves the score, one important moment and one lesson. We will do it one piece at a time.
               </Text>
             </CoachBubble>
 
@@ -265,38 +263,21 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
             <Animated.View entering={FadeInDown.delay(120).duration(340)} style={styles.card}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>WATCHED SESSION · HOW IT RUNS</Text>
+                  <Text style={styles.tagGreenTxt}>POST-MATCH REVIEW · 3 SMALL STEPS</Text>
                 </View>
                 <GamepadIcon size={13} color={colors.primary} />
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>1</Text>
-                <Text style={styles.briefTxt}>
-                  THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE: There is a special connection a biro has to a book that cannot be typed. Record your match as usual, watch your tape back, and write the key moments and unusual things on paper.
-                </Text>
+                <Text style={styles.briefTxt}>ADD THE SCORE. Start with what happened on the scoreboard.</Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>2</Text>
-                <Text style={styles.briefTxt}>
-                  24–30 MINUTE COOL-DOWN: Let your mind settle for 24–30 minutes after the match. Once you have cooled down, open the app and type your written answers into your database.
-                </Text>
+                <Text style={styles.briefTxt}>NAME ONE MOMENT. Use your own words for the turning point you remember.</Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>3</Text>
-                <Text style={styles.briefTxt}>
-                  {coachFirst.toUpperCase()} ASKS A QUESTION ON EVERY TAG. We give you the questions to guide your analysis — answer them honestly from your paper notes.
-                </Text>
-              </View>
-              <View style={styles.briefStep}>
-                <Text style={styles.briefNo}>4</Text>
-                <Text style={styles.briefTxt}>
-                  IN A WORLD LOOKING FOR THE EASY WAY OUT: The hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant.
-                </Text>
-              </View>
-              <View style={styles.privacyBox}>
-                <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: RECORD AS USUAL ON YOUR PS5/XBOX CONSOLE OR CAPTURE CARD. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
-                </Text>
+                <Text style={styles.briefTxt}>WRITE ONE LESSON. Make it useful for your next match, not perfect.</Text>
               </View>
             </Animated.View>
 
@@ -304,12 +285,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <View style={styles.logBtn}>
                 <ScanGlyphIcon size={11} color="#0a0f0a" />
                 <Text style={styles.logBtnTxt}>
-                  I PLAYED THE MATCH — START THE REVIEW ›
+                  START WITH THE SCORE ›
                 </Text>
               </View>
             </Pressable>
             <Text style={styles.honor}>
-              THE CHINEDU WAY: WATCH YOUR TAPE, PEN YOUR MOMENTS ON PAPER, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.
+              ONE PIECE AT A TIME. YOUR PROGRESS SAVES IF YOU NEED TO LEAVE.
             </Text>
           </>
         ) : phase === 'scan' ? (

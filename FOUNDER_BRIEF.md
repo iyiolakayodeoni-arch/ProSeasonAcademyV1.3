@@ -30,6 +30,20 @@ Over time, the player gets evidence of what actually improves—not a streak of 
 | What is Progress? | Six chapters that move only when your evidence earns them. |
 | Do I have to follow news or chat? | No. Those are optional support tools. |
 
+## The five-second test
+
+A first-time player should be able to answer these questions without scrolling or learning a branded term:
+
+| Question | The interface must answer |
+|---|---|
+| What is this? | A way to learn from my FC match. |
+| What do I tap? | **Start my match review**. |
+| What if my match has not started? | Choose **I’m about to play**. |
+| What if it already ended? | Choose **I already finished a match**. |
+| What if I have no match today? | Leave the app; come back after a real match. Nothing is overdue. |
+
+The Home screen should always preserve one obvious green action above explanations, statistics, coach lore, news, community, and monetisation.
+
 ## The hierarchy to protect
 
 ### 1. Core product — never bury this

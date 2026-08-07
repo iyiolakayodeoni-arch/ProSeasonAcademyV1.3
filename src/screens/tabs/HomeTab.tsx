@@ -121,12 +121,25 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
           </Text>
           {!activeSession && (
             <View style={styles.choiceBox}>
-              <Text style={styles.choiceTitle}>IF YOU HAVE A MATCH TODAY</Text>
-              <Text style={styles.choiceCopy}>Tap “Start a Mirror Session.” It will explain each step as you go.</Text>
+              <Text style={styles.choiceTitle}>IF YOU HAVE OR JUST FINISHED A MATCH</Text>
+              <Text style={styles.choiceCopy}>Tap the green button. The next screen lets you choose the right path.</Text>
               <Text style={styles.choiceTitle}>IF YOU DO NOT HAVE A MATCH TODAY</Text>
               <Text style={styles.choiceCopy}>You do not need to fill anything in. Close the app and return after your next real match.</Text>
             </View>
           )}
+          <Pressable onPress={openPrimary} style={styles.startAction}>
+            {isComplete ? <RouteIcon size={16} color="#07110a" /> : <PlayIcon size={16} color="#07110a" />}
+            <Text style={styles.startActionTxt}>
+              {isComplete ? 'SHOW MY PROGRESS' : activeSession ? 'KEEP GOING' : 'START MY MATCH REVIEW'}
+            </Text>
+          </Pressable>
+          <Text style={styles.startActionHint}>
+            {isComplete
+              ? 'Your season is complete. This opens the evidence you earned.'
+              : activeSession
+                ? 'Your saved session is ready at the exact next step.'
+                : 'Next, choose whether you are about to play or you already finished.'}
+          </Text>
           <Pressable onPress={onOpenGuide} style={styles.explainBtn}>
             <Text style={styles.explainBtnTxt}>EXPLAIN MY FIRST SESSION STEP BY STEP</Text>
             <ChevronRightIcon size={12} color={colors.accent} />
@@ -173,22 +186,11 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
             </View>
           )}
 
-          <Pressable onPress={openPrimary} style={({ pressed }) => [styles.primaryBtn, pressed && styles.pressed]}>
-            {isComplete ? <RouteIcon size={16} color="#07110a" /> : <PlayIcon size={15} color="#07110a" />}
-            <Text style={styles.primaryBtnTxt}>
-              {isComplete
-                ? 'OPEN MY PROGRESS'
-                : activeSession
-                  ? 'RESUME MY MIRROR SESSION'
-                  : 'START A MIRROR SESSION'}
-            </Text>
-          </Pressable>
           {!isComplete && (
-            <Text style={styles.primaryHint}>
-              {activeSession
-                ? 'Your answers are saved. Pick up exactly where you stopped.'
-                : 'Set one intention before the match. Review what happened after it.'}
-            </Text>
+            <Pressable onPress={onOpenJourney} style={styles.stageDetailsLink}>
+              <Text style={styles.stageDetailsLinkTxt}>SEE WHAT THIS STAGE IS TRACKING</Text>
+              <ChevronRightIcon size={13} color={colors.primary} />
+            </Pressable>
           )}
         </Animated.View>
 
@@ -311,6 +313,9 @@ const styles = StyleSheet.create({
   choiceBox: { marginTop: 11, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(242,192,120,0.18)' },
   choiceTitle: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.25, color: colors.accent },
   choiceCopy: { marginTop: 3, fontFamily: bodyFont, fontSize: 10.8, lineHeight: 15, color: '#d8cfbd' },
+  startAction: { marginTop: 14, minHeight: 53, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 12 },
+  startActionTxt: { fontFamily: bodyFontHeavy, fontSize: 12, letterSpacing: 1.6, color: '#07110a' },
+  startActionHint: { marginTop: 7, textAlign: 'center', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, color: '#d8cfbd' },
   explainBtn: { marginTop: 13, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 1, borderColor: 'rgba(242,192,120,0.46)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
   explainBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 1.05, color: colors.accent },
   nextCard: { marginTop: 15, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.48)', borderRadius: 16, padding: 14, backgroundColor: 'rgba(13,25,16,0.92)', shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
@@ -332,10 +337,8 @@ const styles = StyleSheet.create({
   mirrorExplainer: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: 9, paddingRight: 2 },
   mirrorExplainerTitle: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
   mirrorExplainerCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 10.8, lineHeight: 15.5, color: '#d5d9c9' },
-  primaryBtn: { marginTop: 15, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 12 },
-  primaryBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.3, color: '#07110a' },
-  primaryHint: { marginTop: 8, textAlign: 'center', fontFamily: bodyFont, fontSize: 10.5, color: colors.muted },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.99 }] },
+  stageDetailsLink: { marginTop: 13, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 3 },
+  stageDetailsLinkTxt: { fontFamily: bodyFontHeavy, fontSize: 9.2, letterSpacing: 1.15, color: colors.primary },
   sectionLabel: { marginTop: 18, marginLeft: 2, fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.9, color: colors.muted },
   loopRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   loopTile: { flex: 1, minHeight: 112, borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)', borderRadius: 12, backgroundColor: 'rgba(13,24,16,0.76)', padding: 10 },

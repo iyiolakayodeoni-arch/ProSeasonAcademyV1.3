@@ -75,10 +75,10 @@ export default function AcademyGuideScreen({ onClose }: Props) {
         <Animated.View entering={FadeInUp.delay(40).duration(280)}>
           <Text style={styles.sectionLabel}>YOUR FIRST SESSION, WITHOUT GUESSING</Text>
           <View style={styles.card}>
-            <Step number="01" title="BEFORE YOU PLAY" body="Only start a Mirror Session when you have a real match to play or review. It asks for one focus—not a long plan." />
-            <Step number="02" title="AT HALF-TIME" body="Pause only when the match reaches half-time. Name the pattern you are seeing and pick one small adjustment." />
-            <Step number="03" title="AFTER FULL-TIME" body="Log the score. After your cool-down, say what you think decided the match and what you would change first." />
-            <Step number="04" title="AFTER THE REVIEW" body="Choose the moments you want to study. End with one lesson for the next match. Your answers save if you need to leave." />
+            <Step number="01" title="CHOOSE YOUR PATH" body="If your match has not started, choose “I’m about to play.” If it already ended, choose “I already finished a match.”" />
+            <Step number="02" title="IF YOU ARE ABOUT TO PLAY" body="Pick one focus before kick-off. At half-time, name one pattern and one small adjustment." />
+            <Step number="03" title="IF YOU ALREADY FINISHED" body="Use the shorter post-match review. Log the score and the important detail while the match is still fresh." />
+            <Step number="04" title="END WITH ONE LESSON" body="Whether you used the full or short review, keep one lesson for the next match. Your answers save if you need to leave." />
           </View>
           <View style={styles.reassuranceCard}>
             <Text style={styles.reassuranceTitle}>IF YOU ARE NOT PLAYING A MATCH NOW</Text>

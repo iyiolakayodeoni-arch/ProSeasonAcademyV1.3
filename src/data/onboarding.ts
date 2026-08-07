@@ -21,24 +21,11 @@ export type OnboardCard = {
 
 export const ONBOARD_CARDS: OnboardCard[] = [
   {
-    id: 'today',
-    eyebrow: 'START HERE',
-    title: 'ONE MATCH. ONE REVIEW.',
-    body: 'Today always shows the next useful move. Open a Mirror Session before or after your next FC console match — no feed, card or chat comes before that.',
+    id: 'welcome',
+    eyebrow: 'WELCOME',
+    title: 'YOU ONLY NEED ONE THING TODAY.',
+    body: 'You do not need to learn the stages, the names or the settings. We will show you exactly what to tap when you reach Today.',
     tone: 'green',
-  },
-  {
-    id: 'mirror',
-    eyebrow: 'THE MIRROR SESSION',
-    title: 'PLAY · REVIEW · CARRY',
-    body: 'Pick one focus, name the pattern at half-time, review the moments you choose, then write one lesson for the next match. The app keeps your receipts; it does not do your thinking.',
-  },
-  {
-    id: 'evidence',
-    eyebrow: 'YOUR EVIDENCE',
-    title: 'THE RECORD GROWS QUIETLY',
-    body: 'Progress holds your chapters, Match Vault and loss notes. Updates, halls and detailed seven-match tracking are there when helpful — they are not the assignment.',
-    tone: 'gold',
   },
 ];
 

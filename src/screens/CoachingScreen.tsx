@@ -26,6 +26,7 @@ import {
   ChevronLeftIcon,
   ClockGlyphIcon,
   PauseGlyphIcon,
+  PlayIcon,
   RefreshGlyphIcon,
   ScanGlyphIcon,
   TargetGlyphIcon,
@@ -55,7 +56,7 @@ import { PLAYER_CARD } from '../data/playerCard';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { InputCombo, ControllerButton } from '../components/ButtonGlyph';
 import { duckMusic, sfx, voiceNoteSource } from '../audio/sound';
-import { colors, monoFont, displayFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFont } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const VOICE_LEN = 42; // fallback seconds — the real clip reports its own length
@@ -356,6 +357,21 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           ? 'RUN IT BACK — START A NEW MIRROR SESSION ›'
           : 'START A MIRROR SESSION ›';
 
+  // Plain language appears before the coach briefing. A player should be able
+  // to choose the correct path without reading the film-room lore first.
+  const simpleActionLabel =
+    status === 'passed' || (cleared && status === 'ready')
+      ? 'SEE MY PROGRESS'
+      : status === 'failed'
+        ? 'TRY MY NEXT MATCH'
+        : 'I\'M ABOUT TO PLAY';
+  const simpleActionHint =
+    status === 'passed' || (cleared && status === 'ready')
+      ? 'This chapter is done. Return to Progress to see what changed.'
+      : status === 'failed'
+        ? 'Start a new session for the next real match. The evidence already logged stays safe.'
+        : 'Tap this before kick-off. We will show one small step at a time.';
+
   // the room talks as it renders — one pop per beat of the briefing
   useEffect(() => {
     const beats = [250, 380, 540, 660, 780];
@@ -437,6 +453,26 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         </View>
       </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
+
+        {/* ── START HERE — action before lore ── */}
+        <Animated.View entering={FadeInDown.duration(260)} style={styles.quickStartCard}>
+          <Text style={styles.quickStartTag}>START HERE · YOU ONLY NEED TO PICK ONE</Text>
+          <Text style={styles.quickStartTitle}>WHAT IS HAPPENING WITH YOUR MATCH?</Text>
+          <Pressable onPress={handleCta} disabled={scanDisabled} style={[styles.quickStartPrimary, scanDisabled && styles.quickStartDisabled]}>
+            <PlayIcon size={16} color="#05130a" />
+            <Text style={styles.quickStartPrimaryTxt}>{simpleActionLabel}</Text>
+          </Pressable>
+          <Text style={styles.quickStartHint}>{simpleActionHint}</Text>
+
+          {status !== 'scanning' && status !== 'passed' && !cleared && (
+            <Pressable onPress={() => { sfx('tap'); setScanSheet(true); }} style={styles.quickStartSecondary}>
+              <Text style={styles.quickStartSecondaryTitle}>I ALREADY FINISHED A MATCH</Text>
+              <Text style={styles.quickStartSecondaryCopy}>Log the score, name the important moment, then write the lesson.</Text>
+            </Pressable>
+          )}
+
+          <Text style={styles.quickStartFoot}>You can ignore the coach notes below for now. They are extra help, not another task.</Text>
+        </Animated.View>
 
         {/* ── coach identity card — he is live, not decorative ── */}
         <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.identity}>
@@ -878,6 +914,18 @@ function CoachBubble({ coach, label, children }: { coach: Coach; label: string; 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
   scroll: { paddingHorizontal: 16, paddingBottom: 8 },
+
+  quickStartCard: { marginTop: 14, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.52)', borderRadius: 16, backgroundColor: 'rgba(13,25,16,0.94)', padding: 14 },
+  quickStartTag: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.65, color: colors.primary },
+  quickStartTitle: { marginTop: 7, fontFamily: displayFont, fontSize: 21, lineHeight: 22, letterSpacing: 0.55, color: colors.fg },
+  quickStartPrimary: { marginTop: 12, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 },
+  quickStartDisabled: { opacity: 0.38 },
+  quickStartPrimaryTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1.75, color: '#05130a' },
+  quickStartHint: { marginTop: 7, textAlign: 'center', fontFamily: bodyFont, fontSize: 10.6, lineHeight: 15, color: colors.muted },
+  quickStartSecondary: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(242,192,120,0.42)', borderRadius: 11, backgroundColor: 'rgba(38,30,12,0.44)', paddingHorizontal: 11, paddingVertical: 10 },
+  quickStartSecondaryTitle: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  quickStartSecondaryCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 10.4, color: '#d9cfbc' },
+  quickStartFoot: { marginTop: 10, fontFamily: monoFont, fontSize: 5.9, lineHeight: 10, letterSpacing: 1.05, color: 'rgba(143,184,155,0.62)', textAlign: 'center' },
 
   backBtn: {
     position: 'absolute',
