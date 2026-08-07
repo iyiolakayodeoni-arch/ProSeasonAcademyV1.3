@@ -123,6 +123,75 @@ export interface BaselineDay {
   reflection?: { repeated: string; changed: string }; // day 6
 }
 
+/** The FC 26 post-match stats screen — the console truth. These are the numbers
+ *  every player can read after full-time, before any AI touches them. The
+ *  Chinedu Way insists they are TYPED, not scanned: AI can hallucinate, you
+ *  don't, and winning the small hard way is how you win the big hard way. */
+export interface BaselineMatchStats {
+  possession: number | null; // 0..100 %
+  shots: number | null; // 0..50
+  shotsOnTarget: number | null; // 0..50
+  passAccuracy: number | null; // 0..100 %
+  corners: number | null; // 0..20
+  fouls: number | null; // 0..30 — fouls you committed
+  tackles: number | null; // 0..50
+  saves: number | null; // 0..20
+  offsides?: number | null; // 0..20 optional but honest
+  yellowCards?: number | null; // 0..10
+}
+
+export function baselineStatsComplete(s: BaselineMatchStats | null | undefined): boolean {
+  if (!s) return false;
+  const required: (keyof BaselineMatchStats)[] = ['possession', 'shots', 'shotsOnTarget', 'passAccuracy', 'corners', 'fouls', 'tackles', 'saves'];
+  return required.every((k) => typeof s[k] === 'number' && Number.isFinite(s[k] as number));
+}
+
+export function averageBaselineStats(entries: BaselineEntry[]): BaselineMatchStats | null {
+  const valid = entries.filter((e) => e.stats && baselineStatsComplete(e.stats));
+  if (!valid.length) return null;
+  const sum = (key: keyof BaselineMatchStats) => valid.reduce((s, e) => s + (Number(e.stats?.[key] ?? 0)), 0);
+  const avg = (key: keyof BaselineMatchStats, round = 1) => Math.round((sum(key) / valid.length) * 10) / 10;
+  return {
+    possession: avg('possession'),
+    shots: avg('shots'),
+    shotsOnTarget: avg('shotsOnTarget'),
+    passAccuracy: avg('passAccuracy'),
+    corners: avg('corners'),
+    fouls: avg('fouls'),
+    tackles: avg('tackles'),
+    saves: avg('saves'),
+    offsides: valid.some((e) => typeof e.stats?.offsides === 'number') ? avg('offsides') : null,
+    yellowCards: valid.some((e) => typeof e.stats?.yellowCards === 'number') ? avg('yellowCards') : null,
+  };
+}
+
+/** Turn averaged baseline stats into 6 gamified card attributes 0..99. These
+ *  are NOT FUT clones — they are Onliversity's read of where you are now. */
+export function baselineCardStats(avg: BaselineMatchStats | null, entries: BaselineEntry[]): { key: string; label: string; value: number }[] {
+  if (!avg || !entries.length) return [
+    { key: 'control', label: 'CONTROL', value: 50 },
+    { key: 'attack', label: 'ATTACK', value: 50 },
+    { key: 'precision', label: 'PRECISION', value: 50 },
+    { key: 'defence', label: 'DEFENCE', value: 50 },
+    { key: 'discipline', label: 'DISCIPLINE', value: 50 },
+    { key: 'composure', label: 'COMPOSURE', value: 50 },
+  ];
+  const shotAcc = avg.shots && avg.shots > 0 ? Math.round(((avg.shotsOnTarget ?? 0) / avg.shots) * 100) : 0;
+  const goalsPerGame = entries.reduce((s, e) => s + e.gf, 0) / entries.length;
+  const concededPerGame = entries.reduce((s, e) => s + e.ga, 0) / entries.length;
+  const w = entries.filter((e) => e.result === 'W').length / entries.length;
+  const avgComposure = entries.reduce((s, e) => s + e.composure, 0) / entries.length;
+  const clamp = (n: number) => Math.max(0, Math.min(99, Math.round(n)));
+  return [
+    { key: 'control', label: 'CONTROL', value: clamp(((avg.possession ?? 50) * 0.6 + (avg.passAccuracy ?? 75) * 0.4)) },
+    { key: 'attack', label: 'ATTACK', value: clamp((avg.shots ?? 8) * 6 + goalsPerGame * 10 + (avg.shotsOnTarget ?? 3) * 4) },
+    { key: 'precision', label: 'PRECISION', value: clamp(shotAcc * 0.7 + (avg.passAccuracy ?? 75) * 0.3) },
+    { key: 'defence', label: 'DEFENCE', value: clamp(99 - concededPerGame * 18 - (avg.fouls ?? 8) * 1.2 + (avg.tackles ?? 12) * 0.8 + (avg.saves ?? 2) * 2) },
+    { key: 'discipline', label: 'DISCIPLINE', value: clamp(99 - (avg.fouls ?? 8) * 4 - (avg.yellowCards ?? 0) * 8 - (avg.offsides ?? 2) * 3) },
+    { key: 'composure', label: 'COMPOSURE', value: clamp((avgComposure / 5) * 99) },
+  ];
+}
+
 export interface BaselineEntry {
   gf: number;
   ga: number;
@@ -133,6 +202,8 @@ export interface BaselineEntry {
   /** the failing moments the player named from the recording + their analysis.
    *  NO lesson is written during the trial: the lessons start at Stage 1. */
   moments: BaselineMoment[];
+  stats: BaselineMatchStats | null; // typed FC 26 stats screen — the console truth
+  profilePicUri?: string | null; // snap for the baseline card — Day 1 or pre-seal
   at: number;
 }
 
@@ -151,6 +222,9 @@ export interface BaselineCard {
   ambition: string;     // their words — he will bring this up later
   /** what the 20+ tags across 5 matches say you tend to do under pressure */
   tendencies: string[];
+  avgStats: BaselineMatchStats | null; // averaged console truth across 5 matches
+  cardStats: { key: string; label: string; value: number }[]; // 6 gamified attributes
+  profilePicUri: string | null; // the snap they took — on the card
   sealedAt: number;
 }
 
@@ -236,6 +310,21 @@ function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   return days;
 }
 
+function migrateEntry(raw: any): BaselineEntry {
+  return {
+    gf: Number(raw.gf) || 0,
+    ga: Number(raw.ga) || 0,
+    result: (raw.result === 'W' || raw.result === 'D' || raw.result === 'L' ? raw.result : 'D') as MatchResult,
+    composure: typeof raw.composure === 'number' ? raw.composure : 3,
+    question: typeof raw.question === 'string' ? raw.question : '',
+    answer: typeof raw.answer === 'string' ? raw.answer : '',
+    moments: Array.isArray(raw.moments) ? raw.moments : [],
+    stats: raw.stats && typeof raw.stats === 'object' ? (raw.stats as BaselineMatchStats) : null,
+    profilePicUri: typeof raw.profilePicUri === 'string' ? raw.profilePicUri : null,
+    at: typeof raw.at === 'number' ? raw.at : Date.now(),
+  };
+}
+
 export async function loadBaseline(coachId: string): Promise<BaselineSession> {
   if (!hydrated) {
     hydrated = true;
@@ -243,17 +332,42 @@ export async function loadBaseline(coachId: string): Promise<BaselineSession> {
       const raw = await AsyncStorage.getItem(baselineStorageKey());
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<BaselineSession>;
+        const migratedEntries = Array.isArray(parsed.entries) ? (parsed.entries as any[]).map(migrateEntry) : [];
+        // migrate old cards missing new fields
+        let migratedCard: BaselineCard | null = null;
+        if (parsed.card && typeof parsed.card === 'object') {
+          const c: any = parsed.card;
+          migratedCard = {
+            handle: c.handle ?? '',
+            coachId: c.coachId ?? coachId,
+            played: c.played ?? migratedEntries.length,
+            w: c.w ?? 0,
+            d: c.d ?? 0,
+            l: c.l ?? 0,
+            gf: c.gf ?? 0,
+            ga: c.ga ?? 0,
+            avgComposure: c.avgComposure ?? 0,
+            tier: c.tier ?? tierFor(c.avgComposure ?? 0),
+            coachRead: c.coachRead ?? '',
+            ambition: c.ambition ?? '',
+            tendencies: Array.isArray(c.tendencies) ? c.tendencies : [],
+            avgStats: c.avgStats ?? averageBaselineStats(migratedEntries),
+            cardStats: Array.isArray(c.cardStats) ? c.cardStats : baselineCardStats(c.avgStats ?? averageBaselineStats(migratedEntries), migratedEntries),
+            profilePicUri: typeof c.profilePicUri === 'string' ? c.profilePicUri : (migratedEntries.find((e: any) => e.profilePicUri)?.profilePicUri ?? null),
+            sealedAt: c.sealedAt ?? Date.now(),
+          };
+        }
         session = {
           coachId: parsed.coachId ?? coachId,
-          entries: Array.isArray(parsed.entries) ? (parsed.entries as BaselineEntry[]) : [],
+          entries: migratedEntries,
           ambition: typeof parsed.ambition === 'string' ? parsed.ambition : null,
-          card: parsed.card && typeof parsed.card === 'object' ? (parsed.card as BaselineCard) : null,
+          card: migratedCard,
           startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
           // pre-week sessions have no `days` — migrate from their entries
           days: Array.isArray(parsed.days)
             ? (parsed.days as BaselineDay[])
             : makeDays(
-                Array.isArray(parsed.entries) ? (parsed.entries as BaselineEntry[]) : [],
+                migratedEntries,
                 typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
               ),
         };
@@ -376,12 +490,38 @@ async function persist() {
   await AsyncStorage.setItem(baselineStorageKey(), JSON.stringify(session)).catch(() => {});
 }
 
+export function setBaselineProfilePic(uri: string | null): void {
+  if (!session) return;
+  // stash on last entry if exists, otherwise hold for next entry — simplest is to attach to next record
+  // we also keep a pending pic in the session card slot via a hidden field
+  (session as any).__pendingPic = uri;
+  void persist();
+}
+
+export function getBaselinePendingPic(): string | null {
+  return (session as any)?.__pendingPic ?? null;
+}
+
 /** record one debriefed match; also lands in the real vault. The day whose
  *  match this is gets its entry index + recording path linked automatically. */
 export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
   if (!session) return;
   const at = Date.now();
-  session = { ...session, entries: [...session.entries, { ...entry, at }] };
+  // ensure stats field exists for legacy callers
+  const withStats: BaselineEntry = {
+    gf: entry.gf,
+    ga: entry.ga,
+    result: entry.result,
+    composure: entry.composure,
+    question: entry.question,
+    answer: entry.answer,
+    moments: entry.moments ?? [],
+    stats: (entry as any).stats ?? null,
+    profilePicUri: (entry as any).profilePicUri ?? (session as any).__pendingPic ?? null,
+    at,
+  };
+  if ((session as any).__pendingPic) (session as any).__pendingPic = null;
+  session = { ...session, entries: [...session.entries, withStats] };
   const idx = session.entries.length - 1;
   const matchDay = entryIndexToDay(idx);
   const days = session.days.map((d) =>
@@ -410,12 +550,16 @@ export function recordBaselineMatch(entry: Omit<BaselineEntry, 'at'>): void {
   void persist();
 }
 
-export async function sealBaseline(handle: string, coachId: string, ambition: string): Promise<BaselineCard> {
+export async function sealBaseline(handle: string, coachId: string, ambition: string, profilePicUri?: string | null): Promise<BaselineCard> {
   const e = session?.entries ?? [];
   const w = e.filter((m) => m.result === 'W').length;
   const d = e.filter((m) => m.result === 'D').length;
   const l = e.filter((m) => m.result === 'L').length;
   const avg = e.length ? e.reduce((s, m) => s + m.composure, 0) / e.length : 0;
+  const avgStats = averageBaselineStats(e);
+  const cardStats = baselineCardStats(avgStats, e);
+  // prefer explicit pic passed at seal, otherwise last match snap, otherwise any earlier snap
+  const pic = profilePicUri ?? [...e].reverse().find((x) => x.profilePicUri)?.profilePicUri ?? null;
   const card: BaselineCard = {
     handle,
     coachId,
@@ -428,6 +572,9 @@ export async function sealBaseline(handle: string, coachId: string, ambition: st
     coachRead: coachReadFor(coachId, avg, w, l),
     ambition,
     tendencies: tendenciesOf(e),
+    avgStats,
+    cardStats,
+    profilePicUri: pic ?? null,
     sealedAt: Date.now(),
   };
   session = { ...(session as BaselineSession), ambition, card };
