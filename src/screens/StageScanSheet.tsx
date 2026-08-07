@@ -201,7 +201,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
         `MOMENTS: ${momentLine}`,
         `MIND: ${answer.trim()}`,
         `LESSON: ${lesson.trim()}`,
-        carried && verdict ? `THREAD: ${verdict.toUpperCase()} — ${verdictNote.trim()}` : null,
+        carried && verdict ? `LESSON: ${verdict.toUpperCase()} — ${verdictNote.trim()}` : null,
       ]
         .filter(Boolean)
         .join(' | '),
@@ -235,10 +235,10 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
         style={{ marginTop: -50, marginHorizontal: -16 }}
       >
         <Text style={styles.eyebrow}>
-          STAGE {stage.n} · {stage.key} — MAIN QUEST SESSION
+          CHAPTER {stage.n} · {stage.key} — QUICK REVIEW
         </Text>
-        <Text style={styles.bandTitle}>THE MATCH SCAN</Text>
-        <Text style={styles.subtitle}>YOU PLAY · THE SCANNER TAGS · HE ASKS · YOU WRITE THE LESSON</Text>
+        <Text style={styles.bandTitle}>QUICK REVIEW</Text>
+        <Text style={styles.subtitle}>ADD THE SCORE · NAME A MOMENT · WRITE ONE LESSON</Text>
       </ArtBand>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
@@ -246,15 +246,13 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           <>
             <CoachBubble coach={coach} label={coach.name}>
               <Text style={styles.bubbleText}>
-                {stern
-                  ? 'This is not a form, little bro — it is a watched training session. You play, the scanner and I watch. It tags the moments that make or break you — not the score, the MOMENTS — and I ask you about every one of them. Then you write the lesson. That lesson is your next main quest.'
-                  : 'This is a watched session now, little one. Go and play — the scanner and I will be watching for the moments that make or break you. Not the score — the moments the score was made of. I will ask you about each one, and then you will jot the lesson. That lesson becomes your next main quest.'}
+                You finished the match. Good — this path saves the score, one important moment and one lesson. We will do it one piece at a time.
               </Text>
             </CoachBubble>
 
             {carried && (
               <Animated.View entering={FadeInDown.delay(80).duration(340)} style={styles.carriedBanner}>
-                <Text style={styles.carriedTag}>YOUR THREAD WALKED IN WITH YOU</Text>
+                <Text style={styles.carriedTag}>YOUR LAST LESSON CAME WITH YOU</Text>
                 <Text style={styles.carriedLesson}>“{carried.lesson}”</Text>
                 <Text style={styles.carriedMeta}>
                   SWORN AFTER YOUR LAST SCAN · PLAY WITH IT TODAY — THE REVIEW ASKS HOW IT HELD
@@ -265,38 +263,21 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
             <Animated.View entering={FadeInDown.delay(120).duration(340)} style={styles.card}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>WATCHED SESSION · HOW IT RUNS</Text>
+                  <Text style={styles.tagGreenTxt}>POST-MATCH REVIEW · 3 SMALL STEPS</Text>
                 </View>
                 <GamepadIcon size={13} color={colors.primary} />
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>1</Text>
-                <Text style={styles.briefTxt}>
-                  THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE: There is a special connection a biro has to a book that cannot be typed. Record your match as usual, watch your tape back, and write the key moments and unusual things on paper.
-                </Text>
+                <Text style={styles.briefTxt}>ADD THE SCORE. Start with what happened on the scoreboard.</Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>2</Text>
-                <Text style={styles.briefTxt}>
-                  24–30 MINUTE COOL-DOWN: Let your mind settle for 24–30 minutes after the match. Once you have cooled down, open the app and type your written answers into your database.
-                </Text>
+                <Text style={styles.briefTxt}>NAME ONE MOMENT. Use your own words for the turning point you remember.</Text>
               </View>
               <View style={styles.briefStep}>
                 <Text style={styles.briefNo}>3</Text>
-                <Text style={styles.briefTxt}>
-                  {coachFirst.toUpperCase()} ASKS A QUESTION ON EVERY TAG. We give you the questions to guide your analysis — answer them honestly from your paper notes.
-                </Text>
-              </View>
-              <View style={styles.briefStep}>
-                <Text style={styles.briefNo}>4</Text>
-                <Text style={styles.briefTxt}>
-                  IN A WORLD LOOKING FOR THE EASY WAY OUT: The hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant.
-                </Text>
-              </View>
-              <View style={styles.privacyBox}>
-                <Text style={styles.privacyTxt}>
-                  DEFAULT RULE: RECORD AS USUAL ON YOUR PS5/XBOX CONSOLE OR CAPTURE CARD. WE USE NO AUTOMATED WATCHERS — THE ACADEMY KEEPS YOUR TAGS, YOUR ANSWERS AND YOUR LESSON — YOUR OWN EYES ARE THE SCANNER.
-                </Text>
+                <Text style={styles.briefTxt}>WRITE ONE LESSON. Make it useful for your next match, not perfect.</Text>
               </View>
             </Animated.View>
 
@@ -304,12 +285,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               <View style={styles.logBtn}>
                 <ScanGlyphIcon size={11} color="#0a0f0a" />
                 <Text style={styles.logBtnTxt}>
-                  I PLAYED THE MATCH — START THE REVIEW ›
+                  START WITH THE SCORE ›
                 </Text>
               </View>
             </Pressable>
             <Text style={styles.honor}>
-              THE CHINEDU WAY: WATCH YOUR TAPE, PEN YOUR MOMENTS ON PAPER, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.
+              ONE PIECE AT A TIME. YOUR PROGRESS SAVES IF YOU NEED TO LEAVE.
             </Text>
           </>
         ) : phase === 'scan' ? (
@@ -397,7 +378,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               </View>
               <View style={styles.inlineRow}>
                 <Text style={styles.inlineLabel}>
-                  {mechShort ? `USED THE SIDE QUEST — THE ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
+                  {mechShort ? `USED THE OPTIONAL TIP — ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
                 </Text>
                 <View style={styles.inlineCtrl}>
                   {[0, 1, 2, 3].map((n) => (
@@ -427,7 +408,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   </View>
                 </>
               )}
-              <Text style={styles.stageFeed}>EVERY FIELD HERE FEEDS STAGE {stage.n}'S GRADED OBJECTIVES — THE VAULT COUNTS, THE COACH JUDGES</Text>
+              <Text style={styles.stageFeed}>THIS REVIEW BUILDS CHAPTER {stage.n}'S EVIDENCE — MATCH HISTORY COUNTS, THE COACH GUIDES</Text>
             </Animated.View>
 
             {/* ── PART 2 · KEY MOMENTS — the make-or-break minutes ── */}
@@ -506,12 +487,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 <CheckIcon size={12} color={colors.primary} />
               </View>
               <Text style={styles.lessonCue}>
-                EVERYTHING ABOVE WAS EVIDENCE. THIS LINE IS THE TRAINING. JOT THE LESSON YOU CARRY INTO YOUR NEXT MATCH — IT WAITS FOR YOU IN THE NEXT STAGE ROOM AS YOUR MAIN QUEST, AND THE NEXT SCAN OPENS BY ASKING HOW IT HELD.
+                EVERYTHING ABOVE WAS EVIDENCE. THIS LINE IS THE TRAINING. WRITE THE LESSON YOU CARRY INTO YOUR NEXT MATCH — THE NEXT REVIEW ASKS IF IT HELPED.
               </Text>
 
               {carried && (
                 <View style={styles.threadCheck}>
-                  <Text style={styles.threadCheckTag}>THREAD CHECK — AFTER YOUR LAST SCAN YOU SWORE:</Text>
+                  <Text style={styles.threadCheckTag}>LAST LESSON CHECK — AFTER YOUR LAST REVIEW YOU WROTE:</Text>
                   <Text style={styles.threadCheckLesson}>“{carried.lesson}”</Text>
                   <View style={styles.chipRow}>
                     {(['held', 'broke'] as const).map((v) => (
@@ -538,7 +519,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   <HonestyBadge
                     text={verdictNote}
                     options={{ minLength: MIN_VERDICT_NOTE, minWords: 2 }}
-                    defaultNote="ONE HONEST LINE — THE THREAD KEEPS SCORE OF YOUR HEAD, NOT YOUR PRIDE"
+                    defaultNote="ONE HONEST LINE — YOUR LESSON HELPS YOU NOTICE THE PATTERN"
                     coachId={coach.id}
                   />
                 </View>
@@ -580,7 +561,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           <>
             {loggedSummary && (
               <Animated.View entering={FadeInDown.duration(300)} style={styles.summary}>
-                <Text style={styles.summaryEyebrow}>SESSION SEALED TO THE VAULT</Text>
+                <Text style={styles.summaryEyebrow}>MATCH SAVED TO HISTORY</Text>
                 <Text style={styles.summaryScore}>
                   {loggedSummary.r} {loggedSummary.gf}–{loggedSummary.ga}
                   <Text style={styles.summaryHead}> · HEAD: {loggedSummary.head}</Text>
@@ -590,12 +571,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   <Text style={styles.summaryLesson}>“{loggedSummary.note}”</Text>
                   {carried && verdict && (
                     <Text style={styles.summaryVerdict}>
-                      LAST LESSON: {verdict === 'held' ? 'HELD ✓' : 'BROKE ✗'} — {thread.entries.length} ON THE THREAD NOW
+                      LAST LESSON: {verdict === 'held' ? 'HELD ✓' : 'BROKE ✗'} — {thread.entries.length} LESSONS SAVED
                     </Text>
                   )}
                 </View>
                 <Text style={styles.summaryNote}>
-                  IT MEETS YOU IN THE NEXT STAGE ROOM. PLAY WITH IT. ANSWER FOR IT AT THE NEXT SCAN.
+                  IT RETURNS IN YOUR NEXT CHAPTER. USE IT, THEN SAY WHETHER IT HELPED.
                 </Text>
               </Animated.View>
             )}
@@ -613,7 +594,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
             <Pressable onPress={() => onClose(true)} style={({ pressed }) => [styles.logBtn, { marginTop: 16 }, pressed && { opacity: 0.85 }]}>
               <ScanGlyphIcon size={11} color="#0a0f0a" />
-              <Text style={styles.logBtnTxt}>GRADE THE VAULT — RUN THE SCAN ›</Text>
+              <Text style={styles.logBtnTxt}>CHECK MATCH HISTORY ›</Text>
             </Pressable>
             <Pressable onPress={() => { resetComposer(); setPhase('scan'); }} hitSlop={6}>
               <View style={styles.againBtn}>

@@ -74,7 +74,13 @@ function namedMoment(name, analysis = {}) {
 }
 
 async function main() {
-  // ══ T1 · a fresh week opens on DAY 1, days 2–7 are future ══
+  // ══ T0 · a baseline moment is useful without nine essay boxes ══
+  assert.equal(B.BASELINE_MOMENT_QUESTIONS.length, 3, 'three focused moment prompts');
+  assert.equal(B.baselineStatsComplete({ possession: 52, shots: 8, shotsOnTarget: 4, passAccuracy: 81 }), true, 'four core stats are enough');
+  assert.equal(B.baselineStatsComplete({ possession: 52, shots: 8, shotsOnTarget: 4, passAccuracy: null }), false, 'a missing core stat still blocks the receipt');
+  console.log('PASS 0 · baseline asks for three reflection prompts and four core stats');
+
+  // ══ T1 · a fresh week opens on DAY 1, days 2–7 are future
   await B.resetBaselineForDev();
   const fresh = await B.loadBaseline('chinedu');
   assert.equal(B.currentBaselineDay(fresh), 1, 'fresh session starts on day 1');
@@ -107,7 +113,7 @@ async function main() {
 
   // ══ T4 · a moment analysis is only complete when EVERY question is answered ══
   const full = namedMoment('CONCEDED AFTER A PANIC PASS');
-  assert.equal(B.baselineMomentComplete(full), true, 'all nine answered → complete');
+  assert.equal(B.baselineMomentComplete(full), true, 'all focused prompts answered → complete');
   const partial = { ...full, analysis: { ...full.analysis, differently: 'short' } };
   assert.equal(B.baselineMomentComplete(partial), false, 'one short answer → not complete');
   console.log('PASS 4 · moment analysis requires every question answered in full');

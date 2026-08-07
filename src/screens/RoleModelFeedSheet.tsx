@@ -134,7 +134,7 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
         {/* closing disclaimer — always keeps the fiction clear */}
         <Text style={styles.disclaimer}>
           THIS IS PROSEASONACADEMY'S OWN CHARACTER STREAM — ORIGINAL NARRATIVE, NEVER A REPORT ON A REAL
-          PLAYER. THE MECHANICS HE SHOWS ARE THE SAME VERIFIED FC 26 SIDE QUESTS YOUR JOURNEY TEACHES.
+          PLAYER. THE MECHANICS HE SHOWS ARE OPTIONAL FC 26 TIPS YOU CAN TRY WHEN THEY HELP.
         </Text>
         <View style={{ height: 20 }} />
       </ScrollView>

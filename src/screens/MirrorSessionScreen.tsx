@@ -182,8 +182,8 @@ function PhaseHeader({ stage, onLeave, phaseLabel }: { stage: JourneyStage; onLe
         <Text style={styles.phaseBackTxt}>LEAVE</Text>
       </Pressable>
       <View style={styles.phaseHeaderCenter}>
-        <Text style={styles.phaseBrand}>MIRROR SESSION</Text>
-        <Text style={styles.phaseStage}>STAGE {stage.n} · {stage.key}</Text>
+        <Text style={styles.phaseBrand}>MATCH REVIEW</Text>
+        <Text style={styles.phaseStage}>CHAPTER {stage.n} · {stage.key}</Text>
       </View>
       <View style={styles.phaseBadge}>
         <Text style={styles.phaseBadgeTxt}>{phaseLabel}</Text>
@@ -265,7 +265,7 @@ export default function MirrorSessionScreen({
   };
 
   const phaseLabel: Record<string, string> = {
-    'thread-check': 'THE THREAD',
+    'thread-check': 'YOUR LESSON',
     intention: 'INTENTION',
     live: 'LIVE',
     'half-time': 'HALF-TIME',
@@ -298,7 +298,7 @@ export default function MirrorSessionScreen({
               <Text style={styles.heroSub}>Before a new match, answer for it. A lesson you create and immediately forget is a mood, not a lesson.</Text>
               {carried && (
                 <View style={styles.threadCard}>
-                  <Text style={styles.threadTag}>YOUR THREAD · CARRIED FROM STAGE {carried.stageN}</Text>
+                  <Text style={styles.threadTag}>YOUR LESSON · CARRIED FROM CHAPTER {carried.stageN}</Text>
                   <Text style={styles.threadLesson}>“{carried.lesson}”</Text>
                 </View>
               )}
@@ -327,7 +327,7 @@ export default function MirrorSessionScreen({
                 coachId={coach.id}
               />
               <StepButton
-                label="ANSWER FOR THE THREAD · CONTINUE ›"
+                label="ANSWER FOR YOUR LESSON · CONTINUE ›"
                 disabled={!verdict || !isValidReflection(verdictNote, { minLength: MIN_ANSWER, minWords: 1 })}
                 onPress={() => {
                   sfx('whoosh');
@@ -340,8 +340,18 @@ export default function MirrorSessionScreen({
           {/* ══ INTENTION — before the score changes the emotions ══ */}
           {mirror.phase === 'intention' && !mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>BEFORE THE MATCH — SET THE INTENTION.</Text>
-              <Text style={styles.heroSub}>Answer now, while the score is 0–0 and your head is still yours. The session keeps these answers beside your half-time and full-time ones.</Text>
+              <Text style={styles.heroLine}>BEFORE THE MATCH — PICK ONE FOCUS.</Text>
+              <Text style={styles.heroSub}>Write one useful intention while the score is 0–0. The session keeps it beside what you see later.</Text>
+              <View style={styles.sessionGuide}>
+                <Text style={styles.sessionGuideTitle}>YOU ARE IN THE RIGHT PLACE. HERE IS WHAT HAPPENS NEXT.</Text>
+                <View style={styles.sessionGuideSteps}>
+                  <Text style={styles.sessionGuideStep}>1 · ONE FOCUS NOW</Text>
+                  <Text style={styles.sessionGuideStep}>2 · TWO LINES AT HALF-TIME</Text>
+                  <Text style={styles.sessionGuideStep}>3 · SCORE + FIRST READ AFTER FULL-TIME</Text>
+                  <Text style={styles.sessionGuideStep}>4 · ONE LESSON FOR NEXT MATCH</Text>
+                </View>
+                <Text style={styles.sessionGuideNote}>This is not a test. You can leave at any time; your saved answers will still be here when you return.</Text>
+              </View>
               {INTENTION_QUESTIONS.map((q, i) => (
                 <QuestionCard
                   key={q.key}
@@ -374,12 +384,10 @@ export default function MirrorSessionScreen({
 
           {mirror.phase === 'intention' && mirror.intention && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>INTENTION SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
+              <Text style={styles.heroLine}>FOCUS SEALED. RECORD AS USUAL AND PLAY FOR REAL.</Text>
               <View style={styles.receiptCard}>
-                <Text style={styles.receiptTag}>YOUR INTENTION — READ IT BEFORE YOU PLAY</Text>
-                <Text style={styles.receiptLine}>PRACTISE: {mirror.intention.practice.toUpperCase()}</Text>
-                <Text style={styles.receiptLine}>PAY ATTENTION TO: {mirror.intention.attention.toUpperCase()}</Text>
-                <Text style={styles.receiptLine}>AVOID: {mirror.intention.avoid.toUpperCase()}</Text>
+                <Text style={styles.receiptTag}>YOUR ONE FOCUS — READ IT BEFORE YOU PLAY</Text>
+                <Text style={styles.receiptLine}>FOCUS: {mirror.intention.practice.toUpperCase()}</Text>
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
@@ -387,7 +395,7 @@ export default function MirrorSessionScreen({
                 </Text>
               </View>
               <StepButton
-                label="INTENTION SWORN — BEGIN MATCH ›"
+                label="FOCUS SAVED — BEGIN MATCH ›"
                 onPress={() => {
                   sfx('whoosh');
                   beginMatch();
@@ -425,8 +433,8 @@ export default function MirrorSessionScreen({
           {/* score logging (before the full-time reflection) */}
           {mirror.phase === 'score' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>FULL TIME. LOG THE MATCH TO THE VAULT.</Text>
-              <Text style={styles.heroSub}>The receipt is written to your Match Vault — the source of truth the whole journey is graded from.</Text>
+              <Text style={styles.heroLine}>FULL TIME. SAVE THE MATCH TO HISTORY.</Text>
+              <Text style={styles.heroSub}>The receipt is written to your Match History — the source of truth the whole journey is graded from.</Text>
               <ScoreRow gf={gf} ga={ga} onChange={(a, b) => { setGf(a); setGa(b); }} />
               <StepButton
                 label="LOG THE MATCH · UNLOCK THE REFLECTION ›"
@@ -441,8 +449,8 @@ export default function MirrorSessionScreen({
           {/* ══ HALF-TIME reflection ══ */}
           {mirror.phase === 'half-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>HALF-TIME. THE MATCH IS STILL EMOTIONALLY ALIVE.</Text>
-              <Text style={styles.heroSub}>The pause exists to make you think while it still matters. The app does not provide the answers.</Text>
+              <Text style={styles.heroLine}>HALF-TIME. NAME THE PATTERN, THEN PICK ONE ADJUSTMENT.</Text>
+              <Text style={styles.heroSub}>Two quick lines while the match is still alive. The app does not provide the answer.</Text>
               {HALF_TIME_QUESTIONS.map((q, i) => (
                 <QuestionCard
                   key={q.key}
@@ -456,7 +464,7 @@ export default function MirrorSessionScreen({
               <SectionTitle>HALF-TIME COMPOSURE</SectionTitle>
               <ComposureChips value={mirror.half?.composure ?? halfComposure} onChange={setHalfComposure} />
               <StepButton
-                label="SEAL THE HALF-TIME ANSWER · SECOND HALF ›"
+                label="SAVE THE ADJUSTMENT · SECOND HALF ›"
                 disabled={!allHalfAnswered}
                 onPress={() => {
                   sfx('whoosh');
@@ -478,8 +486,8 @@ export default function MirrorSessionScreen({
           {/* ══ FULL-TIME reflection — memory BEFORE the recording ══ */}
           {mirror.phase === 'full-time' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>BEFORE YOU WATCH ANYTHING — WHAT DO YOU BELIEVE?</Text>
-              <Text style={styles.heroSub}>24–30 MINUTE COOL-DOWN: Answer from your immediate memory first. When you watch your recording afterwards, pen your key moments on paper with a biro before typing your review.</Text>
+              <Text style={styles.heroLine}>BEFORE THE TAPE — WHAT DECIDED IT, AND WHAT CHANGES?</Text>
+              <Text style={styles.heroSub}>After your cool-down, write two lines from memory first. Then watch the tape and name the moments that prove or challenge them.</Text>
               <View style={styles.receiptCard}>
                 <Text style={styles.receiptTag}>THE RECEIPT</Text>
                 <Text style={styles.receiptLine}>FINAL SCORE: {mirror.gf} – {mirror.ga}</Text>
@@ -497,7 +505,7 @@ export default function MirrorSessionScreen({
               <SectionTitle>FINAL COMPOSURE</SectionTitle>
               <ComposureChips value={mirror.full?.composure ?? fullComposure} onChange={setFullComposure} />
               <StepButton
-                label="SAVE MY MEMORY · UNLOCK THE EVIDENCE ›"
+                label="SAVE MY FIRST READ · WATCH THE EVIDENCE ›"
                 disabled={!allFullAnswered}
                 onPress={() => {
                   sfx('whoosh');
@@ -659,7 +667,7 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'lesson' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>WRITE THE ONE LINE YOU CARRY INTO THE NEXT MATCH.</Text>
-              <Text style={styles.heroSub}>It becomes your Thread. The next session asks whether it held or broke — so it cannot be created and immediately forgotten.</Text>
+              <Text style={styles.heroSub}>It becomes your lesson. The next session asks whether it held or broke — so it cannot be created and immediately forgotten.</Text>
               <QuestionCard
                 index={0}
                 q="THE LESSON — YOUR WORDS, NOBODY ELSE’S."
@@ -670,7 +678,7 @@ export default function MirrorSessionScreen({
               <HonestyBadge
                 text={lessonDraft}
                 options={{ minLength: 4, minWords: 2 }}
-                defaultNote="ONE LINE YOU WOULD SIGN · YOUR THREAD"
+                defaultNote="ONE LINE YOU WOULD SIGN · YOUR LESSON"
                 coachId={coach.id}
               />
               <StepButton
@@ -694,10 +702,10 @@ export default function MirrorSessionScreen({
 
                 <Text style={styles.receiptLine}>MOMENTS REVIEWED: {mirror.moments.length}</Text>
                 <Text style={styles.receiptLine}>CLOSEST TO THE EVIDENCE: {(mirror.closestVersion ?? '—').toUpperCase()}</Text>
-                {mirror.lessonId && <Text style={styles.receiptLine}>THREAD: SWORN · “{mirror.lesson.toUpperCase()}”</Text>}
+                {mirror.lessonId && <Text style={styles.receiptLine}>LESSON: SAVED · “{mirror.lesson.toUpperCase()}”</Text>}
               </View>
               <Text style={styles.heroSub}>
-                The match is in your vault. The lesson is on your Thread. Nobody can outrun their receipts — and now you have one more.
+                The match is in Match History. Your lesson is saved for the next match. Nobody can outrun their receipts — and now you have one more.
               </Text>
               <StepButton label="RETURN TO THE ROOM ›" onPress={handleDone} />
             </Animated.View>
@@ -740,6 +748,11 @@ const styles = StyleSheet.create({
 
   heroLine: { marginTop: 16, fontFamily: displayFont, fontSize: 22, lineHeight: 24, letterSpacing: 0.6, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.45)', textShadowRadius: 10 },
   heroSub: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#9db4a3' },
+  sessionGuide: { marginTop: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 12, backgroundColor: 'rgba(38,30,12,0.48)', padding: 12 },
+  sessionGuideTitle: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.45, color: colors.accent },
+  sessionGuideSteps: { marginTop: 9, gap: 5 },
+  sessionGuideStep: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 0.8, color: '#e1d8c8' },
+  sessionGuideNote: { marginTop: 9, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(242,192,120,0.18)', fontFamily: bodyFont, fontSize: 10.3, lineHeight: 15, color: '#cfc3ad' },
 
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, marginBottom: 4 },
   sectionTitle: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 2, color: colors.muted },

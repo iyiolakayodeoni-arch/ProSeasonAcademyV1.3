@@ -78,7 +78,7 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
         <Text style={styles.eyebrow}>DIRECT LINE</Text>
         <Text style={styles.bandTitle}>TALK TO THE FOUNDER</Text>
         <Text style={styles.sub}>
-          PRIVATE. NOBODY IN THE HALLS SEES THIS — JUST HIM.
+          PRIVATE. NOBODY IN COMMUNITY SEES THIS — JUST HIM.
         </Text>
       </ArtBand>
 
@@ -110,7 +110,7 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
               setBody(t);
               setError(null);
             }}
-            placeholder="What's on your mind? Bugs, ideas, what you'd pay for, what's annoying you…"
+            placeholder="What's on your mind? A bug, an idea, something confusing, anything…"
             placeholderTextColor="rgba(143,184,155,0.35)"
             multiline
             maxLength={2000}

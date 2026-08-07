@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
 // SOUND — the academy's ear. One tiny module owns everything
 // audible:
-//   · SFX ......... short UI sounds (tap, pop, whistle, coin…),
+//   · SFX ......... short UI sounds (tap, pop, whistle…),
 //                   lazily created, fire-and-forget, and silent
 //                   when the player turns SOUND FX off.
 //   · MUSIC ....... the dark 24s ambient pad that loops under
@@ -27,9 +27,8 @@ export type SfxName =
   | 'pop' // a chat bubble landing
   | 'whoosh' // sheets + the stage zoom
   | 'whistle' // lock-in + stage pass — the referee
-  | 'success' // scan passed / claim filed
-  | 'fail' // scan failed / rejected
-  | 'coin' // the academy till
+  | 'success' // review saved / chapter complete
+  | 'fail' // review needs more evidence
   | 'like'; // the little heart
 
 const SFX_SOURCE: Record<SfxName, number> = {
@@ -41,7 +40,6 @@ const SFX_SOURCE: Record<SfxName, number> = {
   whistle: require('../../assets/sounds/sfx-whistle.wav'),
   success: require('../../assets/sounds/sfx-success.wav'),
   fail: require('../../assets/sounds/sfx-fail.wav'),
-  coin: require('../../assets/sounds/sfx-coin.wav'),
   like: require('../../assets/sounds/sfx-like.wav'),
 };
 

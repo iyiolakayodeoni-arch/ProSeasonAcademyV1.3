@@ -94,11 +94,11 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
       {/* header — the mirror band carries the side note's name */}
       <ArtBand source={MIRROR_ART} width={bandW} height={132} warmAt={{ x: bandW * 0.26, y: 40, r: bandW * 0.5 }} style={{ marginTop: -50 }}>
         <Text style={styles.eyebrow}>
-          {origin === 'home' ? 'HOME · LIVE FEED' : 'STAGE ROOM'} — SIDE QUEST
+          {origin === 'home' ? 'UPDATES' : 'COACH SCREEN'} — OPTIONAL TIP
         </Text>
-        <Text style={styles.bandTitle}>THE SIDE NOTE</Text>
+        <Text style={styles.bandTitle}>OPTIONAL TIP</Text>
         <Text style={styles.subtitle}>
-          RESEARCHED BY THE BOT · APPROVED FOR {coachFirst.toUpperCase()}'S PLAYERS · THE MAIN QUEST IS STILL YOURS
+          RESEARCHED BY THE BOT · APPROVED FOR {coachFirst.toUpperCase()}'S PLAYERS · YOUR MATCH REVIEW IS STILL THE MAIN THING
         </Text>
       </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
@@ -107,7 +107,7 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
         <View style={[styles.lessonCard, { marginTop: 14 }]}>
           <View style={styles.tagRow}>
             <View style={styles.tagGreen}>
-              <Text style={styles.tagGreenTxt}>SIDE QUEST · {lesson.kind.replace(/_/g, ' ')}</Text>
+              <Text style={styles.tagGreenTxt}>OPTIONAL TIP · {lesson.kind.replace(/_/g, ' ')}</Text>
             </View>
             <View style={styles.tagGold}>
               <Text style={styles.tagGoldTxt}>{lesson.mechanicName}</Text>
@@ -198,7 +198,7 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
 
         {/* the honest framing — a side note, never the assignment */}
         <View style={styles.sideNote}>
-          <Text style={styles.sideNoteTitle}>WHY THIS IS A SIDE QUEST</Text>
+          <Text style={styles.sideNoteTitle}>WHY THIS IS OPTIONAL</Text>
           <Text style={styles.sideNoteBody}>
             The main thing has to be done by you. The bot can find a trick and the board can draw
             it — but your head is only trained by your own matches and your own lessons, and that

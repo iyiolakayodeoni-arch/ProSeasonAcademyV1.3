@@ -18,22 +18,19 @@ export const REGIONS = [
   'NA WEST · GMT-8',
   'ASIA · GMT+8',
 ] as const;
-export const PLANS = ['PRO', 'ROOKIE'] as const;
-
 export type GeoRegion = 'africa' | 'world' | 'unset';
 
 export interface SettingsState {
   displayName: string;
   email: string | null;
-  country: string | null; // picked at sign-up — drives the regional pricing shelf
-  geo: GeoRegion;         // 'africa' → Africa pricing · 'world' → world pricing · unset until picked
+  country: string | null; // picked at sign-up for the member profile
+  geo: GeoRegion;         // retained regional profile value for existing records
   academyId: string; // generated once, never changes
   joinedAt: number; // first launch — drives "IN ACADEMY" days
   div: string;
   bestStreak: number;
   platform: (typeof PLATFORMS)[number];
   region: (typeof REGIONS)[number];
-  plan: (typeof PLANS)[number];
   /** ISO-2 country code captured at sign-up */
   countryCode: string | null;
   /** soft IP verify result */
@@ -51,7 +48,7 @@ export interface SettingsState {
     groupSessions: boolean;
     /** the ambient pad under the home tab */
     music: boolean;
-    /** taps, whistles and the academy till */
+    /** taps, whistles and lightweight feedback */
     soundFx: boolean;
   };
 }
@@ -72,7 +69,6 @@ const DEFAULTS: SettingsState = {
   bestStreak: 3,
   platform: 'PS5 / XBOX',
   region: 'EU WEST · GMT+1',
-  plan: 'PRO',
   toggles: {
     matchScanAutoRead: true,
     lossJournal: true,
@@ -164,7 +160,7 @@ export function setRegion(r: SettingsState['region']) {
   set({ region: r });
 }
 
-/** sign-up capture: their country + which pricing track it maps to */
+/** sign-up capture: country and regional profile information */
 export function setCountry(country: string, geo: Exclude<GeoRegion, 'unset'>, countryCode?: string) {
   set({ country, geo, countryCode: countryCode ?? state.countryCode });
 }
@@ -182,12 +178,6 @@ export function setGeoFlags(flags: { verified?: boolean; uncertain?: boolean }) 
 
 export function setAcademyId(id: string) {
   if (id) set({ academyId: id.startsWith('#') ? id : id });
-}
-
-export function setPlan(p: SettingsState['plan']) {
-  // TODO(real-billing): plan changes go through the store receipt flow
-  console.log('[settings] plan →', p);
-  set({ plan: p });
 }
 
 /** full local wipe for "Delete account" — path, scans and XP go with it */

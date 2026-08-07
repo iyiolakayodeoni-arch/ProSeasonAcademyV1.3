@@ -61,16 +61,13 @@ export type BaselineAnalysisKey =
   | 'differently'
   | 'evidence';
 
+// Three focused prompts give a player a useful baseline without turning a
+// five-match week into forty-five essay boxes. Older saved answers are kept;
+// these are simply the questions a new player must answer now.
 export const BASELINE_MOMENT_QUESTIONS: { key: BaselineAnalysisKey; label: string }[] = [
   { key: 'happened', label: 'WHAT HAPPENED?' },
-  { key: 'thinking', label: 'WHAT WERE YOU THINKING IN THAT MOMENT?' },
-  { key: 'feel', label: 'HOW DID YOU FEEL IN THAT MOMENT?' },
-  { key: 'cause', label: 'WHAT DO YOU THINK CAUSED THIS MOMENT?' },
-  { key: 'why', label: 'WHY DID THIS MOMENT TURN AGAINST YOU?' },
-  { key: 'noticed', label: 'WHAT DID YOU NOTICE BEFORE THE DECISION?' },
-  { key: 'missed', label: 'WHAT DID YOU FAIL TO NOTICE?' },
-  { key: 'differently', label: 'WHAT COULD YOU HAVE DONE DIFFERENTLY?' },
-  { key: 'evidence', label: 'WHAT EVIDENCE SUPPORTS YOUR ANSWER?' },
+  { key: 'missed', label: 'WHAT DID YOU MISS OR FAIL TO NOTICE?' },
+  { key: 'differently', label: 'WHAT WILL YOU TRY DIFFERENTLY NEXT TIME?' },
 ];
 
 export const BASELINE_MOMENT_MIN_ANSWER = 8;
@@ -142,7 +139,10 @@ export interface BaselineMatchStats {
 
 export function baselineStatsComplete(s: BaselineMatchStats | null | undefined): boolean {
   if (!s) return false;
-  const required: (keyof BaselineMatchStats)[] = ['possession', 'shots', 'shotsOnTarget', 'passAccuracy', 'corners', 'fouls', 'tackles', 'saves'];
+  // Four universal, easy-to-read stats are enough for the starting card.
+  // The remaining console fields remain supported for historical imports,
+  // but no longer block a new player's first useful review.
+  const required: (keyof BaselineMatchStats)[] = ['possession', 'shots', 'shotsOnTarget', 'passAccuracy'];
   return required.every((k) => typeof s[k] === 'number' && Number.isFinite(s[k] as number));
 }
 

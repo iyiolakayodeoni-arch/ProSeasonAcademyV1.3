@@ -142,7 +142,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     const o = optionForLabel(label);
     if (!o) return;
     setCountryPick(label);
-    // Nigeria shelf only for NG — other Africa labels map to world pricing
+    // Keep the existing regional profile value for member records.
     const geo: 'africa' | 'world' = o.nigeriaShelf
       ? 'africa'
       : o.geo === 'africa' && o.code !== 'NG'

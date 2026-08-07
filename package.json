@@ -51,7 +51,7 @@
     "test:live": "node tests/live-backend.test.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/gradleDeprecations.test.js && node tests/honestyGuard.test.js",
-    "test:ci-smoke": "node tests/stripe-webhook.test.mjs",
+    "test:ci-smoke": "npm run typecheck && npm test",
     "test:ui": "node tests/statRing.test.mjs",
     "storybook": "start-storybook -p 7007 -c .storybook",
     "build-storybook": "build-storybook -c .storybook -o storybook-static",

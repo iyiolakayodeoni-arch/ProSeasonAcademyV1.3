@@ -47,7 +47,6 @@ import {
 } from '../../data/community';
 import { useCloud } from '../../data/cloudSync';
 import * as backend from '../../data/backend';
-import PricingTable from '../PricingTable';
 import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../../theme';
 import { isValidReflection } from '../../data/honestyGuard';
 
@@ -176,7 +175,7 @@ function Dot({ delay }: { delay: number }) {
 
 // ── main component ────────────────────────────────────────────
 
-export default function CommunityTab({ coach }: { coach: Coach }) {
+export default function CommunityTab({ coach, onClose }: { coach: Coach; onClose?: () => void }) {
   const { width: winW } = useWindowDimensions();
   const bandW = Math.min(winW, 430) - 24; // standard card margins are 12 a side
   const st = useCommunityState();
@@ -201,16 +200,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
   const [plusOpen, setPlusOpen] = useState(false);
 
   // ── panels / sheets ──
-  const [founder, setFounder] = useState<backend.FounderWeek | null>(null);
-  const [pricingOpen, setPricingOpen] = useState(false);
-  const [consultLeft, setConsultLeft] = useState<number | null>(null);
-  useEffect(() => {
-    void backend.myConsult().then((qs) => {
-      if (qs) setConsultLeft(qs.filter((q) => !q.answered).length);
-    });
-  }, [pricingOpen]);
-  useEffect(() => { void backend.founderWeek().then(setFounder); }, [cloud.status]);
-
   const [panel, setPanel] = useState<'channels' | 'members' | null>(null);
   const [profileUser, setProfileUser] = useState<UserWithAvatar | null>(null);
 
@@ -301,8 +290,9 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
 
       {/* ── header ── */}
       <View style={styles.header}>
-        <Pressable onPress={() => setPanel(null)} hitSlop={8} style={styles.headerBtn}>
+        <Pressable onPress={() => { if (onClose) onClose(); else setPanel(null); }} hitSlop={8} style={[styles.headerBtn, onClose && styles.headerBackBtn]}>
           <ChevronLeftIcon size={14} color={colors.fg} />
+          {onClose && <Text style={styles.headerBackTxt}>TODAY</Text>}
         </Pressable>
 
         {searchMode ? (
@@ -344,22 +334,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
       <View style={styles.headerRule} />
 
       {/* ── season gate: sold-out season → you train solo until your seat opens ── */}
-      {consultLeft !== null && consultLeft > 0 && (
-        <Pressable onPress={() => setPricingOpen(true)}>
-          <View style={styles.consultBar}>
-            <Text style={styles.consultTag}>THE PRICING TABLE · {consultLeft} LEFT</Text>
-            <Text style={styles.consultTxt}>
-              YOU HELP SET THE PRICE — THE FOUNDER READS EVERY ANSWER ›
-            </Text>
-          </View>
-        </Pressable>
-      )}
-      {founder?.live && (
-        <View style={styles.founderWeek}>
-          <Text style={styles.founderWeekTag}>● THE FOUNDER IS IN THE HALLS</Text>
-          <Text style={styles.founderWeekTxt}>{founder.note}</Text>
-        </View>
-      )}
       {backend.getSeasonGate() ? (
         <View style={styles.gateBanner}>
           <Text style={styles.gateBannerTxt}>
@@ -381,7 +355,7 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
         overlayStyle={{ paddingHorizontal: 13, paddingBottom: 11 }}
       >
         <Text style={{ fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.2, color: colors.primary }}>
-          THE CHINEDU WAY · PEN TO PAPER BEFORE YOU TYPE
+          YOUR REVIEW ROUTINE · PEN TO PAPER BEFORE YOU TYPE
         </Text>
         <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.82)' }}>
           Record & watch · pen your moments first · cool down 24–30m · then log your truth.
@@ -679,12 +653,6 @@ export default function CommunityTab({ coach }: { coach: Coach }) {
           </Animated.View>
         </View>
       )}
-
-      {pricingOpen && (
-        <View style={StyleSheet.absoluteFill}>
-          <PricingTable onClose={() => setPricingOpen(false)} />
-        </View>
-      )}
     </View>
   );
 }
@@ -781,6 +749,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerBackBtn: { width: 68, flexDirection: 'row', gap: 3 },
+  headerBackTxt: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '900', letterSpacing: 1, color: colors.fg },
   titleWrap: { flex: 1 },
   titleCol: { flex: 1 },
   titleChannel: {

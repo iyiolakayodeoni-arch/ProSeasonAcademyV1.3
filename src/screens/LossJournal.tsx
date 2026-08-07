@@ -22,7 +22,7 @@ import HonestyMeter from '../components/HonestyMeter';
 import { isValidReflection } from '../data/honestyGuard';
 
 // ─────────────────────────────────────────────────────────────
-// LOSS JOURNAL SCREEN — one line per loss. Composer at top,
+// LOSS NOTES SCREEN — one line per loss. Composer at top,
 // honest lines below, newest first, stats strip on top.
 // The coach reads every line the moment it lands (his reaction
 // strip appears after you log) — still one-way, still his rules.
@@ -75,7 +75,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         style={{ marginTop: -50, marginHorizontal: -16 }}
       >
         <Text style={styles.eyebrow}>{coachFirst}'S RULE — ONE LINE PER LOSS</Text>
-        <Text style={styles.bandTitle}>LOSS JOURNAL</Text>
+        <Text style={styles.bandTitle}>LOSS NOTES</Text>
         <Text style={styles.subtitle}>NOT A DIARY — A PATTERN HE CAN FIX</Text>
       </ArtBand>
 
@@ -96,7 +96,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         </View>
       </View>
 
-      {/* ── THE CHINEDU WAY: LOSS JOURNAL PHILOSOPHY ── */}
+      {/* ── THE CHINEDU WAY: LOSS NOTES PHILOSOPHY ── */}
       <View style={[styles.ruleStrip, { borderColor: 'rgba(57,255,106,0.35)', backgroundColor: 'rgba(57,255,106,0.04)', flexDirection: 'column', alignItems: 'flex-start' }]}>
         <Text style={[styles.ruleTxt, { color: colors.primary, fontSize: 8, fontWeight: '800' }]}>
           THE CHINEDU WAY · HOW YOU LOG A LOSS
@@ -163,7 +163,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
       {/* rule strip */}
       <View style={styles.ruleStrip}>
         <JournalIcon size={13} color="#57d07c" />
-        <Text style={styles.ruleTxt}>THE CHINEDU WAY — PEN YOUR LOSS ON PAPER FIRST, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR ONE HONEST LINE INTO YOUR DATABASE</Text>
+        <Text style={styles.ruleTxt}>YOUR REVIEW ROUTINE — PEN YOUR LOSS ON PAPER FIRST, COOL DOWN FOR 24–30 MINS, THEN TYPE ONE HONEST LINE</Text>
       </View>
 
       {/* entries */}

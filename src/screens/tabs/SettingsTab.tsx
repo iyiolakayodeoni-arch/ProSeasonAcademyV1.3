@@ -18,7 +18,6 @@ import * as backend from '../../data/backend';
 import { DEVICE_LABEL } from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import { resetOnboarding } from '../../data/onboarding';
-import { resetFoundersWeekForDev } from '../../data/foundersWeek';
 import OnboardingScreen from '../OnboardingScreen';
 import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
@@ -26,15 +25,12 @@ import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
 import { setNotifPref, getQuietHours, setQuietHours, QuietHours, syncPushRegistration, registerForPush, cancelBaselineUnlocks } from '../../data/notifications';
 import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
-import StoreSheet from '../StoreSheet';
 import ContactSheet from '../ContactSheet';
 import {
-  PLANS,
   PLATFORMS,
   REGIONS,
   daysInAcademy,
   setDisplayName,
-  setPlan,
   setPlatform,
   setRegion,
   setToggle,
@@ -58,7 +54,6 @@ import {
   PencilIcon,
   PersonIcon,
   PinIcon,
-  PlanIcon,
   RouteIcon,
   ScanGlyphIcon,
   TrashIcon,
@@ -72,7 +67,6 @@ type SheetKind =
   | 'edit'
   | 'platform'
   | 'region'
-  | 'plan'
   | 'password'
   | 'help'
   | 'logout'
@@ -153,10 +147,12 @@ export default function SettingsTab({
   coach,
   onSignOut,
   onOpenJourney,
+  onOpenGuide,
 }: {
   coach: Coach;
   onSignOut: () => void;
   onOpenJourney: () => void;
+  onOpenGuide: () => void;
 }) {
   const s = useSettings();
   const progress = useJourneyProgress();
@@ -167,6 +163,9 @@ export default function SettingsTab({
   const [ticketOpen, setTicketOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [deleteArmed, setDeleteArmed] = useState(false);
+  // The account page opens with only the decisions a member needs. Less-used
+  // delivery, sound and device controls live behind one deliberate reveal.
+  const [showControls, setShowControls] = useState(false);
 
   // ── THE FOUNDER'S DOOR — tap the version line 5× ──
   const [taps, setTaps] = useState(0);
@@ -177,7 +176,6 @@ export default function SettingsTab({
   const [founderKey, setFounderKey] = useState<string | null>(null);
   const [founderAllowed, setFounderAllowed] = useState(false);
   const [deskOpen, setDeskOpen] = useState(false);
-  const [tillOpen, setTillOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [unreadAcademy, setUnreadAcademy] = useState(0);
   const [academyToken, setAcademyToken] = useState<string | null>(null);
@@ -264,7 +262,7 @@ export default function SettingsTab({
         <Animated.View entering={FadeInUp.duration(320)}>
           <ArtBand source={LOCKERS} width={bandW} height={104} style={styles.setBand} warmAt={{ x: bandW * 0.5, y: 30, r: bandW * 0.55 }}>
             <Text style={styles.title} numberOfLines={1}>SETTINGS</Text>
-            <Text style={styles.subtitle}>YOUR ACCOUNT · YOUR JOURNEY · YOUR NOISE LEVEL</Text>
+            <Text style={styles.subtitle}>YOUR PROFILE · YOUR PROGRESS · YOUR NOISE LEVEL</Text>
           </ArtBand>
           <View style={styles.topLine}>
             <View>
@@ -313,7 +311,7 @@ export default function SettingsTab({
               <Text style={styles.profileName}>{s.displayName}</Text>
               <Text style={styles.profileId}>ACADEMY ID · {s.academyId}</Text>
               <Text style={styles.profilePath}>
-                {pathDone ? `PATH COMPLETE — WALKED ${coachShort}'S WAY` : `STAGE ${stageN} — WALKING ${coachShort}'S PATH`}
+                {pathDone ? `PROGRESS COMPLETE — YOUR RECEIPTS ARE IN` : `CHAPTER ${stageN} — YOUR PROGRESS`}
               </Text>
             </View>
           </View>
@@ -346,12 +344,12 @@ export default function SettingsTab({
 
         {/* ── coach & journey ── */}
         <Animated.View entering={FadeInUp.delay(120).duration(340)}>
-          <Text style={styles.sectionLabel}>COACH & JOURNEY</Text>
+          <Text style={styles.sectionLabel}>COACH & PROGRESS</Text>
           <View style={styles.card}>
             <Row
               icon={<PersonIcon size={16} color="#57d07c" />}
               title="Your Coach"
-              sub="SWITCHING RESETS YOUR PATH PROGRESS"
+              sub="YOUR VOICE & ACCOUNTABILITY PARTNER THIS SEASON"
               right={
                 <View style={styles.valueRow}>
                   <Image source={coach.portrait} style={styles.coachChip} />
@@ -363,8 +361,8 @@ export default function SettingsTab({
             />
             <Row
               icon={<RouteIcon size={16} color="#57d07c" />}
-              title="Current Stage"
-              sub={pathDone ? '6 OF 6 · PATH COMPLETE' : `${stageN} OF ${SEASON.totalStages} · ${stage?.key ?? ''}`}
+              title="Current Chapter"
+              sub={pathDone ? '6 OF 6 · PROGRESS COMPLETE' : `${stageN} OF ${SEASON.totalStages} · ${stage?.key ?? ''}`}
               right={
                 <View style={styles.valueRow}>
                   <Text style={styles.valueTxt}>{pathDone ? 'COMPLETE' : 'IN PROGRESS'}</Text>
@@ -374,14 +372,21 @@ export default function SettingsTab({
               onPress={onOpenJourney}
             />
             <Row
+              icon={<HelpIcon size={15} color="#f2c078" />}
+              title="How the Academy works"
+              sub="PLAY ONE MATCH · REVIEW IT · CARRY ONE LESSON"
+              right={<Chevron />}
+              onPress={onOpenGuide}
+            />
+            <Row
               icon={<ScanGlyphIcon size={15} color="#57d07c" />}
-              title="The Chinedu Way ritual"
-              sub="PEN TO PAPER · 24–30 MIN COOL-DOWN BEFORE TYPING"
+              title="Auto-check new evidence"
+              sub="CHECK EVIDENCE AFTER A MATCH REVIEW"
               right={<Toggle on={s.toggles.matchScanAutoRead} onFlip={() => flip('matchScanAutoRead')} />}
             />
             <Row
               icon={<JournalIcon size={15} color="#57d07c" />}
-              title="Loss Journal"
+              title="Loss Notes"
               sub={`${coachShort}'S RULE — LOG ONE LINE PER LOSS`}
               right={<Toggle on={s.toggles.lossJournal} onFlip={() => flip('lossJournal')} />}
               last
@@ -389,9 +394,47 @@ export default function SettingsTab({
           </View>
         </Animated.View>
 
+        {/* ── only the account actions that matter day-to-day ── */}
+        <Animated.View entering={FadeInUp.delay(165).duration(340)}>
+          <Text style={styles.sectionLabel}>ACCOUNT & SUPPORT</Text>
+          <View style={styles.card}>
+            <Row
+              icon={<LockIcon size={14} color="#57d07c" />}
+              title="Security"
+              sub="PASSWORD, SEAT AND ACADEMY TOKEN"
+              right={<Chevron />}
+              onPress={() => open('password')}
+            />
+            <Row
+              icon={<HelpIcon size={15} color="#57d07c" />}
+              title="Help & support"
+              sub="HOW THE PRACTICE WORKS · BUGS · A HUMAN"
+              right={<Chevron />}
+              onPress={() => open('help')}
+            />
+            <Row
+              icon={<AtIcon size={15} color="#f2c078" />}
+              title="Contact the founder"
+              sub={unreadAcademy > 0 ? 'YOU HAVE A MESSAGE FROM THE ACADEMY' : 'PRIVATE LINE — QUESTIONS, IDEAS, BUGS'}
+              right={unreadAcademy > 0 ? <View style={styles.unreadDot}><Text style={styles.unreadTxt}>{unreadAcademy}</Text></View> : <Chevron />}
+              onPress={() => { setContactOpen(true); void backend.markAcademyRead(); }}
+            />
+            <Row
+              icon={<GamepadIcon size={15} color="#57d07c" />}
+              title={showControls ? 'Hide extra controls' : 'More controls'}
+              sub="NOTIFICATIONS, SOUND AND DEVICE OPTIONS"
+              right={<Chevron />}
+              onPress={() => setShowControls((value) => !value)}
+              last
+            />
+          </View>
+        </Animated.View>
+
+        {showControls && (
+          <>
         {/* ── the academy manifesto: the chinedu way ── */}
         <Animated.View entering={FadeInUp.delay(170).duration(340)}>
-          <Text style={styles.sectionLabel}>ACADEMY MANIFESTO — THE CHINEDU WAY</Text>
+          <Text style={styles.sectionLabel}>REVIEW ROUTINE</Text>
           <View style={[styles.card, { padding: 14, borderColor: 'rgba(57,255,106,0.35)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
             <Text style={[styles.profileName, { fontSize: 11, color: colors.primary }]}>
               THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE
@@ -418,13 +461,13 @@ export default function SettingsTab({
             />
             <Row
               icon={<ScanGlyphIcon size={15} color="#57d07c" />}
-              title="Match Scan results"
+              title="Match Review results"
               sub="PING YOU THE SECOND YOUR SCAN LANDS"
               right={<Toggle on={s.toggles.matchScanResults} onFlip={() => flip('matchScanResults')} />}
             />
             <Row
               icon={<FilmIcon size={15} color="#57d07c" />}
-              title="Film Room live alerts"
+              title="Coach Screen live alerts"
               sub="WHEN A COACH GOES LIVE IN THE ROOM"
               right={<Toggle on={s.toggles.filmRoomAlerts} onFlip={() => flip('filmRoomAlerts')} />}
             />
@@ -491,7 +534,7 @@ export default function SettingsTab({
             <Row
               icon={<BroadcastIcon size={15} color="#57d07c" />}
               title="Sound effects"
-              sub="TAPS, BUBBLE POPS, THE WHISTLE, THE TILL — THE BANTER"
+              sub="TAPS, BUBBLE POPS AND THE WHISTLE"
               right={<Toggle on={s.toggles.soundFx} onFlip={() => flip('soundFx')} />}
               last
             />
@@ -527,25 +570,6 @@ export default function SettingsTab({
               onPress={() => open('region')}
             />
             <Row
-              icon={<PlanIcon size={15} color="#57d07c" />}
-              title="Academy plan"
-              sub={s.plan === 'PRO' ? 'FULL ACCESS · ALL COACHES · ALL SCANS' : 'FREE TIER · ONE COACH · WEEKLY SCANS'}
-              right={
-                <View style={styles.valueRow}>
-                  <Text style={[styles.valueTxt, s.plan === 'PRO' && { color: colors.accent }]}>{s.plan}</Text>
-                  <Chevron />
-                </View>
-              }
-              onPress={() => open('plan')}
-            />
-            <Row
-              icon={<PlanIcon size={15} color="#f2c078" />}
-              title="THE TILL"
-              sub="CREDITS · PRO · YOUR ACADEMY WALLET"
-              right={<Chevron />}
-              onPress={() => setTillOpen(true)}
-            />
-            <Row
               icon={<LockIcon size={14} color="#57d07c" />}
               title="Password & security"
               right={<Chevron />}
@@ -554,7 +578,7 @@ export default function SettingsTab({
             <Row
               icon={<HelpIcon size={15} color="#57d07c" />}
               title="Help & support"
-              sub="BUGS · BILLING · TALK TO A HUMAN"
+              sub="BUGS · QUESTIONS · TALK TO A HUMAN"
               right={<Chevron />}
               onPress={() => open('help')}
             />
@@ -577,6 +601,9 @@ export default function SettingsTab({
           </View>
         </Animated.View>
 
+          </>
+        )}
+
         {/* ── danger zone ── */}
         <Animated.View entering={FadeInUp.delay(300).duration(340)}>
           <Text style={[styles.sectionLabel, { color: 'rgba(224,96,92,0.75)' }]}>DANGER ZONE</Text>
@@ -584,7 +611,7 @@ export default function SettingsTab({
             <Row
               icon={<LogoutIcon size={15} color={colors.loss} />}
               title="Log out"
-              sub="YOUR JOURNEY WAITS — IT PATIENTLY JUDGES"
+              sub="YOUR PROGRESS WAITS FOR YOU"
               right={<ChevronRightIcon size={13} color="rgba(224,96,92,0.6)" />}
               onPress={() => open('logout')}
               danger
@@ -592,7 +619,7 @@ export default function SettingsTab({
             <Row
               icon={<TrashIcon size={15} color={colors.loss} />}
               title="Delete account"
-              sub="PATH, SCANS AND XP GO WITH IT — NO UNDO"
+              sub="MATCH HISTORY, NOTES AND XP GO WITH IT — NO UNDO"
               right={<ChevronRightIcon size={13} color="rgba(224,96,92,0.6)" />}
               onPress={() => open('delete')}
               danger
@@ -693,24 +720,6 @@ export default function SettingsTab({
               </View>
             )}
 
-            {sheet === 'plan' && (
-              <View>
-                <Text style={styles.sheetEyebrow}>ACADEMY PLAN</Text>
-                {PLANS.map((p) => (
-                  <OptionRow
-                    key={p}
-                    label={p}
-                    sub={p === 'PRO' ? 'FULL ACCESS · ALL COACHES · ALL SCANS' : 'FREE TIER · ONE COACH · WEEKLY SCANS'}
-                    active={s.plan === p}
-                    accent={p === 'PRO'}
-                    onPress={() => setPlan(p)}
-                  />
-                ))}
-                <Text style={styles.sheetFootnote}>PLAN CHANGES APPLY INSTANTLY · BILLING SEAM LOGGED TO CONSOLE</Text>
-                <SheetButton label="DONE" onPress={close} ghost />
-              </View>
-            )}
-
             {sheet === 'password' && (
               <View>
                 <Text style={styles.sheetEyebrow}>SECURITY</Text>
@@ -745,11 +754,19 @@ export default function SettingsTab({
             {sheet === 'help' && (
               <View>
                 <Text style={styles.sheetEyebrow}>HELP & SUPPORT</Text>
-                <Text style={styles.sheetTitle}>BUGS · BILLING · A HUMAN</Text>
-                <FaqRow q="HOW DO I CLEAR A STAGE?" a="OPEN THE STAGE AND START A MIRROR SESSION — INTENTION, MATCH, CHECKPOINTS, REVIEW, ONE LESSON. THE STAGE GRADES YOUR EVIDENCE." />
-                <FaqRow q="MY SCAN DIDN'T LAND" a="SCANS ARRIVE WITH YOUR NEXT RANKED MATCH. IF 24H PASS, PING US." />
+                <Text style={styles.sheetTitle}>START WITH THE NEXT MATCH</Text>
+                <FaqRow q="WHAT DO I DO ON HOME?" a="LOOK FOR THE GREEN MATCH REVIEW BUTTON. IF YOU HAVE OR JUST FINISHED A REAL MATCH, TAP IT. IF YOU DO NOT, YOU ARE NOT BEHIND — COME BACK AFTER THE MATCH." />
+                <FaqRow q="HOW DO I COMPLETE A CHAPTER?" a="A CHAPTER MOVES WHEN YOUR MATCH RECEIPTS MEET ITS EVIDENCE TARGETS. THE MATCH REVIEW HELPS YOU CREATE THE EVIDENCE; PROGRESS SHOWS WHAT IS STILL NEEDED." />
+                <FaqRow q="DO I NEED TO USE EVERY FEATURE?" a="NO. THE CORE IS PLAY, REVIEW, CARRY. NEWS, COMMUNITY AND ADVANCED TRACKING ARE OPTIONAL SUPPORT TOOLS." />
                 <FaqRow q="CAN I SWITCH COACHES?" a="NO — THE PATH LOCK IS PERMANENT. THAT'S THE ACADEMY." />
                 <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE, AND MIRRORED TO YOUR ACADEMY SEAT WHEN YOU HAVE SIGNAL." />
+                <SheetButton
+                  label="READ THE STEP-BY-STEP GUIDE"
+                  onPress={() => {
+                    close();
+                    onOpenGuide();
+                  }}
+                />
                 <SheetButton
                   label="TOUR THE ACADEMY"
                   onPress={() => {
@@ -800,7 +817,6 @@ export default function SettingsTab({
                     await wipeThread();
                     await wipeMirror();
                     await resetOnboarding(); // a brand-new account gets the tour again
-                    await resetFoundersWeekForDev();
                     await cancelBaselineUnlocks(); // no unlock nags for a dead account
                     await wipeSession();
                     backend.cloudReset();
@@ -842,13 +858,6 @@ export default function SettingsTab({
       {contactOpen && (
         <View style={StyleSheet.absoluteFill}>
           <ContactSheet onClose={() => setContactOpen(false)} />
-        </View>
-      )}
-
-      {/* ── THE TILL ── */}
-      {tillOpen && (
-        <View style={StyleSheet.absoluteFill}>
-          <StoreSheet onClose={() => setTillOpen(false)} />
         </View>
       )}
 

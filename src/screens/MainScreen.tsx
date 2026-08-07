@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -12,6 +13,8 @@ import Animated, {
 import LogoMark from '../components/LogoMark';
 import TabBar, { MainTab } from '../components/TabBar';
 import HomeTab from './tabs/HomeTab';
+import AcademyUpdatesScreen from './AcademyUpdatesScreen';
+import AcademyGuideScreen from './AcademyGuideScreen';
 import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
@@ -25,7 +28,6 @@ import * as backend from '../data/backend';
 import { useOnboardingGate } from '../data/onboarding';
 import { usePushRegistration } from '../data/notifications';
 import { fetchAnnouncements } from '../data/announcements';
-import LapsedGate from './LapsedGate';
 import TermsSheet from './TermsSheet';
 import { sfx } from '../audio/sound';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -44,16 +46,11 @@ type RoomState = { stage: JourneyStage; origin: StageOrigin };
 // the node ZOOMS open into the Coaching Screen (shared-element style),
 // and the back chevron zooms straight back out onto the map.
 export default function MainScreen({ coach, onSignOut }: Props) {
-  const [access, setAccess] = useState<backend.MyAccess | null>(null);
   const [tos, setTos] = useState<backend.MyTos | null>(null);
   const checkTos = useCallback(() => { void backend.myTos().then(setTos); }, []);
   useEffect(checkTos, [checkTos]);
-  const checkAccess = useCallback(() => {
-    void backend.myAccess().then((a) => setAccess(a));
-  }, []);
-  useEffect(checkAccess, [checkAccess]);
 
-  const [tab, setTabState] = useState<MainTab>('home');
+  const [tab, setTabState] = useState<MainTab>('today');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
   const onboard = useOnboardingGate();
   usePushRegistration(true);
@@ -67,9 +64,36 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     setTabState(t);
   }, []);
 
+  // Secondary destinations are available, but deliberately do not compete
+  // with the core Today → Mirror Session journey in the primary tab bar.
+  const [updatesOpen, setUpdatesOpen] = useState(false);
+  const [hallsOpen, setHallsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
+  const guideKey = useMemo(() => `psa.plain-language-guide.v1.${backend.getMe()?.id ?? 'anon'}`, []);
+
+  // A player should never have to discover the product by wandering around
+  // the tabs. The first Home entry opens the plain-language guide; it stays
+  // replayable from Today and Settings afterwards.
+  useEffect(() => {
+    let alive = true;
+    void AsyncStorage.getItem(guideKey)
+      .then((seen) => {
+        if (alive && seen !== 'seen') setGuideOpen(true);
+      })
+      .catch(() => {
+        if (alive) setGuideOpen(true);
+      });
+    return () => { alive = false; };
+  }, [guideKey]);
+
+  const closeGuide = useCallback(() => {
+    setGuideOpen(false);
+    void AsyncStorage.setItem(guideKey, 'seen').catch(() => {});
+  }, [guideKey]);
+
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
-  useAmbientAudio(room ? 'film-room' : tab === 'community' ? 'community' : 'home');
+  useAmbientAudio(room ? 'film-room' : hallsOpen ? 'community' : 'home');
   const zoom = useSharedValue(0);
   const { width: W, height: H } = useWindowDimensions();
   const ox = room?.origin.x ?? W / 2;
@@ -116,15 +140,10 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     opacity: interpolate(zoom.value, [0.3, 0.8], [0, 1]),
   }));
 
-  // the terms come first — nobody is ever removed wondering why
+  // The terms come first. Training is never blocked — members can always
+  // return to their own evidence.
   if (tos && !tos.accepted) {
-    return <TermsSheet onAccepted={() => { checkTos(); checkAccess(); }} />;
-  }
-
-  // paid-only academy: a lapsed pass closes the floor. Nothing is
-  // deleted — the gate explains that and keeps the contact line open.
-  if (access && access.paidOnly && access.state === 'lapsed') {
-    return <LapsedGate coach={coach} access={access} onRecheck={checkAccess} />;
+    return <TermsSheet onAccepted={checkTos} />;
   }
 
   // first-time walkthrough — short cards, skip anytime
@@ -142,9 +161,16 @@ export default function MainScreen({ coach, onSignOut }: Props) {
       <View style={styles.body}>
         {/* each tab is its own boundary — one tab crashing shows a reload
             card instead of taking the whole app down */}
-        {tab === 'home' && (
-          <ErrorBoundary key="home">
-            <HomeTab coach={coach} />
+        {tab === 'today' && (
+          <ErrorBoundary key="today">
+            <HomeTab
+              coach={coach}
+              onOpenStage={openStage}
+              onOpenJourney={() => setTab('journey')}
+              onOpenUpdates={() => setUpdatesOpen(true)}
+              onOpenHalls={() => setHallsOpen(true)}
+              onOpenGuide={() => setGuideOpen(true)}
+            />
           </ErrorBoundary>
         )}
         {tab === 'journey' && (
@@ -152,37 +178,17 @@ export default function MainScreen({ coach, onSignOut }: Props) {
             <JourneyTab coach={coach} onOpenStage={openStage} />
           </ErrorBoundary>
         )}
-        {tab === 'community' && (
-          <ErrorBoundary key="community">
-            <CommunityTab coach={coach} />
-          </ErrorBoundary>
-        )}
         {tab === 'settings' && (
           <ErrorBoundary key="settings">
-            <SettingsTab coach={coach} onSignOut={onSignOut} onOpenJourney={() => setTab('journey')} />
+            <SettingsTab
+              coach={coach}
+              onSignOut={onSignOut}
+              onOpenJourney={() => setTab('journey')}
+              onOpenGuide={() => setGuideOpen(true)}
+            />
           </ErrorBoundary>
         )}
       </View>
-
-      {tos?.deadlineAt != null && access?.state !== 'lapsed' && (() => {
-        const d = Math.max(0, Math.ceil((tos.deadlineAt! - Date.now()) / 86400000));
-        if (d > 7) return null;
-        return (
-          <View style={styles.deadlineBar}>
-            <Text style={styles.deadlineTxt}>
-              {d === 0 ? 'YOUR SEAT IS DECIDED TODAY' : `${d} DAY${d === 1 ? '' : 'S'} TO TAKE A PLAN`} — SETTINGS › THE TILL
-            </Text>
-          </View>
-        );
-      })()}
-
-      {access?.state === 'grace' && (
-        <View style={styles.graceBar}>
-          <Text style={styles.graceTxt}>
-            PASS EXPIRED · {access.graceLeft} DAY{access.graceLeft === 1 ? '' : 'S'} OF GRACE LEFT — RENEW TO KEEP GOING
-          </Text>
-        </View>
-      )}
 
       <TabBar active={tab} onChange={setTab} />
 
@@ -200,16 +206,30 @@ export default function MainScreen({ coach, onSignOut }: Props) {
           </Animated.View>
         </View>
       )}
+
+      {updatesOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <AcademyUpdatesScreen coach={coach} onClose={() => setUpdatesOpen(false)} />
+        </View>
+      )}
+
+      {hallsOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <CommunityTab coach={coach} onClose={() => setHallsOpen(false)} />
+        </View>
+      )}
+
+      {guideOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <AcademyGuideScreen onClose={closeGuide} />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
-  deadlineBar: { backgroundColor: 'rgba(224,96,92,0.92)', paddingVertical: 6, paddingHorizontal: 12 },
-  deadlineTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: '#fff', textAlign: 'center' },
-  graceBar: { backgroundColor: 'rgba(242,192,120,0.92)', paddingVertical: 6, paddingHorizontal: 12 },
-  graceTxt: { fontFamily: monoFont, fontSize: 6, fontWeight: '900', letterSpacing: 1.2, color: '#2a1410', textAlign: 'center' },
   crestWrap: { alignItems: 'center', height: 36, justifyContent: 'center' },
   body: { flex: 1, minHeight: 0 },
 

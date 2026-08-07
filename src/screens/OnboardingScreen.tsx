@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
 import ArtBand from '../components/ArtBand';
 import { ONBOARD_CARDS } from '../data/onboarding';
@@ -49,14 +49,9 @@ export default function OnboardingScreen({ onDone }: Props) {
           }}
           style={({ pressed }) => [styles.cta, pressed && { opacity: 0.8 }]}
         >
-          <Text style={styles.ctaTxt}>{last ? 'ENTER THE FLOOR ›' : 'NEXT ›'}</Text>
+          <Text style={styles.ctaTxt}>{last ? 'SHOW ME WHAT TO DO ›' : 'NEXT ›'}</Text>
         </Pressable>
 
-        <Pressable onPress={onDone} hitSlop={10}>
-          <Animated.View entering={FadeIn.delay(200)}>
-            <Text style={styles.skip}>SKIP TOUR — I'LL FIND MY WAY</Text>
-          </Animated.View>
-        </Pressable>
       </View>
     </View>
   );
@@ -133,12 +128,5 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     letterSpacing: 1.2,
     color: colors.primary,
-  },
-  skip: {
-    marginTop: 16,
-    textAlign: 'center',
-    fontFamily: bodyFont,
-    fontSize: 11.5,
-    color: colors.muted,
   },
 });
