@@ -25,6 +25,7 @@ type Props = {
   onOpenJourney: () => void;
   onOpenUpdates: () => void;
   onOpenHalls: () => void;
+  onOpenGuide: () => void;
 };
 
 function ObjectiveRow({ stage, index, done, target }: { stage: JourneyStage; index: number; done: number; target: number }) {
@@ -42,7 +43,7 @@ function ObjectiveRow({ stage, index, done, target }: { stage: JourneyStage; ind
   );
 }
 
-export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdates, onOpenHalls }: Props) {
+export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdates, onOpenHalls, onOpenGuide }: Props) {
   const { width: windowWidth } = useWindowDimensions();
   const contentWidth = Math.min(windowWidth, 430) - 32;
   const settings = useSettings();
@@ -104,6 +105,10 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
           <Text style={styles.definitionCopy}>
             Play a real FC console match. Review it in your own words. Carry one useful lesson into the next one.
           </Text>
+          <Pressable onPress={onOpenGuide} hitSlop={8} style={styles.guideLink}>
+            <Text style={styles.guideLinkTxt}>NEW HERE? READ THE 60-SECOND GUIDE</Text>
+            <ChevronRightIcon size={12} color={colors.primary} />
+          </Pressable>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(50).duration(320)} style={styles.nextCard}>
@@ -134,6 +139,15 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
                   target={item.target}
                 />
               ))}
+            </View>
+          )}
+
+          {!isComplete && (
+            <View style={styles.mirrorExplainer}>
+              <Text style={styles.mirrorExplainerTitle}>WHAT IS A MIRROR SESSION?</Text>
+              <Text style={styles.mirrorExplainerCopy}>
+                A short match review: choose one focus, notice the pattern, then write one lesson. It does not tell you what to think.
+              </Text>
             </View>
           )}
 
@@ -266,6 +280,8 @@ const styles = StyleSheet.create({
   definitionStrip: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.primary, paddingLeft: 11, paddingRight: 8 },
   definitionTitle: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.8, color: colors.primary },
   definitionCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 12.3, lineHeight: 18, color: '#c3d4c7' },
+  guideLink: { marginTop: 10, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2 },
+  guideLinkTxt: { fontFamily: bodyFontHeavy, fontSize: 9.2, letterSpacing: 1.2, color: colors.primary },
   nextCard: { marginTop: 15, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.48)', borderRadius: 16, padding: 14, backgroundColor: 'rgba(13,25,16,0.92)', shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   nextTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   cardKicker: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
@@ -282,6 +298,9 @@ const styles = StyleSheet.create({
   objectiveLabelDone: { color: 'rgba(143,184,155,0.58)' },
   objectiveCount: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 0.6, color: colors.accent },
   objectiveCountDone: { color: colors.primary },
+  mirrorExplainer: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: 9, paddingRight: 2 },
+  mirrorExplainerTitle: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  mirrorExplainerCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 10.8, lineHeight: 15.5, color: '#d5d9c9' },
   primaryBtn: { marginTop: 15, minHeight: 49, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, paddingHorizontal: 12 },
   primaryBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.3, color: '#07110a' },
   primaryHint: { marginTop: 8, textAlign: 'center', fontFamily: bodyFont, fontSize: 10.5, color: colors.muted },

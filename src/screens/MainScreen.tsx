@@ -13,6 +13,7 @@ import LogoMark from '../components/LogoMark';
 import TabBar, { MainTab } from '../components/TabBar';
 import HomeTab from './tabs/HomeTab';
 import AcademyUpdatesScreen from './AcademyUpdatesScreen';
+import AcademyGuideScreen from './AcademyGuideScreen';
 import JourneyTab from './tabs/JourneyTab';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
@@ -72,6 +73,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   // with the core Today → Mirror Session journey in the primary tab bar.
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [hallsOpen, setHallsOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -156,6 +158,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
               onOpenJourney={() => setTab('journey')}
               onOpenUpdates={() => setUpdatesOpen(true)}
               onOpenHalls={() => setHallsOpen(true)}
+              onOpenGuide={() => setGuideOpen(true)}
             />
           </ErrorBoundary>
         )}
@@ -166,7 +169,12 @@ export default function MainScreen({ coach, onSignOut }: Props) {
         )}
         {tab === 'settings' && (
           <ErrorBoundary key="settings">
-            <SettingsTab coach={coach} onSignOut={onSignOut} onOpenJourney={() => setTab('journey')} />
+            <SettingsTab
+              coach={coach}
+              onSignOut={onSignOut}
+              onOpenJourney={() => setTab('journey')}
+              onOpenGuide={() => setGuideOpen(true)}
+            />
           </ErrorBoundary>
         )}
       </View>
@@ -217,6 +225,12 @@ export default function MainScreen({ coach, onSignOut }: Props) {
       {hallsOpen && (
         <View style={StyleSheet.absoluteFill}>
           <CommunityTab coach={coach} onClose={() => setHallsOpen(false)} />
+        </View>
+      )}
+
+      {guideOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <AcademyGuideScreen onClose={() => setGuideOpen(false)} />
         </View>
       )}
     </View>

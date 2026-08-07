@@ -1,5 +1,7 @@
 # ProSeasonAcademy — product focus
 
+> **Founder version:** Read [`FOUNDER_BRIEF.md`](./FOUNDER_BRIEF.md) for the plain-language product story, feature hierarchy, and positioning.
+
 ## The one-line definition
 
 **ProSeasonAcademy helps an EA SPORTS FC console player turn one played match into one honest lesson to carry into the next match.**

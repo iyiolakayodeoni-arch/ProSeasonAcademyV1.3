@@ -153,10 +153,12 @@ export default function SettingsTab({
   coach,
   onSignOut,
   onOpenJourney,
+  onOpenGuide,
 }: {
   coach: Coach;
   onSignOut: () => void;
   onOpenJourney: () => void;
+  onOpenGuide: () => void;
 }) {
   const s = useSettings();
   const progress = useJourneyProgress();
@@ -375,6 +377,13 @@ export default function SettingsTab({
                 </View>
               }
               onPress={onOpenJourney}
+            />
+            <Row
+              icon={<HelpIcon size={15} color="#f2c078" />}
+              title="How the Academy works"
+              sub="PLAY ONE MATCH · REVIEW IT · CARRY ONE LESSON"
+              right={<Chevron />}
+              onPress={onOpenGuide}
             />
             <Row
               icon={<ScanGlyphIcon size={15} color="#57d07c" />}

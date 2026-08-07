@@ -6,7 +6,7 @@
 
 > **The product in one sentence:** ProSeasonAcademy helps an EA SPORTS FC console player turn one played match into one honest lesson to carry into the next match.
 >
-> The member-facing app is now organised around that loop: **Play → Review → Carry**. Today and the Mirror Session are primary; updates, community, advanced stats, and payments are secondary utilities. See **[`PRODUCT_FOCUS.md`](./PRODUCT_FOCUS.md)** before adding another feature or screen.
+> The member-facing app is now organised around that loop: **Play → Review → Carry**. Today and the Mirror Session are primary; updates, community, advanced stats, and payments are secondary utilities. See **[`PRODUCT_FOCUS.md`](./PRODUCT_FOCUS.md)** before adding another feature or screen, and **[`FOUNDER_BRIEF.md`](./FOUNDER_BRIEF.md)** for the plain-language founder story.
 
 You lock in **one coach — permanently** — as your voice, guide and accountability presence on a
 **universal six-stage development journey** (See Yourself → Control Yourself → Read the Game →
