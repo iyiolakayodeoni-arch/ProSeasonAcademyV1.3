@@ -163,7 +163,7 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.stepsLabel}>HOW THIS WEEK RUNS</Text>
               <Text style={styles.stepLine}>1. TOUR — 60 sec · how tracking + the card works</Text>
               <Text style={styles.stepLine}>2. PRICING IN COMMUNITY — I start per region, you make it fair</Text>
-              <Text style={styles.stepLine}>3. BEFORE LAUNCH DATE — 3 days to pay and continue</Text>
+              <Text style={styles.stepLine}>3. 3 DAYS AFTER LAUNCH TO PAY AND CONTINUE</Text>
             </View>
             <Pressable onPress={welcomeNext} style={styles.cta}><Text style={styles.ctaTxt}>ENTER FOUNDERS WEEK ›</Text></Pressable>
           </Animated.View>
@@ -211,16 +211,16 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
             <Text style={styles.eyebrow}>FOUNDERS WEEK · WHAT HAPPENS NEXT</Text>
             <View style={[styles.statusBox, isActive && styles.statusOk, isGrace && styles.statusGrace]}>
               <Text style={styles.statusLabel}>
-                {isActive ? 'YOU ARE ACTIVE' : isGrace ? `${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} LEFT BEFORE LAUNCH` : isPriced ? 'PRICE IS SET — PAY BEFORE LAUNCH' : 'FOUNDER IS REVIEWING THE HALLS'}
+                {isActive ? 'YOU ARE ACTIVE' : isGrace ? `${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} LEFT AFTER LAUNCH` : isPriced ? 'PRICE IS SET — PAY WITHIN 3 DAYS AFTER LAUNCH' : 'FOUNDER IS REVIEWING THE HALLS'}
               </Text>
               <Text style={styles.statusBody}>
                 {isActive
                   ? 'Your pass is active. Founders Week is complete — the floor is yours.'
                   : isGrace
-                  ? `You have ${graceLeft} day${graceLeft === 1 ? '' : 's'} left before the launch date to pay — nothing is deleted, but access closes after that.`
+                  ? `Launch has happened. You have ${graceLeft} day${graceLeft === 1 ? '' : 's'} left after launch to pay — nothing is deleted, but access closes after that.`
                   : isPriced
-                  ? 'The founder has set the prices. New players will pay to enter after the launch date. As a founders-week member you have 3 days before launch to claim your pass.'
-                  : 'You’ve shared your thoughts. The founder is reading every message. Before the launch date is set, you’ll be notified in the app and in the halls.'}
+                  ? 'The founder has set the prices. New players will pay to enter. You have 3 days after launch to claim your founders pass.'
+                  : 'You’ve shared your thoughts. The founder is reading every message. Before the launch date, you’ll be notified in the app and in the halls.'}
               </Text>
             </View>
 
@@ -233,21 +233,21 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
                     <Text style={styles.priceDisplay}>{p.display}</Text>
                   </View>
                 ))}
-                {livePrices.length > 4 && <Text style={styles.priceMore}>+ {livePrices.length - 4} more before launch</Text>}
+                {livePrices.length > 4 && <Text style={styles.priceMore}>+ {livePrices.length - 4} more after launch</Text>}
               </View>
             )}
 
             {!isActive && (
               <View style={styles.graceBox}>
-                <Text style={styles.graceLabel}>BEFORE LAUNCH DATE — 3 DAYS</Text>
+                <Text style={styles.graceLabel}>AFTER LAUNCH — 3 DAYS TO PAY</Text>
                 <Text style={styles.graceTxt}>
-                  Once pricing is published, you have 3 full days before the launch date to pay. No one is removed wondering why. If you need help, use CONTACT THE FOUNDER in Settings — card trouble, OPay transfer, or “talk to me” all go to the founder’s inbox.
+                  Once the launch date arrives, you have 3 full days after launch to pay. No one is removed wondering why. If you need help, use CONTACT THE FOUNDER in Settings — card trouble, OPay transfer, or “talk to me” all go to the founder’s inbox.
                 </Text>
               </View>
             )}
 
             <Pressable onPress={completeFoundersWeek} style={styles.cta}><Text style={styles.ctaTxt}>{isGrace ? `CONTINUE — PAY IN ${graceLeft} DAY${graceLeft === 1 ? '' : 'S'} ›` : 'CONTINUE TO THE FLOOR ›'}</Text></Pressable>
-            <Pressable onPress={completeFoundersWeek} hitSlop={8}><Text style={styles.skip}>I’LL PAY FROM SETTINGS BEFORE LAUNCH</Text></Pressable>
+            <Pressable onPress={completeFoundersWeek} hitSlop={8}><Text style={styles.skip}>I’LL PAY FROM SETTINGS AFTER LAUNCH</Text></Pressable>
             <Text style={styles.footNote}>Founders Week progress is saved. You can always re-vote in Community → pricing halls or Settings → Pricing Discussion.</Text>
           </Animated.View>
         )}
