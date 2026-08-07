@@ -14,26 +14,25 @@ It is not primarily a news app, a social network, a card generator, a stats dash
 2. **Review** the match in the player’s own words.
 3. **Carry** one lesson into the next match.
 
-The coach provides structure and accountability. The Match Vault keeps receipts. The Journey makes improvement visible. Nothing else should compete with the next review.
+The coach provides structure and accountability. Match History keeps receipts. Progress makes improvement visible. Nothing else should compete with the next review.
 
 ## UX decisions in this simplification
 
 - **Today is the default screen.** It answers one question: *what do I do next?*
-- **Mirror Session is the primary action.** The current journey stage and its evidence are visible, but the player never has to hunt through a map or tracker to find the core practice.
-- **The primary navigation has three destinations:** Today, Progress, and Me. Community, updates, the advanced stats tracker, and payments remain available as secondary utilities rather than acting like separate products.
+- **Match Review is the primary action.** The current progress chapter and its evidence are visible, but the player never has to hunt through a map or tracker to find the core practice.
+- **The primary navigation has three destinations:** Today, Progress, and Me. Community, updates, and the advanced stats tracker remain secondary utilities rather than acting like separate products.
 - **The review ritual is intentionally shorter.** A focused session asks for one intention, two half-time prompts, two full-time prompts, and three prompts per player-chosen moment. The app still protects honest reflection; it no longer mistakes volume for depth.
 - **Baseline keeps its purpose but loses form fields.** It now asks for the four core console stats and three useful moment prompts rather than demanding every available stat and nine answers for every moment.
-- **Onboarding goes straight from coach choice to Baseline Week, then to Today.** Coach lore, orientation cards, founder-pricing gates, referral surveys, and setup loaders no longer block a player from understanding the programme.
+- **Onboarding goes straight from coach choice to the Starting Week, then to Today.** Coach lore, orientation cards, referral surveys, setup loaders, and commercial gates no longer block a player from understanding the programme.
 
 ## What is deliberately secondary
 
 | Utility | Why it remains | Where it belongs |
 |---|---|---|
 | Academy updates / FC news | Helpful context, not training | “Updates” from Today |
-| Community halls | Support and accountability, not the task | “Halls” from Today / Me |
+| Community | Support and accountability, not the task | “Community” from Today |
 | Advanced seven-match stats tracker | Useful longitudinal evidence | “Evidence tracker” within Progress |
-| The Standard | A benchmark, not a second route | Briefly inside Progress |
-| Payments / pricing | Necessary operationally | Me → Till |
+| What good looks like | A benchmark, not a second route | Briefly inside Progress |
 
 ## Filter for every next feature
 

@@ -36,9 +36,7 @@ import {
 import { fetchPublishedNews, NewsItem } from '../data/newsFeed';
 import { brandMutter, caughtUpLine, greetingLine } from '../data/humor';
 import { useSettings } from '../data/settings';
-import * as backend from '../data/backend';
 import { sfx } from '../audio/sound';
-import StoreSheet from './StoreSheet';
 import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold, bodyFontHeavy } from '../theme';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -92,22 +90,13 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
   const colW = Math.min(winW, 430); // App.tsx frames the column on wide screens
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
-  const [access, setAccess] = useState<backend.MyAccess | null>(null);
-  const [unlocks, setUnlocks] = useState<string[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const { items: announcements, unread: unreadAnn, refresh: refreshAnn } = useAnnouncements();
   const settings = useSettings();
 
-  const refreshAccess = () => {
-    void backend.myAccess().then((a) => a && setAccess(a));
-    void backend.myUnlocks().then((u) => u && setUnlocks(u));
-  };
-  useEffect(refreshAccess, []);
   useEffect(() => {
     void fetchPublishedNews(20).then(setNews);
   }, []);
-
-  const [tillOpen, setTillOpen] = useState(false);
   // the SIDE NOTE — a bot trick opened as an in-app lesson + blog
   const [side, setSide] = useState<SideLesson | null>(null);
   // the ROLE MODEL FEED — Chinedu's ongoing story, opened from a cross-post
@@ -125,9 +114,6 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
       sfx('pop');
     }
   };
-
-  const isTrick = (k: string) => k === 'EXPLOIT' || k === 'SKILL_MOVE' || k === 'TRICK_OF_THE_WEEK';
-  const trickOpen = (id: string) => (access?.level ?? 0) >= 1 || unlocks.includes(`trick:${id}`);
 
   const [liked, setLiked] = useState<Record<string, boolean>>({});
 
@@ -213,27 +199,6 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
             <Text style={styles.liveTxt}>LIVE FEED</Text>
           </View>
         </View>
-
-        {/* the console grammar: this week's state as label-above-value triads.
-            Real numbers only — the row hides entirely when the ledger is offline. */}
-        {access && (
-          <Animated.View entering={FadeInUp.duration(320)} style={styles.triad}>
-            <View style={styles.triadCell}>
-              <Text style={styles.triadLbl}>PASS</Text>
-              <Text style={styles.triadVal}>{access.tier.toUpperCase()}</Text>
-            </View>
-            <View style={styles.triadDiv} />
-            <View style={styles.triadCell}>
-              <Text style={styles.triadLbl}>DAYS LEFT</Text>
-              <Text style={styles.triadVal}>{access.daysLeft != null ? access.daysLeft : '—'}</Text>
-            </View>
-            <View style={styles.triadDiv} />
-            <View style={styles.triadCell}>
-              <Text style={styles.triadLbl}>SEASON</Text>
-              <Text style={styles.triadVal}>ONE</Text>
-            </View>
-          </Animated.View>
-        )}
 
         <View style={styles.ticker}>
           <Marquee>
@@ -364,8 +329,6 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
             delay={i * 40}
             liked={!!liked[card.id]}
             onLike={() => { setLiked((s) => ({ ...s, [card.id]: true })); sfx('like'); }}
-            locked={isTrick(card.kind) && !trickOpen(card.id)}
-            onUnlock={() => { setTillOpen(true); sfx('whoosh'); }}
             onOpenLesson={(l) => { setSide(l); sfx('whoosh'); }}
             onOpenRoleFeed={() => { sfx('whoosh'); setFeedOpen(true); }}
           />
@@ -400,12 +363,6 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
         <Text style={styles.footVersion}>PROSEASONACADEMY · VERSION {APP_VERSION}</Text>
         <Text style={styles.footTag}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
       </ScrollView>
-
-      {tillOpen && (
-        <View style={StyleSheet.absoluteFill}>
-          <StoreSheet onClose={() => { setTillOpen(false); refreshAccess(); }} />
-        </View>
-      )}
 
       {/* the SIDE NOTE — the bot's trick as an in-app lesson + blog */}
       {side && (
@@ -480,8 +437,6 @@ function FeedCard({
   delay,
   liked,
   onLike,
-  locked = false,
-  onUnlock,
   onOpenLesson,
   onOpenRoleFeed,
 }: {
@@ -490,9 +445,6 @@ function FeedCard({
   delay: number;
   liked: boolean;
   onLike: () => void;
-  /** a gated trick this member's tier does not open yet */
-  locked?: boolean;
-  onUnlock?: () => void;
   /** a trick carrying a SIDE NOTE — open the lesson + blog inside the app */
   onOpenLesson?: (lesson: SideLesson) => void;
   /** a ROLE MODEL cross-post — open Chinedu's ongoing story feed */
@@ -571,32 +523,18 @@ function FeedCard({
         <View style={styles.cardBody}>
           {card.authorHandle && <Text style={styles.cardHandle}>{card.authorHandle}</Text>}
           <Text style={styles.cardHeadline}>{card.headline}</Text>
-          {card.sideLesson?.topic && COMBO_MAP[card.sideLesson.topic] && !locked && (
+          {card.sideLesson?.topic && COMBO_MAP[card.sideLesson.topic] && (
             <View style={styles.cardComboRow}>
               <InputCombo combo={COMBO_MAP[card.sideLesson.topic]} size={16} />
             </View>
           )}
-          {card.body && !locked && (
+          {card.body && (
             <Text style={styles.cardText} numberOfLines={3}>
               {card.body}
             </Text>
           )}
 
-          {/* locked trick — the headline teases, the method is in the pack */}
-          {locked && (
-            <View style={styles.lockBox}>
-              <Text style={styles.lockTag}>ACADEMY & PRO</Text>
-              <Text style={styles.lockBody}>
-                The how-to comes with an ACADEMY or PRO pass — every trick, for the whole
-                period, not one at a time. Same tier wherever you are; only the currency changes.
-              </Text>
-              <Pressable onPress={onUnlock} hitSlop={6}>
-                <Text style={styles.lockCta}>SEE THE PASSES ›</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {(card.cta || card.reactions) && !locked && (
+          {(card.cta || card.reactions) && (
             <View style={styles.cardFoot}>
               {card.cta && (
                 <Pressable onPress={open} hitSlop={6}>

@@ -92,8 +92,8 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
       <ScreenFlash />
       {/* the tunnel band — the finish is somewhere you walk out to */}
       <ArtBand source={TUNNEL} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 42, r: bandW * 0.6 }} style={{ marginTop: -50 }}>
-        <Text style={styles.eyebrow}>STAGE {SEASON.totalStages + 1} OF {SEASON.totalStages} · THE FINISH</Text>
-        <Text style={styles.bandTitle}>THE ROLE MODEL</Text>
+        <Text style={styles.eyebrow}>AFTER CHAPTER {SEASON.totalStages} · WHAT GOOD LOOKS LIKE</Text>
+        <Text style={styles.bandTitle}>WHAT GOOD LOOKS LIKE</Text>
         <Text style={styles.subtitle}>{SEASON.title} — WHERE THIS PATH ENDS</Text>
       </ArtBand>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
@@ -102,7 +102,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
         <Animated.View entering={FadeInUp.delay(120).duration(380)} style={styles.cardWrap}>
           <RoleModelCard coach={coach} />
           <Text style={styles.cardHint}>
-            {cleared ? `STAGE ${SEASON.totalStages + 1} · CLEARED — THE MIRROR, NOT THE MAP` : `SEALED UNTIL THE CLIMB IS DONE · ${prog.completedCount}/${SEASON.totalStages}`}
+            {cleared ? `YOUR PROGRESS IS COMPLETE — LEARN, DO NOT COPY` : `AVAILABLE AFTER CHAPTER ${SEASON.totalStages} · ${prog.completedCount}/${SEASON.totalStages} COMPLETE`}
           </Text>
         </Animated.View>
 
@@ -110,7 +110,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
           <>
             <Animated.View entering={FadeInUp.delay(200).duration(360)} style={styles.lockPill}>
               <LockIcon size={10} color="rgba(143,184,155,0.75)" />
-              <Text style={styles.lockPillTxt}>HIS FULL STORY OPENS AFTER STAGE {SEASON.totalStages}</Text>
+              <Text style={styles.lockPillTxt}>THE FULL STORY OPENS AFTER CHAPTER {SEASON.totalStages}</Text>
             </Animated.View>
 
             <Animated.View entering={FadeInUp.delay(260).duration(360)} style={styles.proseCard}>
@@ -157,7 +157,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
             >
               <View style={styles.cta}>
                 <RouteIcon size={12} color="#0a0f0a" />
-                <Text style={styles.ctaTxt}>BACK TO STAGE {prog.currentStage} — WALK YOUR OWN ROAD ›</Text>
+                <Text style={styles.ctaTxt}>BACK TO CHAPTER {prog.currentStage} ›</Text>
               </View>
             </Pressable>
             <Text style={styles.footNote}>
@@ -219,7 +219,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
             <Animated.View entering={FadeInUp.delay(600).duration(360)} style={styles.legendCard}>
               <View style={styles.legendHeader}>
                 <LockIcon size={12} color="#f2c078" />
-                <Text style={styles.legendTag}>NEXT STAGE: THE LEGEND PATH (LOCKED)</Text>
+                <Text style={styles.legendTag}>NEXT: THE LEGEND PATH (COMING LATER)</Text>
               </View>
               <Text style={styles.legendTitle}>YOU ARE A LEGEND YOURSELF NOW</Text>
               <Text style={styles.legendBody}>

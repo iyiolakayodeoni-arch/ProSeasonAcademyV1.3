@@ -71,8 +71,8 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
 }
 
 // SPLASH → SIGN IN → CHOOSE A COACH → BASELINE WEEK → TODAY.
-// The old coach lore, orientation carousel, pricing gate, referral survey and
-// fake setup loader were all extra stops before a player could understand the work.
+// The old coach lore, orientation carousel, referral survey and fake setup
+// loader were all extra stops before a player could understand the work.
 type Route = 'signin' | 'coach' | 'scan' | 'hub';
 
 export default function App() {

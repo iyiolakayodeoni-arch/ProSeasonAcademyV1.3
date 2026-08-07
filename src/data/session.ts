@@ -23,10 +23,8 @@ export interface SessionState {
   introDone: boolean;
   /** the 30-second week orientation seen (between intro and baseline) */
   orientationDone: boolean;
-  /** the Baseline Week gate cleared → journey unlocked */
+  /** the Starting Week gate cleared → Today unlocked */
   baselineDone: boolean;
-  /** Founders Week (tutorial + pricing discussion + grace) completed → hub */
-  foundersWeekDone: boolean;
   /** "how did you hear" answer, kept for the founder's own numbers */
   referral: string | null;
   /** first successful entry — drives "days in academy" */
@@ -39,7 +37,6 @@ const EMPTY: SessionState = {
   introDone: false,
   orientationDone: false,
   baselineDone: false,
-  foundersWeekDone: false,
   referral: null,
   enteredAt: null,
 };
@@ -80,7 +77,6 @@ export function hydrateSession(): Promise<void> {
             introDone: s.introDone === true,
             orientationDone: s.orientationDone === true,
             baselineDone: s.baselineDone === true,
-            foundersWeekDone: s.foundersWeekDone === true,
             referral: typeof s.referral === 'string' ? s.referral : null,
             enteredAt: typeof s.enteredAt === 'number' ? s.enteredAt : null,
           };
@@ -114,7 +110,6 @@ export function lockCoach(coachId: string) {
 export const markIntroDone = () => set({ introDone: true });
 export const markOrientationDone = () => set({ orientationDone: true });
 export const markBaselineDone = () => set({ baselineDone: true });
-export const markFoundersWeekDone = () => set({ foundersWeekDone: true });
 export const setReferral = (referral: string | null) => set({ referral });
 
 /** sign out = leave the academy floor, keep the ledger + the lock */

@@ -108,7 +108,7 @@ def whistle():
     return out
 
 
-# ── 7 · SUCCESS — rising two-note chime (scan passed, purchase) ─────
+# ── 7 · SUCCESS — rising two-note chime (review saved, chapter complete) ─
 def success():
     n = seconds(0.75)
     out = [0.0] * n
@@ -127,19 +127,7 @@ def fail():
     return [e[i] * (0.6 * sine(220 - 110 * (i / n), i / SR) + 0.3 * sine(110, i / SR)) * 0.5 for i in range(n)]
 
 
-# ── 9 · COIN — the academy till ─────────────────────────────────────
-def coin():
-    n = seconds(0.45)
-    out = [0.0] * n
-    for f, start in [(1760, 0.0), (2637, 0.07)]:
-        st = seconds(start)
-        for i in range(n - st):
-            e = math.exp(-(i) / (0.2 * SR))
-            out[st + i] += e * sine(f, i / SR) * 0.42
-    return out
-
-
-# ── 10 · LIKE — tiny warm heart-blip ────────────────────────────────
+# ── 9 · LIKE — tiny warm heart-blip ─────────────────────────────────
 def like():
     n = seconds(0.13)
     e = env_exp(n, decay=0.07)
@@ -203,7 +191,6 @@ if __name__ == "__main__":
     write_wav("sfx-whistle.wav", whistle())
     write_wav("sfx-success.wav", success())
     write_wav("sfx-fail.wav", fail())
-    write_wav("sfx-coin.wav", coin())
     write_wav("sfx-like.wav", like())
     write_wav("music-home.wav", music_home())
     print("done.")

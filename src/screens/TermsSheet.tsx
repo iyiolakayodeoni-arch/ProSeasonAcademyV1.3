@@ -44,11 +44,6 @@ export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
     if (ok) onAccepted();
   };
 
-  const daysLeft =
-    tos?.deadlineAt != null
-      ? Math.max(0, Math.ceil((tos.deadlineAt - Date.now()) / 86400000))
-      : null;
-
   return (
     <Animated.View entering={FadeIn.duration(220)} style={styles.root}>
       <GridBackground />
@@ -60,14 +55,6 @@ export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
         <Text style={styles.bandTitle}>HOW THIS WORKS</Text>
         <Text style={styles.sub}>READ IT ONCE. THEN NOTHING HERE CAN SURPRISE YOU.</Text>
       </ArtBand>
-
-      {daysLeft != null && (
-        <View style={styles.deadline}>
-          <Text style={styles.deadlineTxt}>
-            YOUR TRIAL RUNS {daysLeft} MORE DAY{daysLeft === 1 ? '' : 'S'} — THE DATE IS ALWAYS IN SETTINGS
-          </Text>
-        </View>
-      )}
 
       <ScrollView
         style={{ flex: 1 }}
@@ -108,13 +95,6 @@ const styles = StyleSheet.create({
   eyebrow: { marginTop: 8, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 2.2, color: colors.accent },
   bandTitle: { marginTop: 4, fontFamily: displayFont, fontSize: 29, lineHeight: 30, letterSpacing: 0.8, color: colors.fg, textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 10 },
   sub: { marginTop: 6, fontFamily: monoFont, fontSize: 6, letterSpacing: 1.2, color: 'rgba(238,242,236,0.85)' },
-
-  deadline: {
-    marginTop: 12, marginHorizontal: 16, borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.5)', backgroundColor: 'rgba(38,30,12,0.6)',
-    borderRadius: 9, paddingVertical: 8, paddingHorizontal: 11,
-  },
-  deadlineTxt: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.2, color: '#f2c078', textAlign: 'center' },
 
   scroll: { paddingHorizontal: 16, paddingTop: 12 },
   card: {

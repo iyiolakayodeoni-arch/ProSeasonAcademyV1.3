@@ -42,6 +42,11 @@ const HALLS = [
 
 const HEAD_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 
+// Commerce is intentionally removed from the app experience. Existing
+// backend records remain untouched, but no money, claims, prices or plans
+// are rendered from the Desk.
+const COMMERCE_VISIBLE = false;
+
 export default function FounderDesk({ founderKey, onForgetKey, onClose }: { founderKey: string; onForgetKey: () => void; onClose: () => void }) {
   const [data, setData] = useState<backend.AdminSummary | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -337,7 +342,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
       <View style={styles.headerWrap}>
         <Text style={styles.eyebrow}>PSA-FOUNDER · AUTHENTICATED SESSION · NO CLIENT KEY</Text>
         <Text style={styles.title}>FOUNDER DESK</Text>
-        <Text style={styles.subtitle}>HOME ANNOUNCEMENTS · NEWS REVIEW · STATS · BROADCASTS · THE TILL</Text>
+        <Text style={styles.subtitle}>HOME ANNOUNCEMENTS · NEWS REVIEW · STATS · BROADCASTS</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 30 }} showsVerticalScrollIndicator={false}>
@@ -360,7 +365,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
 
         {/* ── TODAY AT THE DESK — one pass, top to bottom (the daily digest) ── */}
         {(() => {
-          const d = deskDigest({ stuck, claims, flags, lapsed, inboxUnread: unread });
+          const d = deskDigest({ stuck: COMMERCE_VISIBLE ? stuck : null, claims: COMMERCE_VISIBLE ? claims : null, flags, lapsed: COMMERCE_VISIBLE ? lapsed : null, inboxUnread: unread });
           if (d.clear) return null;
           const tone = (t: string) =>
             t === 'payment' ? colors.accent : t === 'flag' ? colors.loss : t === 'seat' ? colors.warm : colors.primary;
@@ -479,7 +484,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
         </Animated.View>
 
         {/* ── WHAT THE MEMBERS SAID ── */}
-        {consult && consult.length > 0 && (
+        {COMMERCE_VISIBLE && consult && consult.length > 0 && (
           <Animated.View entering={FadeInDown.delay(82).duration(320)} style={styles.splitCard}>
             <View style={styles.rowBetween}>
               <Text style={styles.cardTag}>THE PRICING TABLE</Text>
@@ -547,7 +552,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
         )}
 
         {/* ── COULDN'T PAY — answer these first ── */}
-        {(stuck?.length ?? 0) > 0 && (
+        {COMMERCE_VISIBLE && (stuck?.length ?? 0) > 0 && (
           <Animated.View entering={FadeInDown.delay(60).duration(320)} style={styles.stuckCard}>
             <View style={styles.rowBetween}>
               <Text style={[styles.cardTag, { color: 'rgb(240,180,60)' }]}>CARD REFUSED — THEY WANT TO PAY</Text>
@@ -571,7 +576,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           </Animated.View>
         )}
 
-        {/* ── MONEY WAITING ON YOU ── */}
+        {/* Commerce controls are intentionally dormant in this build. */}
+        {COMMERCE_VISIBLE && (
         <Animated.View entering={FadeInDown.delay(70).duration(320)} style={styles.splitCard}>
           <View style={styles.rowBetween}>
             <Text style={styles.cardTag}>PAYMENT CLAIMS</Text>
@@ -613,6 +619,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
             </View>
           ))}
         </Animated.View>
+        )}
 
         {/* ── FLAGGED FOR YOUR EYES ── */}
         <Animated.View entering={FadeInDown.delay(84).duration(320)} style={styles.splitCard}>
@@ -662,7 +669,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           })}
         </Animated.View>
 
-        {/* ── THE SWEEPER ── */}
+        {/* Membership removal, trials, prices and commerce are disabled. */}
+        {COMMERCE_VISIBLE && (<>
         <Animated.View entering={FadeInDown.delay(86).duration(320)} style={styles.splitCard}>
           <Text style={styles.cardTag}>UNPAID SEATS</Text>
           <Text style={styles.emptyNote}>
@@ -853,6 +861,7 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           </View>
           {tillNote ? <Text style={styles.sentNote}>{tillNote}</Text> : null}
         </Animated.View>
+        </>)}
 
         {/* HOME FOUNDER ANNOUNCEMENT — official, not community chat */}
         <Animated.View entering={FadeInDown.delay(130).duration(320)} style={styles.splitCard}>

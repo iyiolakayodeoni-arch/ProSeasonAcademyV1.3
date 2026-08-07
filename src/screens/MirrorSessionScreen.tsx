@@ -182,8 +182,8 @@ function PhaseHeader({ stage, onLeave, phaseLabel }: { stage: JourneyStage; onLe
         <Text style={styles.phaseBackTxt}>LEAVE</Text>
       </Pressable>
       <View style={styles.phaseHeaderCenter}>
-        <Text style={styles.phaseBrand}>MIRROR SESSION</Text>
-        <Text style={styles.phaseStage}>STAGE {stage.n} · {stage.key}</Text>
+        <Text style={styles.phaseBrand}>MATCH REVIEW</Text>
+        <Text style={styles.phaseStage}>CHAPTER {stage.n} · {stage.key}</Text>
       </View>
       <View style={styles.phaseBadge}>
         <Text style={styles.phaseBadgeTxt}>{phaseLabel}</Text>
@@ -265,7 +265,7 @@ export default function MirrorSessionScreen({
   };
 
   const phaseLabel: Record<string, string> = {
-    'thread-check': 'THE THREAD',
+    'thread-check': 'YOUR LESSON',
     intention: 'INTENTION',
     live: 'LIVE',
     'half-time': 'HALF-TIME',
@@ -298,7 +298,7 @@ export default function MirrorSessionScreen({
               <Text style={styles.heroSub}>Before a new match, answer for it. A lesson you create and immediately forget is a mood, not a lesson.</Text>
               {carried && (
                 <View style={styles.threadCard}>
-                  <Text style={styles.threadTag}>YOUR THREAD · CARRIED FROM STAGE {carried.stageN}</Text>
+                  <Text style={styles.threadTag}>YOUR LESSON · CARRIED FROM CHAPTER {carried.stageN}</Text>
                   <Text style={styles.threadLesson}>“{carried.lesson}”</Text>
                 </View>
               )}
@@ -327,7 +327,7 @@ export default function MirrorSessionScreen({
                 coachId={coach.id}
               />
               <StepButton
-                label="ANSWER FOR THE THREAD · CONTINUE ›"
+                label="ANSWER FOR YOUR LESSON · CONTINUE ›"
                 disabled={!verdict || !isValidReflection(verdictNote, { minLength: MIN_ANSWER, minWords: 1 })}
                 onPress={() => {
                   sfx('whoosh');
@@ -433,8 +433,8 @@ export default function MirrorSessionScreen({
           {/* score logging (before the full-time reflection) */}
           {mirror.phase === 'score' && (
             <Animated.View entering={FadeInUp.duration(320)}>
-              <Text style={styles.heroLine}>FULL TIME. LOG THE MATCH TO THE VAULT.</Text>
-              <Text style={styles.heroSub}>The receipt is written to your Match Vault — the source of truth the whole journey is graded from.</Text>
+              <Text style={styles.heroLine}>FULL TIME. SAVE THE MATCH TO HISTORY.</Text>
+              <Text style={styles.heroSub}>The receipt is written to your Match History — the source of truth the whole journey is graded from.</Text>
               <ScoreRow gf={gf} ga={ga} onChange={(a, b) => { setGf(a); setGa(b); }} />
               <StepButton
                 label="LOG THE MATCH · UNLOCK THE REFLECTION ›"
@@ -667,7 +667,7 @@ export default function MirrorSessionScreen({
           {mirror.phase === 'lesson' && (
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>WRITE THE ONE LINE YOU CARRY INTO THE NEXT MATCH.</Text>
-              <Text style={styles.heroSub}>It becomes your Thread. The next session asks whether it held or broke — so it cannot be created and immediately forgotten.</Text>
+              <Text style={styles.heroSub}>It becomes your lesson. The next session asks whether it held or broke — so it cannot be created and immediately forgotten.</Text>
               <QuestionCard
                 index={0}
                 q="THE LESSON — YOUR WORDS, NOBODY ELSE’S."
@@ -678,7 +678,7 @@ export default function MirrorSessionScreen({
               <HonestyBadge
                 text={lessonDraft}
                 options={{ minLength: 4, minWords: 2 }}
-                defaultNote="ONE LINE YOU WOULD SIGN · YOUR THREAD"
+                defaultNote="ONE LINE YOU WOULD SIGN · YOUR LESSON"
                 coachId={coach.id}
               />
               <StepButton
@@ -702,10 +702,10 @@ export default function MirrorSessionScreen({
 
                 <Text style={styles.receiptLine}>MOMENTS REVIEWED: {mirror.moments.length}</Text>
                 <Text style={styles.receiptLine}>CLOSEST TO THE EVIDENCE: {(mirror.closestVersion ?? '—').toUpperCase()}</Text>
-                {mirror.lessonId && <Text style={styles.receiptLine}>THREAD: SWORN · “{mirror.lesson.toUpperCase()}”</Text>}
+                {mirror.lessonId && <Text style={styles.receiptLine}>LESSON: SAVED · “{mirror.lesson.toUpperCase()}”</Text>}
               </View>
               <Text style={styles.heroSub}>
-                The match is in your vault. The lesson is on your Thread. Nobody can outrun their receipts — and now you have one more.
+                The match is in Match History. Your lesson is saved for the next match. Nobody can outrun their receipts — and now you have one more.
               </Text>
               <StepButton label="RETURN TO THE ROOM ›" onPress={handleDone} />
             </Animated.View>

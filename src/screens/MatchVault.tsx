@@ -47,7 +47,7 @@ import {
 } from '../components/Icons';
 
 // ─────────────────────────────────────────────────────────────
-// MATCH VAULT SCREEN — the front door of the match-scan backend.
+// MATCH HISTORY SCREEN — the front door of the match-scan backend.
 // Log the truth in ~15 seconds: score, mode, their style, and
 // (on your honor) the rules you kept. The scan grades THIS vault.
 // Composer on top, log below, newest first, stats strip on top.
@@ -126,7 +126,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
     setAck(
       result === 'L'
         ? coach.id === 'chinedu'
-          ? 'A loss you log is worth ten you hide. Journal line next — the rule is the rule.'
+          ? 'A loss you log is worth ten you hide. Loss note next — the rule is the rule.'
           : 'It happens, little one. Write the one line, breathe, then forward.'
         : coach.id === 'chinedu'
           ? 'Logged. Winning is a habit — keep the receipts coming.'
@@ -160,7 +160,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
         style={{ marginTop: -50, marginHorizontal: -16 }}
       >
         <Text style={styles.eyebrow}>{coachFirst} GRADES WHAT YOU LOG</Text>
-        <Text style={styles.bandTitle}>MATCH VAULT</Text>
+        <Text style={styles.bandTitle}>MATCH HISTORY</Text>
         <Text style={styles.subtitle}>HONOR-SYSTEM INGEST — MANUAL CONSOLE LOG</Text>
       </ArtBand>
 
@@ -196,7 +196,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
         <View style={styles.watchCard}>
           <View style={styles.watchHead}>
             <GamepadIcon size={14} color={colors.primary} />
-            <Text style={styles.watchTitle}>THE CHINEDU WAY — PEN TO PAPER BEFORE YOU TYPE</Text>
+            <Text style={styles.watchTitle}>YOUR REVIEW ROUTINE — PEN TO PAPER BEFORE YOU TYPE</Text>
           </View>
           <Text style={styles.watchTagline}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
           <Text style={styles.watchNote}>
@@ -355,7 +355,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
             <Text style={styles.logBtnTxt}>LOG MATCH — {result} {gf}–{ga}</Text>
           </Pressable>
           <Text style={styles.honor}>
-            CONSOLE MATCHES ARE LOGGED BY YOU — THE VAULT IS ON YOUR HONOR, AND THE SCAN ONLY GRADES WHAT'S LOGGED.
+            CONSOLE MATCHES ARE LOGGED BY YOU — YOUR MATCH HISTORY IS ON YOUR HONOR, AND THE SCAN ONLY GRADES WHAT'S LOGGED.
           </Text>
         </View>
 
@@ -365,7 +365,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
             <Image source={coach.portrait} style={styles.ackAvatar} />
             <View style={{ flex: 1 }}>
               <Text style={styles.ackText}>"{ack}"</Text>
-              <Text style={styles.ackBy}>— {coachFirst} READS THE VAULT HIMSELF</Text>
+              <Text style={styles.ackBy}>— {coachFirst} READS YOUR MATCH HISTORY HIMSELF</Text>
             </View>
           </Animated.View>
         )}
@@ -373,14 +373,14 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
         {/* rule strip */}
         <View style={styles.ruleStrip}>
           <GamepadIcon size={13} color="#57d07c" />
-          <Text style={styles.ruleTxt}>THE VAULT FEEDS THE SCAN — OBJECTIVES ON THE MAP MOVE WHEN THIS MOVES</Text>
+          <Text style={styles.ruleTxt}>YOUR MATCH HISTORY FEEDS THE REVIEW — YOUR PROGRESS MOVES WHEN THIS RECORD GROWS</Text>
         </View>
 
         {/* the log */}
         {v.matches.length === 0 && (
           <View style={styles.empty}>
             <RouteIcon size={18} color="rgba(143,184,155,0.5)" />
-            <Text style={styles.emptyTitle}>NOTHING IN THE VAULT YET</Text>
+            <Text style={styles.emptyTitle}>NO MATCHES SAVED YET</Text>
             <Text style={styles.emptyBody}>
               {coach.id === 'chinedu'
                 ? 'Play one. Come back, log it honest — 0–4 teaches more than a fake 5–0 ever will.'
@@ -434,7 +434,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
         <View style={styles.eyeNote}>
           <EyeIcon size={11} color={colors.muted} />
           <Text style={styles.eyeNoteTxt}>
-            {v.lastMatch ? `LAST IN THE VAULT — ${describeMatch(v.lastMatch)}` : 'THE SCAN READS THE VAULT, NOT YOUR MEMORY'}
+            {v.lastMatch ? `LAST MATCH SAVED — ${describeMatch(v.lastMatch)}` : 'THE REVIEW READS YOUR SAVED MATCHES, NOT YOUR MEMORY'}
           </Text>
         </View>
       </ScrollView>

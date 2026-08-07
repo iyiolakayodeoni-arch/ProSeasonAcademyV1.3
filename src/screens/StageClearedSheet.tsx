@@ -131,7 +131,7 @@ export default function StageClearedSheet({
         </Animated.View>
 
         <Animated.Text entering={FadeIn.delay(260).duration(420)} style={styles.headline}>
-          STAGE {stage.n} CLEARED
+          CHAPTER {stage.n} COMPLETE
         </Animated.Text>
         <Animated.Text entering={FadeIn.delay(320).duration(420)} style={styles.stageName}>
           {stageLabel}
@@ -155,7 +155,7 @@ export default function StageClearedSheet({
         <View style={styles.receiptsCard}>
           <Text style={styles.receiptsTitle}>THE RECEIPTS THAT CLEARED IT</Text>
           {receipts.length === 0 && (
-            <Text style={styles.receiptsEmpty}>STAGE {stage.n} PASSED ON ACCUMULATED EVIDENCE.</Text>
+            <Text style={styles.receiptsEmpty}>CHAPTER {stage.n} IS COMPLETE FROM YOUR SAVED EVIDENCE.</Text>
           )}
           {receipts.map((v, i) => (
             <Animated.View
@@ -202,7 +202,7 @@ export default function StageClearedSheet({
             </Text>
           ) : (
             <Text style={styles.nextDoorTxt}>
-              STAGE {stage.n + 1} — {nextStageName?.toUpperCase() ?? 'THE NEXT CHAPTER'} IS OPEN.
+              CHAPTER {stage.n + 1} — {nextStageName?.toUpperCase() ?? 'THE NEXT CHAPTER'} IS READY.
               THE PATH ONLY MOVES FORWARD.
             </Text>
           )}

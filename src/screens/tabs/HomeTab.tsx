@@ -151,7 +151,7 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
             <View>
               <Text style={styles.cardKicker}>{activeSession ? 'YOUR SESSION IS WAITING' : isComplete ? 'SEASON ONE COMPLETE' : 'YOUR NEXT MOVE'}</Text>
               <Text style={styles.stageTitle}>
-                {isComplete ? 'READ YOUR RECEIPTS' : `STAGE ${currentStage.n} · ${currentStage.name.toUpperCase()}`}
+                {isComplete ? 'READ YOUR RECEIPTS' : `CHAPTER ${currentStage.n} · ${currentStage.name.toUpperCase()}`}
               </Text>
             </View>
             {!isComplete && <Image source={coach.portrait} style={[styles.coachFace, { borderColor: coach.cardAccent }]} />}
@@ -164,7 +164,7 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
 
           {!isComplete && objectiveProgress.length > 0 && (
             <View style={styles.objectives}>
-              <Text style={styles.objectivesLabel}>EVIDENCE FOR THIS STAGE</Text>
+              <Text style={styles.objectivesLabel}>WHAT THIS CHAPTER IS TRACKING</Text>
               {objectiveProgress.map((item, index) => (
                 <ObjectiveRow
                   key={`${currentStage.n}-${index}`}
@@ -179,16 +179,16 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
 
           {!isComplete && (
             <View style={styles.mirrorExplainer}>
-              <Text style={styles.mirrorExplainerTitle}>WHAT IS A MIRROR SESSION?</Text>
+              <Text style={styles.mirrorExplainerTitle}>WHAT IS A MATCH REVIEW?</Text>
               <Text style={styles.mirrorExplainerCopy}>
-                A short match review: choose one focus, notice the pattern, then write one lesson. It does not tell you what to think.
+                A short review: choose one focus, notice the pattern, then write one lesson. It does not tell you what to think.
               </Text>
             </View>
           )}
 
           {!isComplete && (
             <Pressable onPress={onOpenJourney} style={styles.stageDetailsLink}>
-              <Text style={styles.stageDetailsLinkTxt}>SEE WHAT THIS STAGE IS TRACKING</Text>
+              <Text style={styles.stageDetailsLinkTxt}>SEE WHAT THIS CHAPTER IS TRACKING</Text>
               <ChevronRightIcon size={13} color={colors.primary} />
             </Pressable>
           )}
@@ -218,7 +218,7 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
         <Animated.View entering={FadeInUp.delay(130).duration(320)} style={styles.threadCard}>
           <View style={styles.threadHead}>
             <View>
-              <Text style={styles.cardKicker}>YOUR THREAD</Text>
+              <Text style={styles.cardKicker}>YOUR LESSON</Text>
               <Text style={styles.threadTitle}>{thread.current ? 'THE LESSON YOU ARE CARRYING' : 'YOUR FIRST LESSON STARTS HERE'}</Text>
             </View>
             <JournalIcon size={19} color={colors.accent} />
@@ -226,7 +226,7 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
           <Text style={styles.threadCopy}>
             {thread.current
               ? `“${thread.current.lesson}”`
-              : 'Finish one Mirror Session and write the one line you want to remember next time.'}
+              : 'Finish one Match Review and write the one line you want to remember next time.'}
           </Text>
           {thread.current && (
             <Text style={styles.threadMeta}>
@@ -278,7 +278,7 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
           </Pressable>
           <Pressable onPress={onOpenHalls} style={styles.secondaryRow}>
             <View>
-              <Text style={styles.secondaryTitle}>THE HALLS</Text>
+              <Text style={styles.secondaryTitle}>COMMUNITY</Text>
               <Text style={styles.secondarySub}>Talk to real players when support helps the work.</Text>
             </View>
             <ChevronRightIcon size={14} color={colors.muted} />

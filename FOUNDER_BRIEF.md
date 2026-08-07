@@ -23,10 +23,10 @@ Over time, the player gets evidence of what actually improves—not a streak of 
 
 | Question | Plain answer |
 |---|---|
-| What do I do here? | Start a Mirror Session around your next match. |
-| What is a Mirror Session? | A short before/during/after-match review in your own words. |
-| What is The Thread? | The one lesson you carry from the last match. |
-| What is the Vault? | Your match receipts and notes. |
+| What do I do here? | Start a Match Review around your next match. |
+| What is a Match Review? | A short before/during/after-match review in your own words. |
+| What is Your Lesson? | The one lesson you carry from the last match. |
+| What is Match History? | Your saved scores and notes. |
 | What is Progress? | Six chapters that move only when your evidence earns them. |
 | Do I have to follow news or chat? | No. Those are optional support tools. |
 
@@ -42,7 +42,7 @@ A first-time player should be able to answer these questions without scrolling o
 | What if it already ended? | Choose **I already finished a match**. |
 | What if I have no match today? | Leave the app; come back after a real match. Nothing is overdue. |
 
-The Home screen should always preserve one obvious green action above explanations, statistics, coach lore, news, community, and monetisation.
+The Home screen should always preserve one obvious green action above explanations, statistics, coach lore, news, and community.
 
 ## The hierarchy to protect
 
@@ -50,20 +50,19 @@ The Home screen should always preserve one obvious green action above explanatio
 **Play → Review → Carry**
 
 - **Today:** tells the player their next useful action.
-- **Mirror Session:** captures the review.
-- **Thread:** carries the lesson.
+- **Match Review:** captures the review.
+- **Your Lesson:** carries the lesson.
 - **Progress:** makes the long-term evidence visible.
 
 ### 2. Supporting evidence
-- Match Vault
+- Match History
 - Loss Notes
-- Baseline Week
+- Starting Week
 
 ### 3. Optional utilities
 - Founder updates / FC news
-- Community halls
+- Community
 - Advanced seven-match statistics tracker
-- Payments and account management
 
 If a utility competes visually with the core product, it belongs behind a secondary link.
 
@@ -91,14 +90,16 @@ Before approving any future feature, ask:
 
 ## The product language to use
 
-Use clear language first, branded language second.
+Use the plain player language everywhere in the member app.
 
-| Prefer | Instead of only saying |
+| Use | Do not make a new player learn |
 |---|---|
-| “Short match review” | “Mirror Session” |
-| “One lesson for next match” | “The Thread” |
-| “Your match receipts” | “Match Vault” |
-| “What good looks like” | “The Standard” |
-| “Your next step” | “Stage progression” |
+| **Match Review** | “Mirror Session” |
+| **Your Lesson** | “The Thread” |
+| **Match History** | “Match Vault” |
+| **What Good Looks Like** | “The Standard” |
+| **Progress chapter** | “Stage progression” |
+| **Optional Tip** | “Side Quest” |
+| **Community** | “The Halls” |
 
-The brand names can stay. Every branded name should be explained the first time it appears.
+Brand language belongs in founder material or coach flavour only. It should never be required to understand the next action.

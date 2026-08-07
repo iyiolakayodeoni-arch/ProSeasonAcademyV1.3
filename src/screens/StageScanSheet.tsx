@@ -201,7 +201,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
         `MOMENTS: ${momentLine}`,
         `MIND: ${answer.trim()}`,
         `LESSON: ${lesson.trim()}`,
-        carried && verdict ? `THREAD: ${verdict.toUpperCase()} — ${verdictNote.trim()}` : null,
+        carried && verdict ? `LESSON: ${verdict.toUpperCase()} — ${verdictNote.trim()}` : null,
       ]
         .filter(Boolean)
         .join(' | '),
@@ -235,9 +235,9 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
         style={{ marginTop: -50, marginHorizontal: -16 }}
       >
         <Text style={styles.eyebrow}>
-          STAGE {stage.n} · {stage.key} — MAIN QUEST SESSION
+          CHAPTER {stage.n} · {stage.key} — QUICK REVIEW
         </Text>
-        <Text style={styles.bandTitle}>THE MATCH SCAN</Text>
+        <Text style={styles.bandTitle}>QUICK REVIEW</Text>
         <Text style={styles.subtitle}>ADD THE SCORE · NAME A MOMENT · WRITE ONE LESSON</Text>
       </ArtBand>
 
@@ -252,7 +252,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
             {carried && (
               <Animated.View entering={FadeInDown.delay(80).duration(340)} style={styles.carriedBanner}>
-                <Text style={styles.carriedTag}>YOUR THREAD WALKED IN WITH YOU</Text>
+                <Text style={styles.carriedTag}>YOUR LAST LESSON CAME WITH YOU</Text>
                 <Text style={styles.carriedLesson}>“{carried.lesson}”</Text>
                 <Text style={styles.carriedMeta}>
                   SWORN AFTER YOUR LAST SCAN · PLAY WITH IT TODAY — THE REVIEW ASKS HOW IT HELD
@@ -378,7 +378,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
               </View>
               <View style={styles.inlineRow}>
                 <Text style={styles.inlineLabel}>
-                  {mechShort ? `USED THE SIDE QUEST — THE ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
+                  {mechShort ? `USED THE OPTIONAL TIP — ${mechShort.toUpperCase()}` : 'TAUGHT MECHANICS USED'}
                 </Text>
                 <View style={styles.inlineCtrl}>
                   {[0, 1, 2, 3].map((n) => (
@@ -408,7 +408,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   </View>
                 </>
               )}
-              <Text style={styles.stageFeed}>EVERY FIELD HERE FEEDS STAGE {stage.n}'S GRADED OBJECTIVES — THE VAULT COUNTS, THE COACH JUDGES</Text>
+              <Text style={styles.stageFeed}>THIS REVIEW BUILDS CHAPTER {stage.n}'S EVIDENCE — MATCH HISTORY COUNTS, THE COACH GUIDES</Text>
             </Animated.View>
 
             {/* ── PART 2 · KEY MOMENTS — the make-or-break minutes ── */}
@@ -487,12 +487,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                 <CheckIcon size={12} color={colors.primary} />
               </View>
               <Text style={styles.lessonCue}>
-                EVERYTHING ABOVE WAS EVIDENCE. THIS LINE IS THE TRAINING. JOT THE LESSON YOU CARRY INTO YOUR NEXT MATCH — IT WAITS FOR YOU IN THE NEXT STAGE ROOM AS YOUR MAIN QUEST, AND THE NEXT SCAN OPENS BY ASKING HOW IT HELD.
+                EVERYTHING ABOVE WAS EVIDENCE. THIS LINE IS THE TRAINING. WRITE THE LESSON YOU CARRY INTO YOUR NEXT MATCH — THE NEXT REVIEW ASKS IF IT HELPED.
               </Text>
 
               {carried && (
                 <View style={styles.threadCheck}>
-                  <Text style={styles.threadCheckTag}>THREAD CHECK — AFTER YOUR LAST SCAN YOU SWORE:</Text>
+                  <Text style={styles.threadCheckTag}>LAST LESSON CHECK — AFTER YOUR LAST REVIEW YOU WROTE:</Text>
                   <Text style={styles.threadCheckLesson}>“{carried.lesson}”</Text>
                   <View style={styles.chipRow}>
                     {(['held', 'broke'] as const).map((v) => (
@@ -519,7 +519,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   <HonestyBadge
                     text={verdictNote}
                     options={{ minLength: MIN_VERDICT_NOTE, minWords: 2 }}
-                    defaultNote="ONE HONEST LINE — THE THREAD KEEPS SCORE OF YOUR HEAD, NOT YOUR PRIDE"
+                    defaultNote="ONE HONEST LINE — YOUR LESSON HELPS YOU NOTICE THE PATTERN"
                     coachId={coach.id}
                   />
                 </View>
@@ -561,7 +561,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
           <>
             {loggedSummary && (
               <Animated.View entering={FadeInDown.duration(300)} style={styles.summary}>
-                <Text style={styles.summaryEyebrow}>SESSION SEALED TO THE VAULT</Text>
+                <Text style={styles.summaryEyebrow}>MATCH SAVED TO HISTORY</Text>
                 <Text style={styles.summaryScore}>
                   {loggedSummary.r} {loggedSummary.gf}–{loggedSummary.ga}
                   <Text style={styles.summaryHead}> · HEAD: {loggedSummary.head}</Text>
@@ -571,12 +571,12 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
                   <Text style={styles.summaryLesson}>“{loggedSummary.note}”</Text>
                   {carried && verdict && (
                     <Text style={styles.summaryVerdict}>
-                      LAST LESSON: {verdict === 'held' ? 'HELD ✓' : 'BROKE ✗'} — {thread.entries.length} ON THE THREAD NOW
+                      LAST LESSON: {verdict === 'held' ? 'HELD ✓' : 'BROKE ✗'} — {thread.entries.length} LESSONS SAVED
                     </Text>
                   )}
                 </View>
                 <Text style={styles.summaryNote}>
-                  IT MEETS YOU IN THE NEXT STAGE ROOM. PLAY WITH IT. ANSWER FOR IT AT THE NEXT SCAN.
+                  IT RETURNS IN YOUR NEXT CHAPTER. USE IT, THEN SAY WHETHER IT HELPED.
                 </Text>
               </Animated.View>
             )}
@@ -594,7 +594,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
             <Pressable onPress={() => onClose(true)} style={({ pressed }) => [styles.logBtn, { marginTop: 16 }, pressed && { opacity: 0.85 }]}>
               <ScanGlyphIcon size={11} color="#0a0f0a" />
-              <Text style={styles.logBtnTxt}>GRADE THE VAULT — RUN THE SCAN ›</Text>
+              <Text style={styles.logBtnTxt}>CHECK MATCH HISTORY ›</Text>
             </Pressable>
             <Pressable onPress={() => { resetComposer(); setPhase('scan'); }} hitSlop={6}>
               <View style={styles.againBtn}>

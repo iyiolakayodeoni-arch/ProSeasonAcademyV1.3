@@ -1187,7 +1187,7 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
           <Pressable style={styles.ledgerCard} onPress={() => setSheet('vault')}>
             <View style={styles.ledgerHead}>
               <RouteIcon size={14} color={colors.primary} />
-              <Text style={styles.ledgerTitle}>MATCH VAULT</Text>
+              <Text style={styles.ledgerTitle}>MATCH HISTORY</Text>
             </View>
             <Text style={styles.ledgerValue}>{vault.played}</Text>
             <Text style={styles.ledgerBody}>W {vault.w} · D {vault.d} · L {vault.l}</Text>
@@ -1200,7 +1200,7 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
           <Pressable style={styles.ledgerCard} onPress={() => setSheet('journal')}>
             <View style={styles.ledgerHead}>
               <JournalIcon size={14} color={colors.accent} />
-              <Text style={styles.ledgerTitle}>LOSS JOURNAL</Text>
+              <Text style={styles.ledgerTitle}>LOSS NOTES</Text>
             </View>
             <Text style={[styles.ledgerValue, { color: colors.accent }]}>{journal.total}</Text>
             <Text style={styles.ledgerBody}>{journal.streakDays > 0 ? `${journal.streakDays} DAY STREAK` : 'LINES LOGGED'}</Text>

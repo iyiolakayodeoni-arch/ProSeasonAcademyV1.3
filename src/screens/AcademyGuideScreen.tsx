@@ -87,12 +87,12 @@ export default function AcademyGuideScreen({ onClose }: Props) {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(80).duration(280)}>
-          <Text style={styles.sectionLabel}>THE FOUR NAMES YOU WILL SEE</Text>
+          <Text style={styles.sectionLabel}>THE FOUR THINGS YOU WILL SEE</Text>
           <View style={styles.card}>
-            <Term name="MIRROR SESSION" meaning="The short before, during and after-match review. It structures your reflection; it never writes it for you." />
-            <Term name="THE THREAD" meaning="Your one-line lesson from the last match. You carry it into the next one." />
-            <Term name="MATCH VAULT" meaning="The record of your scores and match receipts. This is evidence, not a highlight reel." />
-            <Term name="PROGRESS" meaning="Six development chapters. A chapter moves only when your own evidence meets its target." />
+            <Term name="MATCH REVIEW" meaning="The short before, during and after-match review. It structures your reflection; it never writes it for you." />
+            <Term name="YOUR LESSON" meaning="One useful line from your last match. You carry it into the next one." />
+            <Term name="MATCH HISTORY" meaning="The record of your scores and notes. This is evidence, not a highlight reel." />
+            <Term name="PROGRESS" meaning="Six chapters. A chapter moves only when your own evidence meets its target." />
           </View>
         </Animated.View>
 

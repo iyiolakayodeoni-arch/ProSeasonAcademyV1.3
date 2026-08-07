@@ -241,13 +241,13 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       const coachFirst = coach.name.split(' ')[0];
       const checkRule = stage.rule ?? '';
       return {
-        greeting: `Welcome back, little ${coach.id === 'obinna' ? 'one' : 'bro'}. Today we are tackling our Side Quest: **${stage.name}**. Let's refine your game on a tactical level.`,
+        greeting: `Welcome back, little ${coach.id === 'obinna' ? 'one' : 'bro'}. Here is an optional tip: **${stage.name}**. Use it if it helps your match.`,
         voiceCaption: `VOICE NOTE · ${coachFirst.toUpperCase()} EXPLAINS THE MECHANIC`,
         mechanic: stage.coachExplanation ?? '',
         quip: `This is a precise professional habit. Study it slowly, then take it into the arena. No button-spamming here.`,
-        closer: `That is the plan. Run a **Mirror Session** or log a match inside the Match Vault to put this technique to work. Remember the rule: **${checkRule}**.`,
+        closer: `That is the plan. Start a **Match Review** or log a match in your Match History to put this technique to work. Remember the rule: **${checkRule}**.`,
         scanIntro: `THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.`,
-        footer: `THIS SIDE QUEST CONTENT IS INTERNALLY SOURCED FROM ${stage.internalSource?.toUpperCase()} FOR ${stage.internalPatchVersion?.toUpperCase()}.`,
+        footer: `THIS OPTIONAL TIP IS INTERNALLY SOURCED FROM ${stage.internalSource?.toUpperCase()} FOR ${stage.internalPatchVersion?.toUpperCase()}.`,
       };
     }
     return plan ? buildCoachChat(coach, plan) : buildPrepChat(coach, staleName);
@@ -350,12 +350,12 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const scanDisabled = status === 'scanning';
   const ctaLabel =
     status === 'scanning'
-      ? 'READING THE VAULT…'
+      ? 'CHECKING YOUR MATCH HISTORY…'
       : status === 'passed' || (cleared && status === 'ready')
         ? 'BACK TO THE MAP ›'
         : status === 'failed'
-          ? 'RUN IT BACK — START A NEW MIRROR SESSION ›'
-          : 'START A MIRROR SESSION ›';
+          ? 'TRY AGAIN — START A NEW MATCH REVIEW ›'
+          : 'START A MATCH REVIEW ›';
 
   // Plain language appears before the coach briefing. A player should be able
   // to choose the correct path without reading the film-room lore first.
@@ -443,7 +443,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         style={{ marginTop: -46 }}
       >
         <Text style={styles.eyebrow}>
-          STAGE {stage.n} — {stage.key}{stage.duration ? ` · ${stage.duration}` : ''}
+          CHAPTER {stage.n} — {stage.key}{stage.duration ? ` · ${stage.duration}` : ''}
         </Text>
         <View style={styles.nameRow}>
           <LogoMark size={24} loopProps={loopProps} glowStyle={glowStyle} />
@@ -485,7 +485,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           <View style={styles.identityText}>
             <Text style={styles.identityName}>{coachFirst}</Text>
             <Text style={styles.identityRole}>YOUR COACH · CONSOLE PRO</Text>
-            <Text style={styles.identitySub}>IN THE FILM ROOM · TALKING TO YOU ONLY</Text>
+            <Text style={styles.identitySub}>ON YOUR COACH SCREEN · TALKING TO YOU ONLY</Text>
           </View>
         </Animated.View>
 
@@ -545,7 +545,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             <View style={styles.lessonCard}>
               <View style={styles.tagRow}>
                 <View style={styles.tagGreen}>
-                  <Text style={styles.tagGreenTxt}>SIDE QUEST · STAGE {stage.n}</Text>
+                  <Text style={styles.tagGreenTxt}>OPTIONAL TIP · CHAPTER {stage.n}</Text>
                 </View>
                 <View style={styles.tagGold}>
                   <Text style={styles.tagGoldTxt}>{plan.mechanicName}</Text>
@@ -650,8 +650,8 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
               </Text>
               <Text style={styles.prepTxt}>
                 {staleName
-                  ? 'THE OLD MECHANIC WAS FLAGGED STALE AFTER A PATCH — THIS STAGE IS WAITING ON A FRESH, APPROVED ONE FROM THE LIVE FEED.'
-                  : 'NO APPROVED, FRESH MECHANIC IS AVAILABLE FOR THIS STAGE YET. IT APPEARS HERE THE MOMENT THE LIVE FEED SHIPS ONE.'}
+                  ? 'THE OLD TIP WAS FLAGGED STALE AFTER A PATCH — THIS CHAPTER IS WAITING ON A FRESH ONE.'
+                  : 'NO FRESH OPTIONAL TIP IS AVAILABLE FOR THIS CHAPTER YET. YOUR MATCH REVIEW STILL WORKS WITHOUT IT.'}
               </Text>
             </View>
           )}
@@ -678,25 +678,25 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           {cleared && status !== 'passed' && (
             <View style={styles.clearedBanner}>
               <CheckRingIcon size={11} color={colors.primary} />
-              <Text style={styles.clearedTxt}>STAGE ALREADY CLEARED — REPLAYING THE FILM ROOM</Text>
+              <Text style={styles.clearedTxt}>CHAPTER ALREADY CLEARED — REOPENING YOUR COACH SCREEN</Text>
             </View>
           )}
           <View style={styles.tagRow}>
             <View style={styles.tagGreen}>
-              <Text style={styles.tagGreenTxt}>MAIN QUEST · THE THREAD</Text>
+              <Text style={styles.tagGreenTxt}>YOUR NEXT LESSON</Text>
             </View>
             <View style={styles.tagGold}>
-              <Text style={styles.tagGoldTxt}>REQUIRED TO PASS STAGE {stage.n}</Text>
+              <Text style={styles.tagGoldTxt}>EVIDENCE FOR CHAPTER {stage.n}</Text>
             </View>
           </View>
 
           {/* THE THREAD — the lesson you swore last session, carried into today's match */}
           {carried ? (
             <View style={styles.threadBox}>
-              <Text style={styles.threadBoxTag}>YOUR MAIN QUEST — SWORN AFTER YOUR LAST SCAN</Text>
+              <Text style={styles.threadBoxTag}>YOUR LAST LESSON — CARRIED FROM YOUR LAST REVIEW</Text>
               <Text style={styles.threadLesson}>“{carried.lesson}”</Text>
               <Text style={styles.threadMeta}>
-                CARRY IT INTO THIS MATCH · THE MIRROR SESSION OPENS BY ASKING HOW IT HELD
+                CARRY IT INTO THIS MATCH · THE NEXT REVIEW ASKS IF IT HELD
                 {thread.entries.length > 1
                   ? ` · ${thread.heldCount} HELD · ${thread.brokeCount} BROKE SO FAR`
                   : ''}
@@ -704,7 +704,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </View>
           ) : (
             <View style={[styles.threadBox, styles.threadBoxEmpty]}>
-              <Text style={styles.threadBoxTag}>YOUR MAIN QUEST — THE THREAD STARTS AT YOUR FIRST SCAN</Text>
+              <Text style={styles.threadBoxTag}>YOUR FIRST LESSON STARTS AFTER YOUR FIRST REVIEW</Text>
               <Text style={styles.threadEmpty}>
                 The baseline told us who you are. From this match on, every scan pulls one signed
                 lesson out of you — and that line becomes your next main quest. The psychology
@@ -716,7 +716,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
 
           {/* ── THE CHINEDU WAY — our own path ritual & philosophy ── */}
           <View style={[styles.threadBox, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
-            <Text style={styles.threadBoxTag}>THE CHINEDU WAY · HOW YOU WORK IN OUR PATH</Text>
+            <Text style={styles.threadBoxTag}>YOUR REVIEW ROUTINE</Text>
             <Text style={[styles.scanHeadline, { marginTop: 4, marginBottom: 4, fontSize: 13 }]}>PEN TO PAPER BEFORE YOU TYPE.</Text>
             <Text style={styles.threadEmpty}>
               1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
@@ -727,7 +727,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </Text>
           </View>
 
-          <Text style={styles.scanHeadline}>Prove it in a Mirror Session.</Text>
+          <Text style={styles.scanHeadline}>Start your Match Review.</Text>
           <Text style={styles.scanIntro}>{chat.scanIntro}</Text>
 
           {/* what the scan ACTUALLY grades — live counts off the vault */}
@@ -789,19 +789,19 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
               <Text style={[styles.scanStatusTitle, status === 'failed' && { color: colors.loss }]}>
                 {status === 'ready'
                   ? cleared
-                    ? `STAGE ${stage.n} CLEARED — THE EVIDENCE HOLDS`
-                    : 'READY FOR YOUR MIRROR SESSION'
+                    ? `CHAPTER ${stage.n} CLEARED — THE EVIDENCE HOLDS`
+                    : 'READY FOR YOUR MATCH REVIEW'
                   : status === 'scanning'
                     ? 'READING YOUR MATCH…'
                     : status === 'passed'
-                      ? `STAGE ${stage.n} CLEARED — THE EVIDENCE HOLDS`
+                      ? `CHAPTER ${stage.n} CLEARED — THE EVIDENCE HOLDS`
                       : 'OBJECTIVES NOT MET — RUN IT BACK'}
               </Text>
               <Text style={styles.scanStatusSub}>
                 {status === 'ready'
-                  ? `THE RESULT IS GRADED FROM YOUR VAULT — ${coach.name} NEVER READS YOUR HEAD`
+                  ? `THE RESULT IS GRADED FROM YOUR MATCH HISTORY — ${coach.name} NEVER READS YOUR HEAD`
                   : status === 'scanning'
-                    ? 'THE VAULT IS BEING GRADED — HOLD TIGHT'
+                    ? 'YOUR MATCH HISTORY IS BEING CHECKED — HOLD TIGHT'
                     : status === 'passed'
                       ? `${coachFirst.toUpperCase()} HAS YOUR RESULT — THE NEXT NODE IS OPEN`
                       : 'THE EVIDENCE DIDN’T MEET THE OBJECTIVES — BACK TO THE LAB'}
@@ -819,14 +819,14 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           {/* ghost CTA — grade the matches already in the vault, no new session */}
           {status !== 'scanning' && status !== 'passed' && !cleared && vault.played > 0 && (
             <Pressable onPress={start} hitSlop={6}>
-              <Text style={styles.ghostCta}>OR GRADE THE {vault.played} MATCH{vault.played === 1 ? '' : 'ES'} ALREADY IN MY VAULT ›</Text>
+              <Text style={styles.ghostCta}>OR CHECK THE {vault.played} MATCH{vault.played === 1 ? '' : 'ES'} ALREADY IN MY HISTORY ›</Text>
             </Pressable>
           )}
 
           {/* legacy quick path — the old in-room scan ritual, kept for speed */}
           {status !== 'scanning' && status !== 'passed' && !cleared && (
             <Pressable onPress={() => { sfx('tap'); setScanSheet(true); }} hitSlop={6}>
-              <Text style={styles.ghostCta}>QUICK MATCH SCAN (SHORTER RITUAL) ›</Text>
+              <Text style={styles.ghostCta}>QUICK REVIEW (FOR A FINISHED MATCH) ›</Text>
             </Pressable>
           )}
 

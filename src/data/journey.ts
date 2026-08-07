@@ -138,8 +138,8 @@ const UNIVERSAL: SeasonDef = {
       chapter: 'SEE YOURSELF',
       at: AT[0],
       objectives: [
-        { label: 'Log 3 real matches in the Match Vault', target: 3, done: 0, check: { kind: 'matches_played', count: 3 } },
-        { label: 'Write 1 honest line in the Loss Journal', target: 1, done: 0, check: { kind: 'journal', count: 1 } },
+        { label: 'Log 3 real matches in Match History', target: 3, done: 0, check: { kind: 'matches_played', count: 3 } },
+        { label: 'Write 1 honest Loss Note', target: 1, done: 0, check: { kind: 'journal', count: 1 } },
       ],
       rewardXp: 120,
       rewardBadge: 'SEE YOURSELF BADGE',
@@ -296,7 +296,7 @@ const UNIVERSAL: SeasonDef = {
       objectives: [
         { label: 'Win 2 ranked matches', target: 2, done: 0, check: { kind: 'win', count: 2, rankedOnly: true } },
         { label: 'Win once using 1+ taught mechanics', target: 1, done: 0, check: { kind: 'win_with_mechanics', mechanics: 1, count: 1 } },
-        { label: 'Write 2 honest lines in the Loss Journal', target: 2, done: 0, check: { kind: 'journal', count: 2 } },
+        { label: 'Write 2 honest Loss Notes', target: 2, done: 0, check: { kind: 'journal', count: 2 } },
       ],
       rewardXp: 200,
       rewardBadge: 'BUILD DISCIPLINE BADGE',

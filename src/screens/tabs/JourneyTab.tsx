@@ -80,7 +80,7 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.brandRow}>
           <Text style={styles.brand}>PROSEASONACADEMY</Text>
-          <Text style={styles.brandMeta}>{complete ? 'SEASON ONE · COMPLETE' : `STAGE ${currentN} OF ${total}`}</Text>
+          <Text style={styles.brandMeta}>{complete ? 'SEASON ONE · COMPLETE' : `CHAPTER ${currentN} OF ${total}`}</Text>
         </View>
 
         <ArtBand
@@ -101,7 +101,7 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.duration(300)} style={styles.currentCard}>
-          <Text style={styles.kicker}>{activeSession ? 'YOUR MIRROR SESSION IS OPEN' : complete ? 'YOUR LAST CHAPTER' : 'CURRENT CHAPTER'}</Text>
+          <Text style={styles.kicker}>{activeSession ? 'YOUR MATCH REVIEW IS OPEN' : complete ? 'YOUR LAST CHAPTER' : 'CURRENT CHAPTER'}</Text>
           <Text style={styles.currentTitle}>{complete ? 'PROVE IT' : current.name.toUpperCase()}</Text>
           <Text style={styles.currentCopy}>
             {complete
@@ -127,9 +127,9 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
           )}
           <Pressable onPress={openCurrent} style={({ pressed }) => [styles.primaryBtn, pressed && { opacity: 0.82 }]}>
             <PlayIcon size={15} color="#07110a" />
-            <Text style={styles.primaryTxt}>{activeSession ? 'RESUME MIRROR SESSION' : complete ? 'REVISIT THE FINAL CHAPTER' : 'OPEN THE FILM ROOM'}</Text>
+            <Text style={styles.primaryTxt}>{activeSession ? 'RESUME MATCH REVIEW' : complete ? 'REVISIT THE FINAL CHAPTER' : 'START MATCH REVIEW'}</Text>
           </Pressable>
-          {!complete && <Text style={styles.primaryHint}>The Mirror Session is how a chapter gets its evidence.</Text>}
+          {!complete && <Text style={styles.primaryHint}>A Match Review is how this chapter gets its evidence.</Text>}
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(50).duration(300)}>
@@ -190,7 +190,7 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
           <View style={styles.evidenceGrid}>
             <Pressable onPress={() => setSheet('vault')} style={styles.evidenceTile}>
               <RouteIcon size={16} color={colors.primary} />
-              <Text style={styles.evidenceTitle}>MATCH VAULT</Text>
+              <Text style={styles.evidenceTitle}>MATCH HISTORY</Text>
               <Text style={styles.evidenceNumber}>{vault.played}</Text>
               <Text style={styles.evidenceSub}>MATCH RECEIPTS</Text>
             </Pressable>

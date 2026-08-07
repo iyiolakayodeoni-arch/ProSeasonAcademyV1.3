@@ -226,7 +226,7 @@ export default function PlayerCard({
             <Rect x="44" y="201.2" width="30" height="0.6" fill={colors.primary} fillOpacity="0.4" />
             <Rect x="94" y="201.2" width="30" height="0.6" fill={colors.primary} fillOpacity="0.4" />
             <SvgText x="84" y="203.6" textAnchor="middle" fontSize="3.9" letterSpacing="0.6" fontFamily={monoFont} fill="rgba(166,190,172,0.9)">
-              STAGE {stageN}/{totalStages} · {clearedCount} CLEARED
+              CHAPTER {stageN}/{totalStages} · {clearedCount} COMPLETE
             </SvgText>
           </Svg>
         </Animated.View>

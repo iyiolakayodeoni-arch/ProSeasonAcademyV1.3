@@ -2,7 +2,7 @@
 // ACADEMY CLOUD — the engine room is SUPABASE. Full stop.
 //
 // Auth (anonymous), the seat gate, the vault, the live rooms,
-// the till and the founder desk all run on the Supabase project
+// the member app and the founder desk run on the Supabase project
 // below. Nothing else is contacted at runtime.
 //
 // Both values are read at BUILD time from .env (see .env.example).

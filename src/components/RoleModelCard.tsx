@@ -309,7 +309,7 @@ export default function RoleModelCard({ coach, onPress }: Props) {
               fontFamily={monoFont}
               fill="rgba(166,190,172,0.9)"
             >
-              ROLE MODEL · STAGE MENTOR
+              COACH BENCHMARK · CHAPTER GUIDE
             </SvgText>
           </Svg>
         </Animated.View>
