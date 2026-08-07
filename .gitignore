@@ -51,3 +51,4 @@ server/data/
 # distribution archives — may bundle .env with live keys.
 # download/ is the deliberate exception: a clean, .env-free copy for the founder.
 /*.zip
+image-search/

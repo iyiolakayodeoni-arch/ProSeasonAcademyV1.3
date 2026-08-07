@@ -13,27 +13,27 @@ type Card = { eyebrow: string; title: string; body: string; tone?: 'green' | 'go
 
 const CARDS: Card[] = [
   {
-    eyebrow: 'YOUR STARTING POINT',
-    title: 'THIS IS NOT A TEST.',
-    body: 'Baseline Week is a five-match assessment across seven days. You cannot fail it. We use it to understand the player you are today — your habits, decisions and head under pressure.',
+    eyebrow: 'WEEK ONE',
+    title: '5 GAMES. 7 DAYS.',
+    body: 'This is your starting point. You can’t fail it. We just watch how you play — your habits and decisions when it gets tough.',
     tone: 'green',
   },
   {
-    eyebrow: 'HOW THE WEEK WORKS',
-    title: 'PLAY → REFLECT → LEARN',
-    body: 'Play your normal match. Come back while it is fresh. Scan the moments that changed it, then answer honestly. Repeat for five matches and your starting profile takes shape.',
-    steps: ['01  PLAY A NORMAL MATCH', '02  RETURN & SCAN IT', '03  NAME THE KEY MOMENTS', '04  REPEAT ×5', '05  RECEIVE YOUR BASELINE'],
+    eyebrow: 'HOW IT WORKS',
+    title: 'PLAY, TYPE, REPEAT',
+    body: 'Play your normal game. After, type in your stats and talk about the moments that changed it. Do that 5 times and we make your starting card.',
+    steps: ['01  PLAY YOUR GAME', '02  TYPE YOUR STATS', '03  TALK ABOUT KEY MOMENTS', '04  DO IT 5 TIMES', '05  GET YOUR CARD'],
   },
   {
-    eyebrow: 'WHAT WE NEED FROM YOU',
-    title: 'TRUTH OVER IMPRESSION.',
-    body: 'Losses, rushed passes, frustration and poor decisions belong here too. There is no perfect answer and nobody is grading you. Honest evidence gives your coach something real to work with.',
+    eyebrow: 'BE HONEST',
+    title: 'BAD GAMES COUNT TOO.',
+    body: 'Losses and mistakes are useful. There are no perfect answers here. Just tell the truth — that’s what we can actually work with.',
     tone: 'gold',
   },
   {
-    eyebrow: 'AFTER MATCH FIVE',
-    title: 'YOUR ROAD OPENS.',
-    body: 'Your answers become your starting profile for coaching and tracking. We find patterns before we prescribe improvement — so the next work is built around your actual game.',
+    eyebrow: 'AFTER 5 GAMES',
+    title: 'THEN WE START.',
+    body: 'Your 5 games become your starting card. We look for patterns first, then we start fixing them together.',
     tone: 'green',
   },
 ];
