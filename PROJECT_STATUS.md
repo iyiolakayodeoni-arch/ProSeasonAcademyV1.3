@@ -18,14 +18,14 @@ ProSeasonAcademy is your coaching academy for EA SPORTS FC 26/27 Console. You pi
 ### 2.1 Onboarding — *fully built, all screens real*
 | # | Screen | What's working |
 |---|--------|----------------|
-| 1 | **Splash** | Animated logo crest with the looping "trail" animation, brand grid background, version footer |
+| 1 | **Splash** | Animated Mirror Journal mark with the looping "trail" animation, brand grid background, version footer |
 | 2 | **Sign In** | Clean neon form (email/username/password + create account + forgot). Runs on a local session today; the real server hook is marked for later (`TODO(real-auth)`) |
 | 3 | **Coach Selection** | The courtroom: both coaches pitch you in a one-way chat (you only read, they talk), banter lines per coach, scout file cards, then **"I'M WITH COACH X" → LOCK IT IN**. The lock is **permanent by design** — the app never offers a way back |
 | 4 | **How Did You Hear** | Source picker (YouTube/TikTok/IG/friend/other) with icons |
 | 5 | **Setup Loader** | Short animated "building your academy" boot into the main app |
 
 ### 2.2 Main app shell
-- Shared brand crest at the top of every tab, 4-tab bar (Home / Journey / Community / Settings)
+- Shared Mirror Journal mark at the top of every tab, 4-tab bar (Home / Journey / Community / Settings)
 - **Shared-element zoom transitions**: tap a journey node or the Role Model card and it *blooms* full-screen into the stage room; the back chevron reverses the exact same animation
 
 ### 2.3 Home tab
