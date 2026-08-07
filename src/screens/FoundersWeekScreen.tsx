@@ -146,24 +146,24 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.cardBody}>
                 {fwLive?.note?.trim()
                   ? fwLive.note
-                  : 'Baseline week was the interview. Founders Week is the room where we decide what this is worth — together.\n\nYou will do a 60-second tour of how the academy works, then vote on pricing in the halls. Every vote is read. After 2–4 days I set the price, the till opens, and you have 3 days grace to pay and continue.\n\nNothing is deleted. Your card, your vault, your trends — they wait.'}
+                  : 'You thought this was free, huh? Hah — got you.\n\nBaseline was the interview. Now we do the fair part: we discuss pricing together in the community. I’ll start with a price for each region, you tell me what’s fair in the halls. Take part — that’s how it stays free and fair for everyone.\n\nYour card and vault wait — nothing is deleted.'}
               </Text>
             </View>
             {fwLive && (
               <View style={styles.metaBox}>
                 <Text style={styles.metaLabel}>
-                  {fwLive.live ? 'FOUNDER IS IN THE HALLS NOW' : fwLive.startsAt ? `WINDOW: ${new Date(fwLive.startsAt).toLocaleDateString()} → ${fwLive.endsAt ? new Date(fwLive.endsAt).toLocaleDateString() : 'TBA'}` : 'PRICING WINDOW — DATES IN COMMUNITY'}
+                  {fwLive.live ? 'FOUNDER IS IN THE HALLS NOW' : fwLive.startsAt ? `WINDOW: ${new Date(fwLive.startsAt).toLocaleDateString()} → ${fwLive.endsAt ? new Date(fwLive.endsAt).toLocaleDateString() : 'TBA'}` : 'PRICING DISCUSSION — IN COMMUNITY'}
                 </Text>
                 <Text style={styles.metaTxt}>
-                  {fwLive.live ? 'Pricing discussion is live in #division-africa + #division-world. Your vote matters now.' : 'You can vote anytime — the founder reviews every answer before setting the price.'}
+                  {fwLive.live ? 'Pricing discussion is live in #division-africa + #division-world. Your voice matters now — join the discussion.' : 'I’ll post the starting price per region, you debate it in the halls. Jump in when the window opens.'}
                 </Text>
               </View>
             )}
             <View style={styles.stepsBox}>
               <Text style={styles.stepsLabel}>HOW THIS WEEK RUNS</Text>
               <Text style={styles.stepLine}>1. TOUR — 60 sec · how tracking + the card works</Text>
-              <Text style={styles.stepLine}>2. PRICING VOTE — 7 questions · your honest call (median, not mean)</Text>
-              <Text style={styles.stepLine}>3. FOUNDER SETS PRICE — till opens · 3-day grace to pay</Text>
+              <Text style={styles.stepLine}>2. PRICING IN COMMUNITY — I start per region, you make it fair</Text>
+              <Text style={styles.stepLine}>3. TILL OPENS — 3-day grace to pay and continue</Text>
             </View>
             <Pressable onPress={welcomeNext} style={styles.cta}><Text style={styles.ctaTxt}>ENTER FOUNDERS WEEK ›</Text></Pressable>
           </Animated.View>
@@ -179,8 +179,8 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
               <Text style={styles.tourBody}>{TOUR_CARDS[tourIdx].body}</Text>
             </Animated.View>
             <View style={styles.dots}>{TOUR_CARDS.map((_, i) => (<View key={i} style={[styles.dot, i === tourIdx && styles.dotOn]} />))}</View>
-            <Pressable onPress={tourNext} style={styles.cta}><Text style={styles.ctaTxt}>{tourIdx < TOUR_CARDS.length - 1 ? 'NEXT ›' : 'TOUR DONE — VOTE ON PRICING ›'}</Text></Pressable>
-            <Pressable onPress={tourNext} hitSlop={8}><Text style={styles.skip}>SKIP TOUR — TAKE ME TO VOTING</Text></Pressable>
+            <Pressable onPress={tourNext} style={styles.cta}><Text style={styles.ctaTxt}>{tourIdx < TOUR_CARDS.length - 1 ? 'NEXT ›' : 'TOUR DONE — PRICING ›'}</Text></Pressable>
+            <Pressable onPress={tourNext} hitSlop={8}><Text style={styles.skip}>SKIP TOUR — TAKE ME TO PRICING</Text></Pressable>
           </Animated.View>
         )}
 
@@ -188,82 +188,20 @@ export default function FoundersWeekScreen({ coach, onDone }: { coach: Coach; on
         {step === 'pricing' && (
           <Animated.View entering={FadeIn.duration(280)}>
             <Text style={styles.eyebrow}>FOUNDERS WEEK · PRICING DISCUSSION</Text>
-            <Text style={styles.titleSm}>WHAT SHOULD THIS COST?</Text>
-            <Text style={styles.subSm}>MEDIAN, NOT MEAN — ONE LOUD VOICE CANNOT DRAG IT</Text>
-            <View style={styles.progressBox}>
-              <Text style={styles.progressLabel}>{answeredCount}/{totalCount} ANSWERED</Text>
-              <View style={styles.progressBar}><View style={[styles.progressFill, { width: `${totalCount ? (answeredCount / totalCount) * 100 : 0}%` }]} /></View>
-              <Text style={styles.progressHint}>Change your mind anytime while discussion is open. Founder sees medians, not your name.</Text>
+            <Text style={styles.titleSm}>YOU THOUGHT THIS WAS FREE, HUH? 😅</Text>
+            <Text style={styles.subSm}>WE SET THE PRICE TOGETHER — IN THE COMMUNITY</Text>
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>HOW IT WORKS</Text>
+              <Text style={styles.cardBody}>
+                I’ll start with a price for each region. You jump into the pricing halls — #division-africa and #division-world — and say what’s fair. Take part. Argue it. That’s how it stays free and fair for everyone, not just my call.
+              </Text>
             </View>
-            {!consult && <Text style={styles.muted}>LOADING QUESTIONS… (offline? pull to refresh)</Text>}
-            {consult?.length === 0 && <Text style={styles.muted}>NO PRICING QUESTIONS ARE OPEN YET. The founder will publish them during Founders Week — check back or watch the halls.</Text>}
-            {consult?.map((q) => (
-              <View key={q.slug} style={[styles.qCard, q.answered && styles.qCardDone]}>
-                <Text style={styles.qPrompt}>{q.prompt}</Text>
-                {q.helper && <Text style={styles.qHelper}>{q.helper}</Text>}
-                {q.kind === 'choice' && q.options && (
-                  <View style={styles.choiceRow}>
-                    {q.options.map((opt) => {
-                      const selected = (answers[q.slug]?.choice ?? q.myChoice) === opt;
-                      return (
-                        <Pressable key={opt} onPress={() => setAnswers((m) => ({ ...m, [q.slug]: { ...m[q.slug], choice: opt } }))} style={[styles.choiceChip, selected && styles.choiceChipOn]}>
-                          <Text style={[styles.choiceTxt, selected && styles.choiceTxtOn]}>{opt}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-                {q.kind === 'price' && (
-                  <View style={styles.priceRow}>
-                    <Text style={styles.pricePrefix}>₦ / £</Text>
-                    <TextInput
-                      value={answers[q.slug]?.amount ?? (q.myAmount != null ? String(q.myAmount) : '')}
-                      onChangeText={(v) => setAnswers((m) => ({ ...m, [q.slug]: { ...m[q.slug], amount: v.replace(/[^0-9.]/g, '').slice(0, 7) } }))}
-                      placeholder={q.myAmount != null ? String(q.myAmount) : 'YOUR PRICE'}
-                      placeholderTextColor="rgba(143,184,155,0.4)"
-                      keyboardType="number-pad"
-                      style={styles.priceInput}
-                    />
-                  </View>
-                )}
-                {q.kind === 'text' && (
-                  <TextInput
-                    value={answers[q.slug]?.note ?? q.myNote ?? ''}
-                    onChangeText={(v) => setAnswers((m) => ({ ...m, [q.slug]: { ...m[q.slug], note: v.slice(0, 400) } }))}
-                    placeholder="YOUR HONEST NOTE — IN YOUR OWN WORDS"
-                    placeholderTextColor="rgba(143,184,155,0.4)"
-                    style={styles.textInput}
-                    multiline
-                  />
-                )}
-                {/* note field for choice/price too */}
-                {(q.kind === 'choice' || q.kind === 'price') && (
-                  <TextInput
-                    value={answers[q.slug]?.note ?? q.myNote ?? ''}
-                    onChangeText={(v) => setAnswers((m) => ({ ...m, [q.slug]: { ...m[q.slug], note: v.slice(0, 300) } }))}
-                    placeholder="OPTIONAL NOTE — WHY? (helps the founder more than the number)"
-                    placeholderTextColor="rgba(143,184,155,0.35)"
-                    style={[styles.textInput, { minHeight: 44, marginTop: 8 }]}
-                    multiline
-                  />
-                )}
-                {q.myChoice || q.myAmount != null || q.myNote ? (
-                  <Text style={styles.answeredTxt}>{q.answered ? `✓ YOU SAID: ${q.myChoice ?? q.myAmount ?? 'noted'}` : 'NOT YET ANSWERED'}</Text>
-                ) : null}
-                <Pressable
-                  onPress={() => void submitConsult(q.slug)}
-                  style={[styles.smallCta, savingSlug === q.slug && { opacity: 0.5 }]}
-                >
-                  <Text style={styles.smallCtaTxt}>{savingSlug === q.slug ? 'SAVING…' : q.answered ? 'UPDATE MY VOTE ›' : 'SUBMIT VOTE ›'}</Text>
-                </Pressable>
-              </View>
-            ))}
             <View style={styles.hintBox}>
-              <Text style={styles.hintLabel}>HOW THE PRICE IS SET</Text>
-              <Text style={styles.hintTxt}>Medians per question, not averages. Quotes are read. Founder publishes the final price, till opens, you get 3 days grace to pay. Your baseline card waits — nothing is ever deleted.</Text>
+              <Text style={styles.hintLabel}>TAKE PART</Text>
+              <Text style={styles.hintTxt}>Open Community → pricing halls. Say your piece. Even a short “too high / fair / too low + why” matters more than a silent vote. I read every line before the till opens.</Text>
             </View>
-            <Pressable onPress={() => setStep('await')} style={[styles.cta, { backgroundColor: colors.accent }]}><Text style={[styles.ctaTxt, { color: '#2a1410' }]}>DONE VOTING — WHAT HAPPENS NEXT ›</Text></Pressable>
-            <Pressable onPress={() => setStep('await')} hitSlop={8}><Text style={styles.skip}>SKIP FOR NOW — I’LL VOTE IN THE HALLS</Text></Pressable>
+            <Pressable onPress={() => setStep('await')} style={styles.cta}><Text style={styles.ctaTxt}>GOT IT — TAKE ME TO WHAT HAPPENS NEXT ›</Text></Pressable>
+            <Pressable onPress={() => setStep('await')} hitSlop={8}><Text style={styles.skip}>I’LL JOIN THE DISCUSSION IN THE HALLS</Text></Pressable>
           </Animated.View>
         )}
 
