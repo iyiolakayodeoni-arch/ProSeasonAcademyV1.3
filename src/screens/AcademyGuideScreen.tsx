@@ -73,11 +73,16 @@ export default function AcademyGuideScreen({ onClose }: Props) {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(40).duration(280)}>
-          <Text style={styles.sectionLabel}>WHAT YOU DO AFTER A MATCH</Text>
+          <Text style={styles.sectionLabel}>YOUR FIRST SESSION, WITHOUT GUESSING</Text>
           <View style={styles.card}>
-            <Step number="01" title="PLAY" body="Play a real FC console match as normal. Record it if you want to review it later." />
-            <Step number="02" title="REVIEW" body="Use the Mirror Session to name one focus, the pattern you saw, and the moments you chose." />
-            <Step number="03" title="CARRY" body="Write one lesson in your own words. The next session asks whether it held or broke." />
+            <Step number="01" title="BEFORE YOU PLAY" body="Only start a Mirror Session when you have a real match to play or review. It asks for one focus—not a long plan." />
+            <Step number="02" title="AT HALF-TIME" body="Pause only when the match reaches half-time. Name the pattern you are seeing and pick one small adjustment." />
+            <Step number="03" title="AFTER FULL-TIME" body="Log the score. After your cool-down, say what you think decided the match and what you would change first." />
+            <Step number="04" title="AFTER THE REVIEW" body="Choose the moments you want to study. End with one lesson for the next match. Your answers save if you need to leave." />
+          </View>
+          <View style={styles.reassuranceCard}>
+            <Text style={styles.reassuranceTitle}>IF YOU ARE NOT PLAYING A MATCH NOW</Text>
+            <Text style={styles.reassuranceCopy}>Do nothing. You are not behind, and you do not need to complete forms to “keep up.” Come back when there is a real match to learn from.</Text>
           </View>
         </Animated.View>
 
@@ -132,6 +137,9 @@ const styles = StyleSheet.create({
   stepCopy: { flex: 1 },
   stepTitle: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1, color: colors.fg },
   stepBody: { marginTop: 4, fontFamily: bodyFont, fontSize: 11.2, lineHeight: 16, color: colors.muted },
+  reassuranceCard: { marginHorizontal: 16, marginTop: 10, borderLeftWidth: 2, borderLeftColor: colors.primary, paddingLeft: 11, paddingRight: 8 },
+  reassuranceTitle: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.45, color: colors.primary },
+  reassuranceCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 11.2, lineHeight: 16, color: '#bfcec3' },
   termRow: { padding: 13, borderBottomWidth: 1, borderBottomColor: 'rgba(57,255,106,0.1)' },
   termName: { fontFamily: bodyFontHeavy, fontSize: 10.4, letterSpacing: 1.25, color: colors.primary },
   termMeaning: { marginTop: 5, fontFamily: bodyFont, fontSize: 11.4, lineHeight: 16.5, color: '#c2d2c6' },

@@ -342,6 +342,16 @@ export default function MirrorSessionScreen({
             <Animated.View entering={FadeInUp.duration(320)}>
               <Text style={styles.heroLine}>BEFORE THE MATCH — PICK ONE FOCUS.</Text>
               <Text style={styles.heroSub}>Write one useful intention while the score is 0–0. The session keeps it beside what you see later.</Text>
+              <View style={styles.sessionGuide}>
+                <Text style={styles.sessionGuideTitle}>YOU ARE IN THE RIGHT PLACE. HERE IS WHAT HAPPENS NEXT.</Text>
+                <View style={styles.sessionGuideSteps}>
+                  <Text style={styles.sessionGuideStep}>1 · ONE FOCUS NOW</Text>
+                  <Text style={styles.sessionGuideStep}>2 · TWO LINES AT HALF-TIME</Text>
+                  <Text style={styles.sessionGuideStep}>3 · SCORE + FIRST READ AFTER FULL-TIME</Text>
+                  <Text style={styles.sessionGuideStep}>4 · ONE LESSON FOR NEXT MATCH</Text>
+                </View>
+                <Text style={styles.sessionGuideNote}>This is not a test. You can leave at any time; your saved answers will still be here when you return.</Text>
+              </View>
               {INTENTION_QUESTIONS.map((q, i) => (
                 <QuestionCard
                   key={q.key}
@@ -738,6 +748,11 @@ const styles = StyleSheet.create({
 
   heroLine: { marginTop: 16, fontFamily: displayFont, fontSize: 22, lineHeight: 24, letterSpacing: 0.6, color: colors.fg, textShadowColor: 'rgba(57,255,106,0.45)', textShadowRadius: 10 },
   heroSub: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: '#9db4a3' },
+  sessionGuide: { marginTop: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.4)', borderRadius: 12, backgroundColor: 'rgba(38,30,12,0.48)', padding: 12 },
+  sessionGuideTitle: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.45, color: colors.accent },
+  sessionGuideSteps: { marginTop: 9, gap: 5 },
+  sessionGuideStep: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 0.8, color: '#e1d8c8' },
+  sessionGuideNote: { marginTop: 9, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(242,192,120,0.18)', fontFamily: bodyFont, fontSize: 10.3, lineHeight: 15, color: '#cfc3ad' },
 
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16, marginBottom: 4 },
   sectionTitle: { fontFamily: monoFont, fontSize: 6.6, fontWeight: '900', letterSpacing: 2, color: colors.muted },

@@ -111,6 +111,28 @@ export default function HomeTab({ coach, onOpenStage, onOpenJourney, onOpenUpdat
           </Pressable>
         </Animated.View>
 
+        <Animated.View entering={FadeInUp.delay(35).duration(320)} style={styles.startHereCard}>
+          <Text style={styles.startHereTag}>STOP HERE FIRST</Text>
+          <Text style={styles.startHereTitle}>YOU DO NOT NEED TO LEARN THE WHOLE APP TODAY.</Text>
+          <Text style={styles.startHereCopy}>
+            {activeSession
+              ? 'You already started the important thing. Resume your saved review; the app will take you to the exact next question.'
+              : 'Your only decision is whether you have a real match to review. Everything else can wait.'}
+          </Text>
+          {!activeSession && (
+            <View style={styles.choiceBox}>
+              <Text style={styles.choiceTitle}>IF YOU HAVE A MATCH TODAY</Text>
+              <Text style={styles.choiceCopy}>Tap “Start a Mirror Session.” It will explain each step as you go.</Text>
+              <Text style={styles.choiceTitle}>IF YOU DO NOT HAVE A MATCH TODAY</Text>
+              <Text style={styles.choiceCopy}>You do not need to fill anything in. Close the app and return after your next real match.</Text>
+            </View>
+          )}
+          <Pressable onPress={onOpenGuide} style={styles.explainBtn}>
+            <Text style={styles.explainBtnTxt}>EXPLAIN MY FIRST SESSION STEP BY STEP</Text>
+            <ChevronRightIcon size={12} color={colors.accent} />
+          </Pressable>
+        </Animated.View>
+
         <Animated.View entering={FadeInUp.delay(50).duration(320)} style={styles.nextCard}>
           <View style={styles.nextTop}>
             <View>
@@ -282,6 +304,15 @@ const styles = StyleSheet.create({
   definitionCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 12.3, lineHeight: 18, color: '#c3d4c7' },
   guideLink: { marginTop: 10, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2 },
   guideLinkTxt: { fontFamily: bodyFontHeavy, fontSize: 9.2, letterSpacing: 1.2, color: colors.primary },
+  startHereCard: { marginTop: 14, borderWidth: 1.2, borderColor: 'rgba(242,192,120,0.42)', borderRadius: 15, padding: 14, backgroundColor: 'rgba(37,29,12,0.58)' },
+  startHereTag: { fontFamily: monoFont, fontSize: 6.7, fontWeight: '900', letterSpacing: 1.8, color: colors.accent },
+  startHereTitle: { marginTop: 7, fontFamily: bodyFontHeavy, fontSize: 14, lineHeight: 19, letterSpacing: 0.3, color: colors.fg },
+  startHereCopy: { marginTop: 7, fontFamily: bodyFont, fontSize: 12, lineHeight: 17.5, color: '#e2d7c2' },
+  choiceBox: { marginTop: 11, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(242,192,120,0.18)' },
+  choiceTitle: { marginTop: 6, fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.25, color: colors.accent },
+  choiceCopy: { marginTop: 3, fontFamily: bodyFont, fontSize: 10.8, lineHeight: 15, color: '#d8cfbd' },
+  explainBtn: { marginTop: 13, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 1, borderColor: 'rgba(242,192,120,0.46)', borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 },
+  explainBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 1.05, color: colors.accent },
   nextCard: { marginTop: 15, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.48)', borderRadius: 16, padding: 14, backgroundColor: 'rgba(13,25,16,0.92)', shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   nextTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   cardKicker: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },

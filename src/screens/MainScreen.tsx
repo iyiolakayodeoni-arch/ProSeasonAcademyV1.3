@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -74,6 +75,27 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [hallsOpen, setHallsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const guideKey = useMemo(() => `psa.plain-language-guide.v1.${backend.getMe()?.id ?? 'anon'}`, []);
+
+  // A player should never have to discover the product by wandering around
+  // the tabs. The first Home entry opens the plain-language guide; it stays
+  // replayable from Today and Settings afterwards.
+  useEffect(() => {
+    let alive = true;
+    void AsyncStorage.getItem(guideKey)
+      .then((seen) => {
+        if (alive && seen !== 'seen') setGuideOpen(true);
+      })
+      .catch(() => {
+        if (alive) setGuideOpen(true);
+      });
+    return () => { alive = false; };
+  }, [guideKey]);
+
+  const closeGuide = useCallback(() => {
+    setGuideOpen(false);
+    void AsyncStorage.setItem(guideKey, 'seen').catch(() => {});
+  }, [guideKey]);
 
   // ── stage-zoom transition state ──
   const [room, setRoom] = useState<RoomState | null>(null);
@@ -230,7 +252,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
       {guideOpen && (
         <View style={StyleSheet.absoluteFill}>
-          <AcademyGuideScreen onClose={() => setGuideOpen(false)} />
+          <AcademyGuideScreen onClose={closeGuide} />
         </View>
       )}
     </View>

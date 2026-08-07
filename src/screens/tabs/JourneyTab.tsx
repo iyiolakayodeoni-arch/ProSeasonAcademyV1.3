@@ -95,6 +95,11 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
           <Text style={styles.heroSub}>SIX CHAPTERS. ONE PRACTICE: PLAY · REVIEW · CARRY.</Text>
         </ArtBand>
 
+        <Animated.View entering={FadeInUp.duration(260)} style={styles.progressGuide}>
+          <Text style={styles.progressGuideTitle}>WHAT THIS PAGE IS FOR</Text>
+          <Text style={styles.progressGuideCopy}>This is your evidence page, not another task list. Use Today to start or resume a match review. Come here afterwards to see what that work has earned.</Text>
+        </Animated.View>
+
         <Animated.View entering={FadeInUp.duration(300)} style={styles.currentCard}>
           <Text style={styles.kicker}>{activeSession ? 'YOUR MIRROR SESSION IS OPEN' : complete ? 'YOUR LAST CHAPTER' : 'CURRENT CHAPTER'}</Text>
           <Text style={styles.currentTitle}>{complete ? 'PROVE IT' : current.name.toUpperCase()}</Text>
@@ -225,6 +230,9 @@ const styles = StyleSheet.create({
   heroEyebrow: { fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 2, color: colors.primary },
   heroTitle: { marginTop: 7, maxWidth: '88%', fontFamily: displayFont, fontSize: 27, lineHeight: 28, letterSpacing: 0.5, color: colors.fg },
   heroSub: { marginTop: 7, fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.4, color: 'rgba(238,242,236,0.84)' },
+  progressGuide: { marginTop: 13, borderLeftWidth: 2, borderLeftColor: colors.accent, paddingLeft: 10, paddingRight: 6 },
+  progressGuideTitle: { fontFamily: monoFont, fontSize: 6.4, fontWeight: '900', letterSpacing: 1.5, color: colors.accent },
+  progressGuideCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 11.3, lineHeight: 16, color: '#c8d3c8' },
   currentCard: { marginTop: 14, borderRadius: 16, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.45)', backgroundColor: 'rgba(13,25,16,0.92)', padding: 14 },
   kicker: { fontFamily: monoFont, fontSize: 6.7, fontWeight: '900', letterSpacing: 1.7, color: colors.primary },
   currentTitle: { marginTop: 6, fontFamily: displayFont, fontSize: 27, lineHeight: 27, letterSpacing: 0.6, color: colors.fg },

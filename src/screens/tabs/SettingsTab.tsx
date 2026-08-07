@@ -805,11 +805,19 @@ export default function SettingsTab({
             {sheet === 'help' && (
               <View>
                 <Text style={styles.sheetEyebrow}>HELP & SUPPORT</Text>
-                <Text style={styles.sheetTitle}>BUGS · BILLING · A HUMAN</Text>
-                <FaqRow q="HOW DO I CLEAR A STAGE?" a="OPEN THE STAGE AND START A MIRROR SESSION — INTENTION, MATCH, CHECKPOINTS, REVIEW, ONE LESSON. THE STAGE GRADES YOUR EVIDENCE." />
-                <FaqRow q="MY SCAN DIDN'T LAND" a="SCANS ARRIVE WITH YOUR NEXT RANKED MATCH. IF 24H PASS, PING US." />
+                <Text style={styles.sheetTitle}>START WITH THE NEXT MATCH</Text>
+                <FaqRow q="WHAT DO I DO ON HOME?" a="LOOK FOR YOUR NEXT MOVE. IF YOU HAVE A REAL MATCH TO PLAY OR REVIEW, START A MIRROR SESSION. IF YOU DO NOT, YOU ARE NOT BEHIND — COME BACK AFTER THE MATCH." />
+                <FaqRow q="HOW DO I CLEAR A STAGE?" a="A STAGE MOVES WHEN YOUR MATCH RECEIPTS MEET ITS EVIDENCE TARGETS. THE MIRROR SESSION HELPS YOU CREATE THE REVIEW; PROGRESS SHOWS WHAT IS STILL NEEDED." />
+                <FaqRow q="DO I NEED TO USE EVERY FEATURE?" a="NO. THE CORE IS PLAY, REVIEW, CARRY. NEWS, HALLS AND ADVANCED TRACKING ARE OPTIONAL SUPPORT TOOLS." />
                 <FaqRow q="CAN I SWITCH COACHES?" a="NO — THE PATH LOCK IS PERMANENT. THAT'S THE ACADEMY." />
                 <FaqRow q="WHERE IS MY DATA?" a="ON THIS DEVICE, AND MIRRORED TO YOUR ACADEMY SEAT WHEN YOU HAVE SIGNAL." />
+                <SheetButton
+                  label="READ THE STEP-BY-STEP GUIDE"
+                  onPress={() => {
+                    close();
+                    onOpenGuide();
+                  }}
+                />
                 <SheetButton
                   label="TOUR THE ACADEMY"
                   onPress={() => {
