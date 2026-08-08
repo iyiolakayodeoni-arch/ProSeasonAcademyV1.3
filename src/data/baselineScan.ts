@@ -48,9 +48,6 @@ export type MatchResult = 'W' | 'D' | 'L';
 // ─────────────────────────────────────────────────────────────
 export const BASELINE_MATCHES = 5;
 export const BASELINE_DAYS = 7;
-/** A short reset between days: enough to cool down and return deliberately,
- * never long enough to turn a committed player into a lost player. */
-export const BASELINE_COOLDOWN_MS = 30 * 60 * 1000;
 
 /** the per-moment analysis of a failing moment (the day's core task) */
 export type BaselineAnalysisKey =
@@ -290,8 +287,8 @@ export function entryIndexToDay(idx: number): number {
   }
 }
 
-/** Build the 7-day schedule. A new session has a 30-minute reset between
- * sealed days. Old sessions stay available rather than being unexpectedly locked. */
+/** Build the 7-day schedule. Each next day opens as soon as the prior day is
+ * sealed. Old sessions are migrated without losing progress. */
 function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   const days: BaselineDay[] = [];
   let prevSeal = startedAt;
@@ -410,32 +407,21 @@ export function dayStatus(s: BaselineSession | null, day: number): BaselineDaySt
   if (d?.sealedAt) return 'done';
   const cur = currentBaselineDay(s);
   if (day > cur) return 'future';
-  // The only gate is a short reset after the last day. It gives a tired player
-  // room to come down, without the old 24-hour wall that broke momentum.
-  if ((d?.unlockedAt ?? 0) > Date.now()) return 'locked';
+  // A current unsealed day is available. The 30-minute cool-down remains
+  // coaching guidance, not an app gate, while testing the practice.
   return 'today';
-}
-
-export function baselineCooldownRemaining(s: BaselineSession | null): number {
-  if (!s) return 0;
-  const day = currentBaselineDay(s);
-  const next = s.days.find((item) => item.day === day);
-  return Math.max(0, (next?.unlockedAt ?? 0) - Date.now());
 }
 
 // ── THE WEEK — day actions ───────────────────────────────────
 
-/**
- * Seal a day of the week. The next day opens after a 30-minute reset — enough
- * time to cool down and come back deliberately, without losing momentum.
- */
+/** Seal a day of the week. The next day opens immediately. */
 export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void {
   if (!session) return;
   const sealedAt = Date.now();
   const days = session.days.map((d) => (d.day === day ? { ...d, ...extra, sealedAt } : d));
   const nextIdx = days.findIndex((d) => d.day === day + 1);
   if (nextIdx >= 0 && !days[nextIdx].sealedAt) {
-    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt + BASELINE_COOLDOWN_MS };
+    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt };
   }
   session = { ...session, days };
   void persist();

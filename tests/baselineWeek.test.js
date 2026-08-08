@@ -1,8 +1,8 @@
 // Pure-node unit tests for the BASELINE WEEK — a player-paced 7-day gate.
 // Run: npm test (compiles the TS engine, then executes).
 //
-// These tests prove the paced flow: day 1 opens immediately and every later
-// day follows a short 30-minute reset after the previous one is sealed. Old sessions migrate
+// These tests prove the player-paced flow: day 1 opens immediately and every
+// later day opens as soon as the previous one is sealed. Old sessions migrate
 // without losing progress, and
 // the day's moment analysis must be genuinely complete before the
 // day can be sealed.
@@ -89,30 +89,27 @@ async function main() {
   assert.equal(B.isWeekComplete(fresh), false, 'the week is not complete');
   console.log('PASS 1 · fresh week opens on DAY 1, days 2–7 are future');
 
-  // ══ T2 · sealing day 1 starts a 30-minute reset before day 2 ══
+  // ══ T2 · sealing day 1 immediately opens day 2 ══
   B.recordBaselineMatch(entry(Date.now()), null);
   B.sealBaselineDay(1);
   const after1 = await B.loadBaseline('chinedu');
   assert.equal(B.currentBaselineDay(after1), 2, 'day 1 sealed → day 2 is current');
-  assert.equal(B.dayStatus(after1, 2), 'locked', 'day 2 is held for the short reset');
+  assert.equal(B.dayStatus(after1, 2), 'today', 'day 2 is available immediately');
   const d2 = after1.days.find((d) => d.day === 2);
   const d1 = after1.days.find((d) => d.day === 1);
-  assert.equal(d2.unlockedAt, d1.sealedAt + B.BASELINE_COOLDOWN_MS, 'day 2 opens after the 30-minute reset');
-  assert.ok(B.baselineCooldownRemaining(after1) > 0, 'the reset exposes a live remaining time');
-  d2.unlockedAt = Date.now() - 1;
-  assert.equal(B.dayStatus(after1, 2), 'today', 'day 2 opens after the reset ends');
+  assert.equal(d2.unlockedAt, d1.sealedAt, 'day 2 opens when day 1 is sealed');
   assert.equal(d1.entryIndex, 0, 'day 1 is linked to its vault entry');
-  console.log('PASS 2 · sealing day 1 starts a 30-minute reset before day 2');
+  console.log('PASS 2 · sealing day 1 immediately opens day 2');
 
-  // ══ T3 · every completed day starts the same short reset ══
+  // ══ T3 · every completed day immediately opens the next one ══
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(2);
   const after2 = await B.loadBaseline('chinedu');
   const d3 = after2.days.find((d) => d.day === 3);
   const d2s = after2.days.find((d) => d.day === 2);
-  assert.equal(d3.unlockedAt, d2s.sealedAt + B.BASELINE_COOLDOWN_MS, 'day 3 follows the 30-minute reset');
+  assert.equal(d3.unlockedAt, d2s.sealedAt, 'day 3 opens when day 2 is sealed');
   assert.equal(B.currentBaselineDay(after2), 3, 'day 3 is current even when late');
-  console.log('PASS 3 · every sealed day uses the same short reset');
+  console.log('PASS 3 · sealing any day immediately opens the next');
 
   // ══ T4 · a moment analysis is only complete when EVERY question is answered ══
   const full = namedMoment('CONCEDED AFTER A PANIC PASS');
@@ -148,33 +145,29 @@ async function main() {
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(3);
   const after3 = await B.loadBaseline('chinedu');
-  after3.days.find((d) => d.day === 4).unlockedAt = Date.now() - 1;
   assert.equal(B.currentBaselineDay(after3), 4, 'match 3 sealed → day 4 (rest day 1) is current');
   B.saveBaselineReflection(4, 'I keep rushing after conceding', 'I now pause before passing');
   B.sealBaselineDay(4);
   const after4 = await B.loadBaseline('chinedu');
-  after4.days.find((d) => d.day === 5).unlockedAt = Date.now() - 1;
   assert.equal(B.currentBaselineDay(after4), 5, 'rest day 1 sealed → day 5 (match 4) is current');
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(5);
   const after5 = await B.loadBaseline('chinedu');
-  after5.days.find((d) => d.day === 6).unlockedAt = Date.now() - 1;
   assert.equal(B.currentBaselineDay(after5), 6, 'match 4 sealed → day 6 (rest day 2) is current');
   B.saveBaselineReflection(6, 'My standard for finale is zero panic passes', 'I will hold composure');
   B.sealBaselineDay(6);
   const after6 = await B.loadBaseline('chinedu');
-  after6.days.find((d) => d.day === 7).unlockedAt = Date.now() - 1;
   assert.equal(B.currentBaselineDay(after6), 7, 'rest day 2 sealed → day 7 (match 5 finale) is current');
   assert.equal(B.isBaselineMatchDay(7), true, 'day 7 is match 5 (the finale)');
   assert.equal(B.matchNumberForDay(after6, 7), 5, 'day 7 corresponds to match number 5');
   const d7 = after6.days.find((d) => d.day === 7);
   assert.equal(d7.sealedAt, null, 'day 7 not yet sealed');
-  assert.equal(B.dayStatus(after6, 7), 'today', 'day 7 is available after its short reset');
+  assert.equal(B.dayStatus(after6, 7), 'today', 'day 7 is available immediately after rest day 2');
   const refl4 = after6.days.find((d) => d.day === 4).reflection;
   assert.ok(refl4 && refl4.repeated.includes('rushing'), 'day 4 reflection persisted');
   const refl6 = after6.days.find((d) => d.day === 6).reflection;
   assert.ok(refl6 && refl6.repeated.includes('standard'), 'day 6 reflection persisted');
-  console.log('PASS 6 · the week keeps its rhythm with short resets, not day-long waits');
+  console.log('PASS 6 · the week flows Matches 1–3 → Rest 1 → Match 4 → Rest 2 → Match 5 Finale without waits');
 
   await B.resetBaselineForDev();
   console.log('\nALL BASELINE WEEK TESTS PASS');

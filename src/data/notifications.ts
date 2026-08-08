@@ -158,8 +158,8 @@ export function parseDeepLink(data: any): DeepLink | null {
 }
 
 // ── BASELINE WEEK ─────────────────────────────────────────────
-// Baseline days use a short 30-minute reset. The screen itself shows the
-// countdown; no push permission is required just to keep the commitment.
+// Baseline days open immediately after the prior day is sealed. There are
+// no timed unlock notifications to schedule.
 
 /** Clear any legacy Baseline Week notifications when an account is deleted. */
 export async function cancelBaselineUnlocks(): Promise<void> {

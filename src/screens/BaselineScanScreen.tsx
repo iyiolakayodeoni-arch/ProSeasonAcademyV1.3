@@ -11,7 +11,6 @@ import {
   BASELINE_SCRIPTS,
   BASELINE_DAYS,
   BASELINE_DAY_INTRO,
-  baselineCooldownRemaining,
   BASELINE_MATCHES,
   BASELINE_MOMENT_MIN_ANSWER,
   BASELINE_MOMENT_QUESTIONS,
@@ -47,7 +46,7 @@ import { sfx } from '../audio/sound';
 import { trackFunnel } from '../data/funnel';
 import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy, gradeColor } from '../theme';
 const MIN_ANSWER = 12;
-type Phase = 'talk' | 'day' | 'reflection' | 'cooldown' | 'ambition' | 'card';
+type Phase = 'talk' | 'day' | 'reflection' | 'ambition' | 'card';
 type DayStep = 'start' | 'match' | 'stats' | 'review' | 'analysis' | 'dayq';
 interface DraftMoment { id: string; name: string; startMin: number; endMin: number; tag: string | null; analysis: Partial<Record<BaselineAnalysisKey, string>>; }
 function Stepper({ value, onChange, accent }: { value: number; onChange: (n: number) => void; accent?: boolean }) {
@@ -70,7 +69,7 @@ const GUIDE_STEPS = [
   ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
   ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
   ['TYPE THE FOUR RECEIPTS', 'After the final whistle, open the console stats screen and type four core numbers: possession, shots, shots on target and pass accuracy. Then name one moment honestly.'],
-  ['TAKE A SHORT RESET', 'After each day seals, take 30 minutes away from the app. It is enough time to cool down and return on purpose, without losing your momentum.'],
+  ['TAKE A SHORT RESET', 'After a match, take 30 minutes away from the app before you review. The app will be here when you come back.'],
 ] as const;
 function BaselineGuide({ index, onNext, onBack, onSkip }: { index: number; onNext: () => void; onBack: () => void; onSkip: () => void }) {
   const [title, body] = GUIDE_STEPS[index];
@@ -106,20 +105,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [tackles, setTackles] = useState(''); const [saves, setSaves] = useState(''); const [offsides, setOffsides] = useState(''); const [yellowCards, setYellowCards] = useState('');
   const [profilePicUri, setProfilePicUri] = useState<string | null>(null);
   const day = currentBaselineDay(session); const complete = isWeekComplete(session);
-  const [now, setNow] = useState(Date.now());
-  const cooldownMs = baselineCooldownRemaining(session);
-  const cooldownMinutes = Math.ceil(cooldownMs / 60000);
-  useEffect(() => {
-    if (!cooldownMs) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [cooldownMs]);
-  useEffect(() => {
-    if (phase === 'cooldown' && baselineCooldownRemaining(session) <= 0) {
-      const nextDay = currentBaselineDay(session);
-      setPhase(isBaselineRestDay(nextDay) ? 'reflection' : 'day');
-    }
-  }, [now, phase, session]);
   useEffect(() => { void AsyncStorage.getItem(GUIDE_KEY).then((seen) => { if (!seen) setGuideStep(0); }); }, []);
   const dismissGuide = () => { setGuideStep(null); void AsyncStorage.setItem(GUIDE_KEY, 'seen'); };
   useEffect(() => {
@@ -127,7 +112,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       setSession(s);
       if (s.card) setPhase('card');
       else if (currentBaselineDay(s) > BASELINE_DAYS) setPhase('ambition');
-      else if (baselineCooldownRemaining(s) > 0) setPhase('cooldown');
       else if (isBaselineRestDay(currentBaselineDay(s))) setPhase('reflection');
       else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) setPhase('day');
       else setPhase(s.entries.length > 0 ? 'day' : 'talk');
@@ -184,12 +168,12 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setGf(0); setGa(0); setTouched(false); setComposure(null); setMoments([]); setDayAnswer(''); setMomentName(''); setMomentStart(0); setMomentEnd(5);
     setPossession(''); setShots(''); setShotsOnTarget(''); setPassAcc(''); setCorners(''); setFouls(''); setTackles(''); setSaves(''); setOffsides(''); setYellowCards('');
     setStep('start');
-    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); const d = currentBaselineDay(s); if (d > BASELINE_DAYS) setPhase('ambition'); else setPhase(baselineCooldownRemaining(s) > 0 ? 'cooldown' : isBaselineRestDay(d) ? 'reflection' : 'day'); scrollRef.current?.scrollTo({ y: 0, animated: false }); });
+    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); const d = currentBaselineDay(s); if (d > BASELINE_DAYS) setPhase('ambition'); else setPhase(isBaselineRestDay(d) ? 'reflection' : 'day'); scrollRef.current?.scrollTo({ y: 0, animated: false }); });
   };
   const sealReflection = () => {
     if (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 }) || !session) return;
     sfx('whoosh'); saveBaselineReflection(reflection.repeated, reflection.changed); sealBaselineDay(6);
-    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); setPhase(baselineCooldownRemaining(s) > 0 ? 'cooldown' : 'day'); });
+    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); setPhase('day'); });
   };
   const seal = async () => {
     if (!isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) || sealing) return;
@@ -287,12 +271,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   {!canSealDay && (<Text style={styles.requireTxt}>Add the four stats, one honest moment + review, your head state and the check-in answer to seal.</Text>)}
                 </Animated.View>)}
             </>)}
-          {phase === 'cooldown' && (<Animated.View entering={FadeInUp.duration(300)}>
-              <Text style={styles.eyebrow}>STARTING WEEK · SHORT RESET</Text><WeekStrip session={session} />
-              <Text style={styles.heroLine}>PUT THE PHONE DOWN FOR A MOMENT.</Text>
-              <Text style={styles.heroSub}>You sealed the work. Take a proper 30-minute reset before the next day opens. This is not a punishment or a daily streak — it is room for your head to settle.</Text>
-              <View style={styles.cooldownBox}><Text style={styles.cooldownLabel}>NEXT DAY OPENS IN</Text><Text style={styles.cooldownValue}>{String(Math.floor(cooldownMinutes / 60)).padStart(2, '0')}:{String(cooldownMinutes % 60).padStart(2, '0')}</Text><Text style={styles.cooldownHint}>COME BACK WHEN THE TIMER REACHES 00:00</Text></View>
-            </Animated.View>)}
           {phase === 'reflection' && (<Animated.View entering={FadeInUp.duration(300)}>
               <Text style={styles.eyebrow}>{day === 4 ? `STARTING WEEK · DAY 4 OF ${BASELINE_DAYS} · REST DAY 1 (NO MATCH TODAY)` : `STARTING WEEK · DAY 6 OF ${BASELINE_DAYS} · REST DAY 2 (PRE-FINALE PREPARATION)`}</Text><WeekStrip session={session} />
               <Text style={styles.heroLine}>{day === 4 ? 'MOMENTUM IS BUILT. TODAY YOU REST AND REFLECT.' : 'REST AND RECALIBRATE BEFORE THE FINALE.'}</Text><Text style={styles.heroSub}>{day === 4 ? 'Momentum over your first three matches — now you rest. Step away, biro and paper, reflect on patterns.' : 'Tomorrow is your 5th and final baseline match. Today you rest. Set your non-negotiable standards for the finale.'}</Text>
@@ -328,7 +306,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 function MiniStat({ label, value }: { label: string; value: string }) { return (<View style={styles.miniStat}><Text style={styles.miniStatLabel}>{label}</Text><Text style={styles.miniStatValue}>{value}</Text></View>); }
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg }, scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 42 }, eyebrow: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center' }, title: { color: colors.fg, fontFamily: displayFont, fontSize: 34, lineHeight: 35, letterSpacing: 0.8, textAlign: 'center', marginTop: 8 }, sub: { color: colors.accent, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 6 }, coachRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, marginBottom: 4 }, coachFace: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface }, coachName: { color: colors.muted, fontFamily: monoFont, fontSize: 10, letterSpacing: 1.6 }, beat: { flexDirection: 'row', marginTop: 12, gap: 12 }, quoteBar: { width: 3, borderRadius: 2, opacity: 0.6 }, beatTxt: { flex: 1, color: '#dbe7dd', fontFamily: bodyFont, fontSize: 13, lineHeight: 20 }, bluffBox: { marginTop: 18, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface, padding: 14 }, bluffLabel: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2 }, bluffTxt: { color: '#dbe7dd', fontFamily: bodyFont, fontSize: 12.5, lineHeight: 19, marginTop: 6 }, cta: { marginTop: 20, backgroundColor: colors.primary, borderRadius: 25, paddingVertical: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 0.8 }, skipLink: { color: colors.muted, fontFamily: bodyFont, fontSize: 11.5, letterSpacing: 0.4, textAlign: 'center', marginTop: 14 }, notReadyTxt: { color: colors.muted, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, marginTop: 10, textAlign: 'center' },
-  cooldownBox: { marginTop: 22, borderWidth: 1, borderColor: 'rgba(242,192,120,0.45)', borderRadius: 14, backgroundColor: 'rgba(38,30,12,0.5)', padding: 20, alignItems: 'center' }, cooldownLabel: { color: colors.accent, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.8 }, cooldownValue: { color: colors.fg, fontFamily: displayFont, fontSize: 42, letterSpacing: 2, marginTop: 9 }, cooldownHint: { color: colors.muted, fontFamily: monoFont, fontSize: 6.5, letterSpacing: 1.1, marginTop: 8 },
   guideBox: { marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.55)', borderRadius: 13, backgroundColor: 'rgba(14,30,18,0.98)', padding: 13 }, guideArrow: { color: colors.primary, fontSize: 23, lineHeight: 22, textAlign: 'center' }, guideCopy: { marginTop: 3 }, guideKicker: { color: colors.primary, fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.7 }, guideTitle: { color: colors.fg, fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 5 }, guideBody: { color: '#b9cabe', fontFamily: bodyFont, fontSize: 11, lineHeight: 16, marginTop: 5 }, guideActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }, guideBack: { color: colors.muted, fontFamily: monoFont, fontSize: 8, letterSpacing: 1 }, guideNext: { backgroundColor: colors.primary, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 15 }, guideNextTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1 }, guideSkip: { color: colors.muted, fontFamily: monoFont, fontSize: 7.5, textAlign: 'right', letterSpacing: 1, marginTop: 9 }, replayGuide: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, textAlign: 'center', letterSpacing: 1.2, marginTop: 10 },
   helpCard: { marginTop: 12, borderLeftWidth: 2, borderLeftColor: colors.accent, borderRadius: 8, backgroundColor: 'rgba(242,192,120,0.07)', padding: 11 }, helpTitle: { color: colors.accent, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4 }, helpText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 },
   nextBox: { marginTop: 14, borderWidth: 1, borderColor: 'rgba(57,255,106,0.3)', borderRadius: 12, backgroundColor: 'rgba(57,255,106,0.06)', padding: 12 }, nextLabel: { color: colors.primary, fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.5 }, nextText: { color: '#cbd8cf', fontFamily: bodyFont, fontSize: 10.5, lineHeight: 15, marginTop: 5 },

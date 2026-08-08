@@ -405,7 +405,7 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 
 - **Coach room now starts with the work.** The two match choices and Match Review are visible first. Coach chat, voice, mechanics, clips, sources and the optional tip are behind a single **OPEN COACH NOTES & OPTIONAL TIP** control, so no player has to scroll through lore before reviewing a real match.
 - **The ritual stays intact.** The Match Review still captures intention, half-time, full-time, player-chosen moments, comparison and one carried lesson. The routine card now states the whole job in one line rather than repeating a long manifesto.
-- **30-minute reset, not a 24-hour wall.** Baseline days now unlock 30 minutes after the previous day is sealed, with an in-app countdown. This preserves the deliberate cool-down while protecting momentum; all coaching copy uses a consistent 30-minute cool-down.
+- **30-minute cool-down direction.** The 30-minute reset is documented as the coaching practice after a match, but is deliberately **not app-enforced during founder testing**. Baseline days still open immediately after sealing, so testing is never blocked by a timer.
 - **Core funnel measurement.** `src/data/funnel.ts` records only six conversion milestones, locally first and fail-soft. `supabase/funnel.sql` adds the privacy-minimal server table/RLS/rollup when deployed: coach selected → Baseline day one started → baseline complete → first Match Review → second Match Review → lesson verdict. It never records reflections, scores, recordings or chat content.
 - Verified: `npm run typecheck` clean · `npm test` green.
 
