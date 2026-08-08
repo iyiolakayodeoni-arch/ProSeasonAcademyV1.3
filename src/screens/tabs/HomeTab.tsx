@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
@@ -6,8 +6,6 @@ import ArtBand from '../../components/ArtBand';
 import LogoMark from '../../components/LogoMark';
 import { ChevronDownIcon, ChevronRightIcon, PlayIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
-import { useMatches } from '../../data/matches';
-import { useJourneyProgress } from '../../data/progress';
 import { useSettings } from '../../data/settings';
 import { currentDay, loadDailyProgram } from '../../data/dailyProgram';
 import { bodyFont, bodyFontBold, bodyFontHeavy, colors, displayFont, monoFont } from '../../theme';
@@ -41,23 +39,11 @@ export default function HomeTab({ coach, onOpenJourney, onOpenUpdates, onOpenHal
   const [tutOpen, setTutOpen] = useState<string | null>(null);
   const [day, setDay] = useState<number>(1);
   const settings = useSettings();
-  const progress = useJourneyProgress();
-  const vault = useMatches();
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 2400, eraseMs: 2400 });
 
   useEffect(() => {
     void loadDailyProgram().then((p) => setDay(Math.min(currentDay(p), 180)));
   }, []);
-
-  const stats = useMemo(
-    () => [
-      { label: 'XP', value: progress.xp.toLocaleString('en-US'), accent: colors.primary },
-      { label: 'STREAK', value: `×${settings.bestStreak}`, accent: colors.accent },
-      { label: 'DIV', value: settings.div, accent: colors.warm },
-      { label: 'MATCHES', value: String(vault.played), accent: '#7fd4ff' },
-    ],
-    [progress.xp, settings.bestStreak, settings.div, vault.played],
-  );
 
   return (
     <View style={styles.flex}>
@@ -81,16 +67,6 @@ export default function HomeTab({ coach, onOpenJourney, onOpenUpdates, onOpenHal
             <Text style={styles.heroTitle}>{greeting()} {settings.displayName.toUpperCase()}</Text>
             <Text style={styles.heroSub}>ONE REAL MATCH. ONE HONEST REVIEW. WE BUILD FROM THERE.</Text>
           </ArtBand>
-        </Animated.View>
-
-        {/* ── gamified stat strip ── */}
-        <Animated.View entering={FadeInUp.delay(40).duration(320)} style={styles.statsCard}>
-          {stats.map((s, i) => (
-            <View key={s.label} style={[styles.statCell, i > 0 && styles.statCellBorder]}>
-              <Text style={[styles.statValue, { color: s.accent }]}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
         </Animated.View>
 
         {/* ── your day — the one thing to do today lives in your tracker ── */}
@@ -210,12 +186,6 @@ const styles = StyleSheet.create({
   heroEyebrow: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 2.2, color: colors.primary },
   heroTitle: { marginTop: 6, fontFamily: displayFont, fontSize: 27, lineHeight: 28, letterSpacing: 0.4, color: colors.fg },
   heroSub: { marginTop: 8, fontFamily: monoFont, fontSize: 6.7, letterSpacing: 1.65, color: 'rgba(238,242,236,0.85)' },
-
-  statsCard: { marginTop: 12, flexDirection: 'row', borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)', borderRadius: 14, backgroundColor: 'rgba(13,24,16,0.86)', overflow: 'hidden' },
-  statCell: { flex: 1, alignItems: 'center', paddingVertical: 11 },
-  statCellBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(57,255,106,0.13)' },
-  statValue: { fontFamily: displayFont, fontSize: 17, letterSpacing: 0.6 },
-  statLabel: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 7.5, letterSpacing: 1.5, color: colors.muted },
 
   nextCard: { marginTop: 14, borderWidth: 1.2, borderColor: 'rgba(57,255,106,0.5)', borderRadius: 16, padding: 14, backgroundColor: 'rgba(13,25,16,0.92)', shadowColor: colors.primary, shadowOpacity: 0.12, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } },
   nextTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },

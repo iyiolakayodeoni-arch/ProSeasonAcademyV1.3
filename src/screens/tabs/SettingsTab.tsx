@@ -7,7 +7,7 @@ import ArtBand from '../../components/ArtBand';
 import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy } from '../../theme';
 
 const LOCKERS = require('../../../assets/art/locker-room.jpg');
-import { useJourneyProgress, wipeProgress } from '../../data/progress';
+import { wipeProgress } from '../../data/progress';
 import { wipeThread } from '../../data/lessonThread';
 import { wipeMirror } from '../../data/mirrorSession';
 import * as backend from '../../data/backend';
@@ -66,7 +66,6 @@ const Chevron = () => <ChevronRightIcon size={13} color={colors.muted} />;
 
 export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
   const s = useSettings();
-  const progress = useJourneyProgress();
   const { width: winW } = useWindowDimensions();
   const bandW = Math.min(winW, 430) - 32;
   const [sheet, setSheet] = useState<SheetKind>(null);
@@ -123,8 +122,6 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
 
   const forgetFounderKey = () => { setFounderAllowed(false); setFounderKey(null); setDeskOpen(false); };
 
-  const xp = progress.xp.toLocaleString('en-US');
-
   const open = (k: Exclude<SheetKind, null>) => {
     if (k === 'edit') setNameDraft(s.displayName);
     if (k === 'delete') setDeleteArmed(false);
@@ -173,20 +170,6 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
               <Text style={styles.profileName}>{s.displayName}</Text>
               <Text style={styles.profileId}>ACADEMY ID · {s.academyId}</Text>
               <Text style={styles.profileMeta}>PLATFORM · {s.platform}</Text>
-            </View>
-          </View>
-          <View style={styles.statStrip}>
-            <View style={styles.statCell}>
-              <Text style={styles.statValue}>{xp}</Text>
-              <Text style={styles.statLabel}>ACADEMY XP</Text>
-            </View>
-            <View style={[styles.statCell, styles.statCellBorder]}>
-              <Text style={styles.statValue}>{s.div}</Text>
-              <Text style={styles.statLabel}>CURRENT DIV</Text>
-            </View>
-            <View style={[styles.statCell, styles.statCellBorder]}>
-              <Text style={styles.statValue}>×{s.bestStreak}</Text>
-              <Text style={styles.statLabel}>BEST STREAK</Text>
             </View>
           </View>
           <Pressable style={({ pressed }) => [styles.editBtn, pressed && { backgroundColor: 'rgba(57,255,106,0.08)' }]} onPress={() => open('edit')}>
@@ -419,12 +402,6 @@ const styles = StyleSheet.create({
   profileName: { fontFamily: displayFont, fontSize: 19, letterSpacing: 1.4, color: colors.fg, textTransform: 'uppercase' },
   profileId: { marginTop: 2, fontFamily: monoFont, fontSize: 9, fontWeight: '700', letterSpacing: 1.6, color: colors.muted },
   profileMeta: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 9.5, letterSpacing: 1.4, color: colors.primary },
-
-  statStrip: { flexDirection: 'row', marginHorizontal: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)', borderRadius: 11, backgroundColor: 'rgba(10,15,10,0.5)' },
-  statCell: { flex: 1, alignItems: 'center', paddingVertical: 10 },
-  statCellBorder: { borderLeftWidth: 1, borderLeftColor: 'rgba(57,255,106,0.14)' },
-  statValue: { fontFamily: displayFont, fontSize: 17, letterSpacing: 0.6, color: colors.primary },
-  statLabel: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 8.5, letterSpacing: 1.5, color: colors.muted },
 
   editBtn: { margin: 12, marginTop: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 11, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.4)' },
   editBtnTxt: { fontFamily: bodyFontBold, fontSize: 10, letterSpacing: 2.4, color: '#7ed793' },
