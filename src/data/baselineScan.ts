@@ -1,11 +1,9 @@
 // ─────────────────────────────────────────────────────────────
-// BASELINE SCAN — the 7-day interview that builds the player
+// BASELINE SCAN — the 5-match interview that builds the player
 // profile card. Structured around "The Chinedu Way":
-//   DAY 1–3: Match 1, 2, 3 (build momentum)
-//   DAY 4:   Rest Day 1 (mid-week rest & reflection, no match)
-//   DAY 5:   Match 4
-//   DAY 6:   Rest Day 2 (pre-finale rest & preparation, no match)
-//   DAY 7:   Match 5 (The Finale) + Ambition & Profile Card seal
+//   MATCH 1–5: your real console matches, reviewed honestly,
+//   completed at YOUR pace — no clock, no rest days, no waits.
+//   After Match 5: Ambition & Profile Card seal.
 //
 // For every match, players follow The Chinedu Way ritual:
 //   1. Record as usual and watch the match tape.
@@ -33,21 +31,17 @@ function baselineStorageKey(): string {
 export type MatchResult = 'W' | 'D' | 'L';
 
 // ─────────────────────────────────────────────────────────────
-// THE BASELINE WEEK — 5 matches and 2 reflection days, at the player’s pace.
+// THE BASELINE — 5 matches, at the player's own pace.
 //
-// Players progress through the week at their own pace: three matches
-// build momentum, then a rest day to reflect; one match, then a
-// rest day to prepare; finally Match 5 (The Finale). Completing a day
-// immediately opens the next one.
+// This is a side hustle, not a full-time job — so there is no schedule,
+// no rest day, no clock. A player reviews Match 1, and Match 2 is ready
+// whenever they are. Completing a match immediately opens the next one.
 //
-//   DAY 1, 2, 3   Matches 1, 2, 3 + review each (watch → pen → database)
-//   DAY 4         Rest Day 1 — mid-week reflection on matches 1–3
-//   DAY 5         Match 4 + review
-//   DAY 6         Rest Day 2 — pre-finale preparation & reflection
-//   DAY 7         Match 5 (The Finale) + Ambition & Profile Card seal
+//   MATCH 1–5   review each (watch → pen → database) — your pace
+//   MATCH 5     (The Finale) + Ambition & Profile Card seal
 // ─────────────────────────────────────────────────────────────
 export const BASELINE_MATCHES = 5;
-export const BASELINE_DAYS = 7;
+export const BASELINE_DAYS = 5;
 
 /** the per-moment analysis of a failing moment (the day's core task) */
 export type BaselineAnalysisKey =
@@ -117,7 +111,7 @@ export interface BaselineDay {
   /** epoch ms when this day opened (kept for saved-session compatibility) */
   unlockedAt: number;
   entryIndex?: number; // match days: index into entries[]
-  reflection?: { repeated: string; changed: string }; // day 6
+  reflection?: { repeated: string; changed: string }; // legacy rest-day field (no longer used)
 }
 
 /** The FC 26 post-match stats screen — the console truth. These are the numbers
@@ -242,53 +236,27 @@ export interface BaselineSession {
 let session: BaselineSession | null = null;
 let hydrated = false;
 
-/** Day 1, 2, 3, 5, 7 are match days; Day 4 and 6 are rest days */
+/** Every match (1..5) is a match day — there are no rest days. */
 export function isBaselineMatchDay(day: number): boolean {
-  return day === 1 || day === 2 || day === 3 || day === 5 || day === 7;
+  return day >= 1 && day <= BASELINE_DAYS;
 }
 
 export function isBaselineRestDay(day: number): boolean {
-  return day === 4 || day === 6;
+  return false;
 }
 
 /** Day to entry index (0-based) for match days */
 export function dayToEntryIndex(day: number): number | undefined {
-  switch (day) {
-    case 1:
-      return 0;
-    case 2:
-      return 1;
-    case 3:
-      return 2;
-    case 5:
-      return 3;
-    case 7:
-      return 4;
-    default:
-      return undefined;
-  }
+  return day >= 1 && day <= BASELINE_DAYS ? day - 1 : undefined;
 }
 
-/** Entry index (0-based) to day number (1..7) */
+/** Entry index (0-based) to match/day number (1..5) */
 export function entryIndexToDay(idx: number): number {
-  switch (idx) {
-    case 0:
-      return 1;
-    case 1:
-      return 2;
-    case 2:
-      return 3;
-    case 3:
-      return 5;
-    case 4:
-      return 7;
-    default:
-      return idx + 1;
-  }
+  return Math.min(BASELINE_DAYS, idx + 1);
 }
 
-/** Build the 7-day schedule. Each next day opens as soon as the prior day is
- * sealed. Old sessions are migrated without losing progress. */
+/** Build the 5-match schedule. Each next match opens as soon as the prior one
+ * is sealed. Old 7-day sessions are migrated without losing progress. */
 function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   const days: BaselineDay[] = [];
   let prevSeal = startedAt;
@@ -298,10 +266,6 @@ function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
     let sealedAt: number | null = null;
     if (entryIndex !== undefined) {
       sealedAt = entries[entryIndex].at;
-    } else if (day === 4 && entries.length >= 4) {
-      sealedAt = entries[2].at + 1000;
-    } else if (day === 6 && entries.length >= 5) {
-      sealedAt = entries[3].at + 1000;
     }
     const unlock = day === 1 ? startedAt : prevSeal;
     days.push({ day, sealedAt, unlockedAt: unlock, entryIndex });
@@ -363,13 +327,15 @@ export async function loadBaseline(coachId: string): Promise<BaselineSession> {
           ambition: typeof parsed.ambition === 'string' ? parsed.ambition : null,
           card: migratedCard,
           startedAt: typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
-          // pre-week sessions have no `days` — migrate from their entries
-          days: Array.isArray(parsed.days)
-            ? (parsed.days as BaselineDay[])
-            : makeDays(
-                migratedEntries,
-                typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
-              ),
+          // sessions with no `days` (or the old 7-day layout) are rebuilt as a
+          // 5-match schedule from their entries — nothing is lost
+          days:
+            Array.isArray(parsed.days) && (parsed.days as BaselineDay[]).length === BASELINE_DAYS
+              ? (parsed.days as BaselineDay[])
+              : makeDays(
+                  migratedEntries,
+                  typeof parsed.startedAt === 'number' ? parsed.startedAt : Date.now(),
+                ),
         };
       }
     } catch {
@@ -427,54 +393,14 @@ export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void
   void persist();
 }
 
-/** day 4 or day 6 — the week's rest & reflection days (no match) */
-export function saveBaselineReflection(dayOrRepeated: number | string, repeatedOrChanged: string, maybeChanged?: string): void {
-  if (!session) return;
-  let day = 6;
-  let repeated = '';
-  let changed = '';
-  if (typeof dayOrRepeated === 'number') {
-    day = dayOrRepeated;
-    repeated = repeatedOrChanged;
-    changed = maybeChanged ?? '';
-  } else {
-    day = currentBaselineDay(session);
-    if (day !== 4 && day !== 6) day = 6;
-    repeated = dayOrRepeated;
-    changed = repeatedOrChanged;
-  }
-  const days = session.days.map((d) =>
-    d.day === day ? { ...d, reflection: { repeated: repeated.trim(), changed: changed.trim() } } : d,
-  );
-  session = { ...session, days };
-  void persist();
-}
-
 /** which match number a sealed day produced (1-based) */
 export function matchNumberForDay(s: BaselineSession | null, day: number): number {
   const d = (s?.days ?? []).find((x) => x.day === day);
   if (d?.entryIndex != null) return d.entryIndex + 1;
-  switch (day) {
-    case 1:
-      return 1;
-    case 2:
-      return 2;
-    case 3:
-      return 3;
-    case 4:
-      return 3;
-    case 5:
-      return 4;
-    case 6:
-      return 4;
-    case 7:
-      return 5;
-    default:
-      return day;
-  }
+  return day;
 }
 
-/** the week's receipts for day 6 — every named moment across the matches */
+/** every named moment across the 5 matches */
 export function weekMoments(s: BaselineSession | null): BaselineMoment[] {
   return (s?.entries ?? []).flatMap((e) => e.moments ?? []);
 }
@@ -792,7 +718,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     ],
     introSignoff: 'My story is told. Yours starts now, little one.',
     talk: [
-      'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches across seven days, walked at your own pace.',
+      'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches, walked entirely at your own pace.',
       'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
       'Let your mind cool down for 30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
@@ -870,23 +796,21 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
   },
 };
 
-// ── THE WEEK — short day-to-day lines (match days 2–5, rest, reflection) ──
-// Day 1 uses the full TALK. Day 7 uses ambitionAsk. These keep the pacing
-// human: a word from the coach, then the day's work — never a wall of text.
+// ── THE BASELINE — short match-to-match lines (matches 2–5) ──
+// Match 1 uses the full TALK. Match 5 uses ambitionAsk. These keep the pacing
+// human: a word from the coach, then the match's work — never a wall of text.
 
 export const BASELINE_DAY_INTRO: Record<string, Record<number, string>> = {
   chinedu: {
     2: 'Match two. Yesterday’s moments are still warm — good. Bring them into this one on purpose.',
     3: 'Halfway, little bro. The mirror does not care about your excuses, and neither do I. Play like day one meant something.',
-    4: 'Match four. You should be starting to hear yourself before you do it. That is the point of this week.',
-    5: 'Last trial match. Leave yourself nothing to hide behind — the card you get is built from these five days.',
-    6: 'No match today. Sit with the week — I will show you what you keep doing; you tell me what it means.',
+    4: 'Match four. You should be starting to hear yourself before you do it. That is the point of this work.',
+    5: 'Last trial match. Leave yourself nothing to hide behind — the card you get is built from these five matches.',
   },
   obinna: {
-    2: 'Match two, little one. Let yesterday’s review sit inside you before you play — calm carries over.',
-    3: 'Halfway. The water remembers every ripple — and so do I. I have your week in front of me.',
+    2: 'Match two, little one. Let your last review sit inside you before you play — calm carries over.',
+    3: 'Halfway. The water remembers every ripple — and so do I. I have your matches in front of me.',
     4: 'Match four. Notice how you start. Notice when the calm goes. That noticing IS the training.',
     5: 'The last trial match, little one. Play it like the mirror is kind — because it is, and it does not forget.',
-    6: 'Rest today. The week has been speaking to you — today we listen to it together.',
   },
 };

@@ -82,7 +82,8 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
   const bandW = Math.min(winW, 430);
   const thread = useLessonThread();
   const SEASON = journeySeasonFor(coach.id);
-  const cleared = prog.completedCount >= SEASON.totalStages;
+  // The full story is open to every player — progress no longer locks his arc.
+  const cleared = true;
   const story = STORIES[coach.id] ?? STORIES.chinedu;
   const coachFirst = coach.name.split(' ')[0];
 
@@ -102,7 +103,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
         <Animated.View entering={FadeInUp.delay(120).duration(380)} style={styles.cardWrap}>
           <RoleModelCard coach={coach} />
           <Text style={styles.cardHint}>
-            {cleared ? `YOUR PROGRESS IS COMPLETE — LEARN, DO NOT COPY` : `AVAILABLE AFTER CHAPTER ${SEASON.totalStages} · ${prog.completedCount}/${SEASON.totalStages} COMPLETE`}
+            HIS FULL STORY — OPEN TO YOU · LEARN, DO NOT COPY
           </Text>
         </Animated.View>
 

@@ -24,14 +24,11 @@ import {
   beatKey,
   currentBaselineDay,
   dayStatus,
-  isBaselineMatchDay,
-  isBaselineRestDay,
   isWeekComplete,
   loadBaseline,
   matchNumberForDay,
   momentAskFor,
   recordBaselineMatch,
-  saveBaselineReflection,
   sealBaseline,
   sealBaselineDay,
   tendenciesOf,
@@ -46,18 +43,18 @@ import { sfx } from '../audio/sound';
 import { trackFunnel } from '../data/funnel';
 import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy, gradeColor } from '../theme';
 const MIN_ANSWER = 12;
-type Phase = 'talk' | 'day' | 'reflection' | 'ambition' | 'card';
+type Phase = 'talk' | 'day' | 'ambition' | 'card';
 type DayStep = 'start' | 'match' | 'stats' | 'review' | 'analysis' | 'dayq';
 interface DraftMoment { id: string; name: string; startMin: number; endMin: number; tag: string | null; analysis: Partial<Record<BaselineAnalysisKey, string>>; }
 function Stepper({ value, onChange, accent }: { value: number; onChange: (n: number) => void; accent?: boolean }) {
   return (<View style={styles.stepper}><Pressable onPress={() => onChange(Math.max(0, value - 1))} hitSlop={10} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>−</Text></Pressable><Text style={[styles.stepValue, accent && { color: colors.primary }]}>{value}</Text><Pressable onPress={() => onChange(Math.min(9, value + 1))} hitSlop={10} style={styles.stepBtn}><Text style={styles.stepBtnTxt}>+</Text></Pressable></View>);
 }
 function WeekStrip({ session }: { session: BaselineSession | null }) {
-  return (<View style={styles.weekStrip}>{Array.from({ length: BASELINE_DAYS }).map((_, i) => {
-    const day = i + 1; const st: BaselineDayStatus = dayStatus(session, day);
+  return (<View style={styles.weekStrip}>{Array.from({ length: BASELINE_MATCHES }).map((_, i) => {
+    const match = i + 1; const st: BaselineDayStatus = dayStatus(session, match);
     const pill = st === 'done' ? styles.dayPillDone : st === 'today' ? styles.dayPillNow : st === 'locked' ? styles.dayPillLocked : styles.dayPillFuture;
     const txt = st === 'done' ? styles.dayPillTxtDone : st === 'today' ? styles.dayPillTxtNow : styles.dayPillTxtMuted;
-    return (<View key={day} style={[styles.dayPill, pill]}><Text style={[styles.dayPillTxt, txt]}>{day}</Text></View>);
+    return (<View key={match} style={[styles.dayPill, pill]}><Text style={[styles.dayPillTxt, txt]}>{match}</Text></View>);
   })}</View>);
 }
 const REFLECTION_STARTERS: Partial<Record<BaselineAnalysisKey, string[]>> = {
@@ -66,7 +63,7 @@ const REFLECTION_STARTERS: Partial<Record<BaselineAnalysisKey, string[]>> = {
 };
 const GUIDE_KEY = 'psa.baseline.guide.v1';
 const GUIDE_STEPS = [
-  ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
+  ['YOUR FIVE MATCHES', 'These five markers show the matches you have reviewed, the one you are on, and what is still ahead. Play them whenever you actually play — there is no clock and no deadline.'],
   ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
   ['TYPE THE FOUR RECEIPTS', 'After the final whistle, open the console stats screen and type four core numbers: possession, shots, shots on target and pass accuracy. Then name one moment honestly.'],
   ['TAKE A SHORT RESET', 'After a match, take 30 minutes away from the app before you review. The app will be here when you come back.'],
@@ -97,7 +94,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [composure, setComposure] = useState<number | null>(null);
   const [moments, setMoments] = useState<DraftMoment[]>([]); const [dayAnswer, setDayAnswer] = useState('');
   const [momentName, setMomentName] = useState(''); const [momentStart, setMomentStart] = useState(0); const [momentEnd, setMomentEnd] = useState(5);
-  const [reflection, setReflection] = useState({ repeated: '', changed: '' }); const [ambition, setAmbition] = useState(''); const [sealing, setSealing] = useState(false);
+  const [ambition, setAmbition] = useState(''); const [sealing, setSealing] = useState(false);
   const [guideStep, setGuideStep] = useState<number | null>(null); const seq = useRef(1);
   // ── FC 26 stats draft — TYPED, not scanned ──
   const [possession, setPossession] = useState(''); const [shots, setShots] = useState(''); const [shotsOnTarget, setShotsOnTarget] = useState('');
@@ -112,7 +109,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       setSession(s);
       if (s.card) setPhase('card');
       else if (currentBaselineDay(s) > BASELINE_DAYS) setPhase('ambition');
-      else if (isBaselineRestDay(currentBaselineDay(s))) setPhase('reflection');
       else if (currentBaselineDay(s) > 1 && currentBaselineDay(s) <= BASELINE_DAYS) setPhase('day');
       else setPhase(s.entries.length > 0 ? 'day' : 'talk');
       // restore pending pic if any entry has it
@@ -168,12 +164,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setGf(0); setGa(0); setTouched(false); setComposure(null); setMoments([]); setDayAnswer(''); setMomentName(''); setMomentStart(0); setMomentEnd(5);
     setPossession(''); setShots(''); setShotsOnTarget(''); setPassAcc(''); setCorners(''); setFouls(''); setTackles(''); setSaves(''); setOffsides(''); setYellowCards('');
     setStep('start');
-    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); const d = currentBaselineDay(s); if (d > BASELINE_DAYS) setPhase('ambition'); else setPhase(isBaselineRestDay(d) ? 'reflection' : 'day'); scrollRef.current?.scrollTo({ y: 0, animated: false }); });
-  };
-  const sealReflection = () => {
-    if (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 }) || !session) return;
-    sfx('whoosh'); saveBaselineReflection(reflection.repeated, reflection.changed); sealBaselineDay(6);
-    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); setPhase('day'); });
+    void loadBaseline(coach.id).then((s) => { setSession({ ...s }); const d = currentBaselineDay(s); if (d > BASELINE_DAYS) setPhase('ambition'); else setPhase('day'); scrollRef.current?.scrollTo({ y: 0, animated: false }); });
   };
   const seal = async () => {
     if (!isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) || sealing) return;
@@ -198,21 +189,21 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
           {phase === 'talk' && (<>
-              <Text style={styles.eyebrow}>BEFORE YOU START</Text><Text style={styles.title}>YOUR STARTING WEEK</Text><Text style={styles.sub}>ONE MATCH A DAY · SEVEN DAYS · NO SHORTCUTS</Text>
+              <Text style={styles.eyebrow}>BEFORE YOU START</Text><Text style={styles.title}>YOUR STARTING MATCHES</Text><Text style={styles.sub}>FIVE MATCHES · YOUR PACE · NO SHORTCUTS</Text>
               <View style={styles.coachRow}><CoachPresence size={44}><Image source={coach.portrait} style={styles.coachFace} /></CoachPresence><Text style={styles.coachName}>{first} · ON THE GATE</Text></View>
               {script.talk.map((b, i) => (<Animated.View key={i} entering={FadeInUp.delay(200 + i * 260).duration(300)} style={styles.beat}><View style={[styles.quoteBar, { backgroundColor: coach.cardAccent }]} /><Text style={styles.beatTxt}>{b}</Text></Animated.View>))}
-              <Animated.View entering={FadeInUp.delay(200 + script.talk.length * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>HOW THIS WEEK WORKS</Text><Text style={styles.bluffTxt}>Five ranked matches and two reflection days, walked at your pace. After each match, type four core stats and write three useful lines about one moment. Enough evidence to see your starting pattern — no form-filling contest.</Text></Animated.View>
+              <Animated.View entering={FadeInUp.delay(200 + script.talk.length * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>HOW IT WORKS</Text><Text style={styles.bluffTxt}>Five matches, played entirely at your pace. No clock, no deadline — when you play, you review. After each match, type four core stats and write three useful lines about one moment. Enough evidence to see your starting pattern — no form-filling contest.</Text></Animated.View>
               <Animated.View entering={FadeInUp.delay(200 + (script.talk.length + 1) * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>THE FOUR RECEIPTS</Text><Text style={styles.bluffTxt}>Possession • Shots • On Target • Pass Accuracy. Take a photo of the screen if you want, but type these four numbers. Their average across five matches becomes your baseline card.</Text></Animated.View>
               <Animated.View entering={FadeInUp.delay(200 + (script.talk.length + 2) * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>HIS HOUSE RULE</Text><Text style={styles.bluffTxt}>“{script.bluff}”</Text></Animated.View>
-              <View style={styles.photoPickBox}><Text style={styles.photoPickLabel}>YOUR STARTING PHOTO (FOR YOUR CARD)</Text><Text style={styles.photoPickHint}>Snap or pick one now, or before you seal Day 7. This photo goes on your sealed baseline card.</Text>{profilePicUri ? <Image source={{ uri: profilePicUri! }} style={styles.photoPreview} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderTxt}>NO PHOTO YET</Text></View>}<View style={styles.photoRow}><Pressable onPress={takeProfilePhoto} style={styles.photoBtn}><Text style={styles.photoBtnTxt}>TAKE PHOTO</Text></Pressable><Pressable onPress={pickProfilePic} style={styles.photoBtnAlt}><Text style={styles.photoBtnAltTxt}>PICK FROM GALLERY</Text></Pressable></View></View>
-              <Pressable onPress={() => { sfx('whoosh'); void trackFunnel('baseline_day_1_started'); setPhase('day'); setStep('start'); }} style={styles.cta}><Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text></Pressable>
-              <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}><Text style={styles.skipLink}>{notReady ? 'UNDERSTOOD — THIS GATE STAYS REAL' : 'NOT READY?'}</Text></Pressable>
-              {notReady && (<Text style={styles.notReadyTxt}>Then the journey waits. The academy does not remove you for thinking — but it does not carry passengers either. Come back when you mean it; this screen will be here.</Text>)}
+              <View style={styles.photoPickBox}><Text style={styles.photoPickLabel}>YOUR STARTING PHOTO (FOR YOUR CARD)</Text><Text style={styles.photoPickHint}>Snap or pick one now, or before you seal your card. This photo goes on your sealed baseline card.</Text>{profilePicUri ? <Image source={{ uri: profilePicUri! }} style={styles.photoPreview} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderTxt}>NO PHOTO YET</Text></View>}<View style={styles.photoRow}><Pressable onPress={takeProfilePhoto} style={styles.photoBtn}><Text style={styles.photoBtnTxt}>TAKE PHOTO</Text></Pressable><Pressable onPress={pickProfilePic} style={styles.photoBtnAlt}><Text style={styles.photoBtnAltTxt}>PICK FROM GALLERY</Text></Pressable></View></View>
+              <Pressable onPress={() => { sfx('whoosh'); void trackFunnel('baseline_day_1_started'); setPhase('day'); setStep('start'); }} style={styles.cta}><Text style={styles.ctaTxt}>I'M IN — START MATCH 1</Text></Pressable>
+              <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}><Text style={styles.skipLink}>{notReady ? 'UNDERSTOOD — AT YOUR OWN PACE' : 'FEELING THE PACE?'}</Text></Pressable>
+              {notReady && (<Text style={styles.notReadyTxt}>No pressure — this is a side hustle right now, not your full-time job. Play Match 1 whenever you actually play a real match. The app will be here when you are. Nothing is due, nothing is overdue.</Text>)}
             </>)}
           {phase === 'day' && day <= BASELINE_DAYS && (<>
-              <Text style={styles.eyebrow}>STARTING WEEK · DAY {day} OF {BASELINE_DAYS} · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES}</Text><WeekStrip session={session} />
+              <Text style={styles.eyebrow}>STARTING MATCHES · MATCH {matchNumberForDay(session, day)} OF {BASELINE_MATCHES} · YOUR PACE</Text><WeekStrip session={session} />
               {guideStep !== null && <BaselineGuide index={guideStep} onBack={() => setGuideStep(n => Math.max(0, (n ?? 0) - 1))} onNext={() => { if (guideStep >= GUIDE_STEPS.length - 1) dismissGuide(); else setGuideStep(guideStep + 1); }} onSkip={dismissGuide} />}
-              <Pressable onPress={() => setGuideStep(0)} hitSlop={8}><Text style={styles.replayGuide}>?  SHOW ME HOW STARTING WEEK WORKS</Text></Pressable>
+              <Pressable onPress={() => setGuideStep(0)} hitSlop={8}><Text style={styles.replayGuide}>?  SHOW ME HOW STARTING MATCHES WORK</Text></Pressable>
               {day > 1 && (<View style={styles.dayIntro}><Image source={coach.portrait} style={styles.beatFace} /><Text style={styles.dayIntroTxt}>{BASELINE_DAY_INTRO[coach.id]?.[day] ?? BASELINE_DAY_INTRO.chinedu?.[day]}</Text></View>)}
               {step === 'start' && (<Animated.View entering={FadeInUp.duration(300)}>
                   <Text style={styles.heroLine}>YOUR REVIEW ROUTINE — PEN TO PAPER BEFORE YOU TYPE.</Text>
@@ -261,41 +252,31 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   <Pressable onPress={() => { sfx('whoosh'); setStep('dayq'); }} style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}><Text style={styles.ctaTxt}>REFLECTION COMPLETE — ONE FINAL CHECK-IN ›</Text></Pressable>
                 </Animated.View>)}
               {step === 'dayq' && (<Animated.View entering={FadeInUp.duration(300)}>
-                  <Text style={styles.heroLine}>ONE FINAL CHECK-IN FOR DAY {day}.</Text><Text style={styles.questionPick}>{first}’S QUESTION — CHOSEN FOR THIS {result === 'W' ? 'WIN' : result === 'D' ? 'DRAW' : 'DEFEAT'}</Text>
+                  <Text style={styles.heroLine}>ONE FINAL CHECK-IN FOR MATCH {matchNumberForDay(session, day)}.</Text><Text style={styles.questionPick}>{first}’S QUESTION — CHOSEN FOR THIS {result === 'W' ? 'WIN' : result === 'D' ? 'DRAW' : 'DEFEAT'}</Text>
                   <View style={[styles.questionCard, { marginTop: 8 }]}><Image source={coach.portrait} style={styles.beatFace} /><View style={{ flex: 1 }}><Text style={styles.questionIntroTxt}>{script.dayQuestionIntro[result]}</Text><Text style={styles.questionTxt}>{question}</Text></View></View>
                   <HelpCard>Use a real example from this match. We are looking for the pattern behind the result, not the answer that sounds strongest.</HelpCard>
                   <TextInput value={dayAnswer} onChangeText={(t) => setDayAnswer(t.slice(0, 500))} placeholder="A SHORT, HONEST NOTE IN YOUR OWN WORDS." placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={500} />
                   <HonestyBadge text={dayAnswer} options={{ minLength: MIN_ANSWER, minWords: 2, prompt: question }} defaultNote={`YOUR WORDS, YOUR TRUTH — ${first} READS THIS`} coachId={coach.id} />
-                  <View style={styles.statsSummary}><Text style={styles.statsSummaryLabel}>DAY {day} RECEIPT — WILL BE AVERAGED INTO YOUR CARD</Text><View style={styles.statsSummaryRow}><Text style={styles.statsSummaryTxt}>{possession}% poss · {passAcc}% pass</Text><Text style={styles.statsSummaryTxt}>{shots} shots · {shotsOnTarget} on target</Text></View></View>
-                  <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}><Text style={styles.ctaTxt}>{day >= 5 ? 'SEAL DAY 5 — CONTINUE TO THE WEEK SO FAR' : `SEAL DAY ${day} — CONTINUE TO MATCH ${day + 1}`}</Text></Pressable>
+                  <View style={styles.statsSummary}><Text style={styles.statsSummaryLabel}>MATCH {matchNumberForDay(session, day)} RECEIPT — WILL BE AVERAGED INTO YOUR CARD</Text><View style={styles.statsSummaryRow}><Text style={styles.statsSummaryTxt}>{possession}% poss · {passAcc}% pass</Text><Text style={styles.statsSummaryTxt}>{shots} shots · {shotsOnTarget} on target</Text></View></View>
+                  <Pressable onPress={sealDay} style={[styles.cta, !canSealDay && { opacity: 0.35 }]}><Text style={styles.ctaTxt}>{day >= 5 ? 'SEAL MATCH 5 — FINISH THE STARTING WEEK' : `SEAL MATCH ${day} — CONTINUE TO MATCH ${day + 1}`}</Text></Pressable>
                   {!canSealDay && (<Text style={styles.requireTxt}>Add the four stats, one honest moment + review, your head state and the check-in answer to seal.</Text>)}
                 </Animated.View>)}
             </>)}
-          {phase === 'reflection' && (<Animated.View entering={FadeInUp.duration(300)}>
-              <Text style={styles.eyebrow}>{day === 4 ? `STARTING WEEK · DAY 4 OF ${BASELINE_DAYS} · REST DAY 1 (NO MATCH TODAY)` : `STARTING WEEK · DAY 6 OF ${BASELINE_DAYS} · REST DAY 2 (PRE-FINALE PREPARATION)`}</Text><WeekStrip session={session} />
-              <Text style={styles.heroLine}>{day === 4 ? 'MOMENTUM IS BUILT. TODAY YOU REST AND REFLECT.' : 'REST AND RECALIBRATE BEFORE THE FINALE.'}</Text><Text style={styles.heroSub}>{day === 4 ? 'Momentum over your first three matches — now you rest. Step away, biro and paper, reflect on patterns.' : 'Tomorrow is your 5th and final baseline match. Today you rest. Set your non-negotiable standards for the finale.'}</Text>
-              <View style={styles.receiptBox}><Text style={styles.receiptTag}>THE MOMENTS YOU NAMED SO FAR</Text>{allWeekMoments.length === 0 && <Text style={styles.receiptEmpty}>None yet — the week is waiting.</Text>}{session?.entries.map((e, ei) => (<View key={ei} style={styles.receiptEntry}><Text style={styles.receiptEntryHead}>MATCH {ei + 1} · {e.result} {e.gf}–{e.ga} · HEAD {e.composure}/5{(e.stats ? ` · ${e.stats.possession}% poss · ${e.stats.shots} shots` : '')}</Text>{(e.moments ?? []).map((m) => (<Text key={m.id} style={styles.receiptMoment}>· {m.startMin}’–{m.endMin}’ {m.name.toUpperCase()}{m.tag ? ` — ${m.tag}` : ''}</Text>))}</View>))}{tendencies.length > 0 && (<View style={styles.tendencyWrap}><Text style={styles.receiptTag}>WHAT KEEPS APPEARING</Text><View style={styles.tendencyRow}>{tendencies.map((t) => (<View key={t} style={styles.tendencyPill}><Text style={styles.tendencyTxt}>{t}</Text></View>))}</View></View>)}
-              {avgStatsPreview && <View style={styles.tendencyWrap}><Text style={styles.receiptTag}>YOUR RUNNING AVERAGES</Text><Text style={styles.receiptMoment}>{avgStatsPreview.possession}% possession · {avgStatsPreview.passAccuracy}% pass · {avgStatsPreview.shots} shots ({avgStatsPreview.shotsOnTarget} on)</Text></View>}
-              </View>
-              <Text style={styles.fieldLabel}>{day === 4 ? 'WHAT PATTERN HAVE YOU REPEATED ACROSS MATCHES 1–3?' : 'WHAT DO YOU KEEP REPEATING ACROSS MATCHES 1–4?'}</Text><TextInput value={reflection.repeated} onChangeText={(t) => setReflection((r) => ({ ...r, repeated: t }))} placeholder="LOOK AT THE MOMENTS ABOVE. THE PATTERN IS YOURS." placeholderTextColor={colors.muted} style={styles.input} multiline /><HonestyBadge text={reflection.repeated} options={{ minLength: MIN_ANSWER, minWords: 2 }} defaultNote="NAMING THE REPETITION IS THE FIRST STEP TO CLOSING IT" coachId={coach.id} />
-              <Text style={styles.fieldLabel}>{day === 4 ? 'HOW WILL YOU BREAK THIS PATTERN IN MATCH 4 TOMORROW?' : 'WHAT IS YOUR ONE NON-NEGOTIABLE STANDARD FOR THE FINALE TOMORROW?'}</Text><TextInput value={reflection.changed} onChangeText={(t) => setReflection((r) => ({ ...r, changed: t }))} placeholder="IN YOUR DECISIONS, NOT YOUR RESULTS — BE HONEST." placeholderTextColor={colors.muted} style={styles.input} multiline /><HonestyBadge text={reflection.changed} options={{ minLength: MIN_ANSWER, minWords: 2 }} defaultNote="IN YOUR DECISIONS, NOT YOUR RESULTS — BE HONEST" coachId={coach.id} />
-              <Pressable onPress={sealReflection} style={[styles.cta, (!isValidReflection(reflection.repeated, { minLength: MIN_ANSWER, minWords: 2 }) || !isValidReflection(reflection.changed, { minLength: MIN_ANSWER, minWords: 2 })) && { opacity: 0.35 }]}><Text style={styles.ctaTxt}>{day === 4 ? 'SEAL REST DAY 1 — CONTINUE TO MATCH 4' : 'SEAL REST DAY 2 — CONTINUE TO MATCH 5 (THE FINALE)'}</Text></Pressable>
-            </Animated.View>)}
           {phase === 'ambition' && (<>
-              <Text style={styles.eyebrow}>STARTING WEEK · DAY 7 · THE LAST QUESTION</Text><WeekStrip session={session} /><View style={styles.coachRow}><Image source={coach.portrait} style={styles.coachFace} /><Text style={styles.beatTxt}>{script.ambitionAsk}</Text></View>
+              <Text style={styles.eyebrow}>STARTING MATCHES · MATCH 5 · THE LAST QUESTION</Text><WeekStrip session={session} /><View style={styles.coachRow}><Image source={coach.portrait} style={styles.coachFace} /><Text style={styles.beatTxt}>{script.ambitionAsk}</Text></View>
               <View style={styles.photoPickBox}><Text style={styles.photoPickLabel}>YOUR CARD PHOTO — LAST CHANCE</Text><Text style={styles.photoPickHint}>This is the photo on your sealed baseline card. Snap it now if you haven’t.</Text>{profilePicUri ? <Image source={{ uri: profilePicUri! }} style={styles.photoPreview} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderTxt}>NO PHOTO YET — YOUR CARD NEEDS YOU</Text></View>}<View style={styles.photoRow}><Pressable onPress={takeProfilePhoto} style={styles.photoBtn}><Text style={styles.photoBtnTxt}>TAKE PHOTO</Text></Pressable><Pressable onPress={pickProfilePic} style={styles.photoBtnAlt}><Text style={styles.photoBtnAltTxt}>PICK GALLERY</Text></Pressable></View></View>
               <TextInput value={ambition} onChangeText={(t) => setAmbition(t.slice(0, 240))} placeholder="WHERE IS YOUR GAME GOING? THE REAL ANSWER." placeholderTextColor={colors.muted} style={styles.input} multiline maxLength={240} /><HonestyBadge text={ambition} options={{ minLength: MIN_ANSWER, minWords: 2 }} defaultNote="HE WILL BRING THIS BACK UP — COUNT ON IT" coachId={coach.id} />
               <Pressable onPress={() => void seal()} style={[styles.cta, !isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) && { opacity: 0.35 }]}><Text style={styles.ctaTxt}>{sealing ? 'SEALING…' : 'SEAL MY STARTING CARD'}</Text></Pressable>
             </>)}
           {phase === 'card' && session?.card && (<Animated.View entering={FadeInUp.duration(360)}>
-              <Text style={styles.eyebrow}>STARTING WEEK · SEALED — THIS IS WHERE YOU ARE</Text>
+              <Text style={styles.eyebrow}>STARTING MATCHES · SEALED — THIS IS WHERE YOU ARE</Text>
               <View style={[styles.cardBox, { borderColor: coach.cardAccent }]}>{session.card.profilePicUri ? <Image source={{ uri: session.card.profilePicUri! }} style={styles.cardPhoto} /> : <View style={styles.cardPhotoPh}><Text style={styles.cardPhotoPhTxt}>NO PHOTO</Text></View>}<Text style={styles.cardTier}>{session.card.tier}</Text><Text style={styles.cardHandle}>{session.card.handle}</Text><Text style={styles.cardCoach}>UNDER COACH {first} · {session.card.w}–{session.card.d}–{session.card.l} · {session.card.gf}:{session.card.ga} · HEAD {session.card.avgComposure.toFixed(1)}/5</Text>
                 {session.card.avgStats && (<View style={styles.avgBlock}><Text style={styles.avgLabel}>YOUR 5-MATCH AVERAGE — THE CONSOLE TRUTH</Text><View style={styles.avgGrid}><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.possession}%</Text><Text style={styles.avgKey}>POSSESSION</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.passAccuracy}%</Text><Text style={styles.avgKey}>PASS ACC</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.shots}</Text><Text style={styles.avgKey}>SHOTS</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.shotsOnTarget}</Text><Text style={styles.avgKey}>ON TARGET</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.corners}</Text><Text style={styles.avgKey}>CORNERS</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.fouls}</Text><Text style={styles.avgKey}>FOULS</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.tackles}</Text><Text style={styles.avgKey}>TACKLES</Text></View><View style={styles.avgCell}><Text style={styles.avgVal}>{session.card.avgStats.saves}</Text><Text style={styles.avgKey}>SAVES</Text></View></View></View>)}
                 <View style={styles.cardStatsGami}>{session.card.cardStats.map((s) => (<View key={s.key} style={styles.gamiStat}><View style={styles.gamiBar}><View style={[styles.gamiFill, { width: `${Math.max(6, s.value)}%`, backgroundColor: gradeColor(s.value) }]} /></View><Text style={styles.gamiLabel}>{s.label} {s.value}</Text></View>))}</View>
                 <Text style={styles.cardReadLabel}>{first}'S READ:</Text><Text style={styles.cardReadTxt}>“{session.card.coachRead}”</Text>
                 {(session.card.tendencies?.length ?? 0) > 0 && (<><Text style={styles.cardAmbLabel}>WHAT THE WEEK LEARNED ABOUT YOU:</Text><View style={styles.tendencyRow}>{session.card.tendencies.map((t) => (<View key={t} style={styles.tendencyPill}><Text style={styles.tendencyTxt}>{t}</Text></View>))}</View><Text style={styles.tendencyNote}>YOUR TENDENCIES UNDER PRESSURE — THE FIRST THING YOUR MAIN QUESTS WILL WORK ON.</Text></>)}
                 <Text style={styles.cardAmbLabel}>YOUR AMBITION (HE REMEMBERS):</Text><Text style={styles.cardAmbTxt}>“{session.card.ambition}”</Text></View>
-              <View style={styles.nextBox}><Text style={styles.nextLabel}>STARTING WEEK COMPLETE — TODAY IS READY</Text><Text style={styles.nextText}>Your starting record is saved. Next: open Today and start your first Match Review when you have a real match.</Text></View>
+              <View style={styles.nextBox}><Text style={styles.nextLabel}>STARTING MATCHES COMPLETE — TODAY IS READY</Text><Text style={styles.nextText}>Your starting record is saved. Next: open Today and start your first Match Review when you have a real match.</Text></View>
               <Pressable onPress={onDone} style={styles.cta}><CheckIcon size={12} color="#0a0f0a" /><Text style={styles.ctaTxt}>STARTING CARD SAVED — OPEN TODAY</Text></Pressable>
             </Animated.View>)}
           {complete && !session?.card && phase !== 'ambition' && phase !== 'card' && (<Text style={styles.requireTxt}>THE WEEK IS COMPLETE — ONE LAST QUESTION AWAITS.</Text>)}

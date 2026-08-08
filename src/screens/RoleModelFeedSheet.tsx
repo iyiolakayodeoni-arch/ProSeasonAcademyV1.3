@@ -8,7 +8,7 @@ import RoleModelCard from '../components/RoleModelCard';
 
 // the match moment — the stream is an ongoing night, not a lesson plan
 const VAULT_ART = require('../../assets/art/vault-match.jpg');
-import { ChevronLeftIcon, LockIcon, PlayIcon, CheckRingIcon, RouteIcon } from '../components/Icons';
+import { ChevronLeftIcon, PlayIcon, CheckRingIcon, RouteIcon } from '../components/Icons';
 import { Coach } from '../data/coaches';
 import {
   RoleFeedEntry,
@@ -19,6 +19,7 @@ import {
 } from '../data/roleModelFeed';
 import { SideLesson } from '../data/sideLesson';
 import SideLessonSheet from './SideLessonSheet';
+import RoleModelSheet from './RoleModelSheet';
 import { sfx } from '../audio/sound';
 import { colors, monoFont, displayFont } from '../theme';
 
@@ -66,6 +67,7 @@ function LiveDot() {
 export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Props) {
   const feed = useMemo(() => roleModelFeed(coach), [coach]);
   const [lesson, setLesson] = useState<SideLesson | null>(null);
+  const [finishOpen, setFinishOpen] = useState(false);
   const coachFirst = coach.name.split(' ')[0];
   const { width: winW } = useWindowDimensions();
   const bandW = Math.min(winW, 430);
@@ -116,16 +118,16 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
           ))}
         </View>
 
-        {/* his full story — the existing finish sheet (stage 7) */}
-        <Pressable onPress={() => { sfx('tap'); onOpenFinish?.(); }} hitSlop={6}>
+        {/* his full story — the existing finish sheet (stage 7), open to everyone */}
+        <Pressable onPress={() => { sfx('tap'); onOpenFinish?.(); setFinishOpen(true); }} hitSlop={6}>
           <View style={styles.finishCard}>
             <View style={styles.finishHeader}>
               <RouteIcon size={14} color={colors.accent} />
               <Text style={styles.finishTag}>THE FINISH · HIS FULL STORY</Text>
             </View>
             <Text style={styles.finishBody}>
-              The whole arc — where the card comes from and why it ends your map. Opens when you clear
-              the climb, the way it was designed.
+              The whole arc — where the card comes from and why it ends your map. Read it whenever you
+              want; it is open to you.
             </Text>
             <Text style={styles.finishCta}>READ HIS FULL STORY ›</Text>
           </View>
@@ -151,6 +153,17 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
             lesson={lesson}
             origin="stage"
             onClose={() => { sfx('tap'); setLesson(null); }}
+          />
+        </View>
+      )}
+
+      {/* his full story — open to everyone, no lock */}
+      {finishOpen && (
+        <View style={StyleSheet.absoluteFill}>
+          <RoleModelSheet
+            coach={coach}
+            onClose={() => { sfx('tap'); setFinishOpen(false); }}
+            onWalkCurrent={() => { sfx('tap'); setFinishOpen(false); }}
           />
         </View>
       )}
@@ -209,11 +222,10 @@ function RoleFeedEntryCard({
         </Pressable>
       )}
 
-      {/* sneak → a coming-up lock, pulling you forward */}
+      {/* sneak → an open peek, part of his story */}
       {isSneak && (
         <View style={styles.sneakRow}>
-          <LockIcon size={11} color="#6fd0c9" />
-          <Text style={styles.sneakTxt}>COMING UP IN YOUR JOURNEY — READY WHEN YOU GET THERE</Text>
+          <Text style={styles.sneakTxt}>PART OF HIS STORY — READ FREELY, WHENEVER YOU LIKE</Text>
         </View>
       )}
 

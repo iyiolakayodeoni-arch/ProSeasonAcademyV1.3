@@ -433,6 +433,21 @@ export async function listChannels(): Promise<ServerChannel[] | null> {
   }
 }
 
+/** ensure a per-pair private room exists (channel row) so real DMs can land.
+ *  Best-effort — if the cloud won't answer, the caller stays offline-honest. */
+export async function ensureChannel(slug: string, name: string, topic: string): Promise<boolean> {
+  if (!supabase || !me) return false;
+  try {
+    const { error } = await supabase.from('channels').upsert(
+      { slug, name, topic },
+      { onConflict: 'slug' },
+    );
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 export async function pullMessages(slug: string, afterSeq: number, limit = 50): Promise<ServerMessage[] | null> {
   if (!supabase) return null;
   try {

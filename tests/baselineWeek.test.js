@@ -1,4 +1,4 @@
-// Pure-node unit tests for the BASELINE WEEK — a player-paced 7-day gate.
+// Pure-node unit tests for the BASELINE WEEK — a player-paced 5-match gate.
 // Run: npm test (compiles the TS engine, then executes).
 //
 // These tests prove the player-paced flow: day 1 opens immediately and every
@@ -80,36 +80,42 @@ async function main() {
   assert.equal(B.baselineStatsComplete({ possession: 52, shots: 8, shotsOnTarget: 4, passAccuracy: null }), false, 'a missing core stat still blocks the receipt');
   console.log('PASS 0 · baseline asks for three reflection prompts and four core stats');
 
-  // ══ T1 · a fresh week opens on DAY 1, days 2–7 are future
+  // ══ T1 · a fresh week opens on MATCH 1, matches 2–5 are future
   await B.resetBaselineForDev();
   const fresh = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(fresh), 1, 'fresh session starts on day 1');
-  assert.equal(B.dayStatus(fresh, 1), 'today', 'day 1 is today');
-  assert.equal(B.dayStatus(fresh, 2), 'future', 'day 2 is future');
+  assert.equal(B.currentBaselineDay(fresh), 1, 'fresh session starts on match 1');
+  assert.equal(B.dayStatus(fresh, 1), 'today', 'match 1 is ready');
+  assert.equal(B.dayStatus(fresh, 2), 'future', 'match 2 is future');
+  assert.equal(B.dayStatus(fresh, 4), 'future', 'match 4 is future');
+  assert.equal(B.dayStatus(fresh, 5), 'future', 'match 5 is future');
   assert.equal(B.isWeekComplete(fresh), false, 'the week is not complete');
-  console.log('PASS 1 · fresh week opens on DAY 1, days 2–7 are future');
+  assert.equal(B.isBaselineRestDay(4), false, 'there are no rest days');
+  assert.equal(B.BASELINE_DAYS, 5, 'the week is five matches, not seven days');
+  console.log('PASS 1 · fresh week opens on MATCH 1, matches 2–5 are future');
 
-  // ══ T2 · sealing day 1 immediately opens day 2 ══
+  // ══ T2 · sealing match 1 immediately opens match 2 ══
   B.recordBaselineMatch(entry(Date.now()), null);
   B.sealBaselineDay(1);
   const after1 = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(after1), 2, 'day 1 sealed → day 2 is current');
-  assert.equal(B.dayStatus(after1, 2), 'today', 'day 2 is available immediately');
+  assert.equal(B.currentBaselineDay(after1), 2, 'match 1 sealed → match 2 is current');
+  assert.equal(B.dayStatus(after1, 2), 'today', 'match 2 is available immediately');
   const d2 = after1.days.find((d) => d.day === 2);
   const d1 = after1.days.find((d) => d.day === 1);
-  assert.equal(d2.unlockedAt, d1.sealedAt, 'day 2 opens when day 1 is sealed');
-  assert.equal(d1.entryIndex, 0, 'day 1 is linked to its vault entry');
-  console.log('PASS 2 · sealing day 1 immediately opens day 2');
+  assert.equal(d2.unlockedAt, d1.sealedAt, 'match 2 opens when match 1 is sealed');
+  assert.equal(d1.entryIndex, 0, 'match 1 is linked to its vault entry');
+  assert.equal(B.matchNumberForDay(after1, 1), 1, 'day 1 is match number 1');
+  console.log('PASS 2 · sealing match 1 immediately opens match 2');
 
-  // ══ T3 · every completed day immediately opens the next one ══
+  // ══ T3 · every completed match immediately opens the next one ══
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(2);
   const after2 = await B.loadBaseline('chinedu');
   const d3 = after2.days.find((d) => d.day === 3);
   const d2s = after2.days.find((d) => d.day === 2);
-  assert.equal(d3.unlockedAt, d2s.sealedAt, 'day 3 opens when day 2 is sealed');
-  assert.equal(B.currentBaselineDay(after2), 3, 'day 3 is current even when late');
-  console.log('PASS 3 · sealing any day immediately opens the next');
+  assert.equal(d3.unlockedAt, d2s.sealedAt, 'match 3 opens when match 2 is sealed');
+  assert.equal(B.currentBaselineDay(after2), 3, 'match 3 is current even when late');
+  assert.equal(B.matchNumberForDay(after2, 3), 3, 'day 3 is match number 3');
+  console.log('PASS 3 · sealing any match immediately opens the next');
 
   // ══ T4 · a moment analysis is only complete when EVERY question is answered ══
   const full = namedMoment('CONCEDED AFTER A PANIC PASS');
@@ -135,39 +141,36 @@ async function main() {
   assert.equal(B.currentBaselineDay(migrated), 3, 'migration: 2 sealed entries → day 3 current');
   assert.equal(B.dayStatus(migrated, 1), 'done', 'day 1 done after migration');
   assert.equal(B.dayStatus(migrated, 2), 'done', 'day 2 done after migration');
-  assert.equal(B.dayStatus(migrated, 3), 'today', 'day 3 is available after migration');
+  assert.equal(B.dayStatus(migrated, 3), 'today', 'match 3 is available after migration');
   assert.equal(migrated.entries.length, 2, 'no progress lost');
-  console.log('PASS 5 · pre-week sessions migrate to the 7-day schedule without losing progress');
+  assert.equal(migrated.days.length, 5, 'migrated session is rebuilt as a 5-match schedule');
+  console.log('PASS 5 · pre-week sessions migrate to the 5-match schedule without losing progress');
 
-  // ══ T6 · the week completes across 7 days: Matches 1–3 → Rest 1 → Match 4 → Rest 2 → Match 5 Finale ══
-  assert.equal(B.isBaselineMatchDay(3), true, 'day 3 is a match day');
-  assert.equal(B.isBaselineRestDay(4), true, 'day 4 is a rest day');
+  // ══ T6 · the week completes across 5 matches, at the player's own pace ══
+  assert.equal(B.isBaselineMatchDay(3), true, 'match 3 is a match day');
+  assert.equal(B.isBaselineMatchDay(5), true, 'match 5 is a match day');
+  assert.equal(B.isBaselineRestDay(4), false, 'there is no rest day between matches');
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(3);
   const after3 = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(after3), 4, 'match 3 sealed → day 4 (rest day 1) is current');
-  B.saveBaselineReflection(4, 'I keep rushing after conceding', 'I now pause before passing');
+  assert.equal(B.currentBaselineDay(after3), 4, 'match 3 sealed → match 4 is current immediately');
+  assert.equal(B.dayStatus(after3, 4), 'today', 'match 4 is ready at the player\'s pace');
+  assert.equal(B.matchNumberForDay(after3, 4), 4, 'day 4 is match number 4');
+  B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(4);
   const after4 = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(after4), 5, 'rest day 1 sealed → day 5 (match 4) is current');
+  assert.equal(B.currentBaselineDay(after4), 5, 'match 4 sealed → match 5 (finale) is current');
+  assert.equal(B.dayStatus(after4, 5), 'today', 'match 5 is available immediately');
+  const d5 = after4.days.find((d) => d.day === 5);
+  assert.equal(d5.sealedAt, null, 'match 5 not yet sealed');
+  assert.equal(B.matchNumberForDay(after4, 5), 5, 'day 5 is match number 5');
+  assert.equal(B.isWeekComplete(after4), false, 'the week completes only after match 5');
   B.recordBaselineMatch(entry(Date.now()));
   B.sealBaselineDay(5);
   const after5 = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(after5), 6, 'match 4 sealed → day 6 (rest day 2) is current');
-  B.saveBaselineReflection(6, 'My standard for finale is zero panic passes', 'I will hold composure');
-  B.sealBaselineDay(6);
-  const after6 = await B.loadBaseline('chinedu');
-  assert.equal(B.currentBaselineDay(after6), 7, 'rest day 2 sealed → day 7 (match 5 finale) is current');
-  assert.equal(B.isBaselineMatchDay(7), true, 'day 7 is match 5 (the finale)');
-  assert.equal(B.matchNumberForDay(after6, 7), 5, 'day 7 corresponds to match number 5');
-  const d7 = after6.days.find((d) => d.day === 7);
-  assert.equal(d7.sealedAt, null, 'day 7 not yet sealed');
-  assert.equal(B.dayStatus(after6, 7), 'today', 'day 7 is available immediately after rest day 2');
-  const refl4 = after6.days.find((d) => d.day === 4).reflection;
-  assert.ok(refl4 && refl4.repeated.includes('rushing'), 'day 4 reflection persisted');
-  const refl6 = after6.days.find((d) => d.day === 6).reflection;
-  assert.ok(refl6 && refl6.repeated.includes('standard'), 'day 6 reflection persisted');
-  console.log('PASS 6 · the week flows Matches 1–3 → Rest 1 → Match 4 → Rest 2 → Match 5 Finale without waits');
+  assert.equal(B.currentBaselineDay(after5), 6, 'match 5 sealed → the week is complete');
+  assert.equal(B.isWeekComplete(after5), true, 'the week is complete after 5 matches');
+  console.log('PASS 6 · the week completes across 5 matches at the player\'s own pace, with no waits');
 
   await B.resetBaselineForDev();
   console.log('\nALL BASELINE WEEK TESTS PASS');
