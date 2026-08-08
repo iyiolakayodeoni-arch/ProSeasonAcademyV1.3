@@ -147,7 +147,7 @@ export default function StageClearedSheet({
 
         <Animated.View entering={FadeIn.delay(420).duration(420)} style={[styles.attest, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)', marginTop: 8 }]}>
           <Text style={[styles.attestTxt, { color: colors.primary, textAlign: 'center' }]}>
-            THE CHINEDU WAY · PEN TO PAPER: You recorded your tape as usual, penned your moments on paper, cooled down for 24–30 mins, and typed your truth into your database. The hard way is the easy way, and tech is meant to elevate.
+            THE CHINEDU WAY · PEN TO PAPER: You recorded your tape as usual, penned your moments on paper, cooled down for 30 minutes, and typed your truth into your database. The hard way is the easy way, and tech is meant to elevate.
           </Text>
         </Animated.View>
 

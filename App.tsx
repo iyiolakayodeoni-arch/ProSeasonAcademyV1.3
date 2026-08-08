@@ -34,6 +34,7 @@ import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { trackFunnel } from './src/data/funnel';
 
 // Keep the native OS splash as a plain academy background until
 // the real React loading screen is ready. This prevents the old
@@ -224,7 +225,8 @@ export default function App() {
 
   /** coach lock is PERMANENT — from here onboarding only moves forward */
   const handleLocked = useCallback((id: string) => {
-    lockCoach(id); // persisted; a second call can never overwrite it
+    lockCoach(id);
+    void trackFunnel('coach_selected'); // persisted; a second call can never overwrite it
     setCoachId(id);
     void hydrateProgress(id);
     void hydrateThread(id);

@@ -145,7 +145,7 @@ STEP 1 · THE BASELINE WEEK
 Seven days. Five matches — one a day. After each match you watch the
 recording, name the moments where you failed, and analyse each one in your
 own words. Day 6 is the week's reflection. Day 7 seals your profile.
-The next day unlocks 24 hours after the last one seals — so the thinking
+The next day unlocks 30 minutes after the last one seals — so the thinking
 has time to land. Nothing is forced. Lateness is never punished.
 
 STEP 2 · YOUR JOURNEY
@@ -352,7 +352,7 @@ WHERE IS MY MATCH RECORDING STORED?
 You record your console match as usual (PS Share / Xbox Capture / capture card or clips) and watch your tape back. When using the optional on-device recorder, raw video stays on your phone and is never uploaded.
 
 WHAT HAPPENS IF I MISS A DAY?
-Nothing. The next day unlocks 24 hours after the last one seals — lateness
+Nothing. The next day unlocks 30 minutes after the last one seals — lateness
 is never punished. One task a day is the contract, not a threat.
 
 WHAT HAPPENS WHEN SEASON ONE IS FULL?

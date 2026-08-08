@@ -12,7 +12,7 @@
 //   2. Pen the key moments and unusual events on paper with a biro.
 //      "There is a special connection a biro has to a book that
 //       cannot be typed."
-//   3. Let their mind cool down for 24–30 minutes.
+//   3. Let their mind cool down for 30 minutes.
 //   4. Type their written answers into the Academy database.
 //   "The hard way is the easy way. Tech is meant to elevate and
 //    not make you dormant."
@@ -48,6 +48,9 @@ export type MatchResult = 'W' | 'D' | 'L';
 // ─────────────────────────────────────────────────────────────
 export const BASELINE_MATCHES = 5;
 export const BASELINE_DAYS = 7;
+/** A short reset between days: enough to cool down and return deliberately,
+ * never long enough to turn a committed player into a lost player. */
+export const BASELINE_COOLDOWN_MS = 30 * 60 * 1000;
 
 /** the per-moment analysis of a failing moment (the day's core task) */
 export type BaselineAnalysisKey =
@@ -287,8 +290,8 @@ export function entryIndexToDay(idx: number): number {
   }
 }
 
-/** Build the 7-day schedule. Each next day opens as soon as the prior day is
- * sealed. Old sessions are migrated without losing progress. */
+/** Build the 7-day schedule. A new session has a 30-minute reset between
+ * sealed days. Old sessions stay available rather than being unexpectedly locked. */
 function makeDays(entries: BaselineEntry[], startedAt: number): BaselineDay[] {
   const days: BaselineDay[] = [];
   let prevSeal = startedAt;
@@ -407,16 +410,24 @@ export function dayStatus(s: BaselineSession | null, day: number): BaselineDaySt
   if (d?.sealedAt) return 'done';
   const cur = currentBaselineDay(s);
   if (day > cur) return 'future';
-  // A current unsealed day is always available, including legacy sessions that
-  // retain timestamps from the former timed gate.
+  // The only gate is a short reset after the last day. It gives a tired player
+  // room to come down, without the old 24-hour wall that broke momentum.
+  if ((d?.unlockedAt ?? 0) > Date.now()) return 'locked';
   return 'today';
+}
+
+export function baselineCooldownRemaining(s: BaselineSession | null): number {
+  if (!s) return 0;
+  const day = currentBaselineDay(s);
+  const next = s.days.find((item) => item.day === day);
+  return Math.max(0, (next?.unlockedAt ?? 0) - Date.now());
 }
 
 // ── THE WEEK — day actions ───────────────────────────────────
 
 /**
- * Seal a day of the week. The next day opens immediately, so players can
- * continue their Baseline Week whenever they are ready.
+ * Seal a day of the week. The next day opens after a 30-minute reset — enough
+ * time to cool down and come back deliberately, without losing momentum.
  */
 export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void {
   if (!session) return;
@@ -424,7 +435,7 @@ export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void
   const days = session.days.map((d) => (d.day === day ? { ...d, ...extra, sealedAt } : d));
   const nextIdx = days.findIndex((d) => d.day === day + 1);
   if (nextIdx >= 0 && !days[nextIdx].sealedAt) {
-    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt };
+    days[nextIdx] = { ...days[nextIdx], unlockedAt: sealedAt + BASELINE_COOLDOWN_MS };
   }
   session = { ...session, days };
   void persist();
@@ -711,7 +722,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     talk: [
       'Before one tactic. Before one mechanic. Five matches. Yours.',
       'For every match, follow The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
-      'Let your head cool for 24–30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
+      'Let your head cool for 30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.',
     ],
     bluff:
@@ -797,7 +808,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     talk: [
       'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches across seven days, walked at your own pace.',
       'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
-      'Let your mind cool down for 24–30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
+      'Let your mind cool down for 30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
     ],
     bluff:

@@ -442,7 +442,7 @@ export default function SettingsTab({
             <Text style={{ marginTop: 8, fontFamily: bodyFont, fontSize: 12, lineHeight: 18, color: 'rgba(143,184,155,0.9)' }}>
               1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
               {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
-              {'\n'}3. 24–30 MIN COOL-DOWN: Let your mind settle for 24–30 minutes after full time.
+              {'\n'}3. 30-MINUTE COOL-DOWN: Let your mind settle for 30 minutes after full time.
               {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
               {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
             </Text>
