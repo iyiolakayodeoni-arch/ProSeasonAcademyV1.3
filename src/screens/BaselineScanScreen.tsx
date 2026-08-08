@@ -43,6 +43,7 @@ import { CheckIcon, EyeIcon } from '../components/Icons';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
 import { sfx } from '../audio/sound';
+import { trackFunnel } from '../data/funnel';
 import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy, gradeColor } from '../theme';
 const MIN_ANSWER = 12;
 type Phase = 'talk' | 'day' | 'reflection' | 'ambition' | 'card';
@@ -68,7 +69,7 @@ const GUIDE_STEPS = [
   ['YOUR WEEK MAP', 'These seven markers show completed days, today, and what is still ahead. You will play five matches; Days 4 and 6 are intentional rest and reflection days.'],
   ['WHAT TO DO FIRST', 'Start with a normal match. Record it if you can, then come back while the key moments are fresh. You are not trying to create a perfect result.'],
   ['TYPE THE FOUR RECEIPTS', 'After the final whistle, open the console stats screen and type four core numbers: possession, shots, shots on target and pass accuracy. Then name one moment honestly.'],
-  ['KEEP GOING WHEN READY', 'Each completed day adds evidence to your starting card. Seal a day and continue straight to the next one whenever you want.'],
+  ['TAKE A SHORT RESET', 'After a match, take 30 minutes away from the app before you review. The app will be here when you come back.'],
 ] as const;
 function BaselineGuide({ index, onNext, onBack, onSkip }: { index: number; onNext: () => void; onBack: () => void; onSkip: () => void }) {
   const [title, body] = GUIDE_STEPS[index];
@@ -178,6 +179,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     if (!isValidReflection(ambition, { minLength: MIN_ANSWER, minWords: 2 }) || sealing) return;
     setSealing(true);
     const card = await sealBaseline(getSettings().displayName, coach.id, ambition.trim(), profilePicUri);
+    void trackFunnel('baseline_completed');
     sfx('success'); const s = await loadBaseline(coach.id); setSession({ ...s, card }); setPhase('card'); setSealing(false);
   };
   const startMatch = async () => { sfx('whoosh'); setStep('match'); };
@@ -203,7 +205,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
               <Animated.View entering={FadeInUp.delay(200 + (script.talk.length + 1) * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>THE FOUR RECEIPTS</Text><Text style={styles.bluffTxt}>Possession • Shots • On Target • Pass Accuracy. Take a photo of the screen if you want, but type these four numbers. Their average across five matches becomes your baseline card.</Text></Animated.View>
               <Animated.View entering={FadeInUp.delay(200 + (script.talk.length + 2) * 260).duration(300)} style={styles.bluffBox}><Text style={styles.bluffLabel}>HIS HOUSE RULE</Text><Text style={styles.bluffTxt}>“{script.bluff}”</Text></Animated.View>
               <View style={styles.photoPickBox}><Text style={styles.photoPickLabel}>YOUR STARTING PHOTO (FOR YOUR CARD)</Text><Text style={styles.photoPickHint}>Snap or pick one now, or before you seal Day 7. This photo goes on your sealed baseline card.</Text>{profilePicUri ? <Image source={{ uri: profilePicUri! }} style={styles.photoPreview} /> : <View style={styles.photoPlaceholder}><Text style={styles.photoPlaceholderTxt}>NO PHOTO YET</Text></View>}<View style={styles.photoRow}><Pressable onPress={takeProfilePhoto} style={styles.photoBtn}><Text style={styles.photoBtnTxt}>TAKE PHOTO</Text></Pressable><Pressable onPress={pickProfilePic} style={styles.photoBtnAlt}><Text style={styles.photoBtnAltTxt}>PICK FROM GALLERY</Text></Pressable></View></View>
-              <Pressable onPress={() => { sfx('whoosh'); setPhase('day'); setStep('start'); }} style={styles.cta}><Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text></Pressable>
+              <Pressable onPress={() => { sfx('whoosh'); void trackFunnel('baseline_day_1_started'); setPhase('day'); setStep('start'); }} style={styles.cta}><Text style={styles.ctaTxt}>I'M IN — START DAY 1</Text></Pressable>
               <Pressable onPress={() => setNotReady((v) => !v)} hitSlop={8}><Text style={styles.skipLink}>{notReady ? 'UNDERSTOOD — THIS GATE STAYS REAL' : 'NOT READY?'}</Text></Pressable>
               {notReady && (<Text style={styles.notReadyTxt}>Then the journey waits. The academy does not remove you for thinking — but it does not carry passengers either. Come back when you mean it; this screen will be here.</Text>)}
             </>)}

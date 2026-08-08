@@ -16,7 +16,7 @@ import { ObjectiveCheck } from './matches';
 //   2. Pen to Paper: write key moments and answers on paper with a biro.
 //      "There is a special connection a biro has to a book that
 //       cannot be typed."
-//   3. Let your mind cool down for 24–30 minutes.
+//   3. Let your mind cool down for 30 minutes.
 //   4. Type your written truth into the Academy database.
 //   "The hard way is the easy way, and tech is meant to elevate."
 //

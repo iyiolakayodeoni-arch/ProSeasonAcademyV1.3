@@ -356,7 +356,7 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
         >
           <Text style={{ fontFamily: bodyFontHeavy, letterSpacing: 1.2, color: colors.primary, fontSize: 10.5 }}>THE CHINEDU WAY · PEN TO PAPER</Text>
           <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.85)' }}>
-            Record & watch · pen your moments first · cool down 24–30m · then log your truth.
+            Record & watch · pen your moments first · cool down 30m · then log your truth.
           </Text>
         </ArtBand>
 

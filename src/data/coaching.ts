@@ -180,9 +180,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
       voiceCaption: 'VOICE NOTE · LISTEN ALL THE WAY THROUGH — THE POINT LANDS AT 0:38',
       mechanic: `The side note first, little one. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, and the blog is inside the app. Try it if it fits your thread today — the main thing is still done by you.`,
       quip: coachQuip('obinna', plan.contentId),
-      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after full time, then type your truth into your database. **There is a special connection a biro has to a book that cannot be typed.**`,
+      closer: `That’s the whole side note. The real work is yours — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 30 minutes after full time, then type your truth into your database. **There is a special connection a biro has to a book that cannot be typed.**`,
       scanIntro:
-        'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. THE HARD WAY IS THE EASY WAY.',
+        'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 30 MINUTES, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. THE HARD WAY IS THE EASY WAY.',
       footer: 'THE SIDE QUESTS ARE MY RESEARCH. THE MAIN QUEST IS YOUR OWN PATH — PEN TO PAPER BEFORE YOU TYPE.',
     };
   }
@@ -192,9 +192,9 @@ export function buildCoachChat(coach: Coach, plan: LessonPlan): CoachChat {
     voiceCaption: 'VOICE NOTE · LISTEN TILL THE END — THE JOKE LANDS AT 0:38',
     mechanic: `The side note first. Today’s side quest is **the ${mech}** — ${angle.chinedu} Scroll down, I drew it up for you, blog included, right here in the app. Try it if it serves your thread — the main thing is still on you.`,
     quip: coachQuip('chinedu', plan.contentId),
-    closer: `That’s the whole side note. Now the real work — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape, and write your key moments on paper with a biro. Let your mind cool down for 24–30 minutes, then type your truth into your database. **The hard way is the easy way, and tech is meant to elevate.**`,
+    closer: `That’s the whole side note. Now the real work — start a **Mirror Session** and follow **The Chinedu Way**: record your match as usual, watch your tape, and write your key moments on paper with a biro. Let your mind cool down for 30 minutes, then type your truth into your database. **The hard way is the easy way, and tech is meant to elevate.**`,
     scanIntro:
-      'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.',
+      'THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 30 MINUTES, THEN TYPE YOUR TRUTH INTO YOUR DATABASE. TECH IS MEANT TO ELEVATE AND NOT MAKE YOU DORMANT.',
     footer: 'THE SIDE QUESTS ARE MY RESEARCH, LITTLE BRO. THE MAIN QUEST IS YOUR OWN PATH — ONLY YOUR MATCHES WRITE IT.',
   };
 }

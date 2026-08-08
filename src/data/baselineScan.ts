@@ -12,7 +12,7 @@
 //   2. Pen the key moments and unusual events on paper with a biro.
 //      "There is a special connection a biro has to a book that
 //       cannot be typed."
-//   3. Let their mind cool down for 24–30 minutes.
+//   3. Let their mind cool down for 30 minutes.
 //   4. Type their written answers into the Academy database.
 //   "The hard way is the easy way. Tech is meant to elevate and
 //    not make you dormant."
@@ -407,17 +407,14 @@ export function dayStatus(s: BaselineSession | null, day: number): BaselineDaySt
   if (d?.sealedAt) return 'done';
   const cur = currentBaselineDay(s);
   if (day > cur) return 'future';
-  // A current unsealed day is always available, including legacy sessions that
-  // retain timestamps from the former timed gate.
+  // A current unsealed day is available. The 30-minute cool-down remains
+  // coaching guidance, not an app gate, while testing the practice.
   return 'today';
 }
 
 // ── THE WEEK — day actions ───────────────────────────────────
 
-/**
- * Seal a day of the week. The next day opens immediately, so players can
- * continue their Baseline Week whenever they are ready.
- */
+/** Seal a day of the week. The next day opens immediately. */
 export function sealBaselineDay(day: number, extra?: Partial<BaselineDay>): void {
   if (!session) return;
   const sealedAt = Date.now();
@@ -711,7 +708,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     talk: [
       'Before one tactic. Before one mechanic. Five matches. Yours.',
       'For every match, follow The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
-      'Let your head cool for 24–30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
+      'Let your head cool for 30 minutes after full time. Only when your mind has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Do things the right way. Tech is meant to elevate and not make you dormant. That is the Chinedu Way.',
     ],
     bluff:
@@ -797,7 +794,7 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
     talk: [
       'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches across seven days, walked at your own pace.',
       'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
-      'Let your mind cool down for 24–30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
+      'Let your mind cool down for 30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
       'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
     ],
     bluff:

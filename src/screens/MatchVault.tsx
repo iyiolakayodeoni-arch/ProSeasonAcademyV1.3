@@ -32,9 +32,9 @@ import { isValidReflection } from '../data/honestyGuard';
 const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 const MIND_FRAME: Record<string, string> = {
   chinedu:
-    'There is a special connection a biro has to a book that cannot be typed, little bro. Record your match as usual, watch your tape, and write your key moments on paper. Cool down for 24–30 minutes after full time, then type your truth into your database. Tech is meant to elevate and not make you dormant — that is the Chinedu Way.',
+    'There is a special connection a biro has to a book that cannot be typed, little bro. Record your match as usual, watch your tape, and write your key moments on paper. Cool down for 30 minutes after full time, then type your truth into your database. Tech is meant to elevate and not make you dormant — that is the Chinedu Way.',
   obinna:
-    'Record your match as usual, watch your tape, and pen your moments on paper, little one. Cool down for 24–30 minutes, then type your truth into your database. The hard way is the easy way, and the easy way is the hard way.',
+    'Record your match as usual, watch your tape, and pen your moments on paper, little one. Cool down for 30 minutes, then type your truth into your database. The hard way is the easy way, and the easy way is the hard way.',
 };
 import {
   CheckIcon,
@@ -200,7 +200,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
           </View>
           <Text style={styles.watchTagline}>THE HARD WAY IS THE EASY WAY · TECH IS MEANT TO ELEVATE</Text>
           <Text style={styles.watchNote}>
-            Watch your match back. Pen the key moments, cool down 24–30 minutes, then type your truth in. The hard way is the easy way — tech should elevate you, never make you dormant.
+            Watch your match back. Pen the key moments, cool down 30 minutes, then type your truth in. The hard way is the easy way — tech should elevate you, never make you dormant.
           </Text>
         </View>
 

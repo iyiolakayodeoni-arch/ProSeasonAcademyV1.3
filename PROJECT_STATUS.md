@@ -351,10 +351,10 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
   day 1?"
 - **DAY 7 — AMBITION + THE SEAL.** The ambition question, then the sealed profile
   card (tier from head state, tendencies from the named moments, the coach's read).
-- **THE 24-HOUR GAP IS THE HONESTY MECHANISM.** The next day unlocks exactly 24h
+- **THE 30-MINUTE RESET IS THE HONESTY MECHANISM.** The next day unlocks exactly 30 minutes
   after the previous day is sealed (`sealBaselineDay`), with a REST screen showing
   a live countdown and yesterday's review. Lateness is never punished — the gap is
-  always 24h from the actual seal, so a player who comes back three days later just
+  always 30 minutes from the actual seal, so a player who comes back three days later just
   continues where they are. Nothing is forced: one task a day is the contract.
 - **Recording in the trial:** the day flow arms the same native automated capture (consent,
   goal-triggered auto-record, local MP4); in manual mode the timeline fallback
@@ -363,7 +363,7 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 - Old pre-week sessions **migrate** to the schedule from their existing entries —
   nobody is reset mid-baseline.
 - Verified: `npm run typecheck` clean · `npm test` 18/18 (7 automated capture + 5 mirror +
-  6 baseline-week: day-1 open, 24h gap, lateness, moment completeness, migration,
+  6 baseline-week: day-1 open, 30-minute reset, lateness, moment completeness, migration,
   full-week flow).
 
 ## 2.27 — 2026-08-01 · ACADEMY TOUR + USABILITY POLISH
@@ -388,18 +388,26 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 - **Week Orientation** (`src/screens/WeekOrientationScreen.tsx`): the 30-second
   handshake between the coach's story and the Baseline Week. Three short cards —
   THE NEXT 7 DAYS (one match a day, watch → name → analyse, day 6 reflection,
-  day 7 seal) · THE MIRROR (the app records, you see; 24h gap on purpose) ·
+  day 7 seal) · THE MIRROR (the app records, you see; 30-minute reset on purpose) ·
   WHAT FOLLOWS (Journey + The Standard + the Till). Shown exactly once per
   account: new `session.orientationDone` flag, routed after `intro` and before
   `scan` in App.tsx (both restore + fresh-signin paths), skip anytime.
 - **Baseline day-unlock notifications** (`notifications.ts` → `scheduleBaselineUnlock`):
-  when a day seals, the next day's unlock (+24h) is scheduled as a local
+  when a day seals, the next day's unlock (+30 minutes) is scheduled as a local
   notification — fired by the OS even if the app is closed. Per-day copy
   (days 1–5 "DAY N IS UNLOCKED — MATCH N", day 6 "THE WEEK SO FAR", day 7
   "THE LAST QUESTION"), own Android channel, permission requested on first seal,
   fails soft when denied/unavailable (the REST countdown is the fallback).
   `cancelBaselineUnlocks()` runs on Delete Account so a dead account gets no nags.
 - Verified: typecheck clean · 18/18 tests · web export bundles.
+
+## 2.30 — 2026-08-08 · CORE-PRACTICE SIMPLIFICATION
+
+- **Coach room now starts with the work.** The two match choices and Match Review are visible first. Coach chat, voice, mechanics, clips, sources and the optional tip are behind a single **OPEN COACH NOTES & OPTIONAL TIP** control, so no player has to scroll through lore before reviewing a real match.
+- **The ritual stays intact.** The Match Review still captures intention, half-time, full-time, player-chosen moments, comparison and one carried lesson. The routine card now states the whole job in one line rather than repeating a long manifesto.
+- **30-minute cool-down direction.** The 30-minute reset is documented as the coaching practice after a match, but is deliberately **not app-enforced during founder testing**. Baseline days still open immediately after sealing, so testing is never blocked by a timer.
+- **Core funnel measurement.** `src/data/funnel.ts` records only six conversion milestones, locally first and fail-soft. `supabase/funnel.sql` adds the privacy-minimal server table/RLS/rollup when deployed: coach selected → Baseline day one started → baseline complete → first Match Review → second Match Review → lesson verdict. It never records reflections, scores, recordings or chat content.
+- Verified: `npm run typecheck` clean · `npm test` green.
 
 ## 2.29 — 2026-08-04 · THE HONESTY GUARD & COACH AUDIT (v1.3)
 

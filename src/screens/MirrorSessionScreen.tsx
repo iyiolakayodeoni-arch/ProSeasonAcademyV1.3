@@ -48,6 +48,7 @@ import {
 } from '../data/mirrorSession';
 import { useLessonThread } from '../data/lessonThread';
 import { sfx } from '../audio/sound';
+import { hasFunnelEvent, trackFunnel } from '../data/funnel';
 import { colors, monoFont, displayFont, bodyFont } from '../theme';
 import HonestyBadge from '../components/HonestyBadge';
 import { isValidReflection } from '../data/honestyGuard';
@@ -261,6 +262,10 @@ export default function MirrorSessionScreen({
 
   const handleDone = () => {
     sfx('success');
+    void hasFunnelEvent('match_review_completed').then((hasFirst) => {
+      void trackFunnel('match_review_completed');
+      if (hasFirst) void trackFunnel('second_match_review_completed');
+    });
     onClose(true);
   };
 
@@ -331,6 +336,7 @@ export default function MirrorSessionScreen({
                 disabled={!verdict || !isValidReflection(verdictNote, { minLength: MIN_ANSWER, minWords: 1 })}
                 onPress={() => {
                   sfx('whoosh');
+                  void trackFunnel('lesson_verdict_recorded');
                   answerCarriedLesson(verdict!, verdictNote);
                 }}
               />
@@ -391,7 +397,7 @@ export default function MirrorSessionScreen({
               </View>
               <View style={styles.armNote}>
                 <Text style={styles.armNoteTxt}>
-                  THE CHINEDU WAY: Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 24–30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
+                  THE CHINEDU WAY: Record your match as usual, watch your tape back, and pen your key moments on paper. Cool down for 30 minutes after the match, then type your results into your database. There is a special connection a biro has to a book that cannot be typed.
                 </Text>
               </View>
               <StepButton

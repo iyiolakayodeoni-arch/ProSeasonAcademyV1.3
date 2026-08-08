@@ -358,7 +358,7 @@ export default function CommunityTab({ coach, onClose }: { coach: Coach; onClose
           YOUR REVIEW ROUTINE · PEN TO PAPER BEFORE YOU TYPE
         </Text>
         <Text style={{ marginTop: 3, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 15.5, color: 'rgba(238,242,236,0.82)' }}>
-          Record & watch · pen your moments first · cool down 24–30m · then log your truth.
+          Record & watch · pen your moments first · cool down 30m · then log your truth.
         </Text>
         <Text style={{ marginTop: 5, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.8, color: 'rgba(242,192,120,0.9)' }}>
           NO BOTS · NO SCRIPTS — EVERY NAME IN HERE IS A REAL PLAYER

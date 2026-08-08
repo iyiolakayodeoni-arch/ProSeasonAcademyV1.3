@@ -158,7 +158,7 @@ export function parseDeepLink(data: any): DeepLink | null {
 }
 
 // ── BASELINE WEEK ─────────────────────────────────────────────
-// Baseline days now open immediately after the prior day is sealed. There are
+// Baseline days open immediately after the prior day is sealed. There are
 // no timed unlock notifications to schedule.
 
 /** Clear any legacy Baseline Week notifications when an account is deleted. */

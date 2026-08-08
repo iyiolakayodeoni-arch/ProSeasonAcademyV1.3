@@ -104,7 +104,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         <Text style={[styles.ruleTxt, { marginTop: 4, fontSize: 9.5, lineHeight: 14.5 }]}>
           1. RECORD & WATCH: Watch your match tape back. Don't look away from what went wrong.
           {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen the unusual things and mistake patterns on paper first.
-          {'\n'}3. 24–30 MIN COOL-DOWN: Never log while tilted. Let your mind cool down for 24–30 minutes after full time.
+          {'\n'}3. 30-MINUTE COOL-DOWN: Never log while tilted. Let your mind cool down for 30 minutes after full time.
           {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your one honest line into your database.
           {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
         </Text>
@@ -144,7 +144,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
         <HonestyMeter
           text={text}
           options={{ minLength: 4, minWords: 2 }}
-          defaultNote="PEN TO PAPER FIRST · COOL DOWN FOR 24–30 MINS · ONE HONEST LINE"
+          defaultNote="PEN TO PAPER FIRST · COOL DOWN FOR 30 MINUTES · ONE HONEST LINE"
           coachId={coach.id}
         />
       </View>
@@ -163,7 +163,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
       {/* rule strip */}
       <View style={styles.ruleStrip}>
         <JournalIcon size={13} color="#57d07c" />
-        <Text style={styles.ruleTxt}>YOUR REVIEW ROUTINE — PEN YOUR LOSS ON PAPER FIRST, COOL DOWN FOR 24–30 MINS, THEN TYPE ONE HONEST LINE</Text>
+        <Text style={styles.ruleTxt}>YOUR REVIEW ROUTINE — PEN YOUR LOSS ON PAPER FIRST, COOL DOWN FOR 30 MINUTES, THEN TYPE ONE HONEST LINE</Text>
       </View>
 
       {/* entries */}

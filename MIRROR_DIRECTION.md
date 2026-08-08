@@ -98,7 +98,7 @@ This file records how the product direction ("Mirror — Pro Season") was implem
 | `src/screens/CoachingScreen.tsx` | Primary CTA → Mirror Session; copy → mirror language; legacy quick scan kept |
 | `src/data/coaching.ts` | Film-room copy → Mirror Session language |
 | `src/data/manual console review.ts` | Real native contract: recording state, checkpoints, goal-triggered auto-record, stop→path |
-| `src/data/baselineScan.ts` | **Baseline Week** — 7-day schedule (24h honesty gap), per-moment analysis model, day content, migration |
+| `src/data/baselineScan.ts` | **Baseline Week** — 7-day schedule (30 minutes honesty gap), per-moment analysis model, day content, migration |
 | `src/screens/BaselineScanScreen.tsx` | **REWRITTEN** — the week UI: day flow (arm → match → watch/name → analyse → day Q), REST countdown, day-6 reflection, day-7 seal |
 | `App.tsx` | `hydrateMirror` on boot + coach lock |
 | `src/screens/tabs/SettingsTab.tsx` | DANGER ZONE also wipes the mirror record |
@@ -152,14 +152,14 @@ applied to the gate itself:
   every named moment, the tendencies that keep appearing — with two reflections:
   *what do you keep repeating?* and *what has actually changed since day 1?*
 - **DAY 7:** the ambition question, then the sealed profile card.
-- **The 24-hour gap is the honesty mechanism:** the next day unlocks exactly 24h
+- **The 30-minute cool-down is the intended honesty mechanism (not app-enforced during founder testing): the next day unlocks exactly 30 minutes
   after the previous day seals (`sealBaselineDay`), REST screen with live countdown
   and yesterday's review. Lateness is never punished. One task a day is the
   contract — "give you time to think and not force you".
 - Old pre-week sessions migrate from their existing entries; nothing is reset.
 - `src/data/baselineScan.ts` (schedule + analysis model + day content),
   `src/screens/BaselineScanScreen.tsx` (the week UI), shared
-  `tests/baselineWeek.test.js` (6 tests: day-1 open, 24h gap, lateness, moment
+  `tests/baselineWeek.test.js` (6 tests: day-1 open, 30-minute cool-down, lateness, moment
   completeness, migration, full-week flow).
 
 ---

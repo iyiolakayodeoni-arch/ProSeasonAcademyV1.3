@@ -193,6 +193,9 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   const [scanSheet, setScanSheet] = useState(false);
   const [mirrorOpen, setMirrorOpen] = useState(false);
   const [sideOpen, setSideOpen] = useState(false);
+  // The review is the work. Coach chat, mechanics and clips are available
+  // when wanted, but never stand between a player and the next match.
+  const [showCoachNotes, setShowCoachNotes] = useState(false);
   // the earned reveal — fires once on a genuine stage pass (P3)
   const [showReveal, setShowReveal] = useState(false);
 
@@ -246,7 +249,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
         mechanic: stage.coachExplanation ?? '',
         quip: `This is a precise professional habit. Study it slowly, then take it into the arena. No button-spamming here.`,
         closer: `That is the plan. Start a **Match Review** or log a match in your Match History to put this technique to work. Remember the rule: **${checkRule}**.`,
-        scanIntro: `THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 24–30 MINS, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.`,
+        scanIntro: `THE CHINEDU WAY: RECORD YOUR MATCH AS USUAL, PEN YOUR KEY MOMENTS ON PAPER WITH A BIRO, COOL DOWN FOR 30 MINUTES, THEN TYPE YOUR TRUTH INTO YOUR DATABASE.`,
         footer: `THIS OPTIONAL TIP IS INTERNALLY SOURCED FROM ${stage.internalSource?.toUpperCase()} FOR ${stage.internalPatchVersion?.toUpperCase()}.`,
       };
     }
@@ -472,8 +475,12 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           )}
 
           <Text style={styles.quickStartFoot}>You can ignore the coach notes below for now. They are extra help, not another task.</Text>
+          <Pressable onPress={() => setShowCoachNotes((open) => !open)} hitSlop={8} style={styles.coachNotesToggle}>
+            <Text style={styles.coachNotesToggleTxt}>{showCoachNotes ? 'HIDE COACH NOTES & OPTIONAL TIP' : 'OPEN COACH NOTES & OPTIONAL TIP'}</Text>
+          </Pressable>
         </Animated.View>
 
+        {showCoachNotes && (<>
         {/* ── coach identity card — he is live, not decorative ── */}
         <Animated.View entering={FadeInDown.delay(120).duration(360)} style={styles.identity}>
           <View style={styles.avatarWrap}>
@@ -673,8 +680,10 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           <MessageMeta time={t(4)} />
         </Animated.View>
 
-        {/* ── MIRROR SESSION — the MAIN QUEST; passing unlocks the next node ── */}
-        <Animated.View entering={FadeInDown.delay(400).duration(360)} style={styles.scanCard}>
+        </>)}
+
+        {/* ── MATCH REVIEW — the main ritual; passing unlocks the next node ── */}
+        <Animated.View entering={FadeInDown.delay(120).duration(260)} style={styles.scanCard}>
           {cleared && status !== 'passed' && (
             <View style={styles.clearedBanner}>
               <CheckRingIcon size={11} color={colors.primary} />
@@ -714,17 +723,9 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
             </View>
           )}
 
-          {/* ── THE CHINEDU WAY — our own path ritual & philosophy ── */}
           <View style={[styles.threadBox, { borderColor: 'rgba(57,255,106,0.3)', backgroundColor: 'rgba(57,255,106,0.03)' }]}>
             <Text style={styles.threadBoxTag}>YOUR REVIEW ROUTINE</Text>
-            <Text style={[styles.scanHeadline, { marginTop: 4, marginBottom: 4, fontSize: 13 }]}>PEN TO PAPER BEFORE YOU TYPE.</Text>
-            <Text style={styles.threadEmpty}>
-              1. RECORD & WATCH: Record your console match as usual before kick-off (PS Share / Xbox Capture / capture card), play your match, then watch your tape back.
-              {'\n'}2. PEN TO PAPER: There is a special connection a biro has to a book that cannot be typed. Pen down the key moments, unusual events, and answers on paper first.
-              {'\n'}3. 24–30 MIN COOL-DOWN: Let your head cool for 24–30 minutes after full time.
-              {'\n'}4. LOG TO DATABASE: Once your head has cooled, open the app and type your penned truth into your database.
-              {'\n\n'}In a world looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant.
-            </Text>
+            <Text style={styles.threadEmpty}>Play the match. Take a short reset. Then review the moments in your own words and carry one lesson forward.</Text>
           </View>
 
           <Text style={styles.scanHeadline}>Start your Match Review.</Text>
@@ -926,6 +927,8 @@ const styles = StyleSheet.create({
   quickStartSecondaryTitle: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
   quickStartSecondaryCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 10.4, color: '#d9cfbc' },
   quickStartFoot: { marginTop: 10, fontFamily: monoFont, fontSize: 5.9, lineHeight: 10, letterSpacing: 1.05, color: 'rgba(143,184,155,0.62)', textAlign: 'center' },
+  coachNotesToggle: { alignSelf: 'center', marginTop: 12, paddingVertical: 7, paddingHorizontal: 9 },
+  coachNotesToggleTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.25, color: colors.accent },
 
   backBtn: {
     position: 'absolute',

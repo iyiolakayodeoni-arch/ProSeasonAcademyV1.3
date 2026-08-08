@@ -487,7 +487,7 @@ A stage passes only when **every objective** is met. The scan does not require t
 
 The application does not have an official EA SPORTS FC 26/27 Console match feed. Match data and key moments are entered manually by the player following **The Chinedu Way**:
 1. **Pen to Paper:** *"There is a special connection a biro has to a book that cannot be typed."* Players screen record their match, watch their tape back, and pen the unusual and key make-or-break moments on paper with a biro first.
-2. **24–30 Minute Cool-Down:** Players let their thoughts settle for 24–30 minutes after the match before typing their written answers into the Academy database.
+2. **30-Minute Cool-Down:** Players let their thoughts settle for 30 minutes after the match before typing their written answers into the Academy database.
 3. **The 7-Day Cadence (3 Matches → Rest 1 → Match 4 → Rest 2 → Match 5 Finale):**
    - **Days 1–3:** Matches 1, 2, and 3 (building momentum).
    - **Day 4:** Rest Day 1 (mid-week rest & reflection on matches 1–3, no match played — respecting that players have a life outside the pitch).
@@ -505,7 +505,7 @@ The stage room is a coach-led film-room screen with two quests.
 ### 8.0 "The Chinedu Way" in Our Own Path (The Journey)
 
 The entire universal player Journey (our own path across the 18 stages, not the role model's path) is walked using **The Chinedu Way**:
-- **Stage Room (`CoachingScreen.tsx`):** Displays **The Chinedu Way: How You Work In Our Path** card right above the Main Quest, instructing players to screen record, pen to paper with a biro first, cool down for 24–30 minutes, and type their truth into the database.
+- **Stage Room (`CoachingScreen.tsx`):** Displays **The Chinedu Way: How You Work In Our Path** card right above the Main Quest, instructing players to screen record, pen to paper with a biro first, cool down for 30 minutes, and type their truth into the database.
 - **Coach Briefings (`coaching.ts`):** Both Coach Chinedu and Coach Obinna remind the player that *"there is a special connection a biro has to a book that cannot be typed"* and *"the hard way is the easy way; tech is meant to elevate."*
 - **Main Quest (`MirrorSessionScreen.tsx`) & Stage Scan (`StageScanSheet.tsx`):** Every review and checkpoint prompts the player to answer from their immediate memory or paper notes before typing into the app.
 
