@@ -45,11 +45,9 @@ const SFX_SOURCE: Record<SfxName, number> = {
 
 const MUSIC_SOURCE = require('../../assets/sounds/music-home.wav');
 
-/** the briefing-room voice note, one per coach (real audio, their words) */
-export function voiceNoteSource(coachId: string): number {
-  return coachId === 'obinna'
-    ? require('../../assets/sounds/voice-obinna.mp3')
-    : require('../../assets/sounds/voice-chinedu.mp3');
+/** the briefing-room voice note — the academy's one coach, Chinedu */
+export function voiceNoteSource(): number {
+  return require('../../assets/sounds/voice-chinedu.mp3');
 }
 
 let ready = false;

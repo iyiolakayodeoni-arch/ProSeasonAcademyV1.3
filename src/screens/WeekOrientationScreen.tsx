@@ -14,8 +14,8 @@ type Card = { eyebrow: string; title: string; body: string; tone?: 'green' | 'go
 const CARDS: Card[] = [
   {
     eyebrow: 'WEEK ONE',
-    title: '5 GAMES. 7 DAYS.',
-    body: 'This is your starting point. You can’t fail it. We just watch how you play — your habits and decisions when it gets tough.',
+    title: '5 GAMES. YOUR PACE.',
+    body: 'This is your starting point. You can’t fail it. We just watch how you play — your habits and decisions when it gets tough. There is no schedule: play and review whenever you actually play.',
     tone: 'green',
   },
   {
@@ -66,7 +66,7 @@ export default function WeekOrientationScreen({ coach, onDone }: { coach: Coach;
       </Animated.View>
       <View style={styles.dots}>{CARDS.map((c, idx) => <View key={c.eyebrow} style={[styles.dot, idx === i && styles.dotOn]} />)}</View>
       <Pressable onPress={() => { sfx('tap'); if (last) onDone(); else setI(n => n + 1); }} style={({ pressed }) => [styles.cta, pressed && { opacity: 0.85 }]}>
-        <Text style={styles.ctaTxt}>{last ? 'I UNDERSTAND — START DAY 1 ›' : 'NEXT ›'}</Text>
+        <Text style={styles.ctaTxt}>{last ? 'I UNDERSTAND — START MATCH 1 ›' : 'NEXT ›'}</Text>
       </Pressable>
       <Pressable onPress={onDone} hitSlop={10}><Text style={styles.skip}>SKIP ORIENTATION</Text></Pressable>
     </View>

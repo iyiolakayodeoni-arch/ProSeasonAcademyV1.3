@@ -33,8 +33,6 @@ const COMPOSURE_LABELS = ['TILTED', 'SHOOK', 'OKAY', 'CALM', 'ICE IN VEINS'];
 const MIND_FRAME: Record<string, string> = {
   chinedu:
     'There is a special connection a biro has to a book that cannot be typed, little bro. Record your match as usual, watch your tape, and write your key moments on paper. Cool down for 30 minutes after full time, then type your truth into your database. Tech is meant to elevate and not make you dormant — that is the Chinedu Way.',
-  obinna:
-    'Record your match as usual, watch your tape, and pen your moments on paper, little one. Cool down for 30 minutes, then type your truth into your database. The hard way is the easy way, and the easy way is the hard way.',
 };
 import {
   CheckIcon,

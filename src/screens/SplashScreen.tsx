@@ -150,7 +150,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             <Text style={[styles.wordmark, { marginTop: 14 }]}>PROSEASON</Text>
             <Text style={[styles.wordmark, styles.wordmarkAccent]}>ACADEMY</Text>
             <View style={styles.rule} />
-            <Text style={styles.tagline}>TRACK IT HONESTLY. DO THE WORK.</Text>
+            <Text style={styles.tagline}>THE CONSOLE COACHING ACADEMY</Text>
+            <Text style={styles.taglineSub}>ESPORTS-GRADE REVIEW · ONE MATCH AT A TIME</Text>
           </Animated.View>
 
           <View style={styles.spacer} />
@@ -161,7 +162,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               <Animated.View style={[styles.fill, animatedFillStyle]} />
             </View>
             <View style={styles.statusRow}>
-              <Text style={styles.statusText}>Almost there, Player…</Text>
+              <Text style={styles.statusText}>Loading the academy…</Text>
               <AnimatedTextInput
                 style={styles.pctText}
                 animatedProps={pctProps}
@@ -233,7 +234,18 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 3,
     textTransform: 'uppercase',
-    color: 'rgba(238,242,236,0.78)',
+    color: colors.primary,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 8,
+  },
+  taglineSub: {
+    marginTop: 8,
+    fontFamily: bodyFontStrong,
+    fontSize: 8.5,
+    letterSpacing: 2.4,
+    textTransform: 'uppercase',
+    color: 'rgba(238,242,236,0.72)',
     textShadowColor: 'rgba(0,0,0,0.5)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 8,

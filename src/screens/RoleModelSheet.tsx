@@ -54,18 +54,6 @@ const STORIES: Record<string, RoleStory> = {
     ],
     signoff: 'Now carry it. And when a younger player one day asks how you got here — you know what to tell him. The scan knows. It always knows.',
   },
-  obinna: {
-    teaser:
-      'The harbour made me, little one. I learned the ball where the tide gives minutes, not hours — and when my knee ended my own playing at nineteen, I spent two years angry at the water itself before I learned to read it instead of fight it. Everything I ask of you — the calm, the debriefs, the little lines you write — is that lesson, worn smooth by time.',
-    contract:
-      'WHY THE FINISH IS A PERSON, NOT A PLACE — a sailor needs a light that stays put, little one, not another boat’s wake to follow. Follow MY road and you steer by fog that was mine, in weather that was mine, and you will ground yourself on rocks I never met. The card exists so that on the grey evenings the climb feels endless, there is a face and a story proving calm work lands somewhere. Six stages first — the card opens when the harbour is crossed, not before.',
-    story: [
-      'Why does my card end your map, little one? Because every long road needs proof it ends somewhere real. Every stat on this card was earned on water that never once apologized — the vision is a thousand fog nights reading ships by sound, the workrate is hauling nets when the catch was already lost. Calm is not soft. Calm is trained, the way you have been training it.',
-      'But listen to me carefully: you were never asked to sail the Merehaven Way the way I sailed it. My road had fog gates and light-keepers; yours has tilt queues and a cracked screen protector and matches at hours no harbourmaster would bless. Not once did this academy ask you to become me — it asked you to sit with your own matches and tell the truth about them, and you did.',
-      'So the card is not instructions — it is weather-proofing. Proof that a player who scans his games, answers honestly and carries his own lessons forward becomes someone worth looking up to. You never needed my journey, little one. You needed to believe your own could carry you this far. It just did.',
-    ],
-    signoff: 'Rest a moment, then carry it calmly. Somewhere out there is a player who will one day need YOUR card on his wall — make the story behind it worth reading.',
-  },
 };
 
 type Props = {
@@ -82,7 +70,8 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
   const bandW = Math.min(winW, 430);
   const thread = useLessonThread();
   const SEASON = journeySeasonFor(coach.id);
-  const cleared = prog.completedCount >= SEASON.totalStages;
+  // The full story is open to every player — progress no longer locks his arc.
+  const cleared = true;
   const story = STORIES[coach.id] ?? STORIES.chinedu;
   const coachFirst = coach.name.split(' ')[0];
 
@@ -102,7 +91,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
         <Animated.View entering={FadeInUp.delay(120).duration(380)} style={styles.cardWrap}>
           <RoleModelCard coach={coach} />
           <Text style={styles.cardHint}>
-            {cleared ? `YOUR PROGRESS IS COMPLETE — LEARN, DO NOT COPY` : `AVAILABLE AFTER CHAPTER ${SEASON.totalStages} · ${prog.completedCount}/${SEASON.totalStages} COMPLETE`}
+            HIS FULL STORY — OPEN TO YOU · LEARN, DO NOT COPY
           </Text>
         </Animated.View>
 

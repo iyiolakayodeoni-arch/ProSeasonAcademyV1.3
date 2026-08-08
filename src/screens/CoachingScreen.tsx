@@ -244,7 +244,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       const coachFirst = coach.name.split(' ')[0];
       const checkRule = stage.rule ?? '';
       return {
-        greeting: `Welcome back, little ${coach.id === 'obinna' ? 'one' : 'bro'}. Here is an optional tip: **${stage.name}**. Use it if it helps your match.`,
+        greeting: `Welcome back, little bro. Here is an optional tip: **${stage.name}**. Use it if it helps your match.`,
         voiceCaption: `VOICE NOTE · ${coachFirst.toUpperCase()} EXPLAINS THE MECHANIC`,
         mechanic: stage.coachExplanation ?? '',
         quip: `This is a precise professional habit. Study it slowly, then take it into the arena. No button-spamming here.`,
@@ -269,7 +269,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   // ── voice note: REAL audio — the coach actually talks. The player
   // drives the countdown, the waveform and the music duck; when the
   // clip finishes it rewinds itself, ready for a replay. ──
-  const voicePlayer = useAudioPlayer(voiceNoteSource(coach.id));
+  const voicePlayer = useAudioPlayer(voiceNoteSource());
   const voiceStatus = useAudioPlayerStatus(voicePlayer);
   const voiceTotal = voiceStatus.duration > 0 ? voiceStatus.duration : VOICE_LEN;
   const voiceLeft = voiceStatus.didJustFinish
