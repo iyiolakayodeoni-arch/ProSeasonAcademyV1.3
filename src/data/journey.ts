@@ -382,7 +382,6 @@ export const JOURNEYS: Record<string, SeasonDef> = {
   // the same universal road for every coach — the coach is the
   // voice on it, never a different curriculum
   chinedu: UNIVERSAL,
-  obinna: UNIVERSAL,
 };
 
 /** this player's road — one universal journey, whoever the guide is */

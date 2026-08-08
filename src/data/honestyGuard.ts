@@ -43,7 +43,7 @@ export interface HonestyOptions {
   minWords?: number;
   /** optional prompt or question text to prevent copy-pasting the question */
   prompt?: string;
-  /** coach identity for voice-tailored feedback ('chinedu' | 'obinna') */
+  /** coach identity for voice-tailored feedback */
   coachId?: string;
 }
 
@@ -309,10 +309,7 @@ export function getHonestyFeedback(
 /**
  * Coach quotes on honesty and self-accountability.
  */
-export function getCoachHonestyReminder(coachId?: string): string {
-  if (coachId === 'obinna') {
-    return 'I can hear the difference between a player telling the truth and a player performing it. Answer honestly.';
-  }
+export function getCoachHonestyReminder(_coachId?: string): string {
   return 'I have listened to two thousand debriefs — I know what a lie sounds like before you finish the sentence. Answer honestly.';
 }
 

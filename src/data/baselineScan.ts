@@ -542,7 +542,7 @@ export async function resetBaselineForDev(): Promise<void> {
 
 // ═════════════════════════════════════════════════════════════
 // CONTENT — the fiction. Coach voices per coaches.ts canon:
-// Chinedu = blunt, hates losing. Obinna = calm, "little one".
+// Chinedu = blunt, hates losing — the academy.s one voice.
 // ═════════════════════════════════════════════════════════════
 
 export interface CoachScript {
@@ -708,92 +708,6 @@ export const BASELINE_SCRIPTS: Record<string, CoachScript> = {
       L: 'You lost. Fine. Losses are receipts — and we read receipts. Here is my question for you.',
     },
   },
-
-  obinna: {
-    intro: [
-      'Come in, come in, little one. I am Obinna — THE MOTIVATOR, though between us, I mostly hate watching good players quit on themselves.',
-      'I played academy football until my knee ended it at nineteen. For two years I was angry at the world. Then a coach sat me down and asked questions I did not want to answer. That conversation is why I am standing here.',
-      'Somebody has to ask you the real questions too — gently, but actually ask them. That is me. For the record: you choosing this path genuinely made my day.',
-      'So before tactics, before mechanics — we find out who you are when the goals are going in against you. That player, the one under pressure, is the one I coach.',
-    ],
-    introSignoff: 'My story is told. Yours starts now, little one.',
-    talk: [
-      'Welcome, little one. My name is Obinna. In this academy, we build the mind first — five baseline matches, walked entirely at your own pace.',
-      'For every match, we train The Chinedu Way: record your console match as usual and watch your tape back. Take a biro and paper — there is a special connection a biro has to a book that cannot be typed. Pen your key moments and unusual events on paper first.',
-      'Let your mind cool down for 30 minutes after full time. Only when your head has settled do you open the app and type your written truth into your database.',
-      'In a world where everyone is looking for the easy way out, we tell you that the hard way is the easy way, and the easy way is the hard way. Tech is meant to elevate and not make you dormant. That is our way.',
-    ],
-    bluff:
-      'And little one — be honest with me. I have heard every excuse ever built; I can hear the difference between a player telling the truth and a player performing it. Honest answers make you better and make me better for you. Win-win.',
-    questions: {
-      W: [
-        'Little one, tell me the honest version: which part of that win was YOURS, and which part was the game being kind?',
-        'When you went ahead, what did your body do — relax or tighten? Why do you think that is?',
-        'What did you do well today that nobody watching would ever notice?',
-        'If this win has a lesson you might ignore, what is it?',
-        'Who were you in the last ten minutes — the closer or the survivor? What does that tell us?',
-      ],
-      D: [
-        'A draw, little one. Where did you feel the balance tip — and what did you do with that feeling?',
-        'What did you give them for free today? Not what they earned — what you gave.',
-        'If this draw were a final, where did you leave the trophy?',
-        'Was there a moment you played not to lose instead of playing to win? Tell me about it honestly.',
-        'What would your teammate say you should have done differently? Answer for them.',
-      ],
-      L: [
-        'Little one, walk me to the first goal — before it went in, where was your attention? Start there.',
-        'After they scored, what did the voice in your head say? The real one. I have heard them all.',
-        'If I watched only your last fifteen minutes, what would I believe about your heart? Tell me true.',
-        'What is the kindest excuse you are telling yourself right now? Now tell me the truth under it.',
-        'Losses are tuition, they say. What exactly did this one teach you — in one sentence you would sign?',
-      ],
-    },
-    beats: {
-      winBig:
-        'A big win, little one! My first ever “big win” was 4–0… in a friendly… against a team that arrived with nine men. I still count it. We do not speak of it. Enjoy yours — THEN we audit it.',
-      winTight:
-        'A one-goal win — my favourite kind, honestly? You know why? Because somewhere in those minutes, you chose to suffer correctly, and nobody claps for that. I clap for that.',
-      drawGoals:
-        'A scoring draw! My first draw like that, I sprinted to celebrate OUR equaliser and pulled my hamstring. Missed two weeks. The lesson, little one: celebrate after the debrief.',
-      drawNill:
-        'Zero-zero — the scoreline that puts crowds to sleep and coaches to work. My old gaffer called it “a chess match where nobody moved.” Prove him wrong with your answers today.',
-      lossBig:
-        'A heavy loss, little one. My worst was 7–1. My coach bought me dinner after and said, “good — now you know exactly how much work you have.” I never forgot. Neither will you.',
-      lossTight:
-        'A narrow one. I once lost 1–0 to a goal that came off a man fixing his sock. True story, little one. But we never talk about the bounce — we talk about the ninety minutes before it.',
-    },
-    ambitionAsk:
-      'One more thing, little one, and this stays between us until we need it: where do you want your game to BE when we look back a year from now? Tell me the real dream — I will hold it for you.',
-    analysisIntro:
-      'Sit with me, little one. You named the moments — brave work already. Now we take them one by one, slowly. I am not in a hurry, and I read every word.',
-    momentAsks: {
-      happened: 'Take me there, little one. Walk me through exactly what happened — slowly, just the facts first.',
-      thinking: 'Now step inside your own head — what was your mind saying to you in that exact second?',
-      feel: 'And what did your body do with it? Tell me what you felt — gently, honestly.',
-      cause: 'No blame, no excuses — just honestly: what do you think caused this moment?',
-      why: 'Sit with it a moment, little one. Why did it turn against you — and not your opponent?',
-      noticed: 'Rebuild the picture for me. What did you notice before the decision — what did your eyes give you?',
-      missed: 'It is alright — everyone misses something. What quietly slipped past you?',
-      differently: 'If I handed you the same few seconds again — what would you do differently?',
-      evidence: 'Show me your working, little one. What in the match or your notes supports that answer?',
-    },
-    momentInterludes: {
-      2: 'Good — you are doing this honestly. Keep going.',
-      5: 'Now the part most people skip. We do not skip, little one.',
-      7: 'One more deep question. This is the one that changes players.',
-    },
-    momentFollowUps: {
-      cause: 'You wrote “{snippet}” — I hear you. Now, softly: what caused it?',
-      why: '“{snippet}”. Thank you, little one. But why? Let us go one layer under.',
-      differently: 'You have seen it clearly: “{snippet}”. So — what do you do differently?',
-      evidence: 'You believe “{snippet}”. What points to it?',
-    },
-    dayQuestionIntro: {
-      W: 'You won, little one — well done. Enjoy it for one breath. Done? Good. Now answer me this.',
-      D: 'A draw, little one. Not a defeat, not a victory — a lesson wearing a disguise. Come, sit. Answer me this.',
-      L: 'You lost, little one — that hurt. Let it, for a moment. Then we put the hurt to work. Answer this for me.',
-    },
-  },
 };
 
 // ── THE BASELINE — short match-to-match lines (matches 2–5) ──
@@ -806,11 +720,5 @@ export const BASELINE_DAY_INTRO: Record<string, Record<number, string>> = {
     3: 'Halfway, little bro. The mirror does not care about your excuses, and neither do I. Play like day one meant something.',
     4: 'Match four. You should be starting to hear yourself before you do it. That is the point of this work.',
     5: 'Last trial match. Leave yourself nothing to hide behind — the card you get is built from these five matches.',
-  },
-  obinna: {
-    2: 'Match two, little one. Let your last review sit inside you before you play — calm carries over.',
-    3: 'Halfway. The water remembers every ripple — and so do I. I have your matches in front of me.',
-    4: 'Match four. Notice how you start. Notice when the calm goes. That noticing IS the training.',
-    5: 'The last trial match, little one. Play it like the mirror is kind — because it is, and it does not forget.',
   },
 };
