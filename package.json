@@ -36,6 +36,7 @@
   },
 
   "scripts": {
+    "dev": "expo start --web",
     "start": "expo start --web",
     "web": "expo start --web",
     "web:build": "expo export -p web --output-dir dist/web",
