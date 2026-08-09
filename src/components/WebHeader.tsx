@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoMark from './LogoMark';
 import { HomeIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon, GearIcon, BellIcon, HelpIcon } from './Icons';
 import { colors, monoFont, displayFont, bodyFontBold, bodyFontHeavy, radii } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
+import { useHover } from '../hooks/useHover';
 import { useSettings, setToggle } from '../data/settings';
 import { syncMusicToSettings, sfx } from '../audio/sound';
 import { Coach } from '../data/coaches';
@@ -23,13 +25,60 @@ interface Props {
   isFounder?: boolean;
 }
 
-const NAV_ITEMS: { id: MainNavTab; label: string; icon: any }[] = [
-  { id: 'today', label: 'TODAY', icon: HomeIcon },
-  { id: 'journey', label: '6-MONTH PROGRESS', icon: JourneyIcon },
-  { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', icon: ScanGlyphIcon },
-  { id: 'community', label: 'CLUBHOUSE', icon: WavesGlyphIcon },
-  { id: 'settings', label: 'SETTINGS', icon: GearIcon },
+const NAV_ITEMS: { id: MainNavTab; label: string; short: string; icon: any }[] = [
+  { id: 'today', label: 'TODAY', short: 'TODAY', icon: HomeIcon },
+  { id: 'journey', label: '6-MONTH PROGRESS', short: 'PROGRESS', icon: JourneyIcon },
+  { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', short: 'EVIDENCE', icon: ScanGlyphIcon },
+  { id: 'community', label: 'CLUBHOUSE', short: 'CLUB', icon: WavesGlyphIcon },
+  { id: 'settings', label: 'SETTINGS', short: 'ME', icon: GearIcon },
 ];
+
+// One nav item — the hover veil eases in/out on fine pointers so desktop
+// users feel the surface respond; the active item carries its own fill.
+function NavItem({
+  id,
+  label,
+  Icon,
+  active,
+  onSelect,
+}: {
+  id: MainNavTab;
+  label: string;
+  Icon: any;
+  active: boolean;
+  onSelect: (tab: MainNavTab) => void;
+}) {
+  const { hovered, bind } = useHover();
+  const hov = useSharedValue(0);
+
+  useEffect(() => {
+    hov.value = withTiming(hovered && !active ? 1 : 0, { duration: 150 });
+  }, [hovered, active, hov]);
+
+  const veilStyle = useAnimatedStyle(() => ({ opacity: hov.value }));
+
+  return (
+    <Pressable
+      onPress={() => {
+        sfx('tab');
+        onSelect(id);
+      }}
+      style={({ pressed }) => [
+        styles.navItem,
+        active && styles.navItemActive,
+        pressed && styles.navItemPressed,
+      ]}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      {...bind}
+    >
+      <Animated.View pointerEvents="none" style={[styles.navHoverVeil, veilStyle]} />
+      <Icon size={14} color={active ? colors.primary : 'rgba(143,184,155,0.65)'} />
+      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+      {active && <View style={styles.activeIndicator} />}
+    </Pressable>
+  );
+}
 
 export default function WebHeader({
   activeTab,
@@ -85,7 +134,7 @@ export default function WebHeader({
                 <Text style={styles.liveTxt}>S1 · LIVE</Text>
               </View>
             </View>
-            {isWide && (
+            {isLaptopUp && (
               <Text style={styles.brandSub}>
                 COACH {coach?.name.toUpperCase() || 'CHINEDU OKAFOR'} · FC 26 REVIEW PRACTICE
               </Text>
@@ -93,32 +142,20 @@ export default function WebHeader({
           </View>
         </Pressable>
 
-        {/* Center: Desktop Nav */}
+        {/* Center: Desktop Nav — tablets get the short labels so five
+            destinations + brand + profile never collide at 768–1023px. */}
         {isWide && (
           <View style={styles.navBar}>
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-              const active = activeTab === id;
-              return (
-                <Pressable
-                  key={id}
-                  onPress={() => {
-                    sfx('tab');
-                    onSelectTab(id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.navItem,
-                    active && styles.navItemActive,
-                    pressed && styles.navItemPressed,
-                  ]}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Icon size={14} color={active ? colors.primary : 'rgba(143,184,155,0.65)'} />
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
-                  {active && <View style={styles.activeIndicator} />}
-                </Pressable>
-              );
-            })}
+            {NAV_ITEMS.map(({ id, label, short, icon: Icon }) => (
+              <NavItem
+                key={id}
+                id={id}
+                label={isLaptopUp ? label : short}
+                Icon={Icon}
+                active={activeTab === id}
+                onSelect={onSelectTab}
+              />
+            ))}
           </View>
         )}
 
@@ -299,6 +336,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   navItemPressed: { opacity: 0.82 },
+  navHoverVeil: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderRadius: 10,
+    backgroundColor: 'rgba(57,255,106,0.09)',
+    opacity: 0,
+  },
   navLabel: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.1, color: 'rgba(143,184,155,0.75)' },
   navLabelActive: { color: colors.primary },
   activeIndicator: {

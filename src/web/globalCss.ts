@@ -259,5 +259,67 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .psa-cta-sweep::after { display: none; }
 }
+
+/* ── Pointer honesty ── anything pressable must look pressable. */
+button,
+a,
+summary,
+[role='button'],
+[role='tab'],
+[role='link'],
+[role='menuitem'],
+[onclick] {
+  cursor: pointer;
+}
+
+input, textarea, select { caret-color: var(--psa-primary); }
+input::placeholder, textarea::placeholder {
+  transition: opacity 160ms var(--psa-ease-out);
+}
+input:focus::placeholder, textarea:focus::placeholder { opacity: 0.55; }
+
+/* Dark-theme autofill — the browser's yellow flash makes a dark UI look
+   broken in one keystroke. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #0f1a13 inset;
+  -webkit-text-fill-color: var(--psa-ink);
+  caret-color: var(--psa-primary);
+  transition: background-color 999999s ease-in-out 0s;
+}
+
+/* ── Glass chrome utilities used from components ── */
+.psa-tabbar-root {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+}
+.psa-modal-backdrop {
+  backdrop-filter: blur(9px) saturate(0.9);
+  -webkit-backdrop-filter: blur(9px) saturate(0.9);
+}
+
+/* ── Sheen sweep (gradient CTAs) — one slow pass, then rest. */
+@keyframes psa-sheen {
+  0%        { transform: translateX(-130%) skewX(-18deg); }
+  55%, 100% { transform: translateX(260%) skewX(-18deg); }
+}
+.psa-sheen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 46%;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 8%,
+    rgba(255, 255, 255, 0.34) 50%,
+    transparent 92%
+  );
+  animation: psa-sheen 3.4s var(--psa-ease) 1.1s infinite;
+}
+
+/* Live heartbeat dot */
+.psa-live-dot { animation: psa-pulse 2.1s ease-in-out infinite; }
 `;
 export default GLOBAL_CSS;

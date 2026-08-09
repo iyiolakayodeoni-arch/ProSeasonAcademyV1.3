@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInUp,
   FadeIn,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
@@ -20,6 +21,7 @@ import { currentDay, loadDailyProgram, DailyProgram, doneCount, TOTAL_DAYS } fro
 import { useAnnouncements } from '../../data/announcements';
 import { bodyFont, bodyFontBold, bodyFontHeavy, colors, displayFont, monoFont, radii, elevation } from '../../theme';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useHover } from '../../hooks/useHover';
 import { BaselineCard, loadBaseline } from '../../data/baselineScan';
 
 type Props = {
@@ -62,17 +64,50 @@ function TypedGreeting({ name }: { name: string }) {
 }
 
 function PremiumCard({
-  label, line, onPress, delay, primary, badge, icon: Icon,
+  label, line, onPress, delay, primary, badge, wide, icon: Icon,
 }: {
-  label: string; line: string; onPress: () => void; delay: number; primary?: boolean; badge?: string; icon?: any;
+  label: string; line: string; onPress: () => void; delay: number; primary?: boolean; badge?: string; wide?: boolean; icon?: any;
 }) {
   const scale = useSharedValue(1);
-  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  // Fine-pointer hover lifts the card a breath and lights its ring; press
+  // plants it back down with a spring. Motion with restraint.
+  const { hovered, bind } = useHover();
+  const hov = useSharedValue(0);
+  useEffect(() => {
+    hov.value = withTiming(hovered ? 1 : 0, { duration: 170 });
+  }, [hovered, hov]);
+
+  const animated = useAnimatedStyle(() => ({
+    transform: [{ translateY: -3 * hov.value }, { scale: scale.value }],
+  }));
+  const ringStyle = useAnimatedStyle(() => ({ opacity: hov.value }));
+  const chevNudge = useAnimatedStyle(() => ({ transform: [{ translateX: 3 * hov.value }] }));
+
+  // The primary card carries a slow sheen sweep — the one loop allowed on
+  // the dashboard, because it marks the single most important action.
+  const sheen = useSharedValue(-1);
+  useEffect(() => {
+    if (!primary) return;
+    sheen.value = withRepeat(
+      withSequence(
+        withDelay(2600, withTiming(0, { duration: 0 })),
+        withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      false,
+    );
+  }, [primary, sheen]);
+  const sheenStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -160 + sheen.value * 1100 }, { skewX: '-18deg' }],
+  }));
 
   return (
     <Animated.View
       entering={FadeInUp.delay(delay).duration(420).springify().damping(18)}
-      style={[primary ? styles.routePrimaryWrap : styles.routeWrap, animated]}
+      style={[
+        primary ? styles.routePrimaryWrap : wide ? styles.routeWrapWide : styles.routeWrap,
+        animated,
+      ]}
     >
       <Pressable
         onPress={onPress}
@@ -84,9 +119,25 @@ function PremiumCard({
           pressed && styles.routePressed,
           Platform.OS === 'web' && !primary ? ({ backdropFilter: 'blur(14px)' } as any) : null,
         ]}
+        accessibilityRole="button"
+        {...bind}
       >
+        {/* hover ring — eased in, never stamped on */}
+        <Animated.View pointerEvents="none" style={[styles.routeHoverRing, ringStyle]} />
         {/* Top accent line */}
         {!primary && <LinearGradient colors={['rgba(57,255,106,0.45)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.routeAccent} />}
+        {primary && (
+          <View pointerEvents="none" style={styles.sheenClip}>
+            <Animated.View style={[styles.sheen, sheenStyle]}>
+              <LinearGradient
+                colors={['rgba(5,22,10,0)', 'rgba(255,255,255,0.3)', 'rgba(5,22,10,0)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          </View>
+        )}
 
         <View style={[styles.routeIconBox, primary && styles.routeIconBoxPrimary]}>
           {Icon ? <Icon size={18} color={primary ? '#05160a' : colors.primary} /> : <View style={[styles.signalDot, primary && styles.signalDotPrimary]} />}
@@ -104,11 +155,57 @@ function PremiumCard({
           <Text style={[styles.routeLine, primary && styles.routeLinePrimary]}>{line}</Text>
         </View>
 
-        <View style={[styles.chevWrap, primary && styles.chevWrapPrimary]}>
+        <Animated.View style={[styles.chevWrap, primary && styles.chevWrapPrimary, chevNudge]}>
           <ChevronRightIcon size={14} color={primary ? '#05160a' : colors.primary} />
-        </View>
+        </Animated.View>
       </Pressable>
     </Animated.View>
+  );
+}
+
+// The 6-month rail — the fill earns its width from real receipts, then
+// settles into place with one eased grow; a quiet shimmer keeps it alive.
+function ProgressRail({ pct }: { pct: number }) {
+  const grow = useSharedValue(0);
+  const shimmer = useSharedValue(-1);
+
+  useEffect(() => {
+    grow.value = withTiming(1, { duration: 950, easing: Easing.out(Easing.cubic) });
+    shimmer.value = withRepeat(
+      withSequence(
+        withDelay(2400, withTiming(0, { duration: 0 })),
+        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+      ),
+      -1,
+      false,
+    );
+  }, [grow, shimmer]);
+
+  const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: grow.value }] }));
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -50 + shimmer.value * 480 }],
+  }));
+
+  return (
+    <View style={styles.progressTrack}>
+      <Animated.View style={[{ width: `${pct}%`, height: '100%' }, fillStyle]}>
+        <LinearGradient
+          colors={['#39ff6a', '#2be05a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.progressFill, { width: '100%' }]}
+        />
+        <Animated.View style={[styles.progressShimmer, shimmerStyle]}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.45)', 'rgba(255,255,255,0)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      </Animated.View>
+      <View style={[styles.progressGlow, { width: `${pct}%` }]} />
+    </View>
   );
 }
 
@@ -204,11 +301,11 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
             </View>
 
             <View style={[styles.routesGrid, isMultiColumn && styles.routesGridWide]}>
-              {onOpenTracker && <PremiumCard delay={160} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
-              <PremiumCard delay={200} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
-              <PremiumCard delay={240} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
-              <PremiumCard delay={280} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
-              <PremiumCard delay={320} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
+              {onOpenTracker && <PremiumCard delay={160} wide={isMultiColumn} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
+              <PremiumCard delay={200} wide={isMultiColumn} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
+              <PremiumCard delay={240} wide={isMultiColumn} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
+              <PremiumCard delay={280} wide={isMultiColumn} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
+              <PremiumCard delay={320} wide={isMultiColumn} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
             </View>
           </View>
 
@@ -241,10 +338,7 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
                   <Text style={styles.widgetPct}>{pct}%</Text>
                 </View>
               </View>
-              <View style={styles.progressTrack}>
-                <LinearGradient colors={['#39ff6a', '#2be05a']} start={{x:0,y:0}} end={{x:1,y:0}} style={[styles.progressFill, { width: `${Math.max(6, pct)}%` }]} />
-                <View style={[styles.progressGlow, { width: `${Math.max(6, pct)}%` }]} />
-              </View>
+              <ProgressRail pct={Math.max(6, pct)} />
               <View style={styles.widgetStatsRow}>
                 <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>{doneDays}</Text><Text style={styles.widgetStatLbl}>DAYS SEALED</Text></View>
                 <View style={styles.widgetStatCenter}><Text style={styles.widgetStatVal}>{day}</Text><Text style={styles.widgetStatLbl}>CURRENT DAY</Text></View>
@@ -352,9 +446,47 @@ const styles = StyleSheet.create({
   sectionHeader: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 2.2, color: colors.muted },
   sectionLine: { flex: 1, height: 1, backgroundColor: 'rgba(143,184,155,0.12)' },
   routesGrid: { gap: 10 },
-  routesGridWide: { gap: 12 },
+  // Desktop: the workspaces sit in a proper two-column grid instead of one
+  // long phone-like stack — the dashboard earns its width.
+  routesGridWide: { flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
   routeWrap: { width: '100%' },
+  routeWrapWide: {
+    // Web gets the exact calc; native gets a close percentage.
+    width: Platform.OS === 'web' ? (('calc(50% - 7px)' as unknown) as number) : '48%',
+  },
   routePrimaryWrap: { width: '100%' },
+  routeHoverRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.55)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    opacity: 0,
+    zIndex: 2,
+  },
+  sheenClip: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    borderRadius: radii.lg,
+  },
+  sheen: {
+    position: 'absolute',
+    top: -20,
+    bottom: -20,
+    left: 0,
+    width: 120,
+  },
   route: {
     minHeight: 84,
     flexDirection: 'row',
@@ -429,6 +561,7 @@ const styles = StyleSheet.create({
   widgetPct: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 0.5, color: '#05160a' },
   progressTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(57,255,106,0.10)', overflow: 'hidden', marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.08)' },
   progressFill: { height: '100%', borderRadius: 999 },
+  progressShimmer: { position: 'absolute', top: 0, bottom: 0, left: 0, width: 44, borderRadius: 999, overflow: 'hidden' },
   progressGlow: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 999, backgroundColor: 'rgba(57,255,106,0.18)', opacity: 0.6 },
   widgetStatsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(57,255,106,0.08)' },
   widgetStat: { alignItems: 'center', flex: 1 },

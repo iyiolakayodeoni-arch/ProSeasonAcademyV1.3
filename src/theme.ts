@@ -1,6 +1,8 @@
 // ProSeasonAcademy — design tokens (single source of truth)
 // PREMIUM EDITION v2 — glass, elevation, radii, typography scale.
 
+import { Platform } from 'react-native';
+
 export const colors = {
   bg: '#050a06',
   bgElevated: '#0a130d',
@@ -25,7 +27,13 @@ export const colors = {
   flash: '#35d7ff',
 } as const;
 
-export const monoFont = 'JetBrains Mono, ui-monospace, SFMono-Regular, monospace';
+// The ledger voice. Web gets a proper instrument stack so receipts render
+// crisp and even; native keeps the platform monospace (native font lookup
+// resolves one family name, not a CSS stack).
+export const monoFont =
+  Platform.OS === 'web'
+    ? '"JetBrains Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace'
+    : 'monospace';
 
 export const displayFont = 'Anton_400Regular';
 export const bodyFont = 'Barlow_500Medium';
