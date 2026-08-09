@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Easing } from 'react-native';
 import Animated, {
   FadeInUp,
   useAnimatedStyle,
@@ -38,6 +38,7 @@ import { colors, bodyFont, bodyFontBold, bodyFontHeavy, displayFont, monoFont } 
 import { BaselineCard, loadBaseline } from '../../data/baselineScan';
 import { sfx } from '../../audio/sound';
 import { useResponsive } from '../../hooks/useResponsive';
+import { useHover } from '../../hooks/useHover';
 
 const TUNNEL = require('../../../assets/art/journey-tunnel.jpg');
 
@@ -51,6 +52,24 @@ export default function TrackerTab({ coach }: Props) {
   const [now, setNow] = useState(Date.now());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
+
+  // The six-month rail grows into place once, then holds — earned width,
+  // eased landing. (Hooks stay above every early return in this file.)
+  const railGrow = useSharedValue(0);
+  useEffect(() => {
+    railGrow.value = withTiming(1, { duration: 950, easing: Easing.out(Easing.cubic) });
+  }, [railGrow]);
+  const railStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: railGrow.value }] }));
+
+  // The seal button lifts a breath on fine pointers.
+  const { hovered: sealHovered, bind: sealBind } = useHover();
+  const sealHov = useSharedValue(0);
+  useEffect(() => {
+    sealHov.value = withTiming(sealHovered ? 1 : 0, { duration: 150 });
+  }, [sealHovered, sealHov]);
+  const sealLiftStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: -2 * sealHov.value }],
+  }));
 
   useEffect(() => {
     void loadDailyProgram().then(setProg);
@@ -119,7 +138,7 @@ export default function TrackerTab({ coach }: Props) {
 
         {/* Global Progress Track */}
         <View style={styles.pctBarWrap}>
-          <View style={[styles.pctBar, { width: `${Math.max(2, pct)}%` }]} />
+          <Animated.View style={[styles.pctBar, { width: `${Math.max(2, pct)}%` }, railStyle]} />
         </View>
         <Text style={styles.pctTxt}>{pct}% OF YOUR SIX MONTHS COMPLETED</Text>
 
@@ -170,13 +189,20 @@ export default function TrackerTab({ coach }: Props) {
                       </Text>
                     </View>
                   ) : (
-                    <Pressable
-                      onPress={onSeal}
-                      style={({ pressed }) => [styles.sealBtn, pressed && { opacity: 0.85 }]}
-                    >
-                      <CheckIcon size={14} color="#07110a" />
-                      <Text style={styles.sealTxt}>SEAL DAY {cur} — DONE FOR TODAY</Text>
-                    </Pressable>
+                    <Animated.View style={sealLiftStyle}>
+                      <Pressable
+                        onPress={onSeal}
+                        style={({ pressed }) => [
+                          styles.sealBtn,
+                          pressed && { opacity: 0.85, transform: [{ scale: 0.985 }] },
+                        ]}
+                        accessibilityRole="button"
+                        {...sealBind}
+                      >
+                        <CheckIcon size={14} color="#07110a" />
+                        <Text style={styles.sealTxt}>SEAL DAY {cur} — DONE FOR TODAY</Text>
+                      </Pressable>
+                    </Animated.View>
                   )}
 
                   <Pressable

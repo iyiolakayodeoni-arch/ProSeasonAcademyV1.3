@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
@@ -18,6 +18,7 @@ import { getCoach } from '../data/coaches';
 import { sfx } from '../audio/sound';
 import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold, bodyFontHeavy } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
+import { useHover } from '../hooks/useHover';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -129,13 +130,24 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
 
 function LockButton({ label, onPress }: { label: string; onPress: () => void }) {
   const press = useSharedValue(0);
-  const s = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
+  const { hovered, bind } = useHover();
+  const hov = useSharedValue(0);
+  useEffect(() => {
+    hov.value = withTiming(hovered ? 1 : 0, { duration: 160 });
+  }, [hovered, hov]);
+  const s = useAnimatedStyle(() => ({
+    transform: [{ translateY: -1.5 * hov.value }, { scale: 1 - press.value * 0.03 + hov.value * 0.01 }],
+    shadowOpacity: 0.4 + hov.value * 0.25 + press.value * 0.2,
+    shadowRadius: 16 + hov.value * 10,
+  }));
   return (
     <Pressable
       onPress={onPress}
       onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
       onPressOut={() => (press.value = withSpring(0))}
       style={styles.lockBtnWrap}
+      accessibilityRole="button"
+      {...bind}
     >
       <Animated.View style={[styles.lockBtn, s]}>
         <Text style={styles.lockBtnTxt}>{label}</Text>
@@ -155,9 +167,15 @@ function ConfirmSheet({
 }) {
   return (
     <View style={styles.overlay} pointerEvents="auto">
-      <Pressable style={styles.overlayBg} onPress={onCancel} />
+      <Animated.View entering={FadeIn.duration(200)} style={StyleSheet.absoluteFill}>
+        <Pressable
+          {...({ className: 'psa-modal-backdrop' } as any)}
+          style={styles.overlayBg}
+          onPress={onCancel}
+        />
+      </Animated.View>
       <Animated.View
-        entering={FadeInUp.duration(280)}
+        entering={FadeInUp.duration(300)}
         style={[styles.sheet, { borderColor: 'rgba(242,192,120,0.55)' }]}
       >
         <Text style={styles.lockKicker}>PATH LOCK — PERMANENT</Text>

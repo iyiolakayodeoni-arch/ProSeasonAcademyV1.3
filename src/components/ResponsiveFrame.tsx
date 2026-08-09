@@ -1,27 +1,16 @@
-// ResponsiveFrame — the Web App Shell wrapping the ProSeason Academy platform.
-// Provides a genuine, responsive full-width web app container across:
-//   - Mobile phones (< 768px): clean responsive layout with touch-friendly navigation.
-//   - Tablets (768px–1023px): spacious layout with multi-column capabilities.
-//   - Laptops & Desktops (1024px+): full desktop web app experience with integrated
-//     top navigation, wide dashboard grids, and responsive content canvas.
-// On native iOS/Android this is a no-op (full-screen flex), preserving native behavior.
-
+// ResponsiveFrame — premium web shell. True responsive, no 430px cage.
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { useLayoutInfo, ResponsiveContext } from '../hooks/useResponsive';
+import { tierZoom } from '../hooks/useBreakpoint';
 
-interface Props {
-  children?: React.ReactNode;
-}
+interface Props { children?: React.ReactNode; }
 
 let cssInjected = false;
 function ensureGlobalCSS() {
   if (cssInjected) return;
   if (Platform.OS !== 'web' || typeof document === 'undefined') return;
-  if (document.getElementById('psa-global-css')) {
-    cssInjected = true;
-    return;
-  }
+  if (document.getElementById('psa-global-css')) { cssInjected = true; return; }
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { GLOBAL_CSS } = require('../web/globalCss');
   const style = document.createElement('style');
@@ -39,32 +28,33 @@ function ensureGlobalCSS() {
     }
     el.setAttribute('content', content);
   };
-  ensureMeta(
-    'viewport',
-    'width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, user-scalable=yes',
-  );
-  ensureMeta('theme-color', '#070c08');
+  ensureMeta('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, user-scalable=yes');
+  ensureMeta('theme-color', '#050a06');
   ensureMeta('apple-mobile-web-app-capable', 'yes');
   ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
   ensureMeta('mobile-web-app-capable', 'yes');
-  ensureMeta(
-    'description',
-    'ProSeason Academy — Football coaching, match reviews, and 6-month player development web app for FC console players.',
-  );
-
-  if (document && !document.title) document.title = 'ProSeason Academy';
-
+  ensureMeta('description', 'ProSeason Academy — Premium football coaching & 6-month development platform for FC players.');
+  if (document && !document.title) document.title = 'ProSeason Academy — Premium Football Coaching';
   cssInjected = true;
 }
 
 export default function ResponsiveFrame({ children }: Props) {
   const info = useLayoutInfo();
+  useEffect(() => { ensureGlobalCSS(); }, []);
 
+  // 10-foot & large-monitor scaling. TV viewers sit ~3m away, so the whole
+  // frame is visually enlarged (CSS zoom on #root) while layout math runs in
+  // the scaled-down box that useBreakpoint exposes — exactly like browser
+  // zoom, applied automatically per device tier. The data attribute lets the
+  // global CSS shrink #root's own box by the same factor so nothing
+  // overflows the physical viewport.
   useEffect(() => {
-    ensureGlobalCSS();
-  }, []);
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const zoom = tierZoom(info.bp);
+    document.documentElement.style.setProperty('--psa-zoom', String(zoom));
+    document.documentElement.setAttribute('data-psa-tier', info.bp);
+  }, [info.bp]);
 
-  // Native: clean flex container
   if (Platform.OS !== 'web') {
     return (
       <ResponsiveContext.Provider value={info}>
@@ -72,7 +62,6 @@ export default function ResponsiveFrame({ children }: Props) {
       </ResponsiveContext.Provider>
     );
   }
-
   return (
     <ResponsiveContext.Provider value={info}>
       <div className="psa-web-shell">
@@ -83,11 +72,8 @@ export default function ResponsiveFrame({ children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  nativeRoot: { flex: 1, backgroundColor: '#070c08' },
-  webAppRoot: {
-    flex: 1,
-    width: '100%',
-    minHeight: '100vh',
-    backgroundColor: '#070c08',
-  } as any,
+  nativeRoot: { flex: 1, backgroundColor: '#050a06' },
+  // height comes from the shell's min-height, not a raw 100vh — under the
+  // TV zoom a bare 100vh would render taller than the physical viewport
+  webAppRoot: { flex: 1, width: '100%', backgroundColor: '#050a06' } as any,
 });

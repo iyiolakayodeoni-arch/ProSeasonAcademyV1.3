@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoMark from './LogoMark';
 import { HomeIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon, GearIcon, BellIcon, HelpIcon } from './Icons';
-import { colors, monoFont, displayFont, bodyFontBold, bodyFontHeavy } from '../theme';
+import { colors, monoFont, displayFont, bodyFontBold, bodyFontHeavy, radii } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
+import { useHover } from '../hooks/useHover';
 import { useSettings, setToggle } from '../data/settings';
 import { syncMusicToSettings, sfx } from '../audio/sound';
 import { Coach } from '../data/coaches';
@@ -23,13 +25,62 @@ interface Props {
   isFounder?: boolean;
 }
 
-const NAV_ITEMS: { id: MainNavTab; label: string; icon: any }[] = [
-  { id: 'today', label: 'TODAY', icon: HomeIcon },
-  { id: 'journey', label: '6-MONTH PROGRESS', icon: JourneyIcon },
-  { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', icon: ScanGlyphIcon },
-  { id: 'community', label: 'CLUBHOUSE', icon: WavesGlyphIcon },
-  { id: 'settings', label: 'SETTINGS', icon: GearIcon },
+const NAV_ITEMS: { id: MainNavTab; label: string; short: string; icon: any }[] = [
+  { id: 'today', label: 'TODAY', short: 'TODAY', icon: HomeIcon },
+  { id: 'journey', label: '6-MONTH PROGRESS', short: 'PROGRESS', icon: JourneyIcon },
+  { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', short: 'EVIDENCE', icon: ScanGlyphIcon },
+  { id: 'community', label: 'CLUBHOUSE', short: 'CLUB', icon: WavesGlyphIcon },
+  { id: 'settings', label: 'SETTINGS', short: 'ME', icon: GearIcon },
 ];
+
+// One nav item — the hover veil eases in/out on fine pointers so desktop
+// users feel the surface respond; the active item carries its own fill.
+function NavItem({
+  id,
+  label,
+  Icon,
+  active,
+  onSelect,
+}: {
+  id: MainNavTab;
+  label: string;
+  Icon: any;
+  active: boolean;
+  onSelect: (tab: MainNavTab) => void;
+}) {
+  const { hovered, bind } = useHover();
+  const { isTV } = useResponsive();
+  const hov = useSharedValue(0);
+
+  useEffect(() => {
+    hov.value = withTiming(hovered && !active ? 1 : 0, { duration: 150 });
+  }, [hovered, active, hov]);
+
+  const veilStyle = useAnimatedStyle(() => ({ opacity: hov.value }));
+
+  return (
+    <Pressable
+      onPress={() => {
+        sfx('tab');
+        onSelect(id);
+      }}
+      style={({ pressed }) => [
+        styles.navItem,
+        isTV && styles.navItemTV,
+        active && styles.navItemActive,
+        pressed && styles.navItemPressed,
+      ]}
+      accessibilityRole="tab"
+      accessibilityState={{ selected: active }}
+      {...bind}
+    >
+      <Animated.View pointerEvents="none" style={[styles.navHoverVeil, veilStyle]} />
+      <Icon size={isTV ? 18 : 14} color={active ? colors.primary : 'rgba(143,184,155,0.65)'} />
+      <Text style={[styles.navLabel, isTV && styles.navLabelTV, active && styles.navLabelActive]}>{label}</Text>
+      {active && <View style={styles.activeIndicator} />}
+    </Pressable>
+  );
+}
 
 export default function WebHeader({
   activeTab,
@@ -42,7 +93,7 @@ export default function WebHeader({
   onOpenFounderDesk,
   isFounder = false,
 }: Props) {
-  const { isWide, isLaptopUp } = useResponsive();
+  const { isWide, isLaptopUp, isTV, w } = useResponsive();
   const settings = useSettings();
   const musicOn = settings.toggles.music;
 
@@ -53,14 +104,12 @@ export default function WebHeader({
     syncMusicToSettings();
   };
 
-  const initials = (settings.displayName || 'PLAYER')
-    .slice(0, 2)
-    .toUpperCase();
+  const initials = (settings.displayName || 'PLAYER').slice(0, 2).toUpperCase();
 
   return (
     <header className="psa-web-header-root" style={{ width: '100%', zIndex: 50 }}>
-      <View style={styles.header}>
-        {/* Left: Brand mark & title */}
+      <View style={[styles.header, isTV && styles.headerTV, Platform.OS === 'web' && (styles.headerWeb as any)]}>
+        {/* Left: Brand */}
         <Pressable
           onPress={() => onSelectTab('today')}
           style={({ pressed }) => [styles.brandGroup, pressed && { opacity: 0.85 }]}
@@ -81,13 +130,18 @@ export default function WebHeader({
           </View>
           <View style={styles.brandTextCol}>
             <View style={styles.brandTitleRow}>
-              <Text style={styles.brandTitle}>PROSEASON ACADEMY</Text>
-              <View style={styles.livePill}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveTxt}>S1 · LIVE</Text>
-              </View>
+              {/* fit a 320px handset without ellipsising the wordmark */}
+              <Text style={[styles.brandTitle, w < 400 && { fontSize: 13, letterSpacing: 0.6 }]}>
+                PROSEASON ACADEMY
+              </Text>
+              {w >= 360 && (
+                <View style={styles.livePill}>
+                  <View style={[styles.liveDot, styles.liveDotPulse]} />
+                  <Text style={styles.liveTxt}>S1 · LIVE</Text>
+                </View>
+              )}
             </View>
-            {isWide && (
+            {isLaptopUp && (
               <Text style={styles.brandSub}>
                 COACH {coach?.name.toUpperCase() || 'CHINEDU OKAFOR'} · FC 26 REVIEW PRACTICE
               </Text>
@@ -95,38 +149,25 @@ export default function WebHeader({
           </View>
         </Pressable>
 
-        {/* Center: Desktop Navigation Bar (visible on tablet / laptop / desktop) */}
+        {/* Center: Desktop Nav — tablets get the short labels so five
+            destinations + brand + profile never collide at 768–1023px. */}
         {isWide && (
           <View style={styles.navBar}>
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-              const active = activeTab === id;
-              return (
-                <Pressable
-                  key={id}
-                  onPress={() => {
-                    sfx('tab');
-                    onSelectTab(id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.navItem,
-                    active && styles.navItemActive,
-                    pressed && styles.navItemPressed,
-                  ]}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Icon size={15} color={active ? colors.primary : 'rgba(143,184,155,0.7)'} />
-                  <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
-                  {active && <View style={styles.activeIndicator} />}
-                </Pressable>
-              );
-            })}
+            {NAV_ITEMS.map(({ id, label, short, icon: Icon }) => (
+              <NavItem
+                key={id}
+                id={id}
+                label={isLaptopUp ? label : short}
+                Icon={Icon}
+                active={activeTab === id}
+                onSelect={onSelectTab}
+              />
+            ))}
           </View>
         )}
 
-        {/* Right: Controls & User Profile */}
+        {/* Right: Controls */}
         <View style={styles.rightGroup}>
-          {/* Sound / Ambient Bed Controller */}
           <Pressable
             onPress={toggleSound}
             style={({ pressed }) => [
@@ -138,9 +179,9 @@ export default function WebHeader({
             accessibilityLabel={musicOn ? 'Mute ambient sound' : 'Unmute ambient sound'}
           >
             <View style={styles.soundWave}>
-              <View style={[styles.soundBar, styles.soundBar1, musicOn && styles.soundBarAnim]} />
-              <View style={[styles.soundBar, styles.soundBar2, musicOn && styles.soundBarAnim]} />
-              <View style={[styles.soundBar, styles.soundBar3, musicOn && styles.soundBarAnim]} />
+              <View style={[styles.soundBar, styles.soundBar1, musicOn && styles.soundBarOn]} />
+              <View style={[styles.soundBar, styles.soundBar2, musicOn && styles.soundBarOn]} />
+              <View style={[styles.soundBar, styles.soundBar3, musicOn && styles.soundBarOn]} />
             </View>
             {isLaptopUp && (
               <Text style={[styles.soundTxt, musicOn && styles.soundTxtOn]}>
@@ -149,62 +190,40 @@ export default function WebHeader({
             )}
           </Pressable>
 
-          {/* Quick Guide */}
           {isLaptopUp && onOpenGuide && (
             <Pressable
-              onPress={() => {
-                sfx('tap');
-                onOpenGuide();
-              }}
+              onPress={() => { sfx('tap'); onOpenGuide(); }}
               style={({ pressed }) => [styles.iconActionBtn, pressed && { opacity: 0.75 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Open Guide"
             >
               <HelpIcon size={14} color={colors.muted} />
             </Pressable>
           )}
 
-          {/* FC Updates shortcut */}
           {isLaptopUp && onOpenUpdates && (
             <Pressable
-              onPress={() => {
-                sfx('tap');
-                onOpenUpdates();
-              }}
+              onPress={() => { sfx('tap'); onOpenUpdates(); }}
               style={({ pressed }) => [styles.iconActionBtn, pressed && { opacity: 0.75 }]}
-              accessibilityRole="button"
-              accessibilityLabel="Open FC Updates"
             >
-              <BellIcon size={14} color={colors.accent} />
+              <View>
+                <BellIcon size={14} color={colors.accent} />
+                <View style={styles.bellDot} />
+              </View>
             </Pressable>
           )}
 
-          {/* Founder Desk Pill (if founder) */}
           {isFounder && onOpenFounderDesk && (
-            <Pressable
-              onPress={() => {
-                sfx('tap');
-                onOpenFounderDesk();
-              }}
-              style={styles.founderPill}
-            >
+            <Pressable onPress={() => { sfx('tap'); onOpenFounderDesk(); }} style={styles.founderPill}>
               <Text style={styles.founderPillTxt}>★ FOUNDER</Text>
             </Pressable>
           )}
 
-          {/* User Profile Pill */}
           <Pressable
-            onPress={() => {
-              sfx('tab');
-              onSelectTab('settings');
-            }}
+            onPress={() => { sfx('tab'); onSelectTab('settings'); }}
             style={({ pressed }) => [
               styles.profilePill,
               activeTab === 'settings' && styles.profilePillActive,
-              pressed && { opacity: 0.8 },
+              pressed && { opacity: 0.82, transform: [{ scale: 0.98 }] },
             ]}
-            accessibilityRole="button"
-            accessibilityLabel="My Profile and Settings"
           >
             <View style={styles.profileAvatar}>
               <Text style={styles.profileAvatarTxt}>{initials}</Text>
@@ -229,29 +248,33 @@ export default function WebHeader({
 const styles = StyleSheet.create({
   header: {
     height: 64,
-    backgroundColor: 'rgba(7, 12, 8, 0.95)',
+    backgroundColor: 'rgba(7, 12, 8, 0.72)',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(57, 255, 106, 0.18)',
+    borderBottomColor: 'rgba(57, 255, 106, 0.14)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
+    // subtle premium shadow
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
   },
-  brandGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  headerWeb: {
+    backdropFilter: 'blur(16px) saturate(1.2)',
+  } as any,
+  brandGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   crestGlow: {
     shadowColor: colors.primary,
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
+    shadowOpacity: 0.55,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 0 },
   },
   crestRing: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     padding: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
@@ -260,67 +283,47 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     borderRadius: 16,
-    backgroundColor: '#031a14',
+    backgroundColor: '#071a12',
     borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.45)',
+    borderColor: 'rgba(242,192,120,0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandTextCol: {
-    gap: 2,
-  },
-  brandTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandTitle: {
-    fontFamily: displayFont,
-    fontSize: 18,
-    letterSpacing: 1.2,
-    color: colors.fg,
-  },
+  brandTextCol: { gap: 2 },
+  brandTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandTitle: { fontFamily: displayFont, fontSize: 17, letterSpacing: 1, color: colors.fg },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(57,255,106,0.1)',
-    borderColor: 'rgba(57,255,106,0.3)',
+    backgroundColor: 'rgba(57,255,106,0.10)',
+    borderColor: 'rgba(57,255,106,0.22)',
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
   },
   liveDot: {
-    width: 5,
-    height: 5,
+    width: 6,
+    height: 6,
     borderRadius: 3,
     backgroundColor: colors.primary,
+  },
+  liveDotPulse: {
     shadowColor: colors.primary,
     shadowOpacity: 0.9,
-    shadowRadius: 4,
+    shadowRadius: 6,
   },
-  liveTxt: {
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    color: colors.primary,
-  },
-  brandSub: {
-    fontFamily: monoFont,
-    fontSize: 6.2,
-    letterSpacing: 1.2,
-    color: 'rgba(143,184,155,0.7)',
-  },
+  liveTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
+  brandSub: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.2, color: 'rgba(143,184,155,0.65)' },
 
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(15, 26, 19, 0.65)',
+    backgroundColor: 'rgba(15, 26, 19, 0.55)',
     borderWidth: 1,
-    borderColor: 'rgba(57, 255, 106, 0.14)',
+    borderColor: 'rgba(57, 255, 106, 0.12)',
     borderRadius: 14,
     paddingHorizontal: 6,
     paddingVertical: 4,
@@ -335,150 +338,121 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   navItemActive: {
-    backgroundColor: 'rgba(57, 255, 106, 0.12)',
-    borderColor: 'rgba(57, 255, 106, 0.28)',
+    backgroundColor: 'rgba(57, 255, 106, 0.11)',
+    borderColor: 'rgba(57, 255, 106, 0.22)',
     borderWidth: 1,
   },
-  navItemPressed: {
-    opacity: 0.8,
+  navItemPressed: { opacity: 0.82 },
+  // 10-foot mode: bigger pads and labels so nav reads from the sofa
+  headerTV: { height: 76, paddingHorizontal: 28 },
+  navItemTV: { paddingHorizontal: 18, paddingVertical: 12, gap: 8 },
+  navLabelTV: { fontSize: 13.5, letterSpacing: 1.4 },
+  navHoverVeil: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderRadius: 10,
+    backgroundColor: 'rgba(57,255,106,0.09)',
+    opacity: 0,
   },
-  navLabel: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 10.5,
-    letterSpacing: 1.1,
-    color: 'rgba(143,184,155,0.8)',
-  },
-  navLabelActive: {
-    color: colors.primary,
-  },
+  navLabel: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.1, color: 'rgba(143,184,155,0.75)' },
+  navLabelActive: { color: colors.primary },
   activeIndicator: {
     position: 'absolute',
     bottom: -5,
-    left: '25%',
-    right: '25%',
+    left: '20%',
+    right: '20%',
     height: 2,
     borderRadius: 1,
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.8,
-    shadowRadius: 4,
+    shadowRadius: 5,
   },
 
-  rightGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  rightGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   soundBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 10,
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 11,
     borderWidth: 1,
-    borderColor: 'rgba(143,184,155,0.22)',
-    backgroundColor: 'rgba(12,20,14,0.6)',
+    borderColor: 'rgba(143,184,155,0.18)',
+    backgroundColor: 'rgba(12,20,14,0.55)',
   },
-  soundBtnOn: {
-    borderColor: 'rgba(57,255,106,0.35)',
-    backgroundColor: 'rgba(57,255,106,0.08)',
-  },
-  soundWave: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 2,
-    height: 12,
-  },
-  soundBar: {
-    width: 2.5,
-    borderRadius: 1.5,
-    backgroundColor: colors.muted,
-  },
-  soundBar1: { height: 6 },
-  soundBar2: { height: 12 },
-  soundBar3: { height: 8 },
-  soundBarAnim: {
-    backgroundColor: colors.primary,
-  },
-  soundTxt: {
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    color: colors.muted,
-  },
-  soundTxtOn: {
-    color: colors.primary,
-  },
+  soundBtnOn: { borderColor: 'rgba(57,255,106,0.28)', backgroundColor: 'rgba(57,255,106,0.08)' },
+  soundWave: { flexDirection: 'row', alignItems: 'flex-end', gap: 2.5, height: 12 },
+  soundBar: { width: 2.5, borderRadius: 2, backgroundColor: 'rgba(143,184,155,0.5)' },
+  soundBar1: { height: 5 },
+  soundBar2: { height: 11 },
+  soundBar3: { height: 7 },
+  soundBarOn: { backgroundColor: colors.primary },
+  soundTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.1, color: colors.muted },
+  soundTxtOn: { color: colors.primary },
 
   iconActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
+    width: 34,
+    height: 34,
+    borderRadius: 11,
     borderWidth: 1,
-    borderColor: 'rgba(143,184,155,0.22)',
-    backgroundColor: 'rgba(12,20,14,0.6)',
+    borderColor: 'rgba(143,184,155,0.18)',
+    backgroundColor: 'rgba(12,20,14,0.55)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.accent,
+    borderWidth: 1.5,
+    borderColor: '#070c08',
   },
   founderPill: {
     backgroundColor: 'rgba(242,192,120,0.12)',
     borderWidth: 1,
     borderColor: colors.accent,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
+    borderRadius: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  founderPillTxt: {
-    fontFamily: monoFont,
-    fontSize: 6.8,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    color: colors.accent,
-  },
+  founderPillTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
 
   profilePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.22)',
+    borderColor: 'rgba(57,255,106,0.18)',
     backgroundColor: 'rgba(15,26,19,0.85)',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
-  profilePillActive: {
-    borderColor: colors.primary,
-    backgroundColor: 'rgba(57,255,106,0.12)',
-  },
+  profilePillActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.10)' },
   profileAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
   },
-  profileAvatarTxt: {
-    fontFamily: monoFont,
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#040805',
-  },
-  profileMetaCol: {
-    gap: 1,
-    maxWidth: 90,
-  },
-  profileName: {
-    fontFamily: bodyFontBold,
-    fontSize: 11,
-    color: colors.fg,
-  },
-  profileId: {
-    fontFamily: monoFont,
-    fontSize: 6.2,
-    color: colors.muted,
-  },
+  profileAvatarTxt: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', color: '#040805' },
+  profileMetaCol: { gap: 1, maxWidth: 96 },
+  profileName: { fontFamily: bodyFontBold, fontSize: 11, color: colors.fg },
+  profileId: { fontFamily: monoFont, fontSize: 6.2, color: colors.muted },
 });
