@@ -488,6 +488,52 @@ export function CheckBadgeIcon({ size = 16, color }: IconProps) {
   );
 }
 
+export function FootballIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={1.7} />
+      <Path d="M12 7.5l3.2 2.3-1.2 3.8h-4l-1.2-3.8L12 7.5z" stroke={color} strokeWidth={1.5} fill="rgba(57,255,106,0.18)" />
+      <Path d="M12 7.5V3M15.2 9.8l3.6-1.5M14 13.6l2.5 3M10 13.6l-2.5 3M8.8 9.8L5.2 8.3" stroke={color} strokeWidth={1.4} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function TrophyIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 4h12v4.5a6 6 0 0 1-12 0V4z" stroke={color} strokeWidth={1.7} strokeLinejoin="round" fill="rgba(242,192,120,0.15)" />
+      <Path d="M6 6H3.5a1.5 1.5 0 0 0-1.5 1.5v.5a3 3 0 0 0 3 3H6M18 6h2.5a1.5 1.5 0 0 1 1.5 1.5v.5a3 3 0 0 1-3 3H18M12 14.5V18M8 21h8M9 18h6" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function TacticsWhistleIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M14 8h5a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2.5l-1.8 4.2A4.5 4.5 0 1 1 14 8z" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" fill="rgba(57,255,106,0.12)" />
+      <Circle cx="8.5" cy="14.5" r="1.5" fill={color} />
+      <Path d="M15 8V5" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function StarBadgeIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2l2.6 6.3 6.9.6-5.2 4.6 1.6 6.7L12 16.7 6.1 20.2l1.6-6.7-5.2-4.6 6.9-.6L12 2z" stroke={color} strokeWidth={1.6} strokeLinejoin="round" fill="rgba(242,192,120,0.2)" />
+    </Svg>
+  );
+}
+
+export function ClubhouseIcon({ size = 18, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path d="M3 10.5L12 3l9 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5v-9z" stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" fill="rgba(57,255,106,0.1)" />
+      <Path d="M9 21v-7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7" stroke={color} strokeWidth={1.6} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function TillIcon({ size = 15, color }: IconProps) {
   // the academy till — drawer + coin, for the store entry chip
   return (

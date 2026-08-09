@@ -47,7 +47,8 @@ type Props = {
 
 export default function TrackerTab({ coach }: Props) {
   const { width: windowWidth } = useWindowDimensions();
-  const bandW = Math.min(windowWidth, 430);
+  const isDesktop = windowWidth >= 768;
+  const bandW = Math.min(windowWidth, 1200);
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [now, setNow] = useState(Date.now());
   const [showCalendar, setShowCalendar] = useState(false);
@@ -93,7 +94,14 @@ export default function TrackerTab({ coach }: Props) {
   return (
     <View style={styles.root}>
       <GridBackground />
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        contentContainerStyle={[
+          styles.scroll,
+          { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: isDesktop ? 24 : 16 },
+        ]}
+      >
         {/* header band */}
         <ArtBand source={[TUNNEL, require('../../../assets/art/home-pitch.png'), require('../../../assets/art/coach-touchline.jpg')]} width={bandW - 8} height={120} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.55 }}>
           <Text style={styles.eyebrow}>YOUR PROGRESS · {complete ? 'COMPLETE' : monthLabel(month)}</Text>
