@@ -10,6 +10,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import SplashScreen from './src/screens/SplashScreen';
+import LandingScreen from './src/screens/LandingScreen';
 import SignInScreen from './src/screens/SignInScreen';
 import CoachSelectScreen from './src/screens/CoachSelectScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
@@ -73,10 +74,10 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
   });
 }
 
-// SPLASH → SIGN IN → CHOOSE A COACH → BASELINE WEEK → TODAY.
+// SPLASH → DOSSIER (landing) → SIGN IN → CHOOSE A COACH → BASELINE WEEK → TODAY.
 // The old coach lore, orientation carousel, referral survey and fake setup
 // loader were all extra stops before a player could understand the work.
-type Route = 'signin' | 'coach' | 'scan' | 'hub';
+type Route = 'landing' | 'signin' | 'coach' | 'scan' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
@@ -91,7 +92,7 @@ export default function App() {
 
   const audioScene: AudioScene = !splashGone
     ? 'splash'
-    : route === 'signin'
+    : route === 'signin' || route === 'landing'
       ? 'seat'
       : route === 'coach'
         ? 'coach-select'
@@ -153,14 +154,14 @@ export default function App() {
       // the user to skip the sign-in door. The local `signedIn` boolean alone
       // is no longer sufficient — this removes the local-only fallback path.
       const signedIn = !!cloud;
-      if (!signedIn) setRoute('signin');
+      if (!signedIn) setRoute('landing');
       else if (!s.coachId) setRoute('coach');
       else if (!s.baselineDone) setRoute('scan');
       else setRoute('hub');
       setRestored(true);
     })().catch(() => {
-      // absolute last resort — land on the sign-in door, never a dead screen
-      setRoute('signin');
+      // absolute last resort — land on the public door, never a dead screen
+      setRoute('landing');
       setRestored(true);
     });
     return () => {
@@ -267,7 +268,7 @@ export default function App() {
     // the ledger and the coach lock survive — only the floor is left
     void signOutRemote();
     endSession();
-    setRoute('signin');
+    setRoute('landing');
   }, []);
 
   return (
@@ -283,6 +284,7 @@ export default function App() {
           <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
             {restored && (
               <>
+                {route === 'landing' && <LandingScreen onEnter={() => setRoute('signin')} />}
                 {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
                 {route === 'coach' && (
                   <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
