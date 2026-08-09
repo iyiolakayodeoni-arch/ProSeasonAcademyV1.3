@@ -410,6 +410,46 @@ html.psa-page-landing .psa-app-fill {
   right: auto !important;
   height: auto !important;
 }
+/* ── Splash background as a true backdrop (web). The photograph is a CSS
+   background layer bleeding past every edge — never an <img> sitting on
+   the page — with its own slow dolly and a vignette that dims the frame
+   edges while the centre stays atmospheric. ── */
+.psa-splash-bg {
+  position: absolute;
+  inset: -8%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: brightness(0.55) saturate(1.1) contrast(1.02);
+  animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes psa-dolly {
+  from { transform: scale(1.06) translateY(0); }
+  to   { transform: scale(1.18) translateY(-1.5%); }
+}
+.psa-splash-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 120% 90% at 50% 42%,
+      rgba(2, 5, 3, 0.30) 0%,
+      rgba(2, 5, 3, 0.62) 62%,
+      rgba(2, 5, 3, 0.88) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(2, 5, 3, 0.55),
+      rgba(2, 5, 3, 0) 24%,
+      rgba(2, 5, 3, 0) 68%,
+      rgba(2, 5, 3, 0.82)
+    );
+}
+@media (prefers-reduced-motion: reduce) {
+  .psa-splash-bg { animation: none; transform: scale(1.08); }
+}
+
 /* While the splash plays, the document behind it must not move. */
 html.psa-splash-lock body {
   overflow: hidden !important;

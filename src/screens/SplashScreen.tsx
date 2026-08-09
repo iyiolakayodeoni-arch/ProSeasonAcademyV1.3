@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Image, Platform, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
   useAnimatedStyle,
@@ -45,11 +45,22 @@ const MIN_SPLASH_MS = 2600;
 const HERO_PORTRAIT = require('../../assets/art/splash-hero.png');
 const HERO_WIDE = require('../../assets/art/splash-hero-wide.png');
 
+const WEB = Platform.OS === 'web';
+
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const [frame, setFrame] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const win = useWindowDimensions();
   const w = frame.w;
   const h = frame.h;
-  const isWideFrame = w > h * 1.05;
+  // window aspect for the first paint (frame arrives one layout later)
+  const isWideFrame = frame.w > 0 ? frame.w > frame.h * 1.05 : win.width > win.height * 1.05;
+
+  // web renders the photograph as a true CSS background layer, so it needs
+  // the resolved asset URI
+  const heroUri = useMemo(
+    () => Image.resolveAssetSource(isWideFrame ? HERO_WIDE : HERO_PORTRAIT).uri,
+    [isWideFrame],
+  );
 
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
@@ -126,13 +137,23 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* the arena, sunk into darkness */}
-      <Animated.Image
-        source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-        style={[styles.photo, photoStyle]}
-        resizeMode="cover"
-      />
-      <View style={styles.dim} />
+      {/* the arena — a true backdrop on web (CSS background bleeding past
+          every edge), an Image on native */}
+      {WEB ? (
+        <>
+          <div className="psa-splash-bg" style={{ backgroundImage: `url(${heroUri})` }} />
+          <div className="psa-splash-vignette" />
+        </>
+      ) : (
+        <>
+          <Animated.Image
+            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
+            style={[styles.photo, photoStyle]}
+            resizeMode="cover"
+          />
+          <View style={styles.dim} />
+        </>
+      )}
 
       {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (
