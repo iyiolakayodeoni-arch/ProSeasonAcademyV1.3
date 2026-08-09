@@ -1,146 +1,131 @@
 // ProSeasonAcademy — design tokens (single source of truth)
-//
-// EXPANDED for the visual design system (v1). The original `colors` object
-// and `monoFont` are untouched — everything already in the app keeps working.
-// New layers: semantic roles, motion tokens, glow/elevation presets, and a
-// `grade` scale that maps an honest 0..100 receipt value to a colour so a
-// readout's colour is *earned*, never painted on. (Principle P1.)
+// PREMIUM EDITION v2 — glass, elevation, radii, typography scale.
 
 export const colors = {
-  bg: '#0a0f0a',
+  bg: '#050a06',
+  bgElevated: '#0a130d',
   surface: '#0f1a13',
-  surface2: '#132217', // one step lighter — layered cards on top of `surface`
+  surface2: '#132217',
+  surfaceGlass: 'rgba(12, 20, 14, 0.72)',
   border: '#1f3826',
+  borderSubtle: 'rgba(143,184,155,0.14)',
+  borderStrong: 'rgba(57,255,106,0.28)',
   fg: '#eef2ec',
+  fgDim: '#d6e2d9',
   muted: '#8fb89b',
+  mutedDim: '#6b8a75',
   primary: '#39FF6A',
   primaryDim: '#1f7a3d',
+  primaryGlow: 'rgba(57,255,106,0.22)',
   accent: '#f2c078',
   warm: '#ffcf7a',
   loss: '#e0605c',
   gridLine: 'rgba(57,255,106,0.045)',
-  // ── Console-instrument support — INSPIRED BY, never copied from, FC 26.
-  // The nod to the current console game's world comes through TREATMENT
-  // (gradient-edged cards, a live transition flash, condensed display type,
-  // ranked-ladder structure) — not by adopting its teal/steel palette. So the
-  // brand's neon-green + gold stay the hero; steel is used only as a whisper
-  // on fine hairlines/gradient edges, and flash is a one-beat live cue.
-  steel: '#9fc2cf', // a cool neutral — fine hairlines + one gradient-edge stop
-  flash: '#35d7ff', // neon live/transition flash — a moment, never a wash
+  steel: '#9fc2cf',
+  flash: '#35d7ff',
 } as const;
 
-export const monoFont = 'monospace';
+export const monoFont = 'JetBrains Mono, ui-monospace, SFMono-Regular, monospace';
 
-// ── FACES (visual POC, splash v2). The monospace stays the voice of the
-//    LEDGER — numbers, receipts, versions. These two faces carry the HUMAN
-//    voice: a heavy condensed display face for the wordmark/headlines
-//    (the sports-broadcast register) and a humanist sans for prose/status.
-//    Loaded via expo-font (@expo-google-fonts/anton & /barlow); the splash
-//    gates its progress bar on these being ready, so nothing ever flashes
-//    in a fallback face.
 export const displayFont = 'Anton_400Regular';
 export const bodyFont = 'Barlow_500Medium';
 export const bodyFontItalic = 'Barlow_500Medium_Italic';
 export const bodyFontStrong = 'Barlow_600SemiBold';
 export const bodyFontBold = 'Barlow_700Bold';
 export const bodyFontHeavy = 'Barlow_800ExtraBold';
-// NOTE — the splash's useFonts list gates on all six Barlow/Anton faces above
-// being ready; if a face is added here, add it to SplashScreen's list too.
 
-// ── Semantic roles. Named for meaning, not hex, so a future re-skin is one
-//    edit. They point at the palette above so the whole app stays coherent.
+// ── Radii — one language
+export const radii = {
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 22,
+  pill: 999,
+} as const;
+
+// ── Elevation — premium shadows (web + native)
+export const elevation = {
+  card: {
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  cardHover: {
+    shadowColor: colors.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+  modal: {
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 20 },
+    elevation: 24,
+  },
+} as const;
+
+// Legacy glow aliases
+export const glow = {
+  held: { shadowColor: colors.primary, shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 0 } },
+  live: { shadowColor: colors.primary, shadowOpacity: 0.42, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } },
+  climax: { shadowColor: colors.accent, shadowOpacity: 0.5, shadowRadius: 26, shadowOffset: { width: 0, height: 0 } },
+} as const;
+
 export const role = {
-  ok: colors.primary, // evidence met / verified / live
-  caution: colors.accent, // the Standard, locked, honest-but-thin
-  danger: colors.loss, // missed objective, lapsed, broken thread
-  info: '#6fd0c9', // a quiet teal for neutral data (used sparingly)
-  // Console-instrument support (inspired, not copied — see colors above):
-  steel: colors.steel, // fine hairline / gradient-edge stop
-  flash: colors.flash, // the live transition flash
+  ok: colors.primary,
+  caution: colors.accent,
+  danger: colors.loss,
+  info: '#6fd0c9',
+  steel: colors.steel,
+  flash: colors.flash,
 } as const;
 
-// ── TYPE — a shared display-header treatment, grounded in current console
-//    football-UI typography (condensed, heavy, uppercase display headers +
-//    a quieter data face; docs/FC26_UI_RESEARCH.md §4). Use on major section
-//    titles/eyebrows so headers carry the "athletic instrument panel" weight
-//    without touching the brand's monospace data readouts.
 export const type = {
-  display: {
-    fontFamily: monoFont,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-  } as const,
-  displayTight: {
-    fontFamily: monoFont,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 1.6,
-  } as const,
-  eyebrow: {
-    fontFamily: monoFont,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 2.4,
-  } as const,
+  display: { fontFamily: displayFont, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.2 } as const,
+  displayTight: { fontFamily: monoFont, fontWeight: '900', textTransform: 'uppercase', letterSpacing: 1.6 } as const,
+  eyebrow: { fontFamily: monoFont, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 2.4 } as const,
 } as const;
 
-// ── Motion. One vocabulary, used by every animated component so the whole
-//    product breathes on the same tempo (Principle P5 — quiet, instrument-like).
+// ── Motion — premium spring vocabulary
 export const motion = {
   dur: {
-    fast: 180, // taps, flips, a check landing
-    base: 320, // a card entering, a ring starting to fill
-    slow: 620, // a reveal resolving, a sheen crossing
+    micro: 140,
+    fast: 180,
+    base: 320,
+    slow: 520,
+    cinematic: 780,
   },
   ease: {
-    // a gentle, slightly-overshooting spring is the product's "voice"
+    premium: [0.16, 1, 0.3, 1] as const, // expo out — the "luxury" ease
     spring: { damping: 18, stiffness: 190, mass: 0.9 },
     settle: { damping: 26, stiffness: 150 },
+    bouncy: { damping: 14, stiffness: 260, mass: 0.8 },
   },
 } as const;
 
-// ── Glow / elevation presets. Replaces the ad-hoc inline shadows scattered
-//    across screens with three honest steps: held / live / climax.
-export const glow = {
-  held: {
-    shadowColor: colors.primary,
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  live: {
-    shadowColor: colors.primary,
-    shadowOpacity: 0.42,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  climax: {
-    shadowColor: colors.accent,
-    shadowOpacity: 0.5,
-    shadowRadius: 26,
-    shadowOffset: { width: 0, height: 0 },
-  },
-} as const;
-
-// ── The honest grade scale. Give it a 0..100 value (a win %, a composure
-//    average, an honesty weight, a fill ratio) and it returns the colour the
-//    readout should wear. Aligned to the philosophy: thin/early evidence is
-//    SHOWN, never SHAMED — so the low band is a quiet neutral ("not much
-//    evidence yet"), amber means "honest but incomplete / getting close",
-//    green means "the evidence holds". Red (role.danger) is reserved for
-//    explicit failure (a failed scan, a broken thread, caught evasion) and is
-//    applied by those surfaces directly — never by this automatic scale.
 export function gradeColor(v: number): string {
   const c = Math.max(0, Math.min(100, v));
-  if (c >= 75) return colors.primary; // the evidence holds
-  if (c >= 40) return colors.warm; // honest but incomplete — getting close
-  return '#6b7d72'; // a quiet slate — "thin / not yet", never shaming
+  if (c >= 75) return colors.primary;
+  if (c >= 40) return colors.warm;
+  return '#6b7d72';
 }
 
-// ── Surfaces, as opacities, so layered cards read as depth on the one bg.
 export const surfaceAlpha = {
   base: 'rgba(12,20,14,0.94)',
   raised: 'rgba(15,26,19,0.82)',
   inset: 'rgba(10,17,12,0.6)',
+  glass: 'rgba(12,20,14,0.72)',
+  glassStrong: 'rgba(15,26,19,0.88)',
+} as const;
+
+// ── Gradients — premium
+export const gradients = {
+  primary: ['#39ff6a', '#2be05a'] as const,
+  accent: ['#f2c078', '#ffb648'] as const,
+  cardEdge: ['rgba(57,255,106,0.5)', 'rgba(242,192,120,0.35)', 'rgba(57,255,106,0.25)'] as const,
+  shimmer: ['rgba(15,26,19,0.6)', 'rgba(57,255,106,0.08)', 'rgba(15,26,19,0.6)'] as const,
 } as const;

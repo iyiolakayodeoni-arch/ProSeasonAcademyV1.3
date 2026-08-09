@@ -1,21 +1,24 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Image } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInUp,
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
+  withSpring,
 } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
 import Marquee from '../../components/Marquee';
-import { ChevronRightIcon, HomeIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon } from '../../components/Icons';
+import { ChevronRightIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
 import { useSettings } from '../../data/settings';
 import { currentDay, loadDailyProgram, DailyProgram, doneCount, TOTAL_DAYS } from '../../data/dailyProgram';
 import { useAnnouncements } from '../../data/announcements';
-import { bodyFont, bodyFontBold, bodyFontHeavy, colors, displayFont, monoFont } from '../../theme';
+import { bodyFont, bodyFontBold, bodyFontHeavy, colors, displayFont, monoFont, radii, elevation } from '../../theme';
 import { useResponsive } from '../../hooks/useResponsive';
 import { BaselineCard, loadBaseline } from '../../data/baselineScan';
 
@@ -40,18 +43,16 @@ function greeting() {
 function TypedGreeting({ name }: { name: string }) {
   const full = `${greeting()} ${name.toUpperCase()}`;
   const [shown, setShown] = useState('');
-
   useEffect(() => {
     setShown('');
     let index = 0;
-    const timer = setInterval(() => {
+    const t = setInterval(() => {
       index += 1;
       setShown(full.slice(0, index));
-      if (index >= full.length) clearInterval(timer);
-    }, 30);
-    return () => clearInterval(timer);
+      if (index >= full.length) clearInterval(t);
+    }, 22);
+    return () => clearInterval(t);
   }, [full]);
-
   return (
     <Text style={styles.heroTitle}>
       {shown}
@@ -60,79 +61,59 @@ function TypedGreeting({ name }: { name: string }) {
   );
 }
 
-function CoachRouteCard({
-  label,
-  line,
-  onPress,
-  delay,
-  primary,
-  badge,
-  icon: Icon,
+function PremiumCard({
+  label, line, onPress, delay, primary, badge, icon: Icon,
 }: {
-  label: string;
-  line: string;
-  onPress: () => void;
-  delay: number;
-  primary?: boolean;
-  badge?: string;
-  icon?: any;
+  label: string; line: string; onPress: () => void; delay: number; primary?: boolean; badge?: string; icon?: any;
 }) {
-  const lift = useSharedValue(0);
-  useEffect(() => {
-    lift.value = withRepeat(
-      withSequence(withTiming(-3, { duration: 1600 }), withTiming(0, { duration: 1600 })),
-      -1,
-      true,
-    );
-  }, [lift]);
-  const movement = useAnimatedStyle(() => ({ transform: [{ translateY: lift.value }] }));
+  const scale = useSharedValue(1);
+  const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
-    <Animated.View entering={FadeInUp.delay(delay).duration(380)} style={[movement, primary ? styles.routePrimaryWrap : styles.routeWrap]}>
+    <Animated.View
+      entering={FadeInUp.delay(delay).duration(420).springify().damping(18)}
+      style={[primary ? styles.routePrimaryWrap : styles.routeWrap, animated]}
+    >
       <Pressable
         onPress={onPress}
+        onPressIn={() => (scale.value = withSpring(0.98, { damping: 18, stiffness: 320 }))}
+        onPressOut={() => (scale.value = withSpring(1, { damping: 18, stiffness: 320 }))}
         style={({ pressed }) => [
           styles.route,
-          primary && styles.routePrimary,
+          primary ? styles.routePrimary : styles.routeGlass,
           pressed && styles.routePressed,
+          Platform.OS === 'web' && !primary ? ({ backdropFilter: 'blur(14px)' } as any) : null,
         ]}
       >
-        <View style={styles.routeIconBox}>
-          {Icon ? (
-            <Icon size={18} color={primary ? '#07110a' : colors.primary} />
-          ) : (
-            <View style={[styles.signalDot, primary && styles.signalDotPrimary]} />
-          )}
+        {/* Top accent line */}
+        {!primary && <LinearGradient colors={['rgba(57,255,106,0.45)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.routeAccent} />}
+
+        <View style={[styles.routeIconBox, primary && styles.routeIconBoxPrimary]}>
+          {Icon ? <Icon size={18} color={primary ? '#05160a' : colors.primary} /> : <View style={[styles.signalDot, primary && styles.signalDotPrimary]} />}
         </View>
+
         <View style={styles.routeCopy}>
           <View style={styles.routeHeadRow}>
             <Text style={[styles.routeLabel, primary && styles.routeLabelPrimary]}>{label}</Text>
             {!!badge && (
               <View style={[styles.routeBadge, primary && styles.routeBadgePrimary]}>
-                <Text style={[styles.routeBadgeTxt, primary && styles.routeBadgeTxtPrimary]}>
-                  {badge}
-                </Text>
+                <Text style={[styles.routeBadgeTxt, primary && styles.routeBadgeTxtPrimary]}>{badge}</Text>
               </View>
             )}
           </View>
           <Text style={[styles.routeLine, primary && styles.routeLinePrimary]}>{line}</Text>
         </View>
-        <ChevronRightIcon size={16} color={primary ? '#07110a' : colors.primary} />
+
+        <View style={[styles.chevWrap, primary && styles.chevWrapPrimary]}>
+          <ChevronRightIcon size={14} color={primary ? '#05160a' : colors.primary} />
+        </View>
       </Pressable>
     </Animated.View>
   );
 }
 
-export default function HomeTab({
-  coach,
-  onOpenJourney,
-  onOpenTracker,
-  onOpenUpdates,
-  onOpenHalls,
-  onOpenGuide,
-  onOpenRole,
-}: Props) {
-  const { isMultiColumn } = useResponsive();
+export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole }: Props) {
+  const { isMultiColumn, isWide } = useResponsive();
   const [day, setDay] = useState(1);
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
@@ -159,38 +140,56 @@ export default function HomeTab({
   return (
     <View style={styles.flex}>
       <GridBackground />
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {/* Live News Ticker */}
-        <View style={styles.newsBar}>
-          <Text style={styles.newsFlag}>LIVE ACADEMY</Text>
-          <Marquee pxPerSec={32}>
-            <Text style={styles.newsText}>✦ {news}   ✦ FC 26 REVIEW PRACTICE   ✦ RECORD MATCHES AS USUAL   </Text>
-          </Marquee>
-        </View>
+      <ScrollView contentContainerStyle={[styles.scroll, isWide && styles.scrollWide]} showsVerticalScrollIndicator={false} bounces={false}>
+        {/* Premium Live Ticker */}
+        <Animated.View entering={FadeIn.duration(420)} style={styles.newsBar}>
+          <LinearGradient colors={['#39ff6a', '#2be05a']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.newsFlag}>
+            <View style={styles.liveDotSmall} />
+            <Text style={styles.newsFlagTxt}>LIVE ACADEMY</Text>
+          </LinearGradient>
+          <View style={styles.marqueeWrap}>
+            <Marquee pxPerSec={38}>
+              <Text style={styles.newsText}>✦ {news}   ✦ FC 26 REVIEW PRACTICE   ✦ RECORD MATCHES AS USUAL   </Text>
+            </Marquee>
+          </View>
+          <View style={styles.newsRightFade} pointerEvents="none" />
+        </Animated.View>
 
-        {/* Main Dashboard Area: 2 columns on desktop, single column on mobile */}
         <View style={[styles.mainLayout, isMultiColumn && styles.mainLayoutWide]}>
-          {/* Left Column (Hero & Actions) */}
+          {/* Left */}
           <View style={[styles.colMain, isMultiColumn && styles.colMainWide]}>
-            <View style={styles.heroCard}>
-              <Text style={styles.heroDay}>
-                DAY {day} OF 180 · {firstName.toUpperCase()} IS ON THE TOUCHLINE
-              </Text>
+            <Animated.View entering={FadeInUp.delay(40).duration(480)} style={[styles.heroCard, Platform.OS === 'web' && (styles.heroBlur as any)]}>
+              <LinearGradient colors={['rgba(57,255,106,0.18)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:1}} style={StyleSheet.absoluteFill} />
+              <View style={styles.heroTopRow}>
+                <Text style={styles.heroDay}>DAY {day} OF 180 · {firstName.toUpperCase()} IS ON THE TOUCHLINE</Text>
+                <View style={styles.dayPill}>
+                  <Text style={styles.dayPillTxt}>DAY {day}</Text>
+                </View>
+              </View>
               <TypedGreeting name={settings.displayName || 'PLAYER'} />
-              <Text style={styles.heroSub}>
-                “{firstName}, speaking. You have one job: show up honestly, review the tape, and let the work stack.”
-              </Text>
-            </View>
+              <Text style={styles.heroSub}>“{firstName}, speaking. You have one job: show up honestly, review the tape, and let the work stack.”</Text>
+              <View style={styles.heroStatsRow}>
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatVal}>{pct}%</Text>
+                  <Text style={styles.heroStatLbl}>SEASON</Text>
+                </View>
+                <View style={styles.heroDivider} />
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatVal}>{doneDays}</Text>
+                  <Text style={styles.heroStatLbl}>SEALED</Text>
+                </View>
+                <View style={styles.heroDivider} />
+                <View style={styles.heroStat}>
+                  <Text style={styles.heroStatVal}>{TOTAL_DAYS - doneDays}</Text>
+                  <Text style={styles.heroStatLbl}>LEFT</Text>
+                </View>
+              </View>
+            </Animated.View>
 
-            {/* Primary Action Card: Open 6 Months */}
-            <View style={styles.primaryActionWrap}>
-              <CoachRouteCard
+            <View style={styles.primaryWrap}>
+              <PremiumCard
                 primary
-                delay={60}
+                delay={120}
                 icon={JourneyIcon}
                 label="OPEN MY SIX MONTHS"
                 badge={`DAY ${day} WAITING`}
@@ -199,55 +198,24 @@ export default function HomeTab({
               />
             </View>
 
-            {/* Secondary Destinations Grid */}
-            <Text style={styles.sectionHeader}>ACADEMY WORKSPACES</Text>
+            <View style={styles.sectionHead}>
+              <Text style={styles.sectionHeader}>ACADEMY WORKSPACES</Text>
+              <View style={styles.sectionLine} />
+            </View>
+
             <View style={[styles.routesGrid, isMultiColumn && styles.routesGridWide]}>
-              {onOpenTracker && (
-                <CoachRouteCard
-                  delay={120}
-                  icon={ScanGlyphIcon}
-                  label="EVIDENCE & CHECKPOINTS"
-                  badge="7-MATCH INGEST"
-                  line="“Upload post-match stats screens. Let your evidence build your development card.”"
-                  onPress={onOpenTracker}
-                />
-              )}
-              <CoachRouteCard
-                delay={180}
-                label="ROLE MODEL STORY"
-                badge="STANDARD"
-                line="“Study the standard. Calm defending, clean composure, and winning from habits.”"
-                onPress={onOpenRole}
-              />
-              <CoachRouteCard
-                delay={240}
-                label="FC UPDATES & ACADEMY"
-                badge="PATCH NOTES"
-                line="“Important gameplay and tuning updates. Only the receipts that help you win.”"
-                onPress={onOpenUpdates}
-              />
-              <CoachRouteCard
-                delay={300}
-                label="LEARN THE BASICS"
-                badge="GUIDE"
-                line="“New foundations first. The simple, repeatable things win difficult matches.”"
-                onPress={onOpenGuide}
-              />
-              <CoachRouteCard
-                delay={360}
-                icon={WavesGlyphIcon}
-                label="CLUBHOUSE COMMUNITY"
-                badge="LIVE"
-                line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”"
-                onPress={onOpenHalls}
-              />
+              {onOpenTracker && <PremiumCard delay={160} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
+              <PremiumCard delay={200} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
+              <PremiumCard delay={240} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
+              <PremiumCard delay={280} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
+              <PremiumCard delay={320} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
             </View>
           </View>
 
-          {/* Right Column (Coach & Live Status Sidebar) */}
+          {/* Right Sidebar */}
           <View style={[styles.colSide, isMultiColumn && styles.colSideWide]}>
-            {/* Coach Card */}
-            <View style={styles.coachSidebarCard}>
+            <Animated.View entering={FadeInUp.delay(100).duration(480)} style={[styles.coachCard, Platform.OS === 'web' && (styles.glassBlur as any)]}>
+              <LinearGradient colors={['rgba(242,192,120,0.10)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.coachAccent} />
               <View style={styles.coachTopRow}>
                 <Image source={coach.portrait} style={styles.coachAvatar} />
                 <View style={styles.coachMeta}>
@@ -255,71 +223,53 @@ export default function HomeTab({
                   <Text style={styles.coachName}>{coach.name.toUpperCase()}</Text>
                   <Text style={styles.coachTitle}>{coach.title}</Text>
                 </View>
+                <View style={styles.coachLive}>
+                  <View style={styles.coachLiveDot} />
+                </View>
               </View>
               <Text style={styles.coachQuote}>“{coach.oneLiner}”</Text>
-              <View style={styles.coachBenchmarkBox}>
-                <Text style={styles.coachBenchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
-                <Text style={styles.coachBenchmarkTxt}>
-                  Calm under pressure. Clean positioning. No panic clearances. Winning through discipline.
-                </Text>
+              <View style={styles.benchmarkBox}>
+                <Text style={styles.benchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
+                <Text style={styles.benchmarkTxt}>Calm under pressure. Clean positioning. No panic clearances. Winning through discipline.</Text>
               </View>
-            </View>
+            </Animated.View>
 
-            {/* 6-Month Progress Summary Widget */}
-            <View style={styles.sidebarWidget}>
+            <Animated.View entering={FadeInUp.delay(160).duration(480)} style={[styles.widget, Platform.OS === 'web' && (styles.glassBlur as any)]}>
               <View style={styles.widgetHeader}>
                 <Text style={styles.widgetTag}>6-MONTH PROGRAM</Text>
-                <Text style={styles.widgetPct}>{pct}% DONE</Text>
+                <View style={styles.widgetPctPill}>
+                  <Text style={styles.widgetPct}>{pct}%</Text>
+                </View>
               </View>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${Math.max(4, pct)}%` }]} />
+              <View style={styles.progressTrack}>
+                <LinearGradient colors={['#39ff6a', '#2be05a']} start={{x:0,y:0}} end={{x:1,y:0}} style={[styles.progressFill, { width: `${Math.max(6, pct)}%` }]} />
+                <View style={[styles.progressGlow, { width: `${Math.max(6, pct)}%` }]} />
               </View>
               <View style={styles.widgetStatsRow}>
-                <View style={styles.widgetStat}>
-                  <Text style={styles.widgetStatVal}>{doneDays}</Text>
-                  <Text style={styles.widgetStatLbl}>DAYS SEALED</Text>
-                </View>
-                <View style={styles.widgetStat}>
-                  <Text style={styles.widgetStatVal}>{day}</Text>
-                  <Text style={styles.widgetStatLbl}>CURRENT DAY</Text>
-                </View>
-                <View style={styles.widgetStat}>
-                  <Text style={styles.widgetStatVal}>{TOTAL_DAYS - doneDays}</Text>
-                  <Text style={styles.widgetStatLbl}>DAYS LEFT</Text>
-                </View>
+                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>{doneDays}</Text><Text style={styles.widgetStatLbl}>DAYS SEALED</Text></View>
+                <View style={styles.widgetStatCenter}><Text style={styles.widgetStatVal}>{day}</Text><Text style={styles.widgetStatLbl}>CURRENT DAY</Text></View>
+                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>{TOTAL_DAYS - doneDays}</Text><Text style={styles.widgetStatLbl}>DAYS LEFT</Text></View>
               </View>
-              <Pressable
-                onPress={onOpenJourney}
-                style={({ pressed }) => [styles.widgetBtn, pressed && { opacity: 0.8 }]}
-              >
+              <Pressable onPress={onOpenJourney} style={({ pressed }) => [styles.widgetBtn, pressed && { opacity: 0.85 }]}>
                 <Text style={styles.widgetBtnTxt}>VIEW FULL 180-DAY TRACK ›</Text>
               </Pressable>
-            </View>
+            </Animated.View>
 
-            {/* Baseline Card Mini Preview if Available */}
             {baseline && (
-              <View style={styles.baselineMiniCard}>
+              <Animated.View entering={FadeInUp.delay(200).duration(480)} style={[styles.baselineCard, Platform.OS === 'web' && (styles.glassBlur as any)]}>
                 <View style={styles.widgetHeader}>
-                  <Text style={styles.baselineMiniTag}>STARTING BASELINE</Text>
-                  <View style={styles.sealedMiniPill}>
-                    <Text style={styles.sealedMiniTxt}>SEALED ✓</Text>
-                  </View>
+                  <Text style={styles.baselineTag}>STARTING BASELINE</Text>
+                  <View style={styles.sealedPill}><Text style={styles.sealedTxt}>SEALED ✓</Text></View>
                 </View>
-                <Text style={styles.baselineMiniTier}>{baseline.tier}</Text>
-                <Text style={styles.baselineMiniMeta}>
-                  {baseline.w}W · {baseline.d}D · {baseline.l}L · HEAD {baseline.avgComposure.toFixed(1)}/5
-                </Text>
-                <Text style={styles.baselineMiniRead} numberOfLines={2}>
-                  “{baseline.coachRead}”
-                </Text>
-              </View>
+                <Text style={styles.baselineTier}>{baseline.tier}</Text>
+                <Text style={styles.baselineMeta}>{baseline.w}W · {baseline.d}D · {baseline.l}L · HEAD {baseline.avgComposure.toFixed(1)}/5</Text>
+                <Text style={styles.baselineRead} numberOfLines={2}>“{baseline.coachRead}”</Text>
+              </Animated.View>
             )}
           </View>
         </View>
 
-        <Text style={styles.footer}>
-          THE NEXT MATCH IS THE ONLY ONE YOU CAN WORK ON · PROSEASON ACADEMY WEB
-        </Text>
+        <Text style={styles.footer}>THE NEXT MATCH IS THE ONLY ONE YOU CAN WORK ON · PROSEASON ACADEMY</Text>
       </ScrollView>
     </View>
   );
@@ -327,425 +277,174 @@ export default function HomeTab({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  scroll: {
-    paddingVertical: 14,
-    paddingBottom: 40,
-  },
+  scroll: { paddingVertical: 14, paddingBottom: 56 },
+  scrollWide: { paddingVertical: 18 },
 
   newsBar: {
-    height: 34,
+    height: 38,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
-    borderRadius: 10,
-    backgroundColor: 'rgba(57,255,106,0.08)',
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(15, 26, 19, 0.88)',
     borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.25)',
+    borderColor: 'rgba(57,255,106,0.18)',
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
   },
   newsFlag: {
-    alignSelf: 'stretch',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    fontFamily: monoFont,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    color: '#040805',
-    backgroundColor: colors.primary,
-  },
-  newsText: {
-    paddingLeft: 14,
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    color: colors.fg,
-  },
-
-  mainLayout: {
-    flexDirection: 'column',
-    gap: 18,
-  },
-  mainLayoutWide: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 24,
+    alignItems: 'center',
+    gap: 7,
+    alignSelf: 'stretch',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
   },
+  liveDotSmall: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#05160a' },
+  newsFlagTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.2, color: '#05160a' },
+  marqueeWrap: { flex: 1, overflow: 'hidden' },
+  newsText: { paddingLeft: 14, fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.2, color: colors.fg },
+  newsRightFade: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 32,
+    // @ts-ignore web gradient
+    backgroundImage: 'linear-gradient(90deg, transparent, rgba(15,26,19,0.88))',
+  } as any,
 
-  colMain: {
-    flex: 1,
-    width: '100%',
-  },
-  colMainWide: {
-    flex: 1.5,
-  },
-
-  colSide: {
-    width: '100%',
-    gap: 16,
-  },
-  colSideWide: {
-    width: 380,
-  },
+  mainLayout: { flexDirection: 'column', gap: 18 },
+  mainLayoutWide: { flexDirection: 'row', alignItems: 'flex-start', gap: 22 },
+  colMain: { flex: 1, width: '100%' },
+  colMainWide: { flex: 1.55 },
+  colSide: { width: '100%', gap: 14 },
+  colSideWide: { width: 372 },
 
   heroCard: {
     padding: 22,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     backgroundColor: 'rgba(15, 26, 19, 0.82)',
     borderWidth: 1,
-    borderColor: 'rgba(57, 255, 106, 0.25)',
+    borderColor: 'rgba(57, 255, 106, 0.18)',
+    overflow: 'hidden',
+    ...elevation.card,
   },
-  heroDay: {
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 2,
-    color: colors.primary,
-  },
-  heroTitle: {
-    minHeight: 44,
-    marginTop: 10,
-    fontFamily: displayFont,
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: 0.5,
-    color: colors.fg,
-  },
-  cursor: { color: colors.primary },
-  heroSub: {
-    marginTop: 10,
-    fontFamily: bodyFont,
-    fontSize: 14,
-    lineHeight: 22,
-    color: 'rgba(143,184,155,0.92)',
-  },
+  heroBlur: { backdropFilter: 'blur(16px)' } as any,
+  glassBlur: { backdropFilter: 'blur(14px)' } as any,
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroDay: { flex: 1, fontFamily: monoFont, fontSize: 8, fontWeight: '900', letterSpacing: 1.8, color: colors.primary },
+  dayPill: { backgroundColor: 'rgba(57,255,106,0.12)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)', borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
+  dayPillTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+  heroTitle: { minHeight: 42, marginTop: 10, fontFamily: displayFont, fontSize: 34, lineHeight: 38, letterSpacing: 0.3, color: colors.fg },
+  cursor: { color: colors.primary, opacity: 0.9 },
+  heroSub: { marginTop: 10, fontFamily: bodyFont, fontSize: 13.5, lineHeight: 21, color: 'rgba(214,226,217,0.92)' },
+  heroStatsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, backgroundColor: 'rgba(5,10,6,0.45)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.08)' },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatVal: { fontFamily: monoFont, fontSize: 16, fontWeight: '900', color: colors.fg, letterSpacing: 0.5 },
+  heroStatLbl: { marginTop: 2, fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.2, color: colors.muted },
+  heroDivider: { width: 1, height: 28, backgroundColor: 'rgba(57,255,106,0.12)' },
 
-  primaryActionWrap: {
-    marginTop: 16,
-  },
-
-  sectionHeader: {
-    marginTop: 22,
-    marginBottom: 12,
-    fontFamily: bodyFontHeavy,
-    fontSize: 11,
-    letterSpacing: 2,
-    color: colors.muted,
-  },
-
-  routesGrid: {
-    gap: 12,
-  },
-  routesGridWide: {
-    gap: 14,
-  },
-
-  routeWrap: {
-    width: '100%',
-  },
-  routePrimaryWrap: {
-    width: '100%',
-  },
-
+  primaryWrap: { marginTop: 14 },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 12 },
+  sectionHeader: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 2.2, color: colors.muted },
+  sectionLine: { flex: 1, height: 1, backgroundColor: 'rgba(143,184,155,0.12)' },
+  routesGrid: { gap: 10 },
+  routesGridWide: { gap: 12 },
+  routeWrap: { width: '100%' },
+  routePrimaryWrap: { width: '100%' },
   route: {
-    minHeight: 80,
+    minHeight: 84,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.18)',
-    backgroundColor: 'rgba(15,26,19,0.85)',
+    overflow: 'hidden',
+  },
+  routeGlass: {
+    backgroundColor: 'rgba(15,26,19,0.72)',
+    borderColor: 'rgba(143,184,155,0.14)',
+    shadowColor: '#000',
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
   },
   routePrimary: {
-    borderColor: colors.primary,
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
     shadowColor: colors.primary,
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
+    shadowOpacity: 0.28,
+    shadowRadius: 20,
     elevation: 8,
   },
-  routePressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.99 }],
-  },
-  routeIconBox: {
-    width: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
-  },
-  signalDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-  },
-  signalDotPrimary: {
-    backgroundColor: '#07110a',
-    shadowOpacity: 0,
-  },
-  routeCopy: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  routeHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  routeLabel: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 13,
-    letterSpacing: 0.8,
-    color: colors.fg,
-  },
-  routeLabelPrimary: {
-    color: '#07110a',
-    fontSize: 14,
-  },
-  routeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: 'rgba(57,255,106,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.3)',
-  },
-  routeBadgePrimary: {
-    backgroundColor: 'rgba(7,17,10,0.2)',
-    borderColor: 'rgba(7,17,10,0.4)',
-  },
-  routeBadgeTxt: {
-    fontFamily: monoFont,
-    fontSize: 6.5,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: colors.primary,
-  },
-  routeBadgeTxtPrimary: {
-    color: '#07110a',
-  },
-  routeLine: {
-    marginTop: 4,
-    fontFamily: bodyFont,
-    fontSize: 12,
-    lineHeight: 17,
-    color: colors.muted,
-  },
-  routeLinePrimary: {
-    color: 'rgba(7,17,10,0.85)',
-    fontFamily: bodyFontBold,
-  },
+  routeAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 1, opacity: 0.9 },
+  routePressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  routeIconBox: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginRight: 10, backgroundColor: 'rgba(57,255,106,0.10)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.18)' },
+  routeIconBoxPrimary: { backgroundColor: 'rgba(5,22,10,0.18)', borderColor: 'rgba(5,22,10,0.22)' },
+  signalDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.9, shadowRadius: 6 },
+  signalDotPrimary: { backgroundColor: '#05160a', shadowOpacity: 0 },
+  routeCopy: { flex: 1, paddingRight: 8 },
+  routeHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  routeLabel: { fontFamily: bodyFontHeavy, fontSize: 12.5, letterSpacing: 0.6, color: colors.fg },
+  routeLabelPrimary: { color: '#05160a', fontSize: 13.5, letterSpacing: 0.8 },
+  routeBadge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7, backgroundColor: 'rgba(57,255,106,0.12)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' },
+  routeBadgePrimary: { backgroundColor: 'rgba(5,22,10,0.14)', borderColor: 'rgba(5,22,10,0.22)' },
+  routeBadgeTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+  routeBadgeTxtPrimary: { color: '#05160a' },
+  routeLine: { marginTop: 5, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16.5, color: 'rgba(143,184,155,0.88)' },
+  routeLinePrimary: { color: 'rgba(5,22,10,0.78)', fontFamily: bodyFontBold },
+  chevWrap: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(57,255,106,0.08)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.14)' },
+  chevWrapPrimary: { backgroundColor: 'rgba(5,22,10,0.12)', borderColor: 'rgba(5,22,10,0.18)' },
 
-  coachSidebarCard: {
+  coachCard: {
     padding: 18,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15,26,19,0.85)',
+    borderRadius: radii.xl,
+    backgroundColor: 'rgba(15,26,19,0.78)',
     borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.4)',
-  },
-  coachTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  coachAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 1.5,
-    borderColor: colors.accent,
-    backgroundColor: '#0c140e',
-  },
-  coachMeta: {
-    flex: 1,
-  },
-  coachTag: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-    color: colors.accent,
-  },
-  coachName: {
-    marginTop: 2,
-    fontFamily: displayFont,
-    fontSize: 18,
-    color: colors.fg,
-  },
-  coachTitle: {
-    marginTop: 2,
-    fontFamily: bodyFontHeavy,
-    fontSize: 10,
-    color: colors.muted,
-  },
-  coachQuote: {
-    marginTop: 12,
-    fontFamily: bodyFont,
-    fontStyle: 'italic',
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: '#d6e2d9',
-  },
-  coachBenchmarkBox: {
-    marginTop: 12,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(242,192,120,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.22)',
-  },
-  coachBenchmarkTag: {
-    fontFamily: monoFont,
-    fontSize: 6.8,
-    fontWeight: '900',
-    letterSpacing: 1.2,
-    color: colors.accent,
-  },
-  coachBenchmarkTxt: {
-    marginTop: 4,
-    fontFamily: bodyFont,
-    fontSize: 11,
-    lineHeight: 16,
-    color: 'rgba(238,242,236,0.85)',
-  },
-
-  sidebarWidget: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15,26,19,0.85)',
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.22)',
-  },
-  widgetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  widgetTag: {
-    fontFamily: monoFont,
-    fontSize: 7.5,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-    color: colors.primary,
-  },
-  widgetPct: {
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 1,
-    color: colors.primary,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(57,255,106,0.12)',
+    borderColor: 'rgba(242,192,120,0.18)',
     overflow: 'hidden',
-    marginTop: 10,
+    ...elevation.card,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-  },
-  widgetStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(57,255,106,0.12)',
-  },
-  widgetStat: {
-    alignItems: 'center',
-  },
-  widgetStatVal: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 16,
-    color: colors.fg,
-  },
-  widgetStatLbl: {
-    marginTop: 2,
-    fontFamily: monoFont,
-    fontSize: 6,
-    letterSpacing: 1.1,
-    color: colors.muted,
-  },
-  widgetBtn: {
-    marginTop: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.3)',
-    backgroundColor: 'rgba(57,255,106,0.06)',
-    alignItems: 'center',
-  },
-  widgetBtnTxt: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 9.5,
-    letterSpacing: 1.2,
-    color: colors.primary,
-  },
+  coachAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, opacity: 0.9 },
+  coachTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  coachAvatar: { width: 56, height: 56, borderRadius: 18, borderWidth: 1.5, borderColor: colors.accent, backgroundColor: '#0c140e' },
+  coachMeta: { flex: 1 },
+  coachTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  coachName: { marginTop: 2, fontFamily: displayFont, fontSize: 17, color: colors.fg },
+  coachTitle: { marginTop: 2, fontFamily: bodyFontHeavy, fontSize: 10, color: colors.muted },
+  coachLive: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.8, shadowRadius: 6 },
+  coachLiveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  coachQuote: { marginTop: 12, fontFamily: bodyFont, fontStyle: 'italic', fontSize: 12.5, lineHeight: 18, color: '#d6e2d9' },
+  benchmarkBox: { marginTop: 12, padding: 11, borderRadius: 12, backgroundColor: 'rgba(242,192,120,0.07)', borderWidth: 1, borderColor: 'rgba(242,192,120,0.16)' },
+  benchmarkTag: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.accent },
+  benchmarkTxt: { marginTop: 4, fontFamily: bodyFont, fontSize: 11, lineHeight: 16, color: 'rgba(238,242,236,0.88)' },
 
-  baselineMiniCard: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: 'rgba(20,18,10,0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.35)',
-  },
-  baselineMiniTag: {
-    fontFamily: monoFont,
-    fontSize: 7,
-    fontWeight: '900',
-    letterSpacing: 1.4,
-    color: colors.accent,
-  },
-  sealedMiniPill: {
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-  },
-  sealedMiniTxt: {
-    fontFamily: monoFont,
-    fontSize: 6,
-    fontWeight: '900',
-    color: '#07110a',
-  },
-  baselineMiniTier: {
-    marginTop: 8,
-    fontFamily: displayFont,
-    fontSize: 20,
-    color: colors.fg,
-  },
-  baselineMiniMeta: {
-    marginTop: 3,
-    fontFamily: monoFont,
-    fontSize: 7.5,
-    letterSpacing: 1,
-    color: colors.muted,
-  },
-  baselineMiniRead: {
-    marginTop: 6,
-    fontFamily: bodyFont,
-    fontSize: 11.5,
-    lineHeight: 16,
-    color: '#cfdcd2',
-    fontStyle: 'italic',
-  },
+  widget: { padding: 16, borderRadius: radii.xl, backgroundColor: 'rgba(15,26,19,0.78)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.16)', ...elevation.card },
+  widgetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  widgetTag: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1.4, color: colors.muted },
+  widgetPctPill: { backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 },
+  widgetPct: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', letterSpacing: 0.5, color: '#05160a' },
+  progressTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(57,255,106,0.10)', overflow: 'hidden', marginTop: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.08)' },
+  progressFill: { height: '100%', borderRadius: 999 },
+  progressGlow: { position: 'absolute', top: 0, left: 0, height: '100%', borderRadius: 999, backgroundColor: 'rgba(57,255,106,0.18)', opacity: 0.6 },
+  widgetStatsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(57,255,106,0.08)' },
+  widgetStat: { alignItems: 'center', flex: 1 },
+  widgetStatCenter: { alignItems: 'center', flex: 1, borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(57,255,106,0.08)' },
+  widgetStatVal: { fontFamily: monoFont, fontSize: 16, fontWeight: '900', color: colors.fg },
+  widgetStatLbl: { marginTop: 3, fontFamily: monoFont, fontSize: 6, fontWeight: '800', letterSpacing: 1.1, color: colors.muted },
+  widgetBtn: { marginTop: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)', backgroundColor: 'rgba(57,255,106,0.06)', alignItems: 'center' },
+  widgetBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.2, color: colors.primary },
 
-  footer: {
-    marginTop: 30,
-    textAlign: 'center',
-    fontFamily: monoFont,
-    fontSize: 7.5,
-    letterSpacing: 1.5,
-    color: 'rgba(143,184,155,0.5)',
-  },
+  baselineCard: { padding: 16, borderRadius: radii.xl, backgroundColor: 'rgba(20,18,10,0.62)', borderWidth: 1, borderColor: 'rgba(242,192,120,0.22)', ...elevation.card },
+  baselineTag: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  sealedPill: { backgroundColor: colors.primary, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  sealedTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', color: '#05160a' },
+  baselineTier: { marginTop: 8, fontFamily: displayFont, fontSize: 20, color: colors.fg },
+  baselineMeta: { marginTop: 3, fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1, color: colors.muted },
+  baselineRead: { marginTop: 7, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16, color: '#d1ddd3', fontStyle: 'italic' },
+
+  footer: { marginTop: 28, textAlign: 'center', fontFamily: monoFont, fontSize: 7.5, letterSpacing: 1.5, color: 'rgba(143,184,155,0.45)' },
 });
