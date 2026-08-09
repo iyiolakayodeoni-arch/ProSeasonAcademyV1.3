@@ -77,6 +77,7 @@ import {
   syncBenchmarkSnapshot,
   syncUnsyncedBenchmarkSnapshots,
 } from '../data/benchmarkCloud';
+import { useResponsive } from '../hooks/useResponsive';
 
 // the walkout tunnel stays — but the meaning changes: this is no longer a
 // forward stage map. It is the place where evidence is filed and read.
@@ -322,6 +323,7 @@ function SnapshotCard({
 }
 
 export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach; onClose: () => void }) {
+  const { isMultiColumn } = useResponsive();
   const tracker = useBenchmarkTracker();
   const cloud = useCloud();
   const settings = useSettings();
@@ -825,316 +827,270 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
           </View>
         </View>
 
-        <View style={styles.captureCard}>
-          <View style={styles.captureHead}>
-            <View>
-              <Text style={styles.cardEyebrow}>STATS SCREEN INGEST</Text>
-              <Text style={styles.cardTitle}>SEVEN-MATCH CHECKPOINT</Text>
-              <Text style={styles.cardSub}>UPLOAD THE POST-MATCH STATS SCREENS, THEN CONFIRM THE NUMBERS BELOW</Text>
-            </View>
-            <View style={styles.statusBox}>
-              <Text style={styles.statusBig}>{completeCount}/{BENCHMARK_MATCH_TARGET}</Text>
-              <Text style={styles.statusSmall}>MATCHES READY</Text>
-            </View>
-          </View>
-
-          <View style={styles.warningBox}>
-            <ScanGlyphIcon size={14} color={colors.accent} />
-            <Text style={styles.warningTxt}>
-              WEB PREVIEW NOW ATTEMPTS OCR ON THE STATS SCREEN. PICK WHETHER THE PLAYER IS ON THE LEFT OR RIGHT, LET OCR
-              PULL A DRAFT, THEN CONFIRM THE NUMBERS HONESTLY BEFORE SAVING THE CHECKPOINT.
-            </Text>
-          </View>
-
-          {Platform.OS === 'web' ? (
-            // Web-only prototype input: lets the founder drop the seven stats screenshots into the UI preview.
-            // @ts-ignore - intrinsic DOM element is valid in web builds.
-            <input
-              key={`uploader-${tracker.nextCheckpoint}`}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={attachWebFiles}
-              style={webInputStyle}
-            />
-          ) : (
-            <View style={styles.nativeNote}>
-              <Text style={styles.nativeNoteTxt}>
-                ON DEVICE, PICK THE SEVEN POST-MATCH STATS SCREENS STRAIGHT FROM THE PLAYER'S PHONE GALLERY.
-                {nativeOcrReady
-                  ? ' THIS BUILD ALSO HAS SERVER OCR READY — SCAN THE SHOTS AFTER PICKING THEM.'
-                  : ' IF SERVER OCR IS NOT CONFIGURED YET, USE THE PASTE OCR TEXT ASSIST UNDER EACH SCREENSHOT.'}
-              </Text>
-              <Pressable onPress={() => void pickNativeShots()} style={styles.nativePickBtn}>
-                <Text style={styles.nativePickBtnTxt}>PICK SCREENSHOTS FROM PHONE</Text>
-              </Pressable>
-            </View>
-          )}
-
-          <View style={styles.actionRow}>
-            <Pressable onPress={loadDemo} style={[styles.actionBtn, styles.actionBtnSolid]}>
-              <RefreshGlyphIcon size={12} color="#05130a" />
-              <Text style={styles.actionBtnSolidTxt}>LOAD DEMO CHECKPOINT</Text>
-            </Pressable>
-            <Pressable onPress={() => void scanAll()} style={styles.actionBtn}>
-              <ScanGlyphIcon size={12} color={colors.primary} />
-              <Text style={styles.actionBtnTxt}>SCAN ALL SHOTS</Text>
-            </Pressable>
-            <Pressable onPress={clearDraft} style={styles.actionBtn}>
-              <Text style={styles.actionBtnTxt}>CLEAR DRAFT</Text>
-            </Pressable>
-          </View>
-          {ocrSummary && <Text style={styles.ocrSummary}>{ocrSummary}</Text>}
-
-          <View style={styles.matchList}>
-            {draft.map((match, index) => {
-              const complete = benchmarkMatchComplete(match);
-              return (
-                <View key={match.id} style={[styles.matchCard, complete && styles.matchCardReady]}>
-                  <View style={styles.matchHead}>
-                    <View>
-                      <Text style={styles.matchTag}>MATCH {index + 1}</Text>
-                      <Text style={styles.matchFile} numberOfLines={1}>
-                        {match.screenshotName ?? 'NO SCREENSHOT ATTACHED YET'}
-                      </Text>
-                    </View>
-                    {complete ? (
-                      <View style={styles.readyBadge}>
-                        <CheckIcon size={10} color="#05130a" />
-                        <Text style={styles.readyBadgeTxt}>READY</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.pendingBadge}>
-                        <EyeIcon size={10} color={colors.accent} />
-                        <Text style={styles.pendingBadgeTxt}>PENDING</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {match.screenshotUri ? (
-                    <Image source={{ uri: match.screenshotUri }} style={styles.shotPreview} resizeMode="cover" />
-                  ) : (
-                    <View style={styles.shotPlaceholder}>
-                      <Text style={styles.shotPlaceholderTxt}>POST-MATCH STATS SCREEN</Text>
-                    </View>
-                  )}
-
-                  <View style={styles.sideRow}>
-                    <Text style={styles.sideRowLabel}>PLAYER SIDE IN THIS SCREEN</Text>
-                    <View style={styles.sideChipRow}>
-                      {(['left', 'right'] as OcrSide[]).map((side) => {
-                        const active = sideOf(match.id) === side;
-                        return (
-                          <Pressable key={side} onPress={() => setSideForMatch(match.id, index, side)} style={[styles.sideChip, active && styles.sideChipOn]}>
-                            <Text style={[styles.sideChipTxt, active && styles.sideChipTxtOn]}>{side.toUpperCase()}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-
-                  {match.screenshotUri && (
-                    <>
-                      <Pressable onPress={() => void scanOne(index)} style={styles.scanBtn}>
-                        <ScanGlyphIcon size={12} color={colors.accent} />
-                        <Text style={styles.scanBtnTxt}>
-                          {scanState[match.id]?.status === 'scanning' ? 'SCANNING…' : 'SCAN THIS SCREENSHOT'}
-                        </Text>
-                      </Pressable>
-                    </>
-                  )}
-
-                  <View style={styles.pasteWrap}>
-                    <Text style={styles.pasteLabel}>PASTE OCR TEXT ASSIST</Text>
-                    <TextInput
-                      value={ocrTextDrafts[match.id] ?? ''}
-                      onChangeText={(text) => setOcrTextDrafts((previous) => ({ ...previous, [match.id]: text }))}
-                      placeholder="PASTE TEXT FROM IOS/ANDROID LIVE TEXT OR ANY OCR TOOL HERE"
-                      placeholderTextColor="rgba(143,184,155,0.35)"
-                      style={styles.pasteInput}
-                      multiline
-                    />
-                    <Pressable onPress={() => parsePastedTextForMatch(match.id, index)} style={styles.pasteBtn}>
-                      <Text style={styles.pasteBtnTxt}>PARSE PASTED TEXT</Text>
-                    </Pressable>
-                  </View>
-
-                  {!!scanState[match.id]?.note && (
-                    <Text
-                      style={[
-                        styles.scanNote,
-                        scanState[match.id]?.status === 'error' && styles.scanNoteError,
-                        scanState[match.id]?.status === 'done' && styles.scanNoteDone,
-                      ]}
-                    >
-                      {scanState[match.id]?.note}
-                    </Text>
-                  )}
-
-                  <View style={styles.inputGrid}>
-                    {FIELD_ORDER.map((field) => (
-                      <StepTile
-                        key={field.key}
-                        label={field.label}
-                        value={match[field.key]}
-                        suffix={field.suffix}
-                        onChange={(value) => updateField(index, field.key, value)}
-                      />
-                    ))}
-                  </View>
+        {/* Workspace: 2 Columns on Desktop, Single column on mobile */}
+        <View style={[styles.workspace, isMultiColumn && styles.workspaceWide]}>
+          {/* Left Column (Ingest & Match Upload) */}
+          <View style={[styles.colIngest, isMultiColumn && styles.colIngestWide]}>
+            <View style={styles.captureCard}>
+              <View style={styles.captureHead}>
+                <View>
+                  <Text style={styles.cardEyebrow}>STATS SCREEN INGEST</Text>
+                  <Text style={styles.cardTitle}>SEVEN-MATCH CHECKPOINT</Text>
+                  <Text style={styles.cardSub}>UPLOAD POST-MATCH SCREENS · CONFIRM STATS</Text>
                 </View>
-              );
-            })}
-          </View>
-
-          <Pressable
-            onPress={saveCheckpoint}
-            style={[styles.saveBtn, !canSave && styles.saveBtnMuted]}
-            disabled={!canSave}
-          >
-            <CheckIcon size={11} color="#05130a" />
-            <Text style={styles.saveBtnTxt}>SAVE THIS CHECKPOINT</Text>
-          </Pressable>
-          {!canSave && (
-            <Text style={styles.helperLine}>
-              EVERY CARD MUST BE BUILT FROM SEVEN COMPLETE MATCH STAT LINES.
-            </Text>
-          )}
-          {savedNotice && <Text style={styles.savedNotice}>{savedNotice}</Text>}
-        </View>
-
-        <Animated.View entering={FadeInUp.duration(280)} style={styles.cardBuild}>
-          <View style={styles.cardBuildHead}>
-            <View>
-              <Text style={styles.cardEyebrow}>LIVE DEVELOPMENT CARD</Text>
-              <Text style={styles.cardTitle}>{settings.displayName || 'PLAYER'}</Text>
-              <Text style={styles.cardSub}>BUILT FROM {liveSummary.matches} OF {BENCHMARK_MATCH_TARGET} STATS SCREENS</Text>
-            </View>
-            <View style={styles.confidencePill}>
-              <Text style={styles.confidenceTxt}>{liveSummary.style.confidence}</Text>
-            </View>
-          </View>
-
-          {/* Inserted PlayerCard component wired to the local ledger + progress */}
-          <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 8 }}>
-            <PlayerCard
-              rating={playerCard.rating}
-              stats={playerCard.stats}
-              stageN={playerCard.stageN}
-              totalStages={playerCard.totalStages}
-              clearedCount={playerCard.clearedCount}
-              ascent={playerCard.ascent}
-              displayName={settings.displayName}
-              onPress={() => {
-                /* small affordance: open Match Vault when pressing the card */
-                setSheet('vault');
-              }}
-            />
-          </View>
-
-          <View style={styles.proofStrip}>
-            <Text style={styles.proofStripLabel}>{liveProof.label}</Text>
-            <Text style={styles.proofStripSub}>{liveProof.sublabel}</Text>
-            <Text style={styles.proofStripMeta}>{liveProof.evidenceLine}</Text>
-          </View>
-
-          <Text style={styles.styleTitle}>{liveIdentity.archetype}</Text>
-          <Text style={styles.styleRead}>{liveSummary.style.read}</Text>
-
-          <View style={styles.identityGrid}>
-            <View style={styles.identityCell}>
-              <Text style={styles.identityLabel}>PRIMARY STYLE</Text>
-              <Text style={styles.identityValue}>{liveIdentity.primaryStyle}</Text>
-            </View>
-            <View style={styles.identityCell}>
-              <Text style={styles.identityLabel}>SECONDARY TENDENCY</Text>
-              <Text style={styles.identityValue}>{liveIdentity.secondaryTendency}</Text>
-            </View>
-            <View style={styles.identityCell}>
-              <Text style={styles.identityLabel}>TEMPERAMENT</Text>
-              <Text style={styles.identityValue}>{liveIdentity.temperament}</Text>
-            </View>
-            <View style={styles.identityCell}>
-              <Text style={styles.identityLabel}>CURRENT GROWTH EDGE</Text>
-              <Text style={styles.identityValue}>{liveSummary.style.focus}</Text>
-            </View>
-          </View>
-
-          <View style={styles.kpiRow}>
-            <Kpi label="W·D·L" value={`${liveSummary.wins}-${liveSummary.draws}-${liveSummary.losses}`} />
-            <Kpi label="PPM" value={liveSummary.pointsPerMatch.toFixed(1)} accent />
-            <Kpi label="AVG GF" value={liveSummary.avgGoalsFor.toFixed(1)} />
-            <Kpi label="AVG GA" value={liveSummary.avgGoalsAgainst.toFixed(1)} />
-          </View>
-
-          <View style={styles.metricWrap}>
-            <StatRing label="POSS" value={liveSummary.avgPossession} suffix="%" size={64} />
-            <StatRing label="SHOTS" value={liveSummary.avgShots} size={64} />
-            <StatRing label="ON TARGET" value={liveSummary.avgShotsOnTarget} size={64} />
-            <StatRing label="PASS" value={liveSummary.avgPassAccuracy} suffix="%" size={64} />
-            <StatRing label="SHOT ACC" value={liveSummary.shotAccuracy} suffix="%" size={64} />
-            <StatRing label="TACKLES" value={liveSummary.avgTacklesWon} size={64} />
-            <StatRing label="SAVES" value={liveSummary.avgSaves} size={64} />
-            <StatRing label="CLEAN SHEETS" value={liveSummary.cleanSheets} size={64} />
-          </View>
-
-          <View style={styles.premiumPanel}>
-            <Text style={styles.premiumPanelTitle}>TREND ENGINE</Text>
-            <Text style={styles.premiumPanelLead}>{liveMovementHeadline}</Text>
-            {liveDelta ? (
-              <View style={styles.trendGrid}>
-                <TrendRow label="PPM" value={liveDelta.pointsPerMatch} />
-                <TrendRow label="GF" value={liveDelta.avgGoalsFor} />
-                <TrendRow label="GA" value={liveDelta.avgGoalsAgainst} betterWhenLower />
-                <TrendRow label="PASS" value={liveDelta.avgPassAccuracy} />
-                <TrendRow label="POSS" value={liveDelta.avgPossession} />
-                <TrendRow label="ON TARGET" value={liveDelta.avgShotsOnTarget} />
+                <View style={styles.statusBox}>
+                  <Text style={styles.statusBig}>{completeCount}/{BENCHMARK_MATCH_TARGET}</Text>
+                  <Text style={styles.statusSmall}>READY</Text>
+                </View>
               </View>
-            ) : (
-              <Text style={styles.premiumPanelBody}>SAVE THIS FIRST CHECKPOINT AND THE APP WILL START DRAWING REAL MOVEMENT ARROWS AGAINST IT.</Text>
-            )}
-          </View>
 
-          <View style={styles.premiumPanel}>
-            <Text style={styles.premiumPanelTitle}>BENCHMARK GAP</Text>
-            <Text style={styles.premiumPanelLead}>YOUR EVIDENCE VS THE ELITE REFERENCE — CLOSE THE GAP, DON’T GUESS IT.</Text>
-            {liveGap.map((item) => (
-              <GapBar key={item.key} item={item} />
-            ))}
-          </View>
-
-          {liveDelta && (
-            <>
-              <Text style={styles.deltaTitle}>LIVE CHANGE VS LAST SAVED CHECKPOINT</Text>
-              <View style={styles.deltaRow}>
-                <DeltaPill label="PPM" value={liveDelta.pointsPerMatch} />
-                <DeltaPill label="GF" value={liveDelta.avgGoalsFor} />
-                <DeltaPill label="GA" value={liveDelta.avgGoalsAgainst} betterWhenLower />
-                <DeltaPill label="PASS" value={liveDelta.avgPassAccuracy} />
+              <View style={styles.warningBox}>
+                <ScanGlyphIcon size={14} color={colors.accent} />
+                <Text style={styles.warningTxt}>
+                  OCR ATTEMPTS TO PULL THE DRAFT FROM YOUR SCREENS. VERIFY YOUR NUMBERS BEFORE SEALING.
+                </Text>
               </View>
-            </>
-          )}
 
-          <View style={styles.focusCard}>
-            <Text style={styles.focusTag}>{coachFirst}'S READ</Text>
-            <Text style={styles.focusBody}>{liveSummary.style.focus}</Text>
-          </View>
-        </Animated.View>
+              {Platform.OS === 'web' ? (
+                // @ts-ignore
+                <input
+                  key={`uploader-${tracker.nextCheckpoint}`}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={attachWebFiles}
+                  style={webInputStyle}
+                />
+              ) : (
+                <View style={styles.nativeNote}>
+                  <Text style={styles.nativeNoteTxt}>
+                    PICK 7 POST-MATCH STATS SCREENS FROM PHONE GALLERY.
+                  </Text>
+                  <Pressable onPress={() => void pickNativeShots()} style={styles.nativePickBtn}>
+                    <Text style={styles.nativePickBtnTxt}>PICK SCREENSHOTS FROM PHONE</Text>
+                  </Pressable>
+                </View>
+              )}
 
-        <View style={styles.shareCardWrap}>
-          <Text style={styles.archiveTitle}>AD CARD PREVIEW</Text>
-          <Text style={styles.archiveSub}>TURN THE CHECKPOINT INTO SOMETHING YOU CAN POST, SEND OR SELL</Text>
-          <View style={styles.sharePreviewCard}>
-            <MarketingShareCard svg={shareSvg} width={332} />
-            <View style={styles.shareActionRow}>
-              <Pressable onPress={() => void exportSharePng()} style={[styles.actionBtn, styles.shareBtnPrimary]}>
-                <Text style={styles.shareBtnPrimaryTxt}>DOWNLOAD PNG</Text>
+              <View style={styles.actionRow}>
+                <Pressable onPress={loadDemo} style={[styles.actionBtn, styles.actionBtnSolid]}>
+                  <RefreshGlyphIcon size={12} color="#05130a" />
+                  <Text style={styles.actionBtnSolidTxt}>LOAD DEMO CHECKPOINT</Text>
+                </Pressable>
+                <Pressable onPress={() => void scanAll()} style={styles.actionBtn}>
+                  <ScanGlyphIcon size={12} color={colors.primary} />
+                  <Text style={styles.actionBtnTxt}>SCAN ALL</Text>
+                </Pressable>
+                <Pressable onPress={clearDraft} style={styles.actionBtn}>
+                  <Text style={styles.actionBtnTxt}>CLEAR</Text>
+                </Pressable>
+              </View>
+              {ocrSummary && <Text style={styles.ocrSummary}>{ocrSummary}</Text>}
+
+              <View style={styles.matchList}>
+                {draft.map((match, index) => {
+                  const complete = benchmarkMatchComplete(match);
+                  return (
+                    <View key={match.id} style={[styles.matchCard, complete && styles.matchCardReady]}>
+                      <View style={styles.matchHead}>
+                        <View>
+                          <Text style={styles.matchTag}>MATCH {index + 1}</Text>
+                          <Text style={styles.matchFile} numberOfLines={1}>
+                            {match.screenshotName ?? 'NO SCREENSHOT ATTACHED'}
+                          </Text>
+                        </View>
+                        {complete ? (
+                          <View style={styles.readyBadge}>
+                            <CheckIcon size={10} color="#05130a" />
+                            <Text style={styles.readyBadgeTxt}>READY</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.pendingBadge}>
+                            <EyeIcon size={10} color={colors.accent} />
+                            <Text style={styles.pendingBadgeTxt}>PENDING</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {match.screenshotUri ? (
+                        <Image source={{ uri: match.screenshotUri }} style={styles.shotPreview} resizeMode="cover" />
+                      ) : (
+                        <View style={styles.shotPlaceholder}>
+                          <Text style={styles.shotPlaceholderTxt}>POST-MATCH STATS SCREEN</Text>
+                        </View>
+                      )}
+
+                      <View style={styles.sideRow}>
+                        <Text style={styles.sideRowLabel}>PLAYER SIDE</Text>
+                        <View style={styles.sideChipRow}>
+                          {(['left', 'right'] as OcrSide[]).map((side) => {
+                            const active = sideOf(match.id) === side;
+                            return (
+                              <Pressable key={side} onPress={() => setSideForMatch(match.id, index, side)} style={[styles.sideChip, active && styles.sideChipOn]}>
+                                <Text style={[styles.sideChipTxt, active && styles.sideChipTxtOn]}>{side.toUpperCase()}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+
+                      {match.screenshotUri && (
+                        <Pressable onPress={() => void scanOne(index)} style={styles.scanBtn}>
+                          <ScanGlyphIcon size={12} color={colors.accent} />
+                          <Text style={styles.scanBtnTxt}>
+                            {scanState[match.id]?.status === 'scanning' ? 'SCANNING…' : 'SCAN SCREENSHOT'}
+                          </Text>
+                        </Pressable>
+                      )}
+
+                      <View style={styles.inputGrid}>
+                        {FIELD_ORDER.map((field) => (
+                          <StepTile
+                            key={field.key}
+                            label={field.label}
+                            value={match[field.key]}
+                            suffix={field.suffix}
+                            onChange={(value) => updateField(index, field.key, value)}
+                          />
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Pressable
+                onPress={saveCheckpoint}
+                style={[styles.saveBtn, !canSave && styles.saveBtnMuted]}
+                disabled={!canSave}
+              >
+                <CheckIcon size={11} color="#05130a" />
+                <Text style={styles.saveBtnTxt}>SAVE THIS CHECKPOINT</Text>
               </Pressable>
-              <Pressable onPress={exportShareSvg} style={styles.actionBtn}>
-                <Text style={styles.actionBtnTxt}>DOWNLOAD SVG</Text>
-              </Pressable>
+              {!canSave && (
+                <Text style={styles.helperLine}>
+                  SEVEN COMPLETE MATCH STAT LINES REQUIRED PER CHECKPOINT.
+                </Text>
+              )}
+              {savedNotice && <Text style={styles.savedNotice}>{savedNotice}</Text>}
             </View>
-            {shareNotice && <Text style={styles.shareNotice}>{shareNotice}</Text>}
+          </View>
+
+          {/* Right Column (Live Development Analytics & Poster Exports) */}
+          <View style={[styles.colCard, isMultiColumn && styles.colCardWide]}>
+            <Animated.View entering={FadeInUp.duration(280)} style={styles.cardBuild}>
+              <View style={styles.cardBuildHead}>
+                <View>
+                  <Text style={styles.cardEyebrow}>LIVE DEVELOPMENT CARD</Text>
+                  <Text style={styles.cardTitle}>{settings.displayName || 'PLAYER'}</Text>
+                  <Text style={styles.cardSub}>BUILT FROM {liveSummary.matches} OF {BENCHMARK_MATCH_TARGET} STATS SCREENS</Text>
+                </View>
+                <View style={styles.confidencePill}>
+                  <Text style={styles.confidenceTxt}>{liveSummary.style.confidence}</Text>
+                </View>
+              </View>
+
+              <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 8 }}>
+                <PlayerCard
+                  rating={playerCard.rating}
+                  stats={playerCard.stats}
+                  stageN={playerCard.stageN}
+                  totalStages={playerCard.totalStages}
+                  clearedCount={playerCard.clearedCount}
+                  ascent={playerCard.ascent}
+                  displayName={settings.displayName}
+                  onPress={() => setSheet('vault')}
+                />
+              </View>
+
+              <View style={styles.proofStrip}>
+                <Text style={styles.proofStripLabel}>{liveProof.label}</Text>
+                <Text style={styles.proofStripSub}>{liveProof.sublabel}</Text>
+                <Text style={styles.proofStripMeta}>{liveProof.evidenceLine}</Text>
+              </View>
+
+              <Text style={styles.styleTitle}>{liveIdentity.archetype}</Text>
+              <Text style={styles.styleRead}>{liveSummary.style.read}</Text>
+
+              <View style={styles.identityGrid}>
+                <View style={styles.identityCell}>
+                  <Text style={styles.identityLabel}>PRIMARY STYLE</Text>
+                  <Text style={styles.identityValue}>{liveIdentity.primaryStyle}</Text>
+                </View>
+                <View style={styles.identityCell}>
+                  <Text style={styles.identityLabel}>SECONDARY TENDENCY</Text>
+                  <Text style={styles.identityValue}>{liveIdentity.secondaryTendency}</Text>
+                </View>
+                <View style={styles.identityCell}>
+                  <Text style={styles.identityLabel}>TEMPERAMENT</Text>
+                  <Text style={styles.identityValue}>{liveIdentity.temperament}</Text>
+                </View>
+                <View style={styles.identityCell}>
+                  <Text style={styles.identityLabel}>GROWTH EDGE</Text>
+                  <Text style={styles.identityValue}>{liveSummary.style.focus}</Text>
+                </View>
+              </View>
+
+              <View style={styles.kpiRow}>
+                <Kpi label="W·D·L" value={`${liveSummary.wins}-${liveSummary.draws}-${liveSummary.losses}`} />
+                <Kpi label="PPM" value={liveSummary.pointsPerMatch.toFixed(1)} accent />
+                <Kpi label="AVG GF" value={liveSummary.avgGoalsFor.toFixed(1)} />
+                <Kpi label="AVG GA" value={liveSummary.avgGoalsAgainst.toFixed(1)} />
+              </View>
+
+              <View style={styles.metricWrap}>
+                <StatRing label="POSS" value={liveSummary.avgPossession} suffix="%" size={60} />
+                <StatRing label="SHOTS" value={liveSummary.avgShots} size={60} />
+                <StatRing label="ON TARGET" value={liveSummary.avgShotsOnTarget} size={60} />
+                <StatRing label="PASS" value={liveSummary.avgPassAccuracy} suffix="%" size={60} />
+                <StatRing label="SHOT ACC" value={liveSummary.shotAccuracy} suffix="%" size={60} />
+                <StatRing label="TACKLES" value={liveSummary.avgTacklesWon} size={60} />
+                <StatRing label="SAVES" value={liveSummary.avgSaves} size={60} />
+                <StatRing label="CLEAN SHEETS" value={liveSummary.cleanSheets} size={60} />
+              </View>
+
+              <View style={styles.premiumPanel}>
+                <Text style={styles.premiumPanelTitle}>TREND ENGINE</Text>
+                <Text style={styles.premiumPanelLead}>{liveMovementHeadline}</Text>
+                {liveDelta ? (
+                  <View style={styles.trendGrid}>
+                    <TrendRow label="PPM" value={liveDelta.pointsPerMatch} />
+                    <TrendRow label="GF" value={liveDelta.avgGoalsFor} />
+                    <TrendRow label="GA" value={liveDelta.avgGoalsAgainst} betterWhenLower />
+                    <TrendRow label="PASS" value={liveDelta.avgPassAccuracy} />
+                  </View>
+                ) : (
+                  <Text style={styles.premiumPanelBody}>SAVE THIS FIRST CHECKPOINT FOR MOVEMENT DELTAS.</Text>
+                )}
+              </View>
+
+              <View style={styles.premiumPanel}>
+                <Text style={styles.premiumPanelTitle}>BENCHMARK GAP</Text>
+                {liveGap.map((item) => (
+                  <GapBar key={item.key} item={item} />
+                ))}
+              </View>
+
+              <View style={styles.focusCard}>
+                <Text style={styles.focusTag}>{coachFirst}'S READ</Text>
+                <Text style={styles.focusBody}>{liveSummary.style.focus}</Text>
+              </View>
+            </Animated.View>
+
+            <View style={styles.shareCardWrap}>
+              <Text style={styles.archiveTitle}>MARKETING CARD PREVIEW</Text>
+              <View style={styles.sharePreviewCard}>
+                <MarketingShareCard svg={shareSvg} width={332} />
+                <View style={styles.shareActionRow}>
+                  <Pressable onPress={() => void exportSharePng()} style={[styles.actionBtn, styles.shareBtnPrimary]}>
+                    <Text style={styles.shareBtnPrimaryTxt}>DOWNLOAD PNG</Text>
+                  </Pressable>
+                  <Pressable onPress={exportShareSvg} style={styles.actionBtn}>
+                    <Text style={styles.actionBtnTxt}>DOWNLOAD SVG</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -1351,8 +1307,32 @@ const styles = StyleSheet.create({
   referenceIndex: { fontFamily: monoFont, fontSize: 10, fontWeight: '900', color: colors.accent },
   referenceTxt: { fontFamily: monoFont, fontSize: 6.4, lineHeight: 9.5, letterSpacing: 1, color: '#eed3a7' },
 
-  captureCard: {
+  workspace: {
+    flexDirection: 'column',
+    gap: 20,
     marginTop: 16,
+  },
+  workspaceWide: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 24,
+  },
+  colIngest: {
+    width: '100%',
+  },
+  colIngestWide: {
+    flex: 1.1,
+  },
+  colCard: {
+    width: '100%',
+    gap: 16,
+  },
+  colCardWide: {
+    flex: 1,
+  },
+
+  captureCard: {
+    marginTop: 0,
     padding: 14,
     borderWidth: 1.1,
     borderColor: 'rgba(57,255,106,0.36)',

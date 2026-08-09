@@ -75,7 +75,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
   const v = useMatches();
   const coachFirst = coach.name.split(' ')[0].toUpperCase();
   const { width: winW } = useWindowDimensions();
-  const bandW = Math.min(winW, 430);
+  const bandW = winW;
 
   // ── composer state ──
   const [gf, setGf] = useState(0);

@@ -70,7 +70,7 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
   const [finishOpen, setFinishOpen] = useState(false);
   const coachFirst = coach.name.split(' ')[0];
   const { width: winW } = useWindowDimensions();
-  const bandW = Math.min(winW, 430);
+  const bandW = winW;
 
   return (
     <Animated.View entering={FadeIn.duration(240)} style={styles.root}>

@@ -37,7 +37,7 @@ function Term({ name, meaning }: { name: string; meaning: string }) {
 
 export default function AcademyGuideScreen({ onClose }: Props) {
   const { width } = useWindowDimensions();
-  const bandWidth = Math.min(width, 430);
+  const bandWidth = width;
 
   return (
     <View style={styles.root}>

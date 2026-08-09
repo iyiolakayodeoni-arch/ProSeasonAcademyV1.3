@@ -1,22 +1,28 @@
-// Global web CSS for ProSeason Academy's premium responsive shell.
+// Global web CSS for ProSeason Academy's premier responsive Web App.
 // Exported as a plain string so Metro doesn't need a CSS loader plugin.
-// It is authored here as if it were a normal .css file for readability,
-// then injected into <head> once by ResponsiveFrame.
 export const GLOBAL_CSS = `
 :root {
-  --psa-bg: #0a0f0a;
-  --psa-bg-deep: #05080a;
-  --psa-ink: #e9f4e6;
+  --psa-bg: #070c08;
+  --psa-bg-surface: #0c140e;
+  --psa-bg-surface2: #121e15;
+  --psa-bg-card: rgba(15, 26, 19, 0.88);
+  --psa-bg-deep: #040805;
+  --psa-ink: #eaf5ec;
+  --psa-ink-muted: #8fb89b;
+  --psa-primary: #39ff6a;
   --psa-acid: #c6ff3c;
-  --psa-accent: #6df7b4;
+  --psa-accent: #f2c078;
   --psa-warn: #ffb648;
-  --psa-blood: #ff4d5e;
-  --psa-rail: rgba(255, 255, 255, 0.04);
-  --psa-rail-hover: rgba(255, 255, 255, 0.08);
-  --psa-ring: rgba(109, 247, 180, 0.55);
-  --psa-frame-halo: 0 0 0 1px rgba(198, 255, 60, 0.08),
-    0 30px 80px -20px rgba(0, 0, 0, 0.8),
-    0 0 120px -40px rgba(109, 247, 180, 0.25);
+  --psa-loss: #ff4d5e;
+  --psa-border: rgba(57, 255, 106, 0.22);
+  --psa-border-accent: rgba(242, 192, 120, 0.4);
+  --psa-border-subtle: rgba(143, 184, 155, 0.16);
+  --psa-glow: 0 0 24px rgba(57, 255, 106, 0.25);
+  --psa-glow-accent: 0 0 24px rgba(242, 192, 120, 0.25);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 html, body, #root {
@@ -24,135 +30,85 @@ html, body, #root {
   width: 100%;
   margin: 0;
   padding: 0;
-  background:
-    radial-gradient(1200px 800px at 80% -10%, rgba(198, 255, 60, 0.08), transparent 60%),
-    radial-gradient(900px 700px at -10% 110%, rgba(109, 247, 180, 0.07), transparent 60%),
-    var(--psa-bg-deep);
+  background-color: var(--psa-bg);
+  background-image:
+    radial-gradient(1200px 900px at 85% -10%, rgba(57, 255, 106, 0.08), transparent 65%),
+    radial-gradient(1000px 800px at -10% 110%, rgba(242, 192, 120, 0.06), transparent 60%),
+    radial-gradient(800px 600px at 50% 50%, rgba(10, 25, 16, 0.5), transparent 70%);
+  background-attachment: fixed;
   color: var(--psa-ink);
   font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
 }
+
 body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
 }
+
 #root {
   display: flex;
+  flex-direction: column;
   align-items: stretch;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 100vh;
 }
 
-.psa-stage {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  overflow: hidden;
-  background:
-    radial-gradient(1200px 800px at 80% -10%, rgba(198, 255, 60, 0.08), transparent 60%),
-    radial-gradient(900px 700px at -10% 110%, rgba(109, 247, 180, 0.07), transparent 60%),
-    var(--psa-bg-deep);
-}
-.psa-frame {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  box-shadow: var(--psa-frame-halo);
-  border-radius: 44px;
-  overflow: hidden;
-  background: var(--psa-bg);
-}
-.psa-frame::before {
-  content: '';
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 88px;
-  height: 6px;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  z-index: 5;
-  pointer-events: none;
-}
-
-.psa-stage.psa-stage--handset { padding: 0; }
-.psa-stage.psa-stage--handset .psa-frame {
-  border-radius: 0;
-  box-shadow: none;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: 100dvh !important;
-}
-.psa-stage.psa-stage--handset .psa-frame::before { display: none; }
-
-.psa-stage.psa-stage--tablet .psa-frame { border-radius: 32px; }
-.psa-stage.psa-stage--tablet .psa-frame::before { display: none; }
-
-.psa-stage.psa-stage--tv { padding: 40px; }
-.psa-stage.psa-stage--tv .psa-frame { border-radius: 36px; }
-.psa-stage.psa-stage--tv .psa-frame::before { display: none; }
-
-.psa-rail {
-  position: fixed;
-  left: max(env(safe-area-inset-left), 24px);
-  top: 50%;
-  transform: translateY(-50%);
+/* Full Web App Layout Containers */
+.psa-web-shell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 10px;
-  background: var(--psa-rail);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 22px;
-  z-index: 20;
-}
-.psa-rail-blip {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  transition: all 200ms ease;
-  cursor: pointer;
-  border: none;
-  padding: 0;
-  outline: none;
-}
-.psa-rail-blip:hover { background: var(--psa-acid); transform: scale(1.2); }
-.psa-rail-blip:focus-visible { box-shadow: 0 0 0 3px var(--psa-ring); }
-.psa-rail-blip[data-active='true'] {
-  background: var(--psa-acid);
-  box-shadow: 0 0 12px rgba(198, 255, 60, 0.6);
+  min-height: 100vh;
+  width: 100%;
+  background: transparent;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  *::-webkit-scrollbar { width: 10px; height: 10px; }
-  *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 999px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+.psa-web-container {
+  width: 100%;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+@media (min-width: 768px) {
+  .psa-web-container {
+    padding: 0 28px;
   }
-  *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); background-clip: padding-box; }
-  * { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.18) transparent; }
 }
 
+@media (min-width: 1200px) {
+  .psa-web-container {
+    padding: 0 36px;
+  }
+}
+
+/* Scrollbar polish */
+@media (hover: hover) and (pointer: fine) {
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(57, 255, 106, 0.2);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(57, 255, 106, 0.4);
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(57, 255, 106, 0.2) rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Focus styles */
 *:focus-visible {
-  outline: 2px solid var(--psa-ring) !important;
+  outline: 2px solid var(--psa-primary) !important;
   outline-offset: 2px !important;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 button:focus-visible,
 a:focus-visible,
@@ -160,22 +116,13 @@ a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--psa-ring) !important;
-  outline-offset: 3px !important;
-}
-
-@media (min-width: 2400px), (pointer: coarse) and (min-width: 1400px) {
-  html { font-size: 20px; }
+  outline: 2px solid var(--psa-primary) !important;
+  outline-offset: 2px !important;
 }
 
 ::selection {
-  background: rgba(198, 255, 60, 0.35);
-  color: #0a0f0a;
-}
-
-.psa-stage, .psa-frame, .psa-rail {
-  -webkit-user-select: none;
-  user-select: none;
+  background: rgba(57, 255, 106, 0.35);
+  color: #040805;
 }
 
 @media (prefers-reduced-motion: reduce) {

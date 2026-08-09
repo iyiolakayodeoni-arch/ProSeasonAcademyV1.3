@@ -30,7 +30,7 @@ import { isValidReflection } from '../data/honestyGuard';
 
 export default function LossJournal({ coach, onClose }: { coach: Coach; onClose: () => void }) {
   const { width: winW } = useWindowDimensions();
-  const bandW = Math.min(winW, 430);
+  const bandW = winW;
   const j = useJournal();
   const [text, setText] = useState('');
   const [tag, setTag] = useState<LossTag>('COMPOSURE');
