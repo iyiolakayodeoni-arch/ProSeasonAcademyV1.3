@@ -654,7 +654,7 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
       return;
     }
     attachAssetBatch(
-      result.assets.slice(0, BENCHMARK_MATCH_TARGET).map((asset, index) => ({
+      result.assets.slice(0, BENCHMARK_MATCH_TARGET).map((asset: any, index: number) => ({
         uri: asset.uri,
         fileName: asset.fileName ?? `match-${index + 1}.jpg`,
       })),

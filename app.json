@@ -14,23 +14,6 @@
       "backgroundColor": "#0a0f0a",
       "imageWidth": 1
     },
-    "ios": {
-      "supportsTablet": true,
-      "requireFullScreen": false,
-      "bundleIdentifier": "com.onliversity.proseasonacademy",
-      "buildNumber": "3"
-    },
-    "android": {
-      "package": "com.onliversity.proseasonacademy",
-      "versionCode": 3,
-      "permissions": [],
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundColor": "#0a0f0a",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
-    },
     "web": {
       "favicon": "./assets/favicon.png",
       "name": "ProSeason Academy",
@@ -49,7 +32,6 @@
       "output": "single"
     },
     "plugins": [
-      "./plugins/withGradleCompat",
       [
         "expo-splash-screen",
         {
