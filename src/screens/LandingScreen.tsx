@@ -19,17 +19,17 @@ import {
   displayFont,
   bodyFont,
   bodyFontItalic,
-  bodyFontBold,
-  bodyFontHeavy,
 } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE DOSSIER v2 — the Onliversity manifesto door, rebuilt in the blueprint
-// register: near-black + one neon, mono labels, glass cards, hud borders,
-// aurora + particles + arena grid always alive, marquee tickers, and the
-// philosophy-first narrative: Hero → Experiment → Philosophy → Method →
-// Programme → Inside → Till → Why Different → Platform → FAQ → CTA.
-// Copy voice: ONLIVERSITY_WEBSITE_COPY.md, verbatim where it lands.
+// THE DOSSIER — ProSeasonAcademy's public door. A proper website: nav bar,
+// long-form manifesto sections, footer. The STYLE is the Onliversity
+// blueprint (near-black + one neon, mono labels, glass cards, hud borders,
+// aurora + particles + arena grid, marquees, fade-ups). The SUBSTANCE is
+// this repository's own philosophy, verbatim where it lands:
+//   FOUNDER_BRIEF.md · PRODUCT_FOCUS.md · MIRROR_DIRECTION.md ·
+//   DESIGN_SYSTEM.md · README.md
+// No pricing on the page. The product speaks for itself.
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
@@ -37,13 +37,12 @@ const headFont = WEB ? "'Space Grotesk', 'Barlow', sans-serif" : displayFont;
 const bodyFace = WEB ? "'Inter', 'Barlow', sans-serif" : bodyFont;
 const ELECTRIC = '#21e6c1';
 const VIOLET = '#a06bff';
-const GOLD = '#ffd23f';
 
 const ART = {
   mirror: require('../../assets/art/mirror-drill.jpg'),
   tunnel: require('../../assets/art/journey-tunnel.jpg'),
-  vault: require('../../assets/art/vault-match.jpg'),
   boots: require('../../assets/art/scan-boots.jpg'),
+  touchline: require('../../assets/art/coach-touchline.jpg'),
 };
 
 /* ── living background: arena grid + aurora + rising particles (web),
@@ -73,12 +72,7 @@ function LivingBackground() {
   return (
     <div
       aria-hidden
-      style={{
-        position: 'absolute',
-        inset: 0,
-        overflow: 'hidden',
-        pointerEvents: 'none',
-      }}
+      style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}
     >
       <div className="onl-arena-grid" />
       <div className="onl-aurora onl-aurora-a" />
@@ -148,23 +142,15 @@ function H2({ children, center }: { children: React.ReactNode; center?: boolean 
 }
 
 function Muted({ children, center, style }: { children: React.ReactNode; center?: boolean; style?: any }) {
-  return (
-    <Text style={[styles.body, center && { textAlign: 'center' }, style]}>{children}</Text>
-  );
+  return <Text style={[styles.body, center && { textAlign: 'center' }, style]}>{children}</Text>;
 }
 
-function GlassCard({
-  children,
-  style,
-  hud,
-}: {
-  children?: React.ReactNode;
-  style?: any;
-  hud?: boolean;
-}) {
-  const cls = [hud ? 'onl-glass onl-hud' : 'onl-glass'];
+function GlassCard({ children, style, hud }: { children?: React.ReactNode; style?: any; hud?: boolean }) {
   return (
-    <View {...({ className: WEB ? cls.join(' ') : undefined } as any)} style={[styles.glassNative, style]}>
+    <View
+      {...({ className: WEB ? (hud ? 'onl-glass onl-hud' : 'onl-glass') : undefined } as any)}
+      style={[styles.glassNative, style]}
+    >
       {children}
     </View>
   );
@@ -212,7 +198,7 @@ function CtaSecondary({ label, onPress }: { label: string; onPress: () => void }
   );
 }
 
-/* ── HUD-framed illustration, blueprint SessionArt style ── */
+/* ── HUD-framed illustration ── */
 function ArtFrame({
   source,
   label,
@@ -239,32 +225,23 @@ function ArtFrame({
       </View>
       <View style={styles.artCaptionRow}>
         <Text style={styles.artCaptionLeft}>{caption}</Text>
-        <Text style={styles.artCaptionRight}>THE MIRROR DOES NOT THINK FOR YOU</Text>
+        <Text style={styles.artCaptionRight}>THE PLAYER DOES THE SEEING</Text>
       </View>
     </View>
   );
 }
 
-function Pill({ children, tone }: { children: string; tone?: 'primary' | 'accent' | 'gold' }) {
-  const c = tone === 'accent' ? colors.accent : tone === 'gold' ? GOLD : colors.primary;
-  return (
-    <View style={[styles.pill, { borderColor: `${c}40`, backgroundColor: `${c}1a` }]}>
-      <Text style={[styles.pillTxt, { color: c }]}>{children}</Text>
-    </View>
-  );
-}
-
-/* ── sticky nav ── */
+/* ── proper website nav bar ── */
 const ANCHORS: [string, string][] = [
-  ['philosophy', 'Philosophy'],
-  ['method', 'Method'],
-  ['programme', 'Programme'],
-  ['inside', 'Inside'],
-  ['pricing', 'Pricing'],
+  ['practice', 'The Practice'],
+  ['ritual', 'The Ritual'],
+  ['season', 'The Season'],
+  ['inside', 'Inside the App'],
+  ['different', 'Why Different'],
   ['faq', 'FAQ'],
 ];
 
-function LandingNav({ onEnter }: { onEnter: () => void }) {
+function WebsiteNav({ onEnter }: { onEnter: () => void }) {
   const { isLaptopUp, w } = useResponsive();
   const [open, setOpen] = useState(false);
 
@@ -279,11 +256,12 @@ function LandingNav({ onEnter }: { onEnter: () => void }) {
     <View {...({ className: WEB ? 'onl-hud' : undefined } as any)} style={styles.nav}>
       <View style={styles.navInner}>
         <Pressable onPress={() => go('top')} style={styles.navBrand} accessibilityRole="button">
-          <LogoMark size={26} />
-          <Text style={styles.navBrandTxt}>ONLIVERSITY</Text>
-          {w > 480 && (
+          <LogoMark size={28} />
+          <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
+          {w > 560 && (
             <View style={styles.navBadge}>
-              <Text style={styles.navBadgeTxt}>MIRROR · PROSEASONACADEMY</Text>
+              <View style={styles.navBadgeDot} />
+              <Text style={styles.navBadgeTxt}>SEASON ONE · LIVE</Text>
             </View>
           )}
         </Pressable>
@@ -304,6 +282,11 @@ function LandingNav({ onEnter }: { onEnter: () => void }) {
               <Text style={styles.burgerTxt}>{open ? '✕' : '☰'}</Text>
             </Pressable>
           )}
+          {isLaptopUp && (
+            <Pressable onPress={onEnter} accessibilityRole="link">
+              <Text style={styles.navSignIn}>SIGN IN</Text>
+            </Pressable>
+          )}
           <Pressable onPress={onEnter} accessibilityRole="button">
             <View {...({ className: WEB ? 'onl-shimmer' : undefined } as any)} style={styles.navCta}>
               <Text style={styles.navCtaTxt}>CLAIM YOUR SEAT</Text>
@@ -319,6 +302,9 @@ function LandingNav({ onEnter }: { onEnter: () => void }) {
               <Text style={styles.drawerTxt}>{label}</Text>
             </Pressable>
           ))}
+          <Pressable onPress={onEnter} style={styles.drawerItem}>
+            <Text style={[styles.drawerTxt, { color: colors.primary }]}>SIGN IN</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -326,7 +312,7 @@ function LandingNav({ onEnter }: { onEnter: () => void }) {
 }
 
 export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
-  const { isMultiColumn, w } = useResponsive();
+  const { isMultiColumn } = useResponsive();
   const scrollY = useSharedValue(0);
   const [seats, setSeats] = useState<backend.SeasonGate | null>(null);
 
@@ -349,7 +335,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   return (
     <View style={styles.root}>
       <LivingBackground />
-      <LandingNav onEnter={onEnter} />
+      <WebsiteNav onEnter={onEnter} />
 
       <ScrollView
         style={styles.scroll}
@@ -367,27 +353,25 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <View style={styles.heroLeft}>
                 <View style={styles.heroBrandRow}>
                   <LogoMark size={30} />
-                  <Text style={styles.heroBrandTxt}>MIRROR · PROSEASONACADEMY</Text>
+                  <Text style={styles.heroBrandTxt}>A PRIVATE EA FC CONSOLE REVIEW PRACTICE</Text>
                 </View>
                 <Text style={styles.h1}>
-                  SEE YOURSELF.{'\n'}
-                  <Text style={styles.h1Muted}>DO THE WORK.</Text>
+                  PLAY. REVIEW.{'\n'}
+                  <Text style={styles.h1Muted}>CARRY ONE LESSON.</Text>
                 </Text>
                 <Muted style={styles.heroSub}>
-                  ProSeasonAcademy is Mirror's professional development programme for EA SPORTS FC
-                  console players who want their behaviour to match their ambition.{' '}
-                  <Text style={styles.strong}>One coach. One road. One standard. No excuses.</Text>
+                  ProSeasonAcademy helps an EA SPORTS FC console player turn one played match into
+                  one honest lesson to carry into the next match.{' '}
+                  <Text style={styles.strong}>
+                    Not a tips feed. Not a social network. Not an AI that tells you what to think.
+                  </Text>
                 </Muted>
                 <View style={styles.heroCtas}>
-                  <CtaPrimary label="START YOUR BASELINE WEEK" onPress={onEnter} />
-                  <CtaSecondary label="MEET THE METHOD" onPress={() => go('method')} />
+                  <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
+                  <CtaSecondary label="HOW THE RITUAL WORKS" onPress={() => go('ritual')} />
                 </View>
                 <View style={[styles.trustStrip, isMultiColumn && { flexDirection: 'row' }]}>
-                  {[
-                    'SEASON ONE · 1,000 SEATS ONLY',
-                    'ONE COACH · LOCKED PERMANENTLY',
-                    'THE MIRROR DOES NOT THINK FOR YOU',
-                  ].map((t) => (
+                  {[seatLine, 'ONE COACH · LOCKED PERMANENTLY', 'EVIDENCE BEFORE ADVICE'].map((t) => (
                     <View key={t} style={styles.trustItem}>
                       <View style={styles.trustDot} />
                       <Text style={styles.trustTxt}>{t}</Text>
@@ -396,34 +380,36 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                 </View>
               </View>
 
-              {/* reflective session card */}
+              {/* the five-second test, as a HUD card — the app answers before
+                  you even sign in */}
               <View style={styles.heroRight}>
                 <GlassCard hud style={styles.sessionCard}>
                   <View style={styles.sessionHead}>
-                    <Text style={styles.sessionHeadL}>mirror / session — baseline</Text>
+                    <Text style={styles.sessionHeadL}>today / next useful action</Text>
                     <View style={styles.recRow}>
                       <View style={styles.recDot} />
-                      <Text style={styles.recTxt}>REC</Text>
+                      <Text style={styles.recTxt}>LIVE</Text>
                     </View>
                   </View>
                   <View style={styles.sessionBody}>
-                    <Text style={styles.sessionLabel}>INTENTION BEFORE THE MATCH</Text>
-                    <Text style={styles.sessionQuote}>
-                      “I will not rush my finishing inside the box.”
-                    </Text>
+                    <Text style={styles.sessionLabel}>START MY MATCH REVIEW</Text>
                     {[
-                      ['HALF-TIME', 'I slowed down when the lead felt nervous.'],
-                      ['FULL-TIME', 'Two counters came from the same risky carry.'],
-                      ['AFTER REVIEW', 'The tape says I rushed what I swore I would not.'],
+                      ['I’M ABOUT TO PLAY', 'Choose one focus before kick-off. Just one.'],
+                      ['I ALREADY FINISHED A MATCH', 'Save the score. Name the turning point. Write one lesson.'],
+                      ['NO MATCH TODAY', 'Nothing is overdue. Come back after a real match.'],
                     ].map(([k, v]) => (
                       <View key={k} style={styles.sessionRow}>
                         <Text style={styles.sessionRowK}>{k}</Text>
                         <Text style={styles.sessionRowV}>{v}</Text>
                       </View>
                     ))}
+                    <Text style={styles.sessionQuote}>
+                      “A player plays a match, reviews the decisions that mattered in their own
+                      words, and carries one lesson into the next match.”
+                    </Text>
                     <View style={styles.sessionFoot}>
-                      <Text style={styles.sessionFootL}>The Mirror does not think for you.</Text>
-                      <Text style={styles.sessionFootR}>● YOUR WORDS ONLY</Text>
+                      <Text style={styles.sessionFootL}>The app records the evidence.</Text>
+                      <Text style={styles.sessionFootR}>YOU DO THE SEEING</Text>
                     </View>
                   </View>
                 </GlassCard>
@@ -436,92 +422,40 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         <View style={styles.marqueeBand}>
           <Marquee pxPerSec={46}>
             <Text style={styles.marqueeTxt}>
-              {'MIRROR · PROSEASONACADEMY   ◆   THE FIRST PROGRAMME   ◆   1,000 SEATS ONLY   ◆   ONE COACH · LOCKED PERMANENTLY   ◆   YOUR JOURNEY IS THE EVIDENCE   ◆   THE STANDARD IS THE BENCHMARK   ◆   THE MIRROR DOES NOT THINK FOR YOU   ◆   '}
+              {'PLAY → REVIEW → CARRY ONE LESSON   ◆   EVIDENCE BEFORE ADVICE   ◆   YOUR JOURNEY IS THE EVIDENCE   ◆   THE STANDARD IS THE BENCHMARK   ◆   NOT A TIPS FEED   ◆   NOT AN AI COACH   ◆   1,000 SEATS ONLY   ◆   NOTHING IS OVERDUE   ◆   '}
             </Text>
           </Marquee>
         </View>
 
-        {/* ══ THE EXPERIMENT ══ */}
+        {/* ══ THE PRACTICE (philosophy) ══ */}
         <Gate scrollY={scrollY}>
-          <View style={styles.section}>
+          <View style={styles.section} nativeID="practice">
             <View style={styles.container}>
-              <View style={[styles.heroGrid, isMultiColumn && styles.heroGridWide]}>
-                <View style={styles.heroLeft}>
-                  <MonoLabel>THE EXPERIMENT · THE APP</MonoLabel>
-                  <H2>
-                    AN EXPERIMENT <Text style={styles.h2Muted}>ON PURPOSE.</Text>{'\n'}A PRODUCT{' '}
-                    <Text style={styles.h2Primary}>FOR REAL.</Text>
-                  </H2>
-                  <Muted style={styles.sectionBody}>
-                    Onliversity runs one serious experiment first. ProSeasonAcademy is a proper
-                    product, not a beta — capped, coached and enforced by the database. If it can
-                    make FC players behave like professionals, it funds Season Two and every craft
-                    after it.
-                  </Muted>
-                  <View style={[styles.pointGrid, isMultiColumn && { flexDirection: 'row' }]}>
-                    {[
-                      ['PROPER PRODUCT', 'Not a testflight of promises. Paid seats, real coaching, enforced caps.'],
-                      ['AN EXPERIMENT', 'One programme first, on purpose — proof before expansion.'],
-                      ['SEATS OPEN SEASON TWO', 'When a lapsed seat releases, the waitlist moves. Scarcity is the structure.'],
-                    ].map(([t, b]) => (
-                      <GlassCard key={t} style={styles.pointCard}>
-                        <Text style={styles.pointTitle}>{t}</Text>
-                        <Text style={styles.pointBody}>{b}</Text>
-                      </GlassCard>
-                    ))}
-                  </View>
-                </View>
-                <View style={styles.heroRight}>
-                  <GlassCard hud style={styles.appPanel}>
-                    <Pill>SEASON ONE · LIVE</Pill>
-                    <Text style={styles.appPanelTitle}>THE APP IS THE MAIN THING.</Text>
-                    <Muted style={styles.appPanelBody}>
-                      Everything lives inside ProSeasonAcademy — Baseline Week, your Journey, the
-                      Mirror Sessions, The Thread. The website only tells you that.
-                    </Muted>
-                    <View style={styles.appPanelCtas}>
-                      <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
-                      <CtaSecondary label="SEE WHAT'S INSIDE" onPress={() => go('inside')} />
-                    </View>
-                    <View style={styles.appPanelMeta}>
-                      <Text style={styles.appPanelMetaTxt}>PROPER PRODUCT ◆ 1K SEATS ◆ 14-DAY TRIAL</Text>
-                    </View>
-                  </GlassCard>
-                </View>
-              </View>
-            </View>
-          </View>
-        </Gate>
-
-        {/* ══ PHILOSOPHY ══ */}
-        <Gate scrollY={scrollY}>
-          <View style={styles.section} nativeID="philosophy">
-            <View style={styles.container}>
-              <MonoLabel>THE PHILOSOPHY · WHY MIRROR EXISTS</MonoLabel>
+              <MonoLabel>THE PRACTICE · WHY THIS EXISTS</MonoLabel>
               <H2>
                 WE CANNOT MAKE YOU BETTER.{'\n'}
-                <Text style={styles.h2Muted}>WE CAN ONLY HELP YOU SEE YOURSELF CLEARLY</Text>{'\n'}
-                <Text style={styles.h2Muted}>ENOUGH TO DO THE WORK YOURSELF.</Text>
+                <Text style={styles.h2Muted}>WE CAN ONLY HELP YOU SEE YOURSELF CLEARLY ENOUGH</Text>{'\n'}
+                <Text style={styles.h2Muted}>TO DO THE WORK YOURSELF.</Text>
               </H2>
               <View style={[styles.heroGrid, isMultiColumn && styles.heroGridWide]}>
                 <View style={styles.heroLeft}>
                   <Muted style={styles.sectionBody}>
-                    Most people say they want a professional outcome while behaving casually every
-                    day. They play without purpose. They don't review their decisions. They blame
-                    the game, the lag, the opponent, the luck. They repeat the same behaviour and
-                    call it bad luck.
+                    Most players play a lot of FC and learn very little from the matches they lose.
+                    They remember the score, blame the game, watch a clip, and move to the next
+                    match. They do not build a record of the decisions, emotions and patterns that
+                    repeat.
                   </Muted>
                   <Muted style={styles.sectionBody}>
-                    Mirror closes the gap between ambition and behaviour. It records the evidence,
-                    preserves your own thinking, and places your intentions, your feelings, your
-                    memory and the recording beside one another — until self-deception becomes
-                    difficult to maintain.
+                    ProSeasonAcademy gives them a simple, repeatable practice: play a real match,
+                    notice what happened, write one honest lesson, test that lesson next match. Over
+                    time the player gets evidence of what actually improves — not a streak of
+                    motivational content.
                   </Muted>
                   <View style={styles.problemGrid}>
                     {[
-                      ['THE GAP', 'You say you want to be exceptional. Your daily process is unserious. Structure closes the gap.'],
-                      ['THE LIE', 'Blaming lag, luck and opponents is comfortable — and it is the reason nothing changes.'],
-                      ['THE MIRROR', 'The app preserves what you intended, felt, believed and reviewed. You see the inconsistencies yourself.'],
+                      ['THE SCORE', 'You remember the result and blame the game. The decisions that mattered go unwatched, and repeat.'],
+                      ['THE FEED', 'Tips and motivation feel like learning. They build no record of your own decisions, emotions and patterns.'],
+                      ['THE PRACTICE', 'A record you write yourself. Your intentions, your feelings, your memory — placed beside the evidence.'],
                     ].map(([t, b]) => (
                       <GlassCard key={t} style={styles.pointCard}>
                         <Text style={styles.pointTitle}>{t}</Text>
@@ -533,14 +467,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                 <View style={styles.heroRight}>
                   <ArtFrame
                     source={ART.mirror}
-                    label="MIRROR SESSION · LIVE"
+                    label="MATCH REVIEW · IN YOUR OWN WORDS"
                     caption="You, beside the evidence"
-                    height={isMultiColumn ? 420 : 260}
+                    height={isMultiColumn ? 400 : 260}
                   />
                   <View style={styles.pullWrap}>
                     <Text style={styles.pull}>
-                      “MIRROR IS NOT AN ANSWER MACHINE. IT IS A STRUCTURE THAT MAKES IT DIFFICULT TO
-                      KEEP GIVING YOURSELF CONVENIENT ANSWERS.”
+                      “IT IS NOT AN ANSWER MACHINE. IT IS A STRUCTURE THAT MAKES IT DIFFICULT TO KEEP
+                      GIVING YOURSELF CONVENIENT ANSWERS.”
                     </Text>
                   </View>
                 </View>
@@ -549,20 +483,24 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           </View>
         </Gate>
 
-        {/* ══ METHOD ══ */}
+        {/* ══ THE RITUAL ══ */}
         <Gate scrollY={scrollY}>
-          <View style={styles.section} nativeID="method">
+          <View style={styles.section} nativeID="ritual">
             <View style={styles.container}>
-              <View style={styles.methodHead}>
-                <MonoLabel>HOW THE METHOD WORKS</MonoLabel>
-                <H2>A STRUCTURE THAT MAKES IT DIFFICULT TO KEEP GIVING YOURSELF CONVENIENT ANSWERS</H2>
-              </View>
+              <MonoLabel>THE RITUAL · HOW IT WORKS</MonoLabel>
+              <H2>ONE MATCH. ONE HONEST LESSON. CARRIED FORWARD.</H2>
+              <Muted style={styles.sectionBody}>
+                The review ritual is intentionally short, and intentionally yours: one intention,
+                two half-time prompts, two full-time prompts, and three prompts per moment{' '}
+                <Text style={styles.strong}>you</Text> choose. The app never writes your answers,
+                never picks your moments, never uploads raw video.
+              </Muted>
               <View style={styles.pillarGrid}>
                 {[
-                  ['01', 'YOUR JOURNEY IS YOURS', 'Your road is personal. Only your matches, your answers and your receipts move it forward. Nobody can walk it for you.'],
-                  ['02', 'THE STANDARD GIVES DIRECTION', 'Beside your road runs The Standard — what the best in your path learned at a comparable point. It is a benchmark, not a second track. Read it. Walk your own road.'],
-                  ['03', 'EVIDENCE BEFORE ADVICE', 'You observe and answer before the app interprets. The machine records the evidence. The player does the seeing.'],
-                  ['04', 'PROGRESS IS EARNED FROM RECEIPTS', 'Reading, watching or tapping is not improvement. Stages clear only when the evidence says the work was done.'],
+                  ['01', 'PLAY A REAL MATCH', 'The practice starts with a real console match. No match today? Nothing to complete — you are not behind, and nothing is overdue.'],
+                  ['02', 'START YOUR MATCH REVIEW', 'Before kick-off you set one intention and a starting composure — captured before the score changes the emotions. At half-time and full-time you answer while the match is still alive.'],
+                  ['03', 'NAME THE MOMENTS', 'You divide the match into its key moments yourself. Three prompts per moment, in your own words. The app preserves the sequence; it does not choose for you.'],
+                  ['04', 'CARRY ONE LESSON', 'One line you are willing to carry forward becomes Your Lesson. Your next review opens by asking how it held — or broke. A lesson cannot be created and immediately forgotten.'],
                 ].map(([n, t, b]) => (
                   <GlassCard key={n} style={styles.pillarCard}>
                     <View style={styles.pillarTop}>
@@ -577,7 +515,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                 ))}
               </View>
               <View style={styles.pullCenter}>
-                <Text style={styles.pullBig}>“YOUR JOURNEY IS THE EVIDENCE. THE STANDARD IS THE BENCHMARK.”</Text>
+                <Text style={styles.pullBig}>“YOU CANNOT OUTRUN YOUR RECEIPTS.”</Text>
                 <View style={styles.pullDivider} />
               </View>
             </View>
@@ -588,89 +526,86 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         <View style={styles.marqueeBand}>
           <Marquee pxPerSec={82}>
             <Text style={styles.marqueeTxt}>
-              {'SEE YOURSELF → CONTROL YOURSELF → READ THE GAME → BUILD DISCIPLINE → PERFORM UNDER PRESSURE → PROVE IT   ◆   EVIDENCE BEFORE ADVICE   ◆   PROGRESS IS EARNED FROM RECEIPTS   ◆   BASELINE WEEK → JOURNEY → MIRROR SESSION → THREAD   ◆   '}
+              {'SEE YOURSELF → CONTROL YOURSELF → READ THE GAME → BUILD DISCIPLINE → PERFORM UNDER PRESSURE → PROVE IT   ◆   SIX CHAPTERS · EARNED FROM EVIDENCE   ◆   LATENESS IS NEVER PUNISHED   ◆   RECEIPTS, NOT PROMISES   ◆   '}
             </Text>
           </Marquee>
         </View>
 
-        {/* ══ PROGRAMME ══ */}
+        {/* ══ THE SEASON ══ */}
         <Gate scrollY={scrollY}>
-          <View style={styles.section} nativeID="programme">
+          <View style={styles.section} nativeID="season">
             <View style={styles.container}>
-              <MonoLabel>THE FIRST PROGRAMME</MonoLabel>
+              <MonoLabel>THE SEASON · WHAT SIX MONTHS LOOK LIKE</MonoLabel>
               <H2>
-                THE FIRST PROGRAMME:{'\n'}
-                <Text style={styles.h2Primary}>PROSEASONACADEMY</Text>
+                ONE COACH. ONE ROAD.{'\n'}
+                <Text style={styles.h2Primary}>SIX CHAPTERS, EARNED.</Text>
               </H2>
-              <Muted style={styles.sectionBody}>
-                The first course built on the Mirror method — and the template for every course
-                Onliversity will ever run.{' '}
-                <Text style={styles.strong}>
-                  If you can take your game this seriously, you can take anything seriously.
-                </Text>
-              </Muted>
-              <View style={styles.pillarGrid}>
-                {[
-                  ['STEP 1 · THE BASELINE WEEK', 'Seven days. Five matches — one a day. After each match you name the moments where you failed, and analyse each one in your own words. Day 6 is reflection. Day 7 seals your profile. The next day unlocks 30 minutes after the last one seals — lateness is never punished.'],
-                  ['STEP 2 · YOUR JOURNEY', 'One universal six-stage road: SEE YOURSELF → CONTROL YOURSELF → READ THE GAME → BUILD DISCIPLINE → PERFORM UNDER PRESSURE → PROVE IT. Your coach walks it with you. Only your evidence moves it forward.'],
-                  ['STEP 3 · THE MIRROR SESSION', 'Before each match you set an intention. At half-time and full-time you answer in your own words. You mark your key moments and watch the versions of your thinking sit beside the evidence. The app never thinks for you.'],
-                  ['STEP 4 · THE THREAD', 'Every session ends with one lesson you swear into The Thread. Your next session opens by asking how it held — or broke. A lesson cannot be created and immediately forgotten.'],
-                ].map(([t, b]) => (
-                  <GlassCard key={t} style={styles.pillarCard}>
-                    <Text style={styles.pillarTitle}>{t}</Text>
-                    <View style={styles.stepInner}>
-                      <Text style={styles.stepInnerTxt}>{b}</Text>
+              <View style={[styles.heroGrid, isMultiColumn && styles.heroGridWide]}>
+                <View style={styles.heroLeft}>
+                  {[
+                    ['THE STARTING WEEK', 'Five recent real matches, honestly logged — four core console stats and the moments that mattered. Your baseline seals before the road opens, and becomes the you that six months is measured against.'],
+                    ['ONE COACH, LOCKED PERMANENTLY', 'Your coach is the voice, the guide and the accountability. No switching, no resets — the lock is the point. Commitment is the product.'],
+                    ['SIX CHAPTERS OF PROGRESS', 'SEE YOURSELF → CONTROL YOURSELF → READ THE GAME → BUILD DISCIPLINE → PERFORM UNDER PRESSURE → PROVE IT. Chapters move only when your evidence earns them. No painted percentages.'],
+                    ['WHAT GOOD LOOKS LIKE', 'Beside your road runs the benchmark — a composite of the best in the path. Direction, not a second track. Read it. Walk your own road.'],
+                  ].map(([t, b]) => (
+                    <View key={t} style={styles.baseRow}>
+                      <View style={styles.baseTick} />
+                      <View style={styles.baseCopy}>
+                        <Text style={styles.baseTitle}>{t}</Text>
+                        <Text style={styles.baseBody}>{b}</Text>
+                      </View>
                     </View>
-                  </GlassCard>
-                ))}
-              </View>
-
-              {/* two tracks */}
-              <View style={[styles.tracksRow, isMultiColumn && { flexDirection: 'row' }]}>
-                <GlassCard style={styles.trackCard}>
-                  <Text style={styles.trackTag}>YOUR JOURNEY</Text>
-                  <Text style={styles.trackLine}>Your current evidence</Text>
-                  <Text style={styles.trackLine}>Your next objective</Text>
-                  <Text style={styles.trackLine}>Your next Mirror Session</Text>
-                </GlassCard>
-                <GlassCard style={styles.trackCard}>
-                  <Text style={[styles.trackTag, { color: colors.accent }]}>THE STANDARD</Text>
-                  <Text style={styles.trackLine}>What elite players learn here</Text>
-                  <Text style={styles.trackLine}>The professional behaviour to study</Text>
-                  <Text style={styles.trackLine}>The standard you are approaching</Text>
-                </GlassCard>
-              </View>
-
-              <View style={styles.artDuo}>
-                <View style={styles.artDuoHalf}>
-                  <ArtFrame source={ART.tunnel} label="SIX-STAGE ROAD" caption="The journey is the evidence" height={220} />
+                  ))}
                 </View>
-                <View style={styles.artDuoHalf}>
-                  <ArtFrame source={ART.boots} label="BASELINE WEEK" caption="Five matches, sealed" height={220} />
+                <View style={styles.heroRight}>
+                  <GlassCard style={styles.trackCard}>
+                    <Text style={styles.trackTag}>YOUR JOURNEY — CONTROL YOURSELF</Text>
+                    <Text style={styles.trackLine}>Your current evidence</Text>
+                    <Text style={styles.trackLine}>Your next objective</Text>
+                    <Text style={styles.trackLine}>Your next match review</Text>
+                    <View style={styles.trackDivider} />
+                    <Text style={[styles.trackTag, { color: colors.accent }]}>
+                      WHAT GOOD LOOKS LIKE — CONTROL YOURSELF
+                    </Text>
+                    <Text style={styles.trackLine}>What elite players learn here</Text>
+                    <Text style={styles.trackLine}>The professional behaviour to study</Text>
+                    <Text style={styles.trackLine}>The benchmark you are approaching</Text>
+                  </GlassCard>
+                  <View style={styles.artDuo}>
+                    <View style={styles.artDuoHalf}>
+                      <ArtFrame source={ART.tunnel} label="SIX-CHAPTER ROAD" caption="The journey is the evidence" height={190} />
+                    </View>
+                    <View style={styles.artDuoHalf}>
+                      <ArtFrame source={ART.touchline} label="ONE COACH · LOCKED" caption="The voice in your corner" height={190} />
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
         </Gate>
 
-        {/* ══ INSIDE ══ */}
+        {/* ══ INSIDE THE APP ══ */}
         <Gate scrollY={scrollY}>
           <View style={styles.section} nativeID="inside">
             <View style={styles.container}>
-              <MonoLabel>INSIDE THE ACADEMY</MonoLabel>
-              <H2>WHAT A MEMBER GETS</H2>
+              <MonoLabel>INSIDE THE APP · WHAT A MEMBER GETS</MonoLabel>
+              <H2>EVERYTHING SERVES THE NEXT REVIEW</H2>
+              <Muted style={styles.sectionBody}>
+                The home screen always keeps one obvious green action above explanations,
+                statistics, news and community. Everything else is supporting equipment.
+              </Muted>
               <View style={styles.insideGrid}>
                 {[
-                  ['ONE COACH, PERMANENTLY', 'Your lock-in is the first commitment. The app never offers a way back — on purpose.'],
-                  ['THE BASELINE WEEK', 'Seven days, five matches, honest analysis. Your profile seals before the road opens.'],
-                  ['YOUR JOURNEY', 'Six universal stages, machine-graded from your real receipts. No painted percentages.'],
-                  ['THE STANDARD', 'The benchmark journey of the best in the path, revealed as you advance. Direction, not a task.'],
-                  ['THE MIRROR SESSION', 'Intention → checkpoints → your key moments → comparison → one sworn lesson. You do the seeing.'],
-                  ['THE THREAD', 'Your lesson loop. Every session asks how the last lesson held or broke.'],
-                  ['MATCH VAULT', 'Every match logged in ~15 seconds. The receipt your stages are graded from.'],
-                  ['LOSS JOURNAL', 'One honest line per loss. The pattern you write is the pattern he fixes.'],
-                  ['THE CLUBHOUSE', 'Channels, squads, reactions. Real-time. The founder reads the serious stuff himself.'],
-                  ['LOCAL RECORDING', 'Raw video stays on your phone — never uploaded. Your tape is yours.'],
+                  ['TODAY', 'Your next useful action. One question answered: what do I do next?'],
+                  ['MATCH REVIEW', 'A short before / during / after review of one real match — in your own words.'],
+                  ['YOUR LESSON', 'The one useful line you carry into the next match. It opens your next session.'],
+                  ['MATCH HISTORY', 'Saved scores and review receipts. The evidence your chapters are graded from.'],
+                  ['LOSS NOTES', 'Brief notes about losses and repeated mistakes. The pattern you write is the pattern you fix.'],
+                  ['PROGRESS', 'Six chapters that move only when your evidence earns them.'],
+                  ['WHAT GOOD LOOKS LIKE', 'The benchmark journey of the best in the path — revealed as you advance.'],
+                  ['EVIDENCE TRACKER', 'Optional seven-match ingest: your stats screens, read on-device, building your development card.'],
+                  ['COMMUNITY', 'Optional support and accountability — never the task.'],
                 ].map(([t, b]) => (
                   <GlassCard key={t} style={styles.insideCard}>
                     <LinearGradient
@@ -688,82 +623,21 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           </View>
         </Gate>
 
-        {/* ══ THE TILL ══ */}
-        <Gate scrollY={scrollY}>
-          <View style={styles.section} nativeID="pricing">
-            <View style={styles.container}>
-              <MonoLabel>PRICING · THE TILL</MonoLabel>
-              <H2>YOUR SEAT. YOUR TERMS.</H2>
-              <Muted style={styles.sectionBody}>
-                ProSeasonAcademy is paid-only after the trial, because anything free is taken for
-                granted. 14-day trial. 3-day grace after expiry. Refunds for time not used. Season
-                One is capped at 1,000 seats — enforced by the database, not by a button.
-              </Muted>
-              <View style={[styles.tracksRow, isMultiColumn && { flexDirection: 'row' }]}>
-                <GlassCard style={styles.tillCard}>
-                  <Text style={styles.tillHead}>AFRICA · CREDIT PACKS</Text>
-                  {[
-                    ['NG-MID-90', '₦3,900'],
-                    ['NG-PRO-90', '₦7,800'],
-                    ['NG-PRO-365', '₦25,000'],
-                  ].map(([k, v]) => (
-                    <View key={k} style={styles.tillRow}>
-                      <Text style={styles.tillCode}>{k}</Text>
-                      <Text style={styles.tillPrice}>{v}</Text>
-                    </View>
-                  ))}
-                </GlassCard>
-                <GlassCard style={styles.tillCard}>
-                  <Text style={styles.tillHead}>WORLD · SUBSCRIPTION</Text>
-                  {[
-                    ['WD-MID-90', '£7.99'],
-                    ['WD-PRO-90', '£15.99'],
-                    ['WD-PRO-365', '£47.99'],
-                  ].map(([k, v]) => (
-                    <View key={k} style={styles.tillRow}>
-                      <Text style={styles.tillCode}>{k}</Text>
-                      <Text style={styles.tillPrice}>{v}</Text>
-                    </View>
-                  ))}
-                </GlassCard>
-              </View>
-              <GlassCard style={styles.subsidyCard}>
-                <Text style={styles.subsidyTxt}>
-                  Africa pays ~28% of the world price, on purpose. Same programme, same standard,
-                  same receipts — priced for where you are, not where we are.
-                </Text>
-              </GlassCard>
-              <View style={[styles.problemGrid, { marginTop: 16 }]}>
-                {[
-                  ['14-DAY TRIAL', 'Try before you pay.'],
-                  ['FULL REFUNDS', 'Time not used = money back.'],
-                  ['1,000 SEATS ONLY', "When Season One is full, it's full. That's the point."],
-                ].map(([t, b]) => (
-                  <GlassCard key={t} style={styles.pointCard}>
-                    <Text style={styles.pointTitle}>{t}</Text>
-                    <Text style={styles.pointBody}>{b}</Text>
-                  </GlassCard>
-                ))}
-              </View>
-            </View>
-          </View>
-        </Gate>
-
         {/* ══ WHY DIFFERENT ══ */}
         <Gate scrollY={scrollY}>
-          <View style={styles.section}>
+          <View style={styles.section} nativeID="different">
             <View style={styles.container}>
-              <MonoLabel>WHY WE'RE DIFFERENT</MonoLabel>
+              <MonoLabel>WHY DIFFERENT · WHAT THIS IS NOT</MonoLabel>
               <H2>
                 EVERYONE ELSE SELLS ANSWERS.{'\n'}
-                <Text style={styles.h2Muted}>WE MAKE YOUR CONVENIENT ANSWERS STOP WORKING.</Text>
+                <Text style={styles.h2Muted}>THIS IS A DISCIPLINED REFLECTION PRACTICE.</Text>
               </H2>
               <View style={styles.pillarGrid}>
                 {[
-                  ['THEY TEACH THE GAME', 'WE MAKE YOU SEE YOURSELF', '“The mechanic that works” is the whole product. Your matches, your moments, your contradictions are the main quest.'],
-                  ['AI COACHES THINK FOR YOU', 'THE MIRROR REFUSES TO', '“AI watched your match — here’s what you did wrong.” A verdict you agree with is a verdict you forget. The player does the seeing.'],
-                  ['OPEN DISCORDS, NO STAKES', 'ONE SEAT, ONE COACH, ONE STANDARD', 'Free, infinite, anonymous — nothing on the line. 1,000 seats, a permanent lock, a trial that converts or removes. The cap is the product.'],
-                  ['STAT TRACKERS COUNT', 'WE CAPTURE THE GAP', 'W/D/L and pass accuracy. We record what you intended, felt, believed — and where the recording disagreed. Nobody else builds that.'],
+                  ['A GENERIC TIPS FEED', 'A REVIEW PRACTICE', '“The mechanic that works” is the whole product there. Here your matches, your moments and your patterns are the main quest.'],
+                  ['AI COACHING THAT THINKS FOR YOU', 'YOUR WORDS ARE REQUIRED', 'No AI verdicts, no auto-written lessons, no reading your head. The machine records the evidence; the player does the seeing.'],
+                  ['A CARD GENERATOR OR STAT DASHBOARD', 'RECEIPTS, NOT PROMISES', 'W/D/L and pass accuracy count nothing about your decisions. Progress is earned from saved match evidence — reading, watching and tapping is not improvement.'],
+                  ['A SOCIAL NETWORK', 'OPTIONAL COMPANY', 'Community supports the practice; it never replaces it. If a utility competes with the core product, it goes behind a secondary link.'],
                 ].map(([they, we, b]) => (
                   <GlassCard key={they} style={styles.pillarCard}>
                     <Text style={styles.theyTxt}>{they}</Text>
@@ -771,45 +645,6 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                     <Text style={styles.pointBody}>{b}</Text>
                   </GlassCard>
                 ))}
-              </View>
-              <View style={styles.pullCenter}>
-                <Text style={styles.pullBig}>“YOU CANNOT OUTRUN YOUR RECEIPTS.”</Text>
-                <View style={styles.pullDivider} />
-              </View>
-            </View>
-          </View>
-        </Gate>
-
-        {/* ══ PLATFORM / ROAD ══ */}
-        <Gate scrollY={scrollY}>
-          <View style={styles.section} nativeID="next">
-            <View style={styles.container}>
-              <MonoLabel>THE ROAD · ONLIVERSITY</MonoLabel>
-              <H2>
-                ONE METHOD. <Text style={styles.h2Muted}>ANY CRAFT.</Text>
-              </H2>
-              <Muted style={styles.sectionBody}>
-                ProSeasonAcademy is the proof. The Mirror method was built to travel — competitive
-                gaming, music, writing, business, art. The coach changes. The craft changes. The
-                structure stays.
-              </Muted>
-              <View style={[styles.tracksRow, isMultiColumn && { flexDirection: 'row' }]}>
-                <GlassCard hud style={styles.seasonCard}>
-                  <Pill>SEASON ONE · LIVE NOW</Pill>
-                  <Text style={styles.seasonTitle}>THE MIRROR</Text>
-                  <Text style={styles.pointBody}>
-                    ProSeasonAcademy — EA SPORTS FC console pro. Baseline week → journey → mirror
-                    session → the thread → proof.
-                  </Text>
-                </GlassCard>
-                <GlassCard style={styles.seasonCard}>
-                  <Pill tone="accent">NEXT PATH · COMING SOON</Pill>
-                  <Text style={styles.seasonTitle}>THE TOURNAMENT SHAPE</Text>
-                  <Text style={styles.pointBody}>
-                    Season Two turns the mirror toward competition. Every future course walks the
-                    same road.
-                  </Text>
-                </GlassCard>
               </View>
             </View>
           </View>
@@ -823,14 +658,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <H2>THE FAQ</H2>
               <View style={styles.faqList}>
                 {[
-                  ['WHY ONLY 1,000 SEATS?', 'Because one person can’t personally coach a million people. The cap keeps coaching personal — every member can actually be tracked and spoken to. When it’s full, it’s full. That’s the point.'],
-                  ['CAN I SWITCH COACHES?', 'No. The path lock is permanent — by design. Commitment is the product.'],
-                  ['DO I NEED TO BE GOOD AT FC?', 'No. The baseline week doesn’t grade your skill. It maps your behaviour under pressure. That’s what we train.'],
-                  ['IS THIS AN AI COACH?', 'The opposite. The Mirror records the evidence; you do the seeing. No AI verdicts, no automatic lessons, no reading your head.'],
-                  ['WHERE IS MY MATCH RECORDING STORED?', 'You record your console match as usual and watch your tape back. With the optional on-device recorder, raw video stays on your phone and is never uploaded.'],
-                  ['WHAT HAPPENS IF I MISS A DAY?', 'Nothing. The next day unlocks 30 minutes after the last one seals — lateness is never punished. One task a day is the contract, not a threat.'],
-                  ['WHAT HAPPENS WHEN SEASON ONE IS FULL?', 'You join the waitlist. You can still train solo — the vault, journey and sessions all work offline. A seat opens when a lapsed one is released.'],
-                  ['WHAT IS THE STANDARD?', 'The benchmark journey of the best in your path — a composite, never a copy of one person. Your evidence decides whether you’re doing the work to get there.'],
+                  ['WHAT IS THIS?', 'A private EA FC console review practice. You play a match, review the decisions that mattered in your own words, and carry one lesson into the next match.'],
+                  ['WHAT DO I DO HERE?', 'Start a Match Review around your next match. If your match has not started, choose “I’m about to play”. If it already ended, choose “I already finished a match”.'],
+                  ['DO I NEED A MATCH TODAY?', 'No. If you have no match today, there is nothing to complete. You are not behind. Nothing is overdue — lateness is never punished.'],
+                  ['IS THIS AN AI COACH?', 'The opposite. The app timestamps, stores and preserves receipts. It never writes your answers, never auto-selects your key moments, never generates your lesson, never uploads raw video.'],
+                  ['CAN I SWITCH COACHES?', 'No. The lock is permanent — by design. Your coach is the voice, the guide and the accountability for your whole season.'],
+                  ['WHY ONLY 1,000 SEATS?', 'Season One is capped and the cap is enforced by the database, not by a button. The cap keeps the practice personal. When it’s full, it’s full.'],
+                  ['DO I NEED TO BE GOOD AT FC?', 'No. The Starting Week doesn’t grade your skill. It maps your behaviour under pressure — that is what the practice trains.'],
+                  ['WHAT IS “WHAT GOOD LOOKS LIKE”?', 'The benchmark journey of the best in your path — a composite, never a copy of one person. It shows direction. Your evidence decides whether you’re doing the work.'],
                 ].map(([q, a]) => (
                   <GlassCard key={q} style={styles.faqCard}>
                     <Text style={styles.faqQ}>{q}</Text>
@@ -848,15 +683,15 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <View style={styles.ctaBox}>
               <MonoLabel>{seatLine}</MonoLabel>
               <Text style={styles.finalTitle}>
-                YOUR ROAD. THE STANDARD.{'\n'}
-                <Text style={styles.h2Muted}>NO EXCUSES.</Text>
+                THE STANDARD SHOWS THE WAY.{'\n'}
+                <Text style={styles.h2Muted}>YOUR EVIDENCE MOVES YOU.</Text>
               </Text>
               <Muted center style={styles.finalSub}>
-                Claim your seat and start your Baseline Week. The Mirror does not think for you —
-                it just refuses to let you forget the sequence.
+                Claim your seat, seal your Starting Week, and let the work stack. The next match is
+                the only one you can work on.
               </Muted>
               <View style={styles.heroCtasCenter}>
-                <CtaPrimary label="START YOUR BASELINE WEEK" onPress={onEnter} />
+                <CtaPrimary label="CLAIM YOUR SEAT — START THE PRACTICE" onPress={onEnter} />
                 <CtaSecondary label="ALREADY A MEMBER? SIGN IN" onPress={onEnter} />
               </View>
             </View>
@@ -870,17 +705,17 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <View style={styles.footerBrand}>
                 <View style={styles.navBrand}>
                   <LogoMark size={26} />
-                  <Text style={styles.navBrandTxt}>ONLIVERSITY</Text>
+                  <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
                 </View>
                 <Text style={styles.footerP}>
-                  Mirror is the method. ProSeasonAcademy is the first programme. One coach. One
-                  road. One standard.
+                  A disciplined reflection practice for serious console players. Play → Review →
+                  Carry one lesson forward.
                 </Text>
-                <Text style={styles.footerMantra}>MIRROR DOES NOT THINK FOR YOU</Text>
+                <Text style={styles.footerMantra}>THE PLAYER DOES THE SEEING</Text>
               </View>
               <View style={styles.footerCols}>
                 <View style={styles.footerCol}>
-                  <Text style={styles.footerColHead}>NAVIGATE</Text>
+                  <Text style={styles.footerColHead}>EXPLORE</Text>
                   {ANCHORS.map(([id, label]) => (
                     <Pressable key={id} onPress={() => go(id)}>
                       <Text style={styles.footerLink}>{label}</Text>
@@ -888,24 +723,25 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                   ))}
                 </View>
                 <View style={styles.footerCol}>
-                  <Text style={styles.footerColHead}>PRODUCT</Text>
-                  <Text style={styles.footerLink}>ProSeasonAcademy · live</Text>
-                  <Text style={styles.footerLink}>Season Two · coming soon</Text>
-                  <Text style={styles.footerLink}>Waitlist</Text>
+                  <Text style={styles.footerColHead}>THE APP</Text>
+                  <Text style={styles.footerLink}>Today</Text>
+                  <Text style={styles.footerLink}>Match Review</Text>
+                  <Text style={styles.footerLink}>Your Lesson</Text>
+                  <Text style={styles.footerLink}>Progress</Text>
                 </View>
                 <View style={styles.footerCol}>
                   <Text style={styles.footerColHead}>TRUST</Text>
                   <Text style={styles.footerLink}>1,000 seats only</Text>
                   <Text style={styles.footerLink}>One coach · locked</Text>
                   <Text style={styles.footerLink}>Evidence before advice</Text>
-                  <Text style={styles.footerLink}>Receipts, not promises</Text>
+                  <Text style={styles.footerLink}>Nothing is overdue</Text>
                 </View>
               </View>
             </View>
             <View style={styles.footerBottom}>
               <Text style={styles.footerFine}>
-                © 2026 ONLIVERSITY · PROSEASONACADEMY IS A DEVELOPMENT PROGRAMME, NOT A GAMING
-                SERVICE, AND IS NOT AFFILIATED WITH OR ENDORSED BY EA SPORTS OR EA SPORTS FC.
+                © 2026 PROSEASON ACADEMY · AN ONLIVERSITY PROGRAMME · NOT AFFILIATED WITH OR
+                ENDORSED BY EA SPORTS OR EA SPORTS FC.
               </Text>
               <Text style={styles.footerFine}>SEE YOURSELF. DO THE WORK.</Text>
             </View>
@@ -921,7 +757,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
 
   container: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 20 },
-  section: { paddingVertical: 72, borderBottomWidth: 1, borderBottomColor: 'rgba(31,56,38,0.6)' },
+  section: { paddingVertical: 76, borderBottomWidth: 1, borderBottomColor: 'rgba(31,56,38,0.6)' },
 
   monoLabel: {
     fontFamily: monoFont,
@@ -935,8 +771,8 @@ const styles = StyleSheet.create({
   h1: {
     fontFamily: headFont,
     fontWeight: '700',
-    fontSize: 52,
-    lineHeight: 50,
+    fontSize: 54,
+    lineHeight: 52,
     letterSpacing: -1,
     color: colors.fg,
     textTransform: 'uppercase',
@@ -946,22 +782,17 @@ const styles = StyleSheet.create({
     fontFamily: headFont,
     fontWeight: '700',
     fontSize: 34,
-    lineHeight: 36,
+    lineHeight: 37,
     letterSpacing: -0.5,
     color: colors.fg,
     textTransform: 'uppercase',
-    maxWidth: 860,
+    maxWidth: 880,
   },
   h2Muted: { color: 'rgba(143,184,155,0.85)' },
   h2Primary: { color: colors.primary },
-  body: {
-    fontFamily: bodyFace,
-    fontSize: 15,
-    lineHeight: 25,
-    color: colors.muted,
-  },
+  body: { fontFamily: bodyFace, fontSize: 15, lineHeight: 25, color: colors.muted },
   strong: { color: colors.fg, fontWeight: '600' },
-  sectionBody: { marginTop: 18, maxWidth: 680 },
+  sectionBody: { marginTop: 18, maxWidth: 700 },
 
   glassNative: {
     backgroundColor: 'rgba(20,36,26,0.5)',
@@ -981,43 +812,38 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: 'center',
     width: '100%',
-    height: 64,
+    minHeight: 68,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingVertical: 8,
   },
   navBrand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  navBrandTxt: {
-    fontFamily: headFont,
-    fontWeight: '700',
-    fontSize: 15,
-    letterSpacing: 2,
-    color: colors.fg,
-  },
+  navBrandTxt: { fontFamily: headFont, fontWeight: '700', fontSize: 15, letterSpacing: 1.6, color: colors.fg },
   navBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.2)',
     backgroundColor: 'rgba(57,255,106,0.1)',
     borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
+  navBadgeDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.primary },
   navBadgeTxt: { fontFamily: monoFont, fontSize: 8, letterSpacing: 1.6, color: colors.primary },
-  navLinks: { flexDirection: 'row', gap: 22 },
+  navLinks: { flexDirection: 'row', gap: 20 },
   navLink: { fontFamily: bodyFace, fontSize: 13, color: colors.muted },
-  navRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  navCta: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  navCtaTxt: { fontFamily: bodyFace, fontWeight: '600', fontSize: 12, color: '#040805' },
+  navRight: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  navSignIn: { fontFamily: bodyFace, fontWeight: '600', fontSize: 12.5, letterSpacing: 1, color: colors.muted },
+  navCta: { backgroundColor: colors.primary, borderRadius: 999, paddingHorizontal: 18, paddingVertical: 9 },
+  navCtaTxt: { fontFamily: bodyFace, fontWeight: '700', fontSize: 12, letterSpacing: 0.6, color: '#040805' },
   burger: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.3)',
     alignItems: 'center',
@@ -1031,7 +857,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  drawerItem: { paddingVertical: 10, borderRadius: 12, paddingHorizontal: 10 },
+  drawerItem: { paddingVertical: 11, borderRadius: 12, paddingHorizontal: 10 },
   drawerTxt: { fontFamily: bodyFace, fontSize: 14, color: colors.muted },
 
   // hero
@@ -1040,13 +866,8 @@ const styles = StyleSheet.create({
   heroLeft: { flex: 1.1 },
   heroRight: { flex: 1, maxWidth: 520 },
   heroBrandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 22 },
-  heroBrandTxt: {
-    fontFamily: monoFont,
-    fontSize: 11,
-    letterSpacing: 3,
-    color: colors.primary,
-  },
-  heroSub: { marginTop: 22, maxWidth: 560 },
+  heroBrandTxt: { fontFamily: monoFont, fontSize: 10, letterSpacing: 2.6, color: colors.primary },
+  heroSub: { marginTop: 22, maxWidth: 580 },
   heroCtas: { flexDirection: 'row', gap: 12, marginTop: 30, flexWrap: 'wrap' },
   heroCtasCenter: { flexDirection: 'row', gap: 12, marginTop: 30, flexWrap: 'wrap', justifyContent: 'center' },
   trustStrip: {
@@ -1075,43 +896,36 @@ const styles = StyleSheet.create({
   },
   sessionHeadL: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)' },
   recRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  recDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#ff3d51',
-    shadowColor: '#ff3d51',
-    shadowOpacity: 0.9,
-    shadowRadius: 5,
-  },
+  recDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.9, shadowRadius: 5 },
   recTxt: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.6, color: colors.primary },
   sessionBody: { padding: 20 },
-  sessionLabel: { fontFamily: monoFont, fontSize: 9, letterSpacing: 2, color: colors.muted, marginBottom: 10 },
-  sessionQuote: { fontFamily: bodyFace, fontSize: 15, color: colors.fg, marginBottom: 16 },
+  sessionLabel: { fontFamily: monoFont, fontSize: 10, letterSpacing: 2, color: colors.fg, marginBottom: 12 },
   sessionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     gap: 12,
     borderRadius: 12,
     backgroundColor: 'rgba(5,10,6,0.7)',
     borderWidth: 1,
     borderColor: 'rgba(31,56,38,0.8)',
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 11,
     marginBottom: 8,
+    alignItems: 'center',
   },
-  sessionRowK: { fontFamily: monoFont, fontSize: 8, letterSpacing: 1.4, color: colors.muted, width: 84 },
-  sessionRowV: { flex: 1, fontFamily: bodyFace, fontSize: 12, color: 'rgba(238,242,236,0.9)' },
-  sessionFoot: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  sessionRowK: { fontFamily: monoFont, fontSize: 8.5, letterSpacing: 1.2, color: colors.primary, width: 108 },
+  sessionRowV: { flex: 1, fontFamily: bodyFace, fontSize: 12, lineHeight: 17, color: 'rgba(238,242,236,0.9)' },
+  sessionQuote: {
+    marginTop: 10,
+    fontFamily: bodyFontItalic,
+    fontSize: 12.5,
+    lineHeight: 19,
+    color: 'rgba(238,242,236,0.8)',
+  },
+  sessionFoot: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 },
   sessionFootL: { fontFamily: monoFont, fontSize: 9, color: 'rgba(143,184,155,0.7)' },
   sessionFootR: { fontFamily: monoFont, fontSize: 9, color: colors.primary },
 
-  marqueeBand: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderTopWidth: 1,
-    borderColor: 'rgba(31,56,38,0.7)',
-  },
+  marqueeBand: { paddingVertical: 10, borderBottomWidth: 1, borderTopWidth: 1, borderColor: 'rgba(31,56,38,0.7)' },
   marqueeTxt: {
     fontFamily: monoFont,
     fontSize: 11,
@@ -1120,7 +934,7 @@ const styles = StyleSheet.create({
     color: 'rgba(143,184,155,0.8)',
   },
 
-  pointGrid: { flexDirection: 'column', gap: 12, marginTop: 24, flexWrap: 'wrap' },
+  problemGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22 },
   pointCard: { padding: 18, flex: 1, minWidth: 200 },
   pointTitle: {
     fontFamily: monoFont,
@@ -1132,24 +946,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pointBody: { fontFamily: bodyFace, fontSize: 12.5, lineHeight: 19, color: colors.muted },
-
-  appPanel: { padding: 28, alignItems: 'center' },
-  appPanelTitle: {
-    marginTop: 18,
-    fontFamily: headFont,
-    fontWeight: '700',
-    fontSize: 24,
-    lineHeight: 26,
-    color: colors.fg,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  appPanelBody: { marginTop: 10, textAlign: 'center', fontSize: 13, lineHeight: 21 },
-  appPanelCtas: { flexDirection: 'column', gap: 10, marginTop: 22, alignSelf: 'stretch' },
-  appPanelMeta: { marginTop: 16 },
-  appPanelMetaTxt: { fontFamily: monoFont, fontSize: 8, letterSpacing: 1.6, color: 'rgba(143,184,155,0.6)' },
-
-  problemGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 22 },
 
   pullWrap: { marginTop: 16 },
   pull: {
@@ -1171,15 +967,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     maxWidth: 760,
   },
-  pullDivider: {
-    marginTop: 20,
-    width: 96,
-    height: 1,
-    backgroundColor: 'rgba(57,255,106,0.4)',
-  },
+  pullDivider: { marginTop: 20, width: 96, height: 1, backgroundColor: 'rgba(57,255,106,0.4)' },
 
-  methodHead: { maxWidth: 820, marginBottom: 40 },
-  pillarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 8 },
+  pillarGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 28 },
   pillarCard: { padding: 22, flex: 1, minWidth: 260, maxWidth: 560 },
   pillarTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   pillarNum: { fontFamily: monoFont, fontSize: 24, fontWeight: '700', color: 'rgba(57,255,106,0.35)' },
@@ -1197,30 +987,25 @@ const styles = StyleSheet.create({
     fontFamily: headFont,
     fontWeight: '700',
     fontSize: 16,
-    letterSpacing: 0.2,
     color: colors.fg,
     marginTop: 12,
     marginBottom: 8,
     textTransform: 'uppercase',
   },
-  stepInner: {
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(31,56,38,0.9)',
-    backgroundColor: 'rgba(5,10,6,0.6)',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  stepInnerTxt: { fontFamily: bodyFace, fontSize: 12, lineHeight: 19, color: 'rgba(238,242,236,0.85)' },
 
-  tracksRow: { flexDirection: 'column', gap: 14, marginTop: 28 },
-  trackCard: { padding: 22, flex: 1, minWidth: 260 },
-  trackTag: { fontFamily: monoFont, fontSize: 10, letterSpacing: 2, color: colors.primary, marginBottom: 12 },
-  trackLine: { fontFamily: bodyFace, fontSize: 13, lineHeight: 24, color: colors.muted },
+  baseRow: { flexDirection: 'row', gap: 12, marginBottom: 18 },
+  baseTick: { width: 8, height: 8, marginTop: 6, borderRadius: 2, backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.7, shadowRadius: 6 },
+  baseCopy: { flex: 1 },
+  baseTitle: { fontFamily: bodyFace, fontWeight: '700', fontSize: 13, letterSpacing: 1.2, color: colors.fg },
+  baseBody: { marginTop: 5, fontFamily: bodyFace, fontSize: 13, lineHeight: 20, color: colors.muted },
 
-  artDuo: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 28 },
-  artDuoHalf: { flex: 1, minWidth: 280 },
+  trackCard: { padding: 22 },
+  trackTag: { fontFamily: monoFont, fontSize: 9.5, letterSpacing: 1.8, color: colors.primary, marginBottom: 10 },
+  trackLine: { fontFamily: bodyFace, fontSize: 13, lineHeight: 23, color: colors.muted },
+  trackDivider: { height: 1, backgroundColor: 'rgba(31,56,38,0.9)', marginVertical: 14 },
+
+  artDuo: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 14 },
+  artDuoHalf: { flex: 1, minWidth: 220 },
 
   artFrame: { borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(31,56,38,0.9)' },
   artLive: {
@@ -1266,21 +1051,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  tillCard: { padding: 24, flex: 1, minWidth: 260 },
-  tillHead: { fontFamily: monoFont, fontSize: 10, letterSpacing: 2, color: colors.fg, marginBottom: 14 },
-  tillRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(31,56,38,0.8)',
-  },
-  tillCode: { fontFamily: monoFont, fontSize: 10, letterSpacing: 1.4, color: colors.muted },
-  tillPrice: { fontFamily: monoFont, fontSize: 15, fontWeight: '700', color: colors.primary },
-  subsidyCard: { padding: 18, marginTop: 14, borderColor: 'rgba(242,192,120,0.3)' },
-  subsidyTxt: { fontFamily: bodyFontItalic, fontSize: 13, lineHeight: 20, color: colors.accent },
-
   theyTxt: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.6, color: 'rgba(143,184,155,0.6)', marginBottom: 6 },
   weTxt: {
     fontFamily: headFont,
@@ -1291,27 +1061,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  seasonCard: { padding: 26, flex: 1, minWidth: 260 },
-  seasonTitle: {
-    fontFamily: headFont,
-    fontWeight: '700',
-    fontSize: 22,
-    color: colors.fg,
-    marginTop: 14,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-
-  faqList: { gap: 12, marginTop: 24, maxWidth: 860 },
+  faqList: { gap: 12, marginTop: 24, maxWidth: 880 },
   faqCard: { padding: 20 },
-  faqQ: {
-    fontFamily: monoFont,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.8,
-    color: colors.fg,
-    marginBottom: 8,
-  },
+  faqQ: { fontFamily: monoFont, fontSize: 11, fontWeight: '700', letterSpacing: 1.8, color: colors.fg, marginBottom: 8 },
   faqA: { fontFamily: bodyFace, fontSize: 13, lineHeight: 20, color: colors.muted },
 
   ctaBox: { alignItems: 'center', paddingVertical: 40 },
@@ -1332,13 +1084,7 @@ const styles = StyleSheet.create({
   footerGrid: { flexDirection: 'column', gap: 36 },
   footerBrand: { flex: 1.1, maxWidth: 420 },
   footerP: { marginTop: 14, fontFamily: bodyFace, fontSize: 13, lineHeight: 20, color: colors.muted },
-  footerMantra: {
-    marginTop: 14,
-    fontFamily: monoFont,
-    fontSize: 9,
-    letterSpacing: 2,
-    color: 'rgba(57,255,106,0.7)',
-  },
+  footerMantra: { marginTop: 14, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, color: 'rgba(57,255,106,0.7)' },
   footerCols: { flex: 1.4, flexDirection: 'row', gap: 32, flexWrap: 'wrap' },
   footerCol: { gap: 8, minWidth: 130 },
   footerColHead: { fontFamily: monoFont, fontSize: 9, letterSpacing: 2, color: 'rgba(143,184,155,0.6)', marginBottom: 6 },
@@ -1358,16 +1104,6 @@ const styles = StyleSheet.create({
     color: 'rgba(143,184,155,0.5)',
     textAlign: 'center',
   },
-
-  pill: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  pillTxt: { fontFamily: monoFont, fontSize: 9, letterSpacing: 1.8 },
 
   ctaPrimary: {
     height: 54,
