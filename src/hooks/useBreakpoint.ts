@@ -42,7 +42,11 @@ export interface BreakpointInfo {
   hitSlop: number;
 }
 
-function pickBp(w: number, coarseAndLarge: boolean): Breakpoint {
+function pickBp(w: number, h: number, coarseAndLarge: boolean, coarse: boolean): Breakpoint {
+  // A phone turned sideways is still a phone. Coarse pointer + low viewport
+  // + modest width means landscape handset — it must keep the phone column,
+  // never the tablet split (which assumes portrait-ish heights).
+  if (coarse && h < 500 && w < 950) return w >= 540 ? 'phablet' : 'phone';
   if (coarseAndLarge && w >= 1400) return 'tv';
   if (w >= 2400) return 'tv';
   if (w >= 1440) return 'desktop';
@@ -77,8 +81,17 @@ function measure(): {
   return { w: width, h: height, dpr, canHover, isCoarsePointer: coarse, isTouch: touch, prefersReducedMotion: reduced };
 }
 
+/** Visual scale applied per tier on web (see ResponsiveFrame + globalCss).
+    TVs sit ~3m away, big monitors ~1m — the frame is enlarged like browser
+    zoom while layout math runs in the *scaled-down* CSS box below. */
+export function tierZoom(bp: Breakpoint): number {
+  if (bp === 'tv') return 1.35;
+  if (bp === 'desktop') return 1.08;
+  return 1;
+}
+
 export function useBreakpoint(): BreakpointInfo {
-  const { width, height } = useWindowDimensions();
+  const { width: rawW, height: rawH } = useWindowDimensions();
   const [caps, setCaps] = useState(() => measure());
 
   useEffect(() => {
@@ -88,8 +101,15 @@ export function useBreakpoint(): BreakpointInfo {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  const coarseAndLarge = caps.isCoarsePointer && width >= 1400;
-  const bp = pickBp(width, coarseAndLarge);
+  const coarseAndLarge = caps.isCoarsePointer && rawW >= 1400;
+  const bp = pickBp(rawW, rawH, coarseAndLarge, caps.isCoarsePointer);
+
+  // The tier is chosen from the RAW viewport, but when the frame is visually
+  // enlarged (zoom > 1) the app must lay out inside the scaled-down CSS box,
+  // exactly like browser zoom: expose the effective dimensions.
+  const zoom = Platform.OS === 'web' ? tierZoom(bp) : 1;
+  const width = Math.round(rawW / zoom);
+  const height = Math.round(rawH / zoom);
 
   let frameWidth: number;
   if (bp === 'phone') frameWidth = width;

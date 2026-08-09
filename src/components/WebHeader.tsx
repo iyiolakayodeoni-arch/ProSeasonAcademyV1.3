@@ -49,6 +49,7 @@ function NavItem({
   onSelect: (tab: MainNavTab) => void;
 }) {
   const { hovered, bind } = useHover();
+  const { isTV } = useResponsive();
   const hov = useSharedValue(0);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ function NavItem({
       }}
       style={({ pressed }) => [
         styles.navItem,
+        isTV && styles.navItemTV,
         active && styles.navItemActive,
         pressed && styles.navItemPressed,
       ]}
@@ -73,8 +75,8 @@ function NavItem({
       {...bind}
     >
       <Animated.View pointerEvents="none" style={[styles.navHoverVeil, veilStyle]} />
-      <Icon size={14} color={active ? colors.primary : 'rgba(143,184,155,0.65)'} />
-      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+      <Icon size={isTV ? 18 : 14} color={active ? colors.primary : 'rgba(143,184,155,0.65)'} />
+      <Text style={[styles.navLabel, isTV && styles.navLabelTV, active && styles.navLabelActive]}>{label}</Text>
       {active && <View style={styles.activeIndicator} />}
     </Pressable>
   );
@@ -91,7 +93,7 @@ export default function WebHeader({
   onOpenFounderDesk,
   isFounder = false,
 }: Props) {
-  const { isWide, isLaptopUp } = useResponsive();
+  const { isWide, isLaptopUp, isTV, w } = useResponsive();
   const settings = useSettings();
   const musicOn = settings.toggles.music;
 
@@ -106,7 +108,7 @@ export default function WebHeader({
 
   return (
     <header className="psa-web-header-root" style={{ width: '100%', zIndex: 50 }}>
-      <View style={[styles.header, Platform.OS === 'web' && (styles.headerWeb as any)]}>
+      <View style={[styles.header, isTV && styles.headerTV, Platform.OS === 'web' && (styles.headerWeb as any)]}>
         {/* Left: Brand */}
         <Pressable
           onPress={() => onSelectTab('today')}
@@ -128,11 +130,16 @@ export default function WebHeader({
           </View>
           <View style={styles.brandTextCol}>
             <View style={styles.brandTitleRow}>
-              <Text style={styles.brandTitle}>PROSEASON ACADEMY</Text>
-              <View style={styles.livePill}>
-                <View style={[styles.liveDot, styles.liveDotPulse]} />
-                <Text style={styles.liveTxt}>S1 · LIVE</Text>
-              </View>
+              {/* fit a 320px handset without ellipsising the wordmark */}
+              <Text style={[styles.brandTitle, w < 400 && { fontSize: 13, letterSpacing: 0.6 }]}>
+                PROSEASON ACADEMY
+              </Text>
+              {w >= 360 && (
+                <View style={styles.livePill}>
+                  <View style={[styles.liveDot, styles.liveDotPulse]} />
+                  <Text style={styles.liveTxt}>S1 · LIVE</Text>
+                </View>
+              )}
             </View>
             {isLaptopUp && (
               <Text style={styles.brandSub}>
@@ -336,6 +343,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   navItemPressed: { opacity: 0.82 },
+  // 10-foot mode: bigger pads and labels so nav reads from the sofa
+  headerTV: { height: 76, paddingHorizontal: 28 },
+  navItemTV: { paddingHorizontal: 18, paddingVertical: 12, gap: 8 },
+  navLabelTV: { fontSize: 13.5, letterSpacing: 1.4 },
   navHoverVeil: {
     position: 'absolute',
     top: 0,

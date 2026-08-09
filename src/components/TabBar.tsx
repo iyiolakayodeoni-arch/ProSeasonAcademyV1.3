@@ -66,7 +66,7 @@ function TabItem({
     >
       <Animated.View pointerEvents="none" style={[styles.itemVeil, veilStyle]} />
       <Animated.View style={[styles.iconWrap, active && styles.iconWrapActive, iconStyle]}>
-        <Icon size={17} color={color} />
+        <Icon size={19} color={color} />
       </Animated.View>
       <Text style={[styles.label, { color }]}>{label}</Text>
     </Pressable>
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     alignItems: 'center',
-    gap: 3,
-    paddingVertical: 2,
+    gap: 4,
+    paddingVertical: 5,
     position: 'relative',
   },
   itemVeil: {
@@ -177,7 +177,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.07)',
     opacity: 0,
   },
-  iconWrap: { width: 30, height: 26, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 34, height: 28, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   iconWrapActive: { backgroundColor: 'rgba(57,255,106,0.14)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' },
-  label: { fontFamily: bodyFontBold, fontSize: 7.5, letterSpacing: 1.05 },
+  // readable at arm's length — 7.5px was below the legibility floor
+  label: { fontFamily: bodyFontBold, fontSize: 9, letterSpacing: 1.05 },
 });

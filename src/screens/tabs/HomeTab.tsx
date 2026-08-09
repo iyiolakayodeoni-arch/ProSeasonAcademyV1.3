@@ -210,7 +210,7 @@ function ProgressRail({ pct }: { pct: number }) {
 }
 
 export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole }: Props) {
-  const { isMultiColumn, isWide } = useResponsive();
+  const { isMultiColumn, isWide, isLaptopUp, bp } = useResponsive();
   const [day, setDay] = useState(1);
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
@@ -300,17 +300,19 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
               <View style={styles.sectionLine} />
             </View>
 
-            <View style={[styles.routesGrid, isMultiColumn && styles.routesGridWide]}>
-              {onOpenTracker && <PremiumCard delay={160} wide={isMultiColumn} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
-              <PremiumCard delay={200} wide={isMultiColumn} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
-              <PremiumCard delay={240} wide={isMultiColumn} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
-              <PremiumCard delay={280} wide={isMultiColumn} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
-              <PremiumCard delay={320} wide={isMultiColumn} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
+            {/* two-up only where the main column actually has room (laptop+);
+                tablets keep a comfortable single rail beside the sidebar */}
+            <View style={[styles.routesGrid, isLaptopUp && styles.routesGridWide]}>
+              {onOpenTracker && <PremiumCard delay={160} wide={isLaptopUp} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
+              <PremiumCard delay={200} wide={isLaptopUp} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
+              <PremiumCard delay={240} wide={isLaptopUp} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
+              <PremiumCard delay={280} wide={isLaptopUp} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
+              <PremiumCard delay={320} wide={isLaptopUp} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
             </View>
           </View>
 
           {/* Right Sidebar */}
-          <View style={[styles.colSide, isMultiColumn && styles.colSideWide]}>
+          <View style={[styles.colSide, isMultiColumn && styles.colSideWide, isMultiColumn && bp === 'tablet' && styles.colSideTablet]}>
             <Animated.View entering={FadeInUp.delay(100).duration(480)} style={[styles.coachCard, Platform.OS === 'web' && (styles.glassBlur as any)]}>
               <LinearGradient colors={['rgba(242,192,120,0.10)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.coachAccent} />
               <View style={styles.coachTopRow}>
@@ -416,6 +418,8 @@ const styles = StyleSheet.create({
   colMainWide: { flex: 1.55 },
   colSide: { width: '100%', gap: 14 },
   colSideWide: { width: 372 },
+  // tablets get a slimmer sidebar so the main column keeps breathing room
+  colSideTablet: { width: 312 },
 
   heroCard: {
     padding: 22,

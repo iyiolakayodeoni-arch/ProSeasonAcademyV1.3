@@ -92,6 +92,23 @@ body::before {
   align-items: stretch;
   min-height: 100vh;
   isolation: isolate;
+  /* device-tier scale set by ResponsiveFrame (1 = phone/tablet/laptop,
+     1.08 desktop monitors, 1.35 TVs) */
+  zoom: var(--psa-zoom, 1);
+}
+
+/* When the frame is enlarged, its CSS box must shrink by the same factor
+   so the rendered result lands exactly on the physical viewport — the
+   shell's min-height otherwise paints taller than a TV screen. */
+html[data-psa-tier='tv'] #root,
+html[data-psa-tier='tv'] .psa-web-shell {
+  width: calc(100% / 1.35);
+  min-height: calc(100vh / 1.35);
+}
+html[data-psa-tier='desktop'] #root,
+html[data-psa-tier='desktop'] .psa-web-shell {
+  width: calc(100% / 1.08);
+  min-height: calc(100vh / 1.08);
 }
 
 /* ── Shell ── */
@@ -122,6 +139,8 @@ body::before {
   position: sticky;
   top: 0;
   z-index: 50;
+  /* PWA / notched phones: keep the chrome out of the status-bar area */
+  padding-top: env(safe-area-inset-top, 0px);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
@@ -196,6 +215,14 @@ body::before {
   outline: 2px solid var(--psa-primary) !important;
   outline-offset: 2px !important;
   border-radius: 6px;
+}
+/* TV remotes & touchpads drive focus with arrows — make the ring thicker
+   so the current target reads from 3 metres away. */
+@media (pointer: coarse) {
+  *:focus-visible {
+    outline-width: 3px !important;
+    outline-offset: 3px !important;
+  }
 }
 
 /* ── Selection ── */

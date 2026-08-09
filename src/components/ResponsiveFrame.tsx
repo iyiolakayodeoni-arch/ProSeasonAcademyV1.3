@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { useLayoutInfo, ResponsiveContext } from '../hooks/useResponsive';
+import { tierZoom } from '../hooks/useBreakpoint';
 
 interface Props { children?: React.ReactNode; }
 
@@ -40,6 +41,20 @@ function ensureGlobalCSS() {
 export default function ResponsiveFrame({ children }: Props) {
   const info = useLayoutInfo();
   useEffect(() => { ensureGlobalCSS(); }, []);
+
+  // 10-foot & large-monitor scaling. TV viewers sit ~3m away, so the whole
+  // frame is visually enlarged (CSS zoom on #root) while layout math runs in
+  // the scaled-down box that useBreakpoint exposes — exactly like browser
+  // zoom, applied automatically per device tier. The data attribute lets the
+  // global CSS shrink #root's own box by the same factor so nothing
+  // overflows the physical viewport.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const zoom = tierZoom(info.bp);
+    document.documentElement.style.setProperty('--psa-zoom', String(zoom));
+    document.documentElement.setAttribute('data-psa-tier', info.bp);
+  }, [info.bp]);
+
   if (Platform.OS !== 'web') {
     return (
       <ResponsiveContext.Provider value={info}>
@@ -58,5 +73,7 @@ export default function ResponsiveFrame({ children }: Props) {
 
 const styles = StyleSheet.create({
   nativeRoot: { flex: 1, backgroundColor: '#050a06' },
-  webAppRoot: { flex: 1, width: '100%', minHeight: '100vh', backgroundColor: '#050a06' } as any,
+  // height comes from the shell's min-height, not a raw 100vh — under the
+  // TV zoom a bare 100vh would render taller than the physical viewport
+  webAppRoot: { flex: 1, width: '100%', backgroundColor: '#050a06' } as any,
 });
