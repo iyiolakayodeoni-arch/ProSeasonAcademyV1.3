@@ -1,16 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import LogoMark from '../components/LogoMark';
-import TabBar, { MainTab } from '../components/TabBar';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import WebHeader, { MainNavTab } from '../components/WebHeader';
+import TabBar from '../components/TabBar';
 import HomeTab from './tabs/HomeTab';
-import AcademyUpdatesScreen from './AcademyUpdatesScreen';
-import AcademyGuideScreen from './AcademyGuideScreen';
 import TrackerTab from './tabs/TrackerTab';
-import RoleModelFeedSheet from './RoleModelFeedSheet';
+import EvidenceTrackerScreen from './EvidenceTrackerScreen';
 import CommunityTab from './tabs/CommunityTab';
 import SettingsTab from './tabs/SettingsTab';
+import AcademyUpdatesScreen from './AcademyUpdatesScreen';
+import AcademyGuideScreen from './AcademyGuideScreen';
+import RoleModelFeedSheet from './RoleModelFeedSheet';
+import ContactSheet from './ContactSheet';
+import FounderDesk from './FounderDesk';
+import TermsSheet from './TermsSheet';
 import OnboardingScreen from './OnboardingScreen';
 import { useAmbientAudio } from '../audio/AudioManager';
 import { useTrailLoop } from '../hooks/useTrailLoop';
@@ -19,48 +22,49 @@ import * as backend from '../data/backend';
 import { useOnboardingGate } from '../data/onboarding';
 import { usePushRegistration } from '../data/notifications';
 import { fetchAnnouncements } from '../data/announcements';
-import TermsSheet from './TermsSheet';
+import { isFounder } from '../data/founderAuth';
 import { sfx } from '../audio/sound';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { colors } from '../theme';
+import { useResponsive } from '../hooks/useResponsive';
 
 type Props = {
   coach: Coach;
   onSignOut: () => void;
 };
 
-// the tabbed academy core: shared crest on top, tab bar on bottom,
-// tab bodies in between.
 export default function MainScreen({ coach, onSignOut }: Props) {
+  const { isWide } = useResponsive();
   const [tos, setTos] = useState<backend.MyTos | null>(null);
   const checkTos = useCallback(() => { void backend.myTos().then(setTos); }, []);
   useEffect(checkTos, [checkTos]);
 
-  const [tab, setTabState] = useState<MainTab>('today');
+  const [tab, setTabState] = useState<MainNavTab>('today');
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: 260, drawMs: 1800, eraseMs: 1800 });
   const onboard = useOnboardingGate();
   usePushRegistration(true);
+
+  const [founderAllowed, setFounderAllowed] = useState(false);
+
   useEffect(() => {
     void fetchAnnouncements();
+    void isFounder().then(setFounderAllowed);
   }, []);
 
-  // SFX only here; ambient beds stay owned by AudioManager so we do not run two music loops.
-  const setTab = useCallback((t: MainTab) => {
+  const setTab = useCallback((t: MainNavTab) => {
     sfx('tab');
     setTabState(t);
   }, []);
 
-  // Secondary destinations are available, but deliberately do not compete
-  // with the core Today → Mirror Session journey in the primary tab bar.
+  // Modal dialog states
   const [updatesOpen, setUpdatesOpen] = useState(false);
-  const [hallsOpen, setHallsOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [deskOpen, setDeskOpen] = useState(false);
+
   const guideKey = useMemo(() => `psa.plain-language-guide.v1.${backend.getMe()?.id ?? 'anon'}`, []);
 
-  // A player should never have to discover the product by wandering around
-  // the tabs. The first Home entry opens the plain-language guide; it stays
-  // replayable from Today and Settings afterwards.
   useEffect(() => {
     let alive = true;
     void AsyncStorage.getItem(guideKey)
@@ -78,123 +82,166 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     void AsyncStorage.setItem(guideKey, 'seen').catch(() => {});
   }, [guideKey]);
 
-  useAmbientAudio(hallsOpen ? 'community' : 'home');
+  useAmbientAudio(tab === 'community' ? 'community' : 'home');
 
-  // The terms come first. Training is never blocked — members can always
-  // return to their own evidence.
   if (tos && !tos.accepted) {
     return <TermsSheet onAccepted={checkTos} />;
   }
 
-  // first-time walkthrough — short cards, skip anytime
   if (onboard.ready && onboard.show) {
     return <OnboardingScreen onDone={onboard.dismiss} />;
   }
 
   return (
     <View style={styles.root}>
-      {/* shared brand crest — top center of every tab, wrapped in a premium
-          metallic ring + soft glow so the mark reads as the academy's seal */}
-      <View style={styles.crestWrap}>
-        <View style={styles.crestGlow}>
-          <LinearGradient
-            colors={['#39ff6a', '#f2c078', '#39ff6a', '#5dff8a']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.crestRing}
-          >
-            <View style={styles.crestInner}>
-              <LogoMark size={28} loopProps={loopProps} glowStyle={glowStyle} />
-            </View>
-          </LinearGradient>
-        </View>
-      </View>
+      {/* Integrated Web Header Navigation */}
+      <WebHeader
+        activeTab={tab}
+        onSelectTab={setTab}
+        coach={coach}
+        loopProps={loopProps}
+        glowStyle={glowStyle}
+        onOpenUpdates={() => setUpdatesOpen(true)}
+        onOpenGuide={() => setGuideOpen(true)}
+        onOpenFounderDesk={() => setDeskOpen(true)}
+        isFounder={founderAllowed}
+      />
 
+      {/* Main Content Area */}
       <View style={styles.body}>
-        {/* each tab is its own boundary — one tab crashing shows a reload
-            card instead of taking the whole app down */}
-        {tab === 'today' && (
-          <ErrorBoundary key="today">
-            <HomeTab
-              coach={coach}
-              onOpenJourney={() => setTab('journey')}
-              onOpenUpdates={() => setUpdatesOpen(true)}
-              onOpenHalls={() => setHallsOpen(true)}
-              onOpenGuide={() => setGuideOpen(true)}
-              onOpenRole={() => setRoleOpen(true)}
-            />
-          </ErrorBoundary>
-        )}
-        {tab === 'journey' && (
-          <ErrorBoundary key="journey">
-            <TrackerTab coach={coach} />
-          </ErrorBoundary>
-        )}
-        {tab === 'settings' && (
-          <ErrorBoundary key="settings">
-            <SettingsTab onSignOut={onSignOut} />
-          </ErrorBoundary>
-        )}
+        <div className="psa-web-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {tab === 'today' && (
+            <ErrorBoundary key="today">
+              <HomeTab
+                coach={coach}
+                onOpenJourney={() => setTab('journey')}
+                onOpenTracker={() => setTab('tracker')}
+                onOpenUpdates={() => setUpdatesOpen(true)}
+                onOpenHalls={() => setTab('community')}
+                onOpenGuide={() => setGuideOpen(true)}
+                onOpenRole={() => setRoleOpen(true)}
+              />
+            </ErrorBoundary>
+          )}
+          {tab === 'journey' && (
+            <ErrorBoundary key="journey">
+              <TrackerTab coach={coach} />
+            </ErrorBoundary>
+          )}
+          {tab === 'tracker' && (
+            <ErrorBoundary key="tracker">
+              <EvidenceTrackerScreen coach={coach} onClose={() => setTab('today')} />
+            </ErrorBoundary>
+          )}
+          {tab === 'community' && (
+            <ErrorBoundary key="community">
+              <CommunityTab onClose={() => setTab('today')} />
+            </ErrorBoundary>
+          )}
+          {tab === 'settings' && (
+            <ErrorBoundary key="settings">
+              <SettingsTab onSignOut={onSignOut} />
+            </ErrorBoundary>
+          )}
+        </div>
       </View>
 
+      {/* Mobile Bottom Tab Bar */}
       <TabBar active={tab} onChange={setTab} />
 
+      {/* Centered Desktop Modals / Sheets */}
       {updatesOpen && (
-        <View style={StyleSheet.absoluteFill}>
+        <ModalWrapper onClose={() => setUpdatesOpen(false)}>
           <AcademyUpdatesScreen coach={coach} onClose={() => setUpdatesOpen(false)} />
-        </View>
-      )}
-
-      {hallsOpen && (
-        <View style={StyleSheet.absoluteFill}>
-          <CommunityTab onClose={() => setHallsOpen(false)} />
-        </View>
+        </ModalWrapper>
       )}
 
       {roleOpen && (
-        <View style={StyleSheet.absoluteFill}>
+        <ModalWrapper onClose={() => setRoleOpen(false)}>
           <RoleModelFeedSheet coach={coach} onClose={() => setRoleOpen(false)} />
-        </View>
+        </ModalWrapper>
       )}
 
       {guideOpen && (
-        <View style={StyleSheet.absoluteFill}>
+        <ModalWrapper onClose={closeGuide}>
           <AcademyGuideScreen onClose={closeGuide} />
-        </View>
+        </ModalWrapper>
+      )}
+
+      {contactOpen && (
+        <ModalWrapper onClose={() => setContactOpen(false)}>
+          <ContactSheet onClose={() => setContactOpen(false)} />
+        </ModalWrapper>
+      )}
+
+      {deskOpen && (
+        <ModalWrapper onClose={() => setDeskOpen(false)}>
+          <FounderDesk
+            founderKey="authenticated-founder"
+            onForgetKey={() => setDeskOpen(false)}
+            onClose={() => setDeskOpen(false)}
+          />
+        </ModalWrapper>
       )}
     </View>
   );
 }
 
+function ModalWrapper({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const { isWide } = useResponsive();
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Pressable style={styles.modalBackdrop} onPress={onClose} />
+      <View style={[styles.modalContent, isWide && styles.modalContentWide]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg, paddingTop: 46 },
-  crestWrap: { alignItems: 'center', height: 40, justifyContent: 'center' },
-  crestGlow: {
-    borderRadius: 22,
-    shadowColor: colors.accent,
-    shadowOpacity: 0.55,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 10,
+  root: { flex: 1, backgroundColor: colors.bg },
+  body: {
+    flex: 1,
+    minHeight: 0,
+    width: '100%',
   },
-  crestRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    padding: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(3, 7, 4, 0.82)',
   },
-  crestInner: {
+  modalContent: {
     flex: 1,
     width: '100%',
-    borderRadius: 18,
-    backgroundColor: '#031f18',
-    borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    height: '100%',
   },
-  body: { flex: 1, minHeight: 0 },
+  modalContentWide: {
+    alignSelf: 'center',
+    maxWidth: 900,
+    maxHeight: '92%',
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(57, 255, 106, 0.3)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 30,
+    elevation: 20,
+  },
 });

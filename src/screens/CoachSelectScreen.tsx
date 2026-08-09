@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
   FadeIn,
@@ -17,22 +17,17 @@ import { useTrailLoop } from '../hooks/useTrailLoop';
 import { getCoach } from '../data/coaches';
 import { sfx } from '../audio/sound';
 import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontBold, bodyFontHeavy } from '../theme';
+import { useResponsive } from '../hooks/useResponsive';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 type Props = {
   onBack: () => void;
-  /** fired once the player locks the coach — the choice is PERMANENT */
   onLocked: (coachId: string) => void;
 };
 
-// ─────────────────────────────────────────────────────────────
-// ONE COACH. Chinedu Okafor is the academy's only coach — your
-// permanent guide AND the benchmark you are climbing toward. He
-// walks the whole road with you. This screen reveals him (as the
-// foil Standard card) and locks him in — once, permanently.
-// ─────────────────────────────────────────────────────────────
 export default function CoachSelectScreen({ onBack, onLocked }: Props) {
+  const { isMultiColumn } = useResponsive();
   const coach = getCoach();
   const [confirming, setConfirming] = useState(false);
   const [locked, setLocked] = useState(false);
@@ -42,7 +37,6 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
     sfx('whistle');
     setConfirming(false);
     setLocked(true);
-    // brief "PATH LOCKED" beat, then hand off to the app shell
     setTimeout(() => onLocked(coach.id), 1150);
   }, [onLocked, coach.id]);
 
@@ -52,55 +46,79 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
     <View style={styles.flex}>
       <GridBackground />
 
-      <View style={styles.crestWrap}>
-        <LogoMark size={38} loopProps={loopProps} glowStyle={glowStyle} />
-      </View>
-
-      <ScrollViewSafe>
+      {/* Top Bar */}
+      <View style={styles.topBar}>
         <Pressable onPress={onBack} hitSlop={10} style={styles.chevBtn}>
-          <Text style={styles.chev}>‹</Text>
+          <Text style={styles.chev}>‹ BACK</Text>
         </Pressable>
+        <View style={styles.crestWrap}>
+          <LogoMark size={32} loopProps={loopProps} glowStyle={glowStyle} />
+        </View>
+        <View style={{ width: 60 }} />
+      </View>
 
-        <Animated.Text entering={FadeIn.duration(320)} style={styles.eyebrow}>
-          MEET YOUR COACH
-        </Animated.Text>
-        <Animated.Text entering={FadeIn.delay(80).duration(360)} style={styles.headline}>
-          THE ONE WHO WALKS THE ROAD WITH YOU
-        </Animated.Text>
-        <Animated.Text entering={FadeIn.delay(160).duration(360)} style={styles.sub}>
-          ONE COACH FOR YOUR WHOLE TIME HERE. HE GUIDES YOU AND SHOWS YOU WHAT GOOD LOOKS LIKE.
-        </Animated.Text>
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <div className="psa-web-container" style={{ width: '100%' }}>
+          <View style={[styles.mainLayout, isMultiColumn && styles.mainLayoutWide]}>
+            {/* Left Column (Foil Holographic Coach Card) */}
+            <View style={[styles.cardCol, isMultiColumn && styles.cardColWide]}>
+              <Animated.View entering={FadeInDown.delay(120).duration(480)} style={styles.cardHolder}>
+                <RoleModelCard coach={coach} />
+              </Animated.View>
+            </View>
 
-        {/* the foil card — the Standard revealed, who guides you */}
-        <Animated.View entering={FadeInDown.delay(240).duration(480)} style={styles.cardHolder}>
-          <RoleModelCard coach={coach} />
-        </Animated.View>
+            {/* Right Column (Coach Information & Lock Action) */}
+            <View style={[styles.infoCol, isMultiColumn && styles.infoColWide]}>
+              <Animated.Text entering={FadeIn.duration(320)} style={styles.eyebrow}>
+                MEET YOUR PERMANENT COACH
+              </Animated.Text>
+              <Animated.Text entering={FadeIn.delay(80).duration(360)} style={styles.headline}>
+                THE STANDARD YOU ARE CLIMBING TOWARD
+              </Animated.Text>
+              <Animated.Text entering={FadeIn.delay(140).duration(360)} style={styles.sub}>
+                ONE COACH FOR YOUR ENTIRE 6 MONTHS. HE GUIDES YOUR RITUALS, REVIEWS YOUR RECEIPTS, AND HOLDS THE BENCHMARK.
+              </Animated.Text>
 
-        <Animated.View entering={FadeInUp.delay(420).duration(400)}>
-          <Text style={styles.name}>{coach.name}</Text>
-          <Text style={styles.role}>{coach.title}</Text>
-          <Text style={styles.meta}>{coach.metaLine}</Text>
-          <Text style={styles.quote}>“{coach.oneLiner}”</Text>
+              <Animated.View entering={FadeInUp.delay(220).duration(400)} style={styles.detailsBox}>
+                <Text style={styles.name}>{coach.name}</Text>
+                <Text style={styles.role}>{coach.title}</Text>
+                <Text style={styles.meta}>{coach.metaLine}</Text>
+                <Text style={styles.quote}>“{coach.oneLiner}”</Text>
 
-          <View style={styles.benchmarkRow}>
-            <Text style={styles.benchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
-            <Text style={styles.benchmarkBody}>
-              Calm when it gets tough. Clean defending. Winning from good habits, not luck. That’s what he’ll push you towards.
-            </Text>
+                <View style={styles.benchmarkRow}>
+                  <Text style={styles.benchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
+                  <Text style={styles.benchmarkBody}>
+                    Calm when the game gets chaotic. Clean defending with zero panic clearances. Winning through habits and patience, not lucky bounces.
+                  </Text>
+                </View>
+
+                <View style={styles.bar}>
+                  <LockButton
+                    label={`LOCK IN COACH ${coach.name.split(' ')[0].toUpperCase()} ›`}
+                    onPress={() => {
+                      sfx('tap');
+                      setConfirming(true);
+                    }}
+                  />
+                </View>
+                <Text style={styles.micro}>
+                  NO SWITCHING ONCE YOU START — THIS IS THE VOICE IN YOUR CORNER FOR YOUR ENTIRE SEASON.
+                </Text>
+              </Animated.View>
+            </View>
           </View>
-        </Animated.View>
-      </ScrollViewSafe>
+        </div>
 
-      {/* lock CTA */}
-      <View style={styles.bar}>
-        <LockButton label={`LOCK IN ${coach.name.split(' ')[0]} ›`} onPress={() => { sfx('tap'); setConfirming(true); }} />
-      </View>
-      <Text style={styles.micro}>NO SWITCHING ONCE YOU START — THIS IS THE VOICE IN YOUR CORNER ALL SEASON.</Text>
-
-      <View style={styles.footerRow}>
-        <Text style={styles.footer}>PROSEASONACADEMY</Text>
-        <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
-      </View>
+        <View style={styles.footerRow}>
+          <Text style={styles.footer}>PROSEASON ACADEMY</Text>
+          <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
+        </View>
+      </ScrollView>
 
       {confirming && (
         <ConfirmSheet coach={coach} onCancel={() => setConfirming(false)} onLock={lockIn} />
@@ -109,23 +127,9 @@ export default function CoachSelectScreen({ onBack, onLocked }: Props) {
   );
 }
 
-// a thin ScrollView wrapper so the long content scrolls on small screens
-function ScrollViewSafe({ children }: { children: React.ReactNode }) {
-  return (
-    <Animated.ScrollView
-      style={styles.body}
-      contentContainerStyle={styles.bodyContent}
-      showsVerticalScrollIndicator={false}
-      bounces={false}
-    >
-      {children}
-    </Animated.ScrollView>
-  );
-}
-
 function LockButton({ label, onPress }: { label: string; onPress: () => void }) {
   const press = useSharedValue(0);
-  const s = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.04 }] }));
+  const s = useAnimatedStyle(() => ({ transform: [{ scale: 1 - press.value * 0.03 }] }));
   return (
     <Pressable
       onPress={onPress}
@@ -140,18 +144,29 @@ function LockButton({ label, onPress }: { label: string; onPress: () => void }) 
   );
 }
 
-// ── PERMANENT lock-in confirmation ────────────────────────────
-function ConfirmSheet({ coach, onCancel, onLock }: { coach: ReturnType<typeof getCoach>; onCancel: () => void; onLock: () => void }) {
+function ConfirmSheet({
+  coach,
+  onCancel,
+  onLock,
+}: {
+  coach: ReturnType<typeof getCoach>;
+  onCancel: () => void;
+  onLock: () => void;
+}) {
   return (
     <View style={styles.overlay} pointerEvents="auto">
       <Pressable style={styles.overlayBg} onPress={onCancel} />
-      <Animated.View entering={FadeInUp.duration(280)} style={[styles.sheet, { borderColor: 'rgba(242,192,120,0.55)' }]}>
+      <Animated.View
+        entering={FadeInUp.duration(280)}
+        style={[styles.sheet, { borderColor: 'rgba(242,192,120,0.55)' }]}
+      >
         <Text style={styles.lockKicker}>PATH LOCK — PERMANENT</Text>
-        <Text style={styles.lockTitle}>LOCK IN {coach.name.split(' ')[0]}?</Text>
+        <Text style={styles.lockTitle}>LOCK IN COACH {coach.name.split(' ')[0].toUpperCase()}?</Text>
         <Text style={styles.lockBody}>
           Once your season starts there is{' '}
-          <Text style={styles.lockBodyHot}>no switching coaches</Text> — no resets, no swaps. {coach.name.split(' ')[0]} is
-          the voice in your corner for the whole journey, and the benchmark you are measured against. Make sure you are ready.
+          <Text style={styles.lockBodyHot}>no switching coaches</Text> — no resets, no swaps. Coach{' '}
+          {coach.name.split(' ')[0]} is the voice in your corner for the whole 6 months, and the
+          benchmark you are measured against.
         </Text>
         <View style={styles.sheetBtns}>
           <Pressable onPress={onCancel} style={styles.ghostBtn}>
@@ -166,97 +181,255 @@ function ConfirmSheet({ coach, onCancel, onLock }: { coach: ReturnType<typeof ge
   );
 }
 
-// ── locked beat ───────────────────────────────────────────────
 function LockedOverlay({ coach }: { coach: ReturnType<typeof getCoach> }) {
   return (
     <Animated.View entering={FadeIn.duration(220)} style={styles.lockedFull}>
       <GridBackground />
       <Text style={styles.lockedKicker}>PATH LOCKED</Text>
       <Text style={styles.lockedName}>{coach.name}</Text>
-      <Text style={styles.lockedSub}>YOUR SEASON STARTS NOW.</Text>
+      <Text style={styles.lockedSub}>YOUR SIX-MONTH SEASON STARTS NOW.</Text>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: 16, paddingTop: 46, paddingBottom: 10 },
-  crestWrap: { alignItems: 'center', height: 42 },
+  flex: { flex: 1, backgroundColor: colors.bg },
 
-  body: { flex: 1, minHeight: 0, marginTop: 4 },
-  bodyContent: { paddingBottom: 10, alignItems: 'center' },
+  topBar: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(57,255,106,0.15)',
+  },
+  chevBtn: { paddingVertical: 8 },
+  chev: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800', letterSpacing: 1.5, color: colors.primary },
+  crestWrap: { alignItems: 'center' },
 
-  chevBtn: { position: 'absolute', top: -2, left: 0, paddingRight: 8, zIndex: 5 },
-  chev: { fontFamily: monoFont, fontSize: 18, color: 'rgba(143,184,155,0.65)', marginTop: -2 },
+  body: { flex: 1 },
+  bodyContent: { paddingVertical: 24, paddingBottom: 40, alignItems: 'center' },
+
+  mainLayout: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 24,
+  },
+  mainLayoutWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 48,
+    paddingVertical: 20,
+  },
+
+  cardCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardColWide: {
+    flex: 1,
+  },
+
+  infoCol: {
+    width: '100%',
+    maxWidth: 540,
+  },
+  infoColWide: {
+    flex: 1.2,
+  },
+
+  cardHolder: { alignItems: 'center', justifyContent: 'center' },
 
   eyebrow: {
-    fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 3.2, color: colors.accent,
-    textShadowColor: 'rgba(242,192,120,0.4)', textShadowRadius: 8,
+    fontFamily: bodyFontHeavy,
+    fontSize: 11,
+    letterSpacing: 3,
+    color: colors.accent,
   },
   headline: {
-    marginTop: 10, fontFamily: displayFont, fontSize: 27, lineHeight: 27, letterSpacing: 1.2, color: colors.fg, textAlign: 'center', textTransform: 'uppercase',
+    marginTop: 8,
+    fontFamily: displayFont,
+    fontSize: 32,
+    lineHeight: 34,
+    letterSpacing: 1,
+    color: colors.fg,
+    textTransform: 'uppercase',
   },
   sub: {
-    marginTop: 9, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 17, letterSpacing: 0.4,
-    color: 'rgba(143,184,155,0.85)', textAlign: 'center', paddingHorizontal: 8,
+    marginTop: 8,
+    fontFamily: bodyFont,
+    fontSize: 13,
+    lineHeight: 20,
+    color: 'rgba(143,184,155,0.9)',
   },
 
-  cardHolder: { alignItems: 'center', justifyContent: 'center', marginTop: 18, paddingVertical: 8 },
+  detailsBox: {
+    marginTop: 18,
+    padding: 20,
+    borderRadius: 18,
+    backgroundColor: 'rgba(15, 26, 19, 0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(57, 255, 106, 0.22)',
+  },
 
-  name: { marginTop: 16, fontFamily: displayFont, fontSize: 26, letterSpacing: 1.2, color: colors.fg, textAlign: 'center', textTransform: 'uppercase' },
-  role: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 2, color: colors.accent, textAlign: 'center' },
-  meta: { marginTop: 4, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, color: 'rgba(143,184,155,0.7)', textAlign: 'center' },
+  name: {
+    fontFamily: displayFont,
+    fontSize: 26,
+    letterSpacing: 1.2,
+    color: colors.fg,
+    textTransform: 'uppercase',
+  },
+  role: {
+    marginTop: 4,
+    fontFamily: bodyFontHeavy,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.accent,
+  },
+  meta: {
+    marginTop: 4,
+    fontFamily: monoFont,
+    fontSize: 9.5,
+    letterSpacing: 1.4,
+    color: 'rgba(143,184,155,0.7)',
+  },
   quote: {
-    marginTop: 12, paddingHorizontal: 16, fontFamily: bodyFontItalic, fontSize: 13, lineHeight: 19,
-    color: '#cdd9cf', textAlign: 'center',
+    marginTop: 12,
+    fontFamily: bodyFontItalic,
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: '#d6e4d8',
   },
 
   benchmarkRow: {
-    marginTop: 16, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.4)', borderRadius: 12, backgroundColor: 'rgba(38,30,12,0.45)',
+    marginTop: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.35)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(38,30,12,0.45)',
   },
-  benchmarkTag: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 1.6, color: colors.accent },
+  benchmarkTag: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.6, color: colors.accent },
   benchmarkBody: {
-    marginTop: 7, fontFamily: bodyFont, fontSize: 11, lineHeight: 16.5, letterSpacing: 0.4, color: 'rgba(238,242,236,0.85)',
+    marginTop: 6,
+    fontFamily: bodyFont,
+    fontSize: 12,
+    lineHeight: 18,
+    color: 'rgba(238,242,236,0.9)',
   },
 
-  bar: { marginTop: 8 },
+  bar: { marginTop: 18 },
   lockBtnWrap: { width: '100%' },
   lockBtn: {
-    height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.primary, shadowColor: colors.primary, shadowOpacity: 0.5, shadowRadius: 16,
-    shadowOffset: { width: 0, height: 0 }, elevation: 6,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    elevation: 6,
   },
-  lockBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 13, letterSpacing: 2.4, color: '#05130a' },
+  lockBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 2, color: '#05130a' },
 
   micro: {
-    marginTop: 9, textAlign: 'center', fontFamily: bodyFont, fontSize: 10, letterSpacing: 0.9,
-    color: 'rgba(143,184,155,0.55)',
+    marginTop: 12,
+    textAlign: 'center',
+    fontFamily: bodyFont,
+    fontSize: 11,
+    color: 'rgba(143,184,155,0.6)',
   },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 2 },
-  footer: { fontFamily: monoFont, fontSize: 8, letterSpacing: 2.5, color: 'rgba(143,184,155,0.42)' },
 
-  // overlays
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  overlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(4,8,5,0.78)' },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 900,
+    marginTop: 24,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(57,255,106,0.1)',
+  },
+  footer: { fontFamily: monoFont, fontSize: 8.5, letterSpacing: 2, color: 'rgba(143,184,155,0.45)' },
+
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  overlayBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(3,7,4,0.85)' },
   sheet: {
-    width: '88%', backgroundColor: colors.surface, borderWidth: 1, borderRadius: 18, padding: 18,
-    shadowColor: colors.accent, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.18, shadowRadius: 24,
+    width: '90%',
+    maxWidth: 480,
+    backgroundColor: '#0d160f',
+    borderWidth: 1,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: colors.accent,
+    shadowOpacity: 0.25,
+    shadowRadius: 28,
   },
-  lockKicker: { fontFamily: bodyFontHeavy, fontSize: 9.5, letterSpacing: 2.6, color: colors.accent },
-  lockTitle: { marginTop: 8, fontFamily: displayFont, fontSize: 24, letterSpacing: 1.2, color: colors.fg, textTransform: 'uppercase' },
-  lockBody: { marginTop: 10, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 19, color: '#c4d4c8', letterSpacing: 0.3 },
+  lockKicker: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 2.6, color: colors.accent },
+  lockTitle: {
+    marginTop: 8,
+    fontFamily: displayFont,
+    fontSize: 24,
+    letterSpacing: 1.2,
+    color: colors.fg,
+  },
+  lockBody: {
+    marginTop: 10,
+    fontFamily: bodyFont,
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#c4d4c8',
+  },
   lockBodyHot: { color: colors.fg, fontFamily: bodyFontBold },
-  sheetBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  ghostBtn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  ghostBtnTxt: { fontFamily: bodyFontBold, fontSize: 11, letterSpacing: 1.6, color: colors.muted },
-  hotBtn: {
-    flex: 1.3, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.4, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
+  sheetBtns: { flexDirection: 'row', gap: 12, marginTop: 20 },
+  ghostBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  hotBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 11.5, letterSpacing: 1.4, color: '#0a0f0a' },
+  ghostBtnTxt: { fontFamily: bodyFontBold, fontSize: 12, letterSpacing: 1.6, color: colors.muted },
+  hotBtn: {
+    flex: 1.4,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+  },
+  hotBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 12.5, letterSpacing: 1.6, color: '#0a0f0a' },
 
-  lockedFull: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(6,11,7,0.97)', alignItems: 'center', justifyContent: 'center' },
-  lockedKicker: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 4, color: colors.accent },
-  lockedName: { marginTop: 12, fontFamily: displayFont, fontSize: 34, letterSpacing: 2, color: colors.fg, textTransform: 'uppercase' },
-  lockedSub: { marginTop: 10, fontFamily: bodyFont, fontSize: 11, letterSpacing: 2.2, color: colors.muted },
+  lockedFull: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(6,11,7,0.98)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lockedKicker: { fontFamily: bodyFontHeavy, fontSize: 12, letterSpacing: 4, color: colors.accent },
+  lockedName: {
+    marginTop: 14,
+    fontFamily: displayFont,
+    fontSize: 38,
+    letterSpacing: 2,
+    color: colors.fg,
+  },
+  lockedSub: { marginTop: 10, fontFamily: bodyFont, fontSize: 13, letterSpacing: 2, color: colors.muted },
 });

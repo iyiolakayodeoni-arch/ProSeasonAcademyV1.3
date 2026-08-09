@@ -87,7 +87,7 @@ function LiveDot() {
 
 export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach; onClose: () => void }) {
   const { width: winW } = useWindowDimensions();
-  const colW = Math.min(winW, 430); // App.tsx frames the column on wide screens
+  const colW = winW;
   const [chip, setChip] = useState<Chip>('ALL');
   const [visible, setVisible] = useState(6);
   const [news, setNews] = useState<NewsItem[]>([]);

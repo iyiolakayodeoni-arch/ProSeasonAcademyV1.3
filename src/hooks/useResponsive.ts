@@ -1,22 +1,21 @@
 // Combined responsive hook for screen components.
-// Exposes breakpoint info + the "content" max width that a screen should
-// target inside the ResponsiveFrame. On phone/phablet, this is literally
-// the viewport (full-bleed). Inside the desktop/TV frame it's the frame
-// interior width, so screens can lay out a wider reading column instead
-// of locking every panel to 430px.
+// Exposes breakpoint info + full web app content width that screens should
+// target. On mobile, this is full-bleed with comfortable padding. On wide
+// screens (tablets, laptops, desktops), it expands into a full desktop canvas
+// up to 1380px width with multi-column grids!
 
 import { createContext, useContext } from 'react';
 import { useBreakpoint, BreakpointInfo } from './useBreakpoint';
 
 export interface LayoutInfo extends BreakpointInfo {
-  /** The width screens should fill. Use this instead of viewport width
-   *  for content caps. */
+  /** The max content width screens should fill. */
   contentWidth: number;
   /** Pad the sides of scroll content by this much on the current tier. */
   contentPad: number;
-  /** True when screens should render a phone-tight single column (i.e.
-   *  on phone/phablet and inside the desktop/TV "device frame"). */
+  /** True ONLY on small phone viewports (< 768px). False on tablet / laptop / desktop. */
   isPhoneColumn: boolean;
+  /** Whether the screen is a 2-column or 3-column desktop layout */
+  isMultiColumn: boolean;
 }
 
 const defaults: LayoutInfo = {
@@ -24,6 +23,7 @@ const defaults: LayoutInfo = {
   isHandset: true,
   isWide: false,
   isLaptopUp: false,
+  isDesktopUp: false,
   isTV: false,
   w: 390,
   h: 844,
@@ -36,8 +36,9 @@ const defaults: LayoutInfo = {
   fontScale: 1,
   hitSlop: 48,
   contentWidth: 390,
-  contentPad: 20,
+  contentPad: 16,
   isPhoneColumn: true,
+  isMultiColumn: false,
 };
 
 const Ctx = createContext<LayoutInfo>(defaults);
@@ -48,42 +49,47 @@ export function useResponsive(): LayoutInfo {
   return useContext(Ctx);
 }
 
-/** Hook used by the ResponsiveFrame provider to compute the layout info. */
+/** Hook used by the ResponsiveFrame / WebShell provider to compute layout info. */
 export function useLayoutInfo(): LayoutInfo {
   const bp = useBreakpoint();
 
   let contentWidth: number;
   let contentPad: number;
   let isPhoneColumn: boolean;
+  let isMultiColumn: boolean;
 
   if (bp.bp === 'phone') {
     contentWidth = bp.w;
+    contentPad = 16;
+    isPhoneColumn = true;
+    isMultiColumn = false;
+  } else if (bp.bp === 'phablet') {
+    contentWidth = Math.min(bp.w, 680);
     contentPad = 20;
     isPhoneColumn = true;
-  } else if (bp.bp === 'phablet') {
-    contentWidth = Math.min(bp.w - 32, 560);
+    isMultiColumn = false;
+  } else if (bp.bp === 'tablet') {
+    contentWidth = Math.min(bp.w - 48, 960);
     contentPad = 24;
     isPhoneColumn = false;
-  } else if (bp.bp === 'tablet') {
-    // Tablet: full-width reading column, no fake phone frame
-    contentWidth = Math.min(bp.w - 64, 880);
+    isMultiColumn = true;
+  } else if (bp.bp === 'laptop') {
+    contentWidth = Math.min(bp.w - 64, 1280);
     contentPad = 32;
     isPhoneColumn = false;
-  } else if (bp.bp === 'laptop') {
-    // Laptop: centered premium "phone" preview
-    contentWidth = Math.min(bp.w - 80, 460);
-    contentPad = 20;
-    isPhoneColumn = true;
+    isMultiColumn = true;
   } else if (bp.bp === 'desktop') {
-    contentWidth = Math.min(bp.w - 120, 500);
-    contentPad = 24;
-    isPhoneColumn = true;
+    contentWidth = Math.min(bp.w - 80, 1380);
+    contentPad = 36;
+    isPhoneColumn = false;
+    isMultiColumn = true;
   } else {
     // tv
-    contentWidth = Math.min(bp.w - 220, 640);
-    contentPad = 36;
-    isPhoneColumn = true;
+    contentWidth = Math.min(bp.w - 120, 1500);
+    contentPad = 40;
+    isPhoneColumn = false;
+    isMultiColumn = true;
   }
 
-  return { ...bp, contentWidth, contentPad, isPhoneColumn };
+  return { ...bp, contentWidth, contentPad, isPhoneColumn, isMultiColumn };
 }

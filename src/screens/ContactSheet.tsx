@@ -32,7 +32,7 @@ const MIN_LEN = 10;
 
 export default function ContactSheet({ onClose }: { onClose: () => void }) {
   const { width: winW } = useWindowDimensions();
-  const bandW = Math.min(winW, 430);
+  const bandW = winW;
   const [kind, setKind] = useState<backend.ContactKind>('question');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);

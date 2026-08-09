@@ -1,17 +1,12 @@
-// ResponsiveFrame — the premium "stage" wrapping the ProSeason Academy app
-// on web. Behavior across tiers:
-//   - Phones/phablets: full-bleed (no chrome, no fake device) → identical to
-//     the mobile experience users already know.
-//   - Tablets (landscape/iPad): the app fills the window with comfortable
-//     side gutters so cards/text don't stretch absurdly wide.
-//   - Laptops/desktops: a centered premium "device-frame" card with soft
-//     halo and a tiny status dot, surrounded by ambient gradient backdrop.
-//   - TVs / 10-foot (>=2400px or coarse pointer + large screen): larger
-//     type/hit targets, a first-key "TV MODE" hint, and a bigger frame.
-// On iOS/Android native this is a no-op (full-screen flex), so the existing
-// native behavior/layout is preserved.
+// ResponsiveFrame — the Web App Shell wrapping the ProSeason Academy platform.
+// Provides a genuine, responsive full-width web app container across:
+//   - Mobile phones (< 768px): clean responsive layout with touch-friendly navigation.
+//   - Tablets (768px–1023px): spacious layout with multi-column capabilities.
+//   - Laptops & Desktops (1024px+): full desktop web app experience with integrated
+//     top navigation, wide dashboard grids, and responsive content canvas.
+// On native iOS/Android this is a no-op (full-screen flex), preserving native behavior.
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { useLayoutInfo, ResponsiveContext } from '../hooks/useResponsive';
 
@@ -19,7 +14,6 @@ interface Props {
   children?: React.ReactNode;
 }
 
-// Inject the global web stylesheet exactly once.
 let cssInjected = false;
 function ensureGlobalCSS() {
   if (cssInjected) return;
@@ -28,7 +22,6 @@ function ensureGlobalCSS() {
     cssInjected = true;
     return;
   }
-  // CSS lives in a TS string module so Metro doesn't need a CSS loader.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { GLOBAL_CSS } = require('../web/globalCss');
   const style = document.createElement('style');
@@ -50,16 +43,15 @@ function ensureGlobalCSS() {
     'viewport',
     'width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover, user-scalable=yes',
   );
-  ensureMeta('theme-color', '#0a0f0a');
+  ensureMeta('theme-color', '#070c08');
   ensureMeta('apple-mobile-web-app-capable', 'yes');
   ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
   ensureMeta('mobile-web-app-capable', 'yes');
   ensureMeta(
     'description',
-    'ProSeason Academy — premium football coaching on any device: phone, tablet, laptop, desktop and TV.',
+    'ProSeason Academy — Football coaching, match reviews, and 6-month player development web app for FC console players.',
   );
 
-  // Ensure the page title is set for browser tabs / PWAs.
   if (document && !document.title) document.title = 'ProSeason Academy';
 
   cssInjected = true;
@@ -72,7 +64,7 @@ export default function ResponsiveFrame({ children }: Props) {
     ensureGlobalCSS();
   }, []);
 
-  // Native: don't wrap at all → existing behavior, zero layout risk.
+  // Native: clean flex container
   if (Platform.OS !== 'web') {
     return (
       <ResponsiveContext.Provider value={info}>
@@ -81,76 +73,21 @@ export default function ResponsiveFrame({ children }: Props) {
     );
   }
 
-  const { bp, w, h } = info;
-
-  // Decide frame geometry per breakpoint.
-  const { frameStyle, stageClass } = useMemo(() => {
-    const cls = ['psa-stage'];
-    let st: any;
-    if (bp === 'phone') {
-      cls.push('psa-stage--handset');
-      st = { width: '100%', maxWidth: '100%', height: '100dvh', borderRadius: 0 };
-    } else if (bp === 'phablet') {
-      cls.push('psa-stage--handset');
-      st = {
-        width: Math.min(w - 0, w),
-        maxWidth: 560,
-        height: '100dvh',
-        borderRadius: 0,
-      };
-    } else if (bp === 'tablet') {
-      cls.push('psa-stage--tablet');
-      st = {
-        width: Math.min(w - 48, 900),
-        maxWidth: 900,
-        height: Math.min(h - 48, 1200),
-        borderRadius: 28,
-      };
-    } else if (bp === 'laptop') {
-      st = {
-        width: info.frameWidth,
-        maxWidth: 480,
-        height: Math.min(h - 56, 1024),
-        borderRadius: 44,
-      };
-    } else if (bp === 'desktop') {
-      st = {
-        width: info.frameWidth,
-        maxWidth: 520,
-        height: Math.min(h - 72, 1120),
-        borderRadius: 48,
-      };
-    } else {
-      // tv
-      cls.push('psa-stage--tv');
-      st = {
-        width: info.frameWidth,
-        maxWidth: 700,
-        height: Math.min(h - 120, 1280),
-        borderRadius: 40,
-      };
-    }
-    return { frameStyle: st, stageClass: cls.join(' ') };
-  }, [bp, w, h, info.frameWidth]);
-
   return (
     <ResponsiveContext.Provider value={info}>
-      <div className={stageClass}>
-        <div className="psa-frame" style={frameStyle}>
-          <View style={styles.appContainer}>{children}</View>
-        </div>
+      <div className="psa-web-shell">
+        <View style={styles.webAppRoot}>{children}</View>
       </div>
     </ResponsiveContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
-  nativeRoot: { flex: 1, backgroundColor: '#0a0f0a' },
-  appContainer: {
+  nativeRoot: { flex: 1, backgroundColor: '#070c08' },
+  webAppRoot: {
     flex: 1,
     width: '100%',
-    height: '100%',
-    backgroundColor: '#0a0f0a',
-    overflow: 'hidden',
-  },
+    minHeight: '100vh',
+    backgroundColor: '#070c08',
+  } as any,
 });
