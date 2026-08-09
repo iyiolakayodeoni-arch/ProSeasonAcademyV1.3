@@ -84,7 +84,7 @@ export default function JourneyTab({ coach, onOpenStage }: Props) {
         </View>
 
         <ArtBand
-          source={TUNNEL}
+          source={[TUNNEL, require('../../../assets/art/home-pitch.png'), require('../../../assets/art/coach-touchline.jpg')]}
           width={Math.min(windowWidth, 430) - 32}
           height={144}
           warmAt={{ x: (Math.min(windowWidth, 430) - 32) * 0.55, y: 38, r: 210 }}

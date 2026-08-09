@@ -439,7 +439,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
       <GridBackground />
       {/* ── header — the film room's window onto the touchline ── */}
       <ArtBand
-        source={TOUCHLINE}
+        source={[TOUCHLINE, require('../../assets/art/mirror-drill.jpg'), require('../../assets/art/locker-room.jpg')]}
         width={bandW}
         height={150}
         warmAt={{ x: bandW * 0.76, y: 44, r: bandW * 0.5 }}

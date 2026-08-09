@@ -77,7 +77,7 @@ export default function RoleModelFeedSheet({ coach, onClose, onOpenFinish }: Pro
       <GridBackground />
       <ScreenFlash />
       {/* the match band — persistent ROLE MODEL STORY label, on the night itself */}
-      <ArtBand source={VAULT_ART} width={bandW} height={140} warmAt={{ x: bandW * 0.22, y: 42, r: bandW * 0.55 }} style={{ marginTop: -50 }}>
+      <ArtBand source={[VAULT_ART, require('../../assets/art/scan-boots.jpg'), require('../../assets/art/home-pitch.png')]} width={bandW} height={140} warmAt={{ x: bandW * 0.22, y: 42, r: bandW * 0.55 }} style={{ marginTop: -50 }}>
         <Text style={styles.eyebrow}>ROLE MODEL STORY · SERIALIZED</Text>
         <Text style={styles.bandTitle}>CHINEDU'S STREAM</Text>
         <Text style={styles.subtitle}>{coach.name.toUpperCase()} · {coach.title} — AN ONGOING STORY, NOT A LESSON</Text>

@@ -346,7 +346,7 @@ export default function AcademyUpdatesScreen({ coach, onClose }: { coach: Coach;
 
         {/* ── THE CHINEDU WAY: HOME TAB RITUAL REMINDER — on the ground itself ── */}
         <ArtBand
-          source={BOOTS}
+          source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
           width={colW - 32}
           height={92}
           veil="light"

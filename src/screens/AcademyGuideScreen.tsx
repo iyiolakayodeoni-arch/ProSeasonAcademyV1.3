@@ -53,7 +53,7 @@ export default function AcademyGuideScreen({ onClose }: Props) {
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <ArtBand
-          source={TOUCHLINE}
+          source={[TOUCHLINE, require('../../assets/art/mirror-drill.jpg'), require('../../assets/art/locker-room.jpg')]}
           width={bandWidth}
           height={150}
           warmAt={{ x: bandWidth * 0.7, y: 38, r: bandWidth * 0.55 }}

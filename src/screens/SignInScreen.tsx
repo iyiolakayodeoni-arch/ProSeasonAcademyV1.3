@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Image,
   KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
@@ -23,6 +22,7 @@ import LogoMark from '../components/LogoMark';
 import CoachCard from '../components/CoachCard';
 import NeonInput from '../components/NeonInput';
 import PhotoVeil from '../components/PhotoVeil';
+import RotatingArtImage from '../components/RotatingArtImage';
 import { useAuth } from '../hooks/useAuth';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { COACHES } from '../data/coaches';
@@ -74,8 +74,8 @@ function DoorHero({
       ]}
     >
       {/* bias the crop toward the night sky + floodlight; the player sits low */}
-      <Image
-        source={HERO}
+      <RotatingArtImage
+        sources={[HERO, require('../../assets/art/coach-touchline.jpg'), require('../../assets/art/mirror-drill.jpg')]}
         style={{ position: 'absolute', top: -70, left: 0, width, aspectRatio: 768 / 1344 }}
         resizeMode="cover"
       />

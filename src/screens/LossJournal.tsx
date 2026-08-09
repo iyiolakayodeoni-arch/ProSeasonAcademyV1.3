@@ -68,7 +68,7 @@ export default function LossJournal({ coach, onClose }: { coach: Coach; onClose:
 
       {/* the boots band — one honest line a day, from the ground you played on */}
       <ArtBand
-        source={BOOTS}
+        source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
         width={bandW}
         height={130}
         warmAt={{ x: bandW * 0.3, y: 36, r: bandW * 0.5 }}

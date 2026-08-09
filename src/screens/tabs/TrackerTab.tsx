@@ -95,7 +95,7 @@ export default function TrackerTab({ coach }: Props) {
       <GridBackground />
       <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={styles.scroll}>
         {/* header band */}
-        <ArtBand source={TUNNEL} width={bandW - 8} height={120} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.55 }}>
+        <ArtBand source={[TUNNEL, require('../../../assets/art/home-pitch.png'), require('../../../assets/art/coach-touchline.jpg')]} width={bandW - 8} height={120} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.55 }}>
           <Text style={styles.eyebrow}>YOUR PROGRESS · {complete ? 'COMPLETE' : monthLabel(month)}</Text>
           <Text style={styles.bandTitle}>{complete ? 'YOU MADE IT' : 'ONE DAY AT A TIME'}</Text>
           <Text style={styles.subtitle}>

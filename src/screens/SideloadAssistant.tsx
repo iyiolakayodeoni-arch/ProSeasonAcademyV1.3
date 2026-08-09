@@ -101,7 +101,7 @@ export default function SideloadAssistant({ onClose }: { onClose: () => void }) 
       </Pressable>
 
       {/* the dressing-room band — getting in is just getting your boots on */}
-      <ArtBand source={LOCKERS} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 38, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
+      <ArtBand source={[LOCKERS, require('../../assets/art/community-huddle.jpg'), require('../../assets/art/seats-till.jpg')]} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 38, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
         <LogoMark size={34} loopProps={loopProps} glowStyle={glowStyle} />
         <Text style={styles.eyebrow}>INSTALL HELP</Text>
         <Text style={styles.bandTitle}>GET IN IN FOUR STEPS</Text>

@@ -1,6 +1,7 @@
 import React from 'react';
-import { Image, ImageSourcePropType, StyleSheet, View, ViewStyle } from 'react-native';
+import { ImageSourcePropType, StyleSheet, View, ViewStyle } from 'react-native';
 import PhotoVeil from './PhotoVeil';
+import RotatingArtImage from './RotatingArtImage';
 
 // ─────────────────────────────────────────────────────────────────────────
 // ARTBAND — the shared photographic header/strip every screen reuses so the
@@ -16,7 +17,8 @@ import PhotoVeil from './PhotoVeil';
 export const ART_ASPECT = 1376 / 768;
 
 type Props = {
-  source: ImageSourcePropType;
+  /** One plate, or a themed set that gently crossfades every 10 seconds. */
+  source: ImageSourcePropType | ImageSourcePropType[];
   /** render width of the band (usually the screen/column width) */
   width: number;
   /** band height — default 176 */
@@ -54,8 +56,8 @@ export default function ArtBand({
   const warm = warmAt === undefined ? { x: width * 0.78, y: height * 0.24, r: width * 0.5 } : warmAt;
   return (
     <View style={[{ width, height, overflow: 'hidden' }, style]}>
-      <Image
-        source={source}
+      <RotatingArtImage
+        sources={source}
         style={{ position: 'absolute', left: 0, top, width, aspectRatio: ART_ASPECT }}
         resizeMode="cover"
       />

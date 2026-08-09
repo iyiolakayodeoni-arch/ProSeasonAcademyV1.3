@@ -769,7 +769,7 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
         </View>
 
         <ArtBand
-          source={TUNNEL}
+          source={[TUNNEL, require('../../assets/art/home-pitch.png'), require('../../assets/art/coach-touchline.jpg')]}
           width={398}
           height={170}
           style={styles.heroBand}

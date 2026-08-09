@@ -71,7 +71,7 @@ export default function HearAboutScreen({ onDone }: Props) {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
         {/* the huddle band — the final step of onboarding, said as a team */}
         <ArtBand
-          source={HUDDLE}
+          source={[HUDDLE, require('../../assets/art/locker-room.jpg'), require('../../assets/art/coach-touchline.jpg')]}
           width={bandW}
           height={168}
           warmAt={{ x: bandW * 0.24, y: 42, r: bandW * 0.55 }}

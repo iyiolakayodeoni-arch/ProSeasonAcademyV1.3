@@ -228,7 +228,7 @@ export default function StageScanSheet({ coach, stage, plan, onClose }: Props) {
 
       {/* the match band — the scan grades what happened out there */}
       <ArtBand
-        source={VAULT_ART}
+        source={[VAULT_ART, require('../../assets/art/scan-boots.jpg'), require('../../assets/art/home-pitch.png')]}
         width={bandW}
         height={126}
         warmAt={{ x: bandW * 0.22, y: 38, r: bandW * 0.55 }}

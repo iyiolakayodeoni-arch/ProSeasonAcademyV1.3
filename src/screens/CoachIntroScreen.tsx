@@ -37,7 +37,7 @@ export default function CoachIntroScreen({ coach, onDone }: { coach: Coach; onDo
       <GridBackground />
 
       {/* the touchline band — he speaks from where he stands, not from a crest */}
-      <ArtBand source={TOUCHLINE} width={bandW} height={176} warmAt={{ x: bandW * 0.76, y: 40, r: bandW * 0.5 }}>
+      <ArtBand source={[TOUCHLINE, require('../../assets/art/mirror-drill.jpg'), require('../../assets/art/locker-room.jpg')]} width={bandW} height={176} warmAt={{ x: bandW * 0.76, y: 40, r: bandW * 0.5 }}>
         <Text style={styles.eyebrow}>PATH LOCKED — YOUR COACH SPEAKS FIRST</Text>
       </ArtBand>
 
