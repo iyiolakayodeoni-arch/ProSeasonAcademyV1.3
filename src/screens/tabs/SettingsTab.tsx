@@ -67,7 +67,8 @@ const Chevron = () => <ChevronRightIcon size={13} color={colors.muted} />;
 export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
   const s = useSettings();
   const { width: winW } = useWindowDimensions();
-  const bandW = Math.min(winW, 430) - 32;
+  const isDesktop = winW >= 768;
+  const bandW = isDesktop ? Math.min(winW, 1200) : winW - 32;
   const [sheet, setSheet] = useState<SheetKind>(null);
   const [nameDraft, setNameDraft] = useState('');
   const [tourOpen, setTourOpen] = useState(false);
@@ -139,7 +140,14 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
   return (
     <View style={styles.flex}>
       <GridBackground />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { maxWidth: 1200, width: '100%', alignSelf: 'center', paddingHorizontal: isDesktop ? 24 : 16 },
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         <Animated.View entering={FadeInUp.duration(320)}>
           <ArtBand source={[LOCKERS, require('../../../assets/art/community-huddle.jpg'), require('../../../assets/art/seats-till.jpg')]} width={bandW} height={104} style={styles.setBand} warmAt={{ x: bandW * 0.5, y: 30, r: bandW * 0.55 }}>
             <Text style={styles.title} numberOfLines={1}>SETTINGS</Text>

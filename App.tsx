@@ -284,9 +284,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    alignSelf: 'center',
     width: '100%',
-    maxWidth: 430,
     backgroundColor: colors.bg,
   },
 });

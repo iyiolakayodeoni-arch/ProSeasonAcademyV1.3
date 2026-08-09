@@ -303,7 +303,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
         <GridBackground />
         <ScreenFlash />
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[styles.scroll, { maxWidth: Math.min(width, 480), width: '100%', alignSelf: 'center' }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           bounces={false}
