@@ -3,7 +3,7 @@
     "name": "ProSeason Academy",
     "slug": "proseasonacademy",
     "version": "1.3.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "proseasonacademy",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0a0f0a",
@@ -15,7 +15,8 @@
       "imageWidth": 1
     },
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
+      "requireFullScreen": false,
       "bundleIdentifier": "com.onliversity.proseasonacademy",
       "buildNumber": "3"
     },
@@ -31,7 +32,21 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "ProSeason Academy",
+      "shortName": "ProSeason",
+      "description": "ProSeason Academy — the premium football coaching web app for phones, tablets, laptops and TVs.",
+      "lang": "en",
+      "themeColor": "#0a0f0a",
+      "backgroundColor": "#0a0f0a",
+      "barStyle": "black-translucent",
+      "startUrl": "/",
+      "scopePath": "/",
+      "preferRelatedApplications": false,
+      "display": "standalone",
+      "orientation": "any",
+      "bundler": "metro",
+      "output": "single"
     },
     "plugins": [
       "./plugins/withGradleCompat",

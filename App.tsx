@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as NativeSplash from 'expo-splash-screen';
 import Animated, {
@@ -14,6 +14,7 @@ import SignInScreen from './src/screens/SignInScreen';
 import CoachSelectScreen from './src/screens/CoachSelectScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
 import MainScreen from './src/screens/MainScreen';
+import ResponsiveFrame from './src/components/ResponsiveFrame';
 import { COACHES } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
 import { hydrateThread } from './src/data/lessonThread';
@@ -35,6 +36,7 @@ import { colors } from './src/theme';
 import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { trackFunnel } from './src/data/funnel';
+import WebAppChrome from './src/components/WebAppChrome';
 
 // Keep the native OS splash as a plain academy background until
 // the real React loading screen is ready. This prevents the old
@@ -206,6 +208,28 @@ export default function App() {
     return () => clearTimeout(t);
   }, [doFinish]);
 
+  // Web keyboard shortcuts: ESC acts like a "soft back" — from hub → sign-out
+  // guard (no destructive action without user choosing), from scan/coach →
+  // previous onboarding gate is already reachable on screen. We also listen
+  // for "?" to focus the first focusable element as a quick laptop/TV jump.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // don't steal ESC from inputs/menus
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        // no routing change — ESC simply blurs any active focus/overlay so the
+        // user lands back on the frame. Individual sheets can override.
+        if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+          (document.activeElement as HTMLElement).blur();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const splashStyle = useAnimatedStyle(() => ({ opacity: splashOpacity.value }));
   const appStyle = useAnimatedStyle(() => ({ opacity: appOpacity.value }));
 
@@ -248,36 +272,44 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <View style={styles.root}>
-        <StatusBar style="light" />
+      <ResponsiveFrame>
+        <View style={styles.root}>
+          <StatusBar style="light" />
 
-        {/* active route stays mounted underneath the splash for a true crossfade */}
-        <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
-          {restored && (
-            <>
-              {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
-              {route === 'coach' && (
-                <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
-              )}
-              {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
-              {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
-            </>
-          )}
-        </Animated.View>
+          {/* Web-only side chrome (keyboard hints + device badge). Invisible on native. */}
+          <WebAppChrome visibleRoute={route} />
 
-        {!splashGone && (
-          <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
-            <SplashScreen onFinish={handleSplashFinish} />
+          {/* active route stays mounted underneath the splash for a true crossfade */}
+          <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
+            {restored && (
+              <>
+                {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
+                {route === 'coach' && (
+                  <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
+                )}
+                {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
+                {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
+              </>
+            )}
           </Animated.View>
-        )}
-      </View>
+
+          {!splashGone && (
+            <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
+              <SplashScreen onFinish={handleSplashFinish} />
+            </Animated.View>
+          )}
+        </View>
+      </ResponsiveFrame>
     </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
-  // phone column on wide screens (web preview); full-bleed on actual phones
+  root: { flex: 1, backgroundColor: colors.bg },
+  // The "phone column" cap of 430 used to hard-lock web to 430px. ResponsiveFrame
+  // now decides width per breakpoint, so the fill takes whatever its parent gives
+  // it and centers horizontally. Native stays full-screen because ResponsiveFrame
+  // is a plain <View> with flex:1 there.
   fill: {
     position: 'absolute',
     top: 0,
@@ -286,7 +318,6 @@ const styles = StyleSheet.create({
     right: 0,
     alignSelf: 'center',
     width: '100%',
-    maxWidth: 430,
     backgroundColor: colors.bg,
   },
 });
