@@ -80,7 +80,7 @@ export default function RoleModelSheet({ coach, onClose, onWalkCurrent }: Props)
       <GridBackground />
       <ScreenFlash />
       {/* the tunnel band — the finish is somewhere you walk out to */}
-      <ArtBand source={TUNNEL} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 42, r: bandW * 0.6 }} style={{ marginTop: -50 }}>
+      <ArtBand source={[TUNNEL, require('../../assets/art/home-pitch.png'), require('../../assets/art/coach-touchline.jpg')]} width={bandW} height={140} warmAt={{ x: bandW * 0.5, y: 42, r: bandW * 0.6 }} style={{ marginTop: -50 }}>
         <Text style={styles.eyebrow}>AFTER CHAPTER {SEASON.totalStages} · WHAT GOOD LOOKS LIKE</Text>
         <Text style={styles.bandTitle}>WHAT GOOD LOOKS LIKE</Text>
         <Text style={styles.subtitle}>{SEASON.title} — WHERE THIS PATH ENDS</Text>

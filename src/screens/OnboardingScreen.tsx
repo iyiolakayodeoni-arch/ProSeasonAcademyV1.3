@@ -23,7 +23,7 @@ export default function OnboardingScreen({ onDone }: Props) {
     <View style={styles.root}>
       <GridBackground />
       {/* the dressing-room band — the tour starts where every kit hangs */}
-      <ArtBand source={LOCKERS} width={bandW} height={132} warmAt={{ x: bandW * 0.5, y: 36, r: bandW * 0.55 }}>
+      <ArtBand source={[LOCKERS, require('../../assets/art/community-huddle.jpg'), require('../../assets/art/seats-till.jpg')]} width={bandW} height={132} warmAt={{ x: bandW * 0.5, y: 36, r: bandW * 0.55 }}>
         <Text style={styles.brand}>PROSEASONACADEMY</Text>
         <Text style={styles.kicker}>ACADEMY TOUR · {i + 1} / {ONBOARD_CARDS.length}</Text>
       </ArtBand>

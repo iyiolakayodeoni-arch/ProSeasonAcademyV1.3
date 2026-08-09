@@ -92,7 +92,7 @@ export default function SideLessonSheet({ coach, lesson, origin, onClose }: Prop
       <GridBackground />
       <ScreenFlash />
       {/* header — the mirror band carries the side note's name */}
-      <ArtBand source={MIRROR_ART} width={bandW} height={132} warmAt={{ x: bandW * 0.26, y: 40, r: bandW * 0.5 }} style={{ marginTop: -50 }}>
+      <ArtBand source={[MIRROR_ART, require('../../assets/art/journey-tunnel.jpg'), require('../../assets/art/coach-touchline.jpg')]} width={bandW} height={132} warmAt={{ x: bandW * 0.26, y: 40, r: bandW * 0.5 }} style={{ marginTop: -50 }}>
         <Text style={styles.eyebrow}>
           {origin === 'home' ? 'UPDATES' : 'COACH SCREEN'} — OPTIONAL TIP
         </Text>

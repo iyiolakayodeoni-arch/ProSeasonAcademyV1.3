@@ -141,7 +141,7 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
       <GridBackground />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false} bounces={false}>
         <Animated.View entering={FadeInUp.duration(320)}>
-          <ArtBand source={LOCKERS} width={bandW} height={104} style={styles.setBand} warmAt={{ x: bandW * 0.5, y: 30, r: bandW * 0.55 }}>
+          <ArtBand source={[LOCKERS, require('../../../assets/art/community-huddle.jpg'), require('../../../assets/art/seats-till.jpg')]} width={bandW} height={104} style={styles.setBand} warmAt={{ x: bandW * 0.5, y: 30, r: bandW * 0.55 }}>
             <Text style={styles.title} numberOfLines={1}>SETTINGS</Text>
             <Text style={styles.subtitle}>YOUR PROFILE · YOUR PLATFORM · YOUR SOUND</Text>
           </ArtBand>

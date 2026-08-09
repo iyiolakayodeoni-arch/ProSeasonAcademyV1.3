@@ -18,6 +18,7 @@ import * as backend from '../../data/backend';
 import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy, bodyFontStrong } from '../../theme';
 import { isValidReflection } from '../../data/honestyGuard';
 import ContactSheet from '../ContactSheet';
+import { myPeerPair, peerReview, PeerPair, PeerReview, submitPeerReview } from '../../data/communityProgram';
 
 type UserWithAvatar = ChatUser & { avatar?: ImageSourcePropType };
 
@@ -68,10 +69,13 @@ export default function CommunityTab({ onClose }: { onClose: () => void }) {
   const [playersOpen, setPlayersOpen] = useState(false);
   const [founderOpen, setFounderOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [peerPair, setPeerPair] = useState<PeerPair | null>(null);
+  const [peerOpen, setPeerOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     void startLiveRooms();
+    void myPeerPair().then(setPeerPair);
   }, [cloud.status]);
 
   useEffect(() => {
@@ -127,15 +131,17 @@ export default function CommunityTab({ onClose }: { onClose: () => void }) {
             </Text>
           </View>
         </View>
-        <Pressable onPress={() => setPlayersOpen(true)} hitSlop={8} style={styles.headerBtn}>
-          <Text style={styles.headerBtnTxt}>DM</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          {peerPair && <Pressable onPress={() => setPeerOpen(true)} hitSlop={8} style={styles.headerBtn}><Text style={styles.headerBtnTxt}>PAIR</Text></Pressable>}
+          <Pressable onPress={() => setPlayersOpen(true)} hitSlop={8} style={styles.headerBtn}><Text style={styles.headerBtnTxt}>DM</Text></Pressable>
+        </View>
       </View>
       <View style={styles.headerRule} />
 
       {/* ── message list ── */}
       <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
         <Text style={styles.dateDivider}>{isDm ? `PRIVATE CHAT · ${dmOther?.handle ?? 'PLAYER'}` : 'GENERAL · THE WHOLE ACADEMY'}</Text>
+        {!isDm && peerPair && <Pressable onPress={() => setPeerOpen(true)} style={styles.pairBanner}><Text style={styles.pairBannerTag}>YOUR FOUR-DAY DRAW</Text><Text style={styles.pairBannerTitle}>YOU'RE PAIRED WITH {peerPair.partner_handle}</Text><Text style={styles.pairBannerCopy}>{peerPair.partner_submitted ? 'THEIR REVIEW IS READY — OPEN YOUR MATCH ROOM.' : peerPair.submitted ? 'YOUR REVIEW IS LOCKED. WAITING FOR THEIR HONEST ANSWERS.' : 'PLAY ONE MATCH, THEN COMPLETE THE SHARED REVIEW.'}</Text></Pressable>}
         {rows.length === 0 && (
           <View style={styles.emptyWrap}>
             <Text style={styles.emptyTag}>{st.live ? 'REAL ROOM · ZERO MESSAGES' : 'ROOM CLOSED · OFFLINE'}</Text>
@@ -252,6 +258,8 @@ export default function CommunityTab({ onClose }: { onClose: () => void }) {
         </View>
       )}
 
+      {peerOpen && peerPair && <PeerReviewSheet pair={peerPair} onClose={() => setPeerOpen(false)} onSubmitted={() => void myPeerPair().then(setPeerPair)} />}
+
       {/* ── founder DM ── */}
       {founderOpen && (
         <View style={StyleSheet.absoluteFill}>
@@ -262,6 +270,32 @@ export default function CommunityTab({ onClose }: { onClose: () => void }) {
   );
 }
 
+function PeerReviewSheet({ pair, onClose, onSubmitted }: { pair: PeerPair; onClose: () => void; onSubmitted: () => void }) {
+  const [turning, setTurning] = useState(''); const [own, setOwn] = useState(''); const [strength, setStrength] = useState(''); const [next, setNext] = useState('');
+  const [reviews, setReviews] = useState<PeerReview[]>([]); const [saving, setSaving] = useState(false);
+  useEffect(() => { void peerReview(pair.pair_id).then(setReviews); }, [pair.pair_id]);
+  const submitReview = async () => { setSaving(true); const ok = await submitPeerReview(pair.pair_id, { turning, own, strength, next }); setSaving(false); if (ok) { setReviews(await peerReview(pair.pair_id)); onSubmitted(); } };
+  const revealed = reviews.some((review) => review.revealed);
+  return <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Animated.View entering={FadeIn.duration(180)} style={styles.backdrop}><Pressable style={StyleSheet.absoluteFill} onPress={onClose} /></Animated.View>
+    <Animated.View entering={SlideInDown.duration(260)} style={[styles.sheet, styles.peerSheet]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.pickerHead}><Text style={styles.sheetEyebrow}>MATCH ROOM · {pair.partner_handle}</Text><Pressable onPress={onClose}><XMarkIcon size={11} color={colors.muted}/></Pressable></View>
+        <Text style={styles.pairInstruction}>PLAY ONE MATCH. WRITE YOUR FIRST READ ALONE. BOTH REVIEWS REVEAL ONLY AFTER YOU BOTH SUBMIT.</Text>
+        {!pair.submitted && <>
+          <TextInput value={turning} onChangeText={setTurning} multiline placeholder="THE TURNING POINT IN THE MATCH" placeholderTextColor={colors.muted} style={styles.reviewInput}/>
+          <TextInput value={own} onChangeText={setOwn} multiline placeholder="MY BIGGEST MISTAKE" placeholderTextColor={colors.muted} style={styles.reviewInput}/>
+          <TextInput value={strength} onChangeText={setStrength} multiline placeholder={`WHAT ${pair.partner_handle} DID WELL`} placeholderTextColor={colors.muted} style={styles.reviewInput}/>
+          <TextInput value={next} onChangeText={setNext} multiline placeholder="MY NEXT ACTION" placeholderTextColor={colors.muted} style={styles.reviewInput}/>
+          <Pressable disabled={saving || [turning,own,strength,next].some(v=>v.trim().length<8)} onPress={submitReview} style={styles.reviewSubmit}><Text style={styles.reviewSubmitText}>{saving ? 'LOCKING…' : 'LOCK MY HONEST REVIEW'}</Text></Pressable>
+        </>}
+        {pair.submitted && !revealed && <Text style={styles.waitingReview}>YOUR ANSWERS ARE LOCKED. {pair.partner_handle} CANNOT SEE THEM UNTIL THEY SUBMIT THEIR OWN REVIEW.</Text>}
+        {revealed && reviews.map((review) => <View key={review.profile_id} style={styles.revealedReview}><Text style={styles.revealedName}>{review.handle}'S REVIEW</Text><Text style={styles.revealedCopy}>TURNING POINT · {review.turning_point}</Text><Text style={styles.revealedCopy}>OWN MISTAKE · {review.own_mistake}</Text><Text style={styles.revealedCopy}>OPPONENT READ · {review.opponent_strength}</Text><Text style={styles.revealedCopy}>NEXT ACTION · {review.next_action}</Text></View>)}
+      </ScrollView>
+    </Animated.View>
+  </View>;
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
 
@@ -270,6 +304,11 @@ const styles = StyleSheet.create({
   headerBackTxt: { fontFamily: monoFont, fontSize: 6.3, fontWeight: '900', letterSpacing: 1, color: colors.fg },
   headerBtn: { width: 34, height: 30, borderRadius: 9, borderWidth: 1.1, borderColor: 'rgba(57,255,106,0.45)', backgroundColor: 'rgba(57,255,106,0.08)', alignItems: 'center', justifyContent: 'center' },
   headerBtnTxt: { fontFamily: bodyFontHeavy, fontSize: 8.5, letterSpacing: 1.4, color: colors.primary },
+  headerActions: { flexDirection: 'row', gap: 6 },
+  pairBanner: { marginBottom: 14, padding: 13, borderRadius: 13, borderWidth: 1, borderColor: 'rgba(242,192,120,0.55)', backgroundColor: 'rgba(242,192,120,0.07)' },
+  pairBannerTag: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '900', letterSpacing: 1.5, color: colors.accent },
+  pairBannerTitle: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 14, letterSpacing: 0.4, color: colors.fg },
+  pairBannerCopy: { marginTop: 4, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16, color: colors.muted },
   titleWrap: { flex: 1 },
   titleChannel: { fontFamily: displayFont, fontSize: 20, letterSpacing: 1, color: colors.primary, textTransform: 'uppercase' },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 3 },
@@ -320,4 +359,13 @@ const styles = StyleSheet.create({
   chanDesc: { marginTop: 2, fontFamily: monoFont, fontSize: 5.8, letterSpacing: 1.1, color: 'rgba(143,184,155,0.6)' },
   founderCta: { marginTop: 10, borderWidth: 1, borderColor: 'rgba(242,192,120,0.5)', borderRadius: 11, paddingVertical: 12, alignItems: 'center', backgroundColor: 'rgba(242,192,120,0.05)' },
   founderCtaTxt: { fontFamily: monoFont, fontSize: 7.4, fontWeight: '900', letterSpacing: 1.6, color: colors.accent },
+  peerSheet: { maxHeight: '86%' },
+  pairInstruction: { marginTop: 8, marginBottom: 12, fontFamily: monoFont, fontSize: 6.5, lineHeight: 11, letterSpacing: 1, color: colors.accent },
+  reviewInput: { minHeight: 54, marginBottom: 8, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(57,255,106,0.25)', fontFamily: bodyFont, fontSize: 12, color: colors.fg, textAlignVertical: 'top' },
+  reviewSubmit: { marginTop: 4, paddingVertical: 13, borderRadius: 11, alignItems: 'center', backgroundColor: colors.primary },
+  reviewSubmitText: { fontFamily: bodyFontHeavy, fontSize: 10, letterSpacing: 1.2, color: '#07110a' },
+  waitingReview: { marginTop: 10, padding: 13, borderRadius: 10, backgroundColor: 'rgba(242,192,120,0.1)', fontFamily: bodyFont, fontSize: 12, lineHeight: 17, color: '#e6d2aa' },
+  revealedReview: { marginTop: 10, padding: 12, borderRadius: 11, backgroundColor: 'rgba(57,255,106,0.07)', borderWidth: 1, borderColor: 'rgba(57,255,106,0.22)' },
+  revealedName: { fontFamily: bodyFontHeavy, fontSize: 11, letterSpacing: 1.1, color: colors.primary },
+  revealedCopy: { marginTop: 7, fontFamily: bodyFont, fontSize: 11.5, lineHeight: 16, color: '#d3ded6' },
 });

@@ -294,7 +294,7 @@ export default function MirrorSessionScreen({
         />
         {/* the mirror strip — a photographic spine behind every phase; slim
             so the questions keep the room */}
-        <ArtBand source={MIRROR_ART} width={bandW} height={58} warmAt={null} grain={0.05} lift={-(bandW / 1.7917 - 58) * 0.9} />
+        <ArtBand source={[MIRROR_ART, require('../../assets/art/journey-tunnel.jpg'), require('../../assets/art/coach-touchline.jpg')]} width={bandW} height={58} warmAt={null} grain={0.05} lift={-(bandW / 1.7917 - 58) * 0.9} />
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {/* ══ THREAD CHECK — the carried lesson must be answered first ══ */}
           {mirror.phase === 'thread-check' && (

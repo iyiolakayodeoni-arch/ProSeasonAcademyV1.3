@@ -185,7 +185,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const tendencies = useMemo(() => tendenciesOf(session?.entries ?? []), [session]);
   const allWeekMoments = useMemo(() => weekMoments(session), [session]);
   const avgStatsPreview = useMemo(() => { if (!session?.entries?.length) return null; const cur = [...session.entries]; if (statsComplete) cur.push({ gf, ga, result, composure: composure ?? 3, question, answer: dayAnswer, moments: [], stats: statsDraft, at: Date.now() } as any); const avail = cur.filter((e: any) => e.stats && baselineStatsComplete(e.stats)); if (!avail.length) return null; const sum = (k: keyof BaselineMatchStats) => avail.reduce((s: number, e: any) => s + Number(e.stats[k] ?? 0), 0); const a = (k: keyof BaselineMatchStats) => Math.round((sum(k) / avail.length) * 10) / 10; return { possession: a('possession'), passAccuracy: a('passAccuracy'), shots: a('shots'), shotsOnTarget: a('shotsOnTarget') }; }, [session?.entries, statsComplete, statsDraft, gf, ga, result, composure, question, dayAnswer]);
-  return (<View style={styles.root}><GridBackground /><ArtBand source={BOOTS} width={bandW} height={118} warmAt={{ x: bandW * 0.3, y: 34, r: bandW * 0.5 }} grain={0.05} />
+  return (<View style={styles.root}><GridBackground /><ArtBand source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]} width={bandW} height={118} warmAt={{ x: bandW * 0.3, y: 34, r: bandW * 0.5 }} grain={0.05} />
       <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
           {phase === 'talk' && (<>

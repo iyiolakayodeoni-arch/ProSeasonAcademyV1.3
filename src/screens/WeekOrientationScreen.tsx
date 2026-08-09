@@ -48,7 +48,7 @@ export default function WeekOrientationScreen({ coach, onDone }: { coach: Coach;
 
   return <View style={styles.root}>
     <GridBackground />
-    <ArtBand source={TUNNEL} width={bandW} height={132} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.6 }}>
+    <ArtBand source={[TUNNEL, require('../../assets/art/home-pitch.png'), require('../../assets/art/coach-touchline.jpg')]} width={bandW} height={132} warmAt={{ x: bandW * 0.5, y: 40, r: bandW * 0.6 }}>
       <Text style={styles.eyebrow}>BEFORE THE WEEK · {first} IS YOUR GUIDE</Text>
       <Text style={styles.kicker}>ORIENTATION · {i + 1} / {CARDS.length}</Text>
     </ArtBand>

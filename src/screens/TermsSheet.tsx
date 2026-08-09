@@ -49,7 +49,7 @@ export default function TermsSheet({ onAccepted }: { onAccepted: () => void }) {
       <GridBackground />
 
       {/* the seats band — the contract for the seat, crest and all */}
-      <ArtBand source={SEATS} width={bandW} height={150} warmAt={{ x: bandW * 0.8, y: 44, r: bandW * 0.5 }} style={{ marginTop: -52 }}>
+      <ArtBand source={[SEATS, require('../../assets/art/locker-room.jpg'), require('../../assets/art/community-huddle.jpg')]} width={bandW} height={150} warmAt={{ x: bandW * 0.8, y: 44, r: bandW * 0.5 }} style={{ marginTop: -52 }}>
         <LogoMark size={40} loopProps={loopProps} glowStyle={glowStyle} />
         <Text style={styles.eyebrow}>BEFORE YOU START</Text>
         <Text style={styles.bandTitle}>HOW THIS WORKS</Text>

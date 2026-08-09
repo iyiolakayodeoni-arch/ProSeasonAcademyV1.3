@@ -74,7 +74,7 @@ export default function ContactSheet({ onClose }: { onClose: () => void }) {
       <GridBackground />
 
       {/* the quiet-room band — a private line, said as an empty dressing room */}
-      <ArtBand source={LOCKERS} width={bandW} height={120} warmAt={{ x: bandW * 0.5, y: 34, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
+      <ArtBand source={[LOCKERS, require('../../assets/art/community-huddle.jpg'), require('../../assets/art/seats-till.jpg')]} width={bandW} height={120} warmAt={{ x: bandW * 0.5, y: 34, r: bandW * 0.55 }} style={{ marginTop: -46 }}>
         <Text style={styles.eyebrow}>DIRECT LINE</Text>
         <Text style={styles.bandTitle}>TALK TO THE FOUNDER</Text>
         <Text style={styles.sub}>

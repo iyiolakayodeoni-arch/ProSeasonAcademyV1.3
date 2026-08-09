@@ -151,7 +151,7 @@ export default function MatchVault({ coach, onClose }: { coach: Coach; onClose: 
 
       {/* the match band — the vault's face: every receipt below was earned here */}
       <ArtBand
-        source={VAULT_ART}
+        source={[VAULT_ART, require('../../assets/art/scan-boots.jpg'), require('../../assets/art/home-pitch.png')]}
         width={bandW}
         height={158}
         warmAt={{ x: bandW * 0.22, y: 44, r: bandW * 0.55 }}
