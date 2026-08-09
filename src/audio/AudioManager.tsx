@@ -1,5 +1,10 @@
+// Ambient audio beds per scene. On web this uses HTMLAudioElement via the
+// expo-audio shim; on native it uses real expo-audio. All code paths are
+// fail-soft — ambient beds are seasoning, never required to boot.
 import { useEffect, useRef } from 'react';
-import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
+import { Platform } from 'react-native';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+type AudioPlayer = any;
 
 export type AudioScene = 'splash' | 'seat' | 'coach-select' | 'home' | 'community' | 'film-room';
 
@@ -17,20 +22,33 @@ const TRACKS: Record<AudioScene, any> = {
   'film-room': require('../../assets/audio/filmroom-afro-funk.wav'),
 };
 
-/**
- * One looping bed at a time — expo-audio edition.
- * Replaces the old expo-av implementation which caused the native
- * module misalignment (app opening then closing itself):
- * - expo-av pulls @react-native-async-storage/async-storage@^3, old RN, old worklets
- * - the rest of SDK 57 expects async-storage 2.2.0, RN 0.86.2, reanimated 4.5.1, worklets 0.10.1
- * By moving fully to expo-audio we drop the legacy native module.
- */
+function resolveUri(src: any): any {
+  if (Platform.OS !== 'web') return src;
+  try {
+    if (!src) return src;
+    if (typeof src === 'string') return src;
+    if (src.uri) return src.uri;
+    if (src.default?.uri) return src.default.uri;
+    const Asset = require('expo-asset');
+    const a = Asset.fromModule ? Asset.fromModule(src) : null;
+    return a?.uri ?? src;
+  } catch {
+    return src;
+  }
+}
+
+function safeStop(p: any) {
+  if (!p) return;
+  try { p.pause(); } catch { /* noop */ }
+  try { if (typeof p.release === 'function') p.release(); } catch { /* noop */ }
+}
+
 export function useAmbientAudio(scene: AudioScene, enabled = true): void {
   const playerRef = useRef<AudioPlayer | null>(null);
-  const mountedRef = useRef<AudioPlayer | null>(null);
 
   useEffect(() => {
     let alive = true;
+    let player: any = null;
 
     const start = async () => {
       if (!enabled) return;
@@ -39,32 +57,22 @@ export function useAmbientAudio(scene: AudioScene, enabled = true): void {
           playsInSilentMode: true,
           shouldPlayInBackground: false,
           interruptionMode: 'duckOthers',
-        });
+        }).catch(() => {});
       } catch {
         /* audio mode is best-effort */
       }
       try {
-        const src =
-          Array.isArray(TRACKS[scene])
-            ? TRACKS[scene][Math.floor(Math.random() * TRACKS[scene].length)]
-            : TRACKS[scene];
-        const player = createAudioPlayer(src);
+        const src = Array.isArray(TRACKS[scene])
+          ? TRACKS[scene][Math.floor(Math.random() * TRACKS[scene].length)]
+          : TRACKS[scene];
+        const resolved = resolveUri(src);
+        player = createAudioPlayer(resolved);
+        if (!player) return;
         player.loop = true;
-        player.volume = scene === 'film-room' ? 0.16 : 0.10;
-        player.play();
-        if (!alive) {
-          try {
-            player.pause();
-          } catch {}
-          try {
-            player.release();
-          } catch {}
-          try {
-            (player as any).remove?.();
-          } catch {}
-          return;
-        }
-        mountedRef.current = player;
+        const vol = scene === 'film-room' ? 0.16 : 0.1;
+        try { player.volume = vol; } catch { /* noop */ }
+        try { player.play(); } catch { /* noop — autoplay may be blocked */ }
+        if (!alive) { safeStop(player); return; }
         playerRef.current = player;
       } catch {
         /* ambient is optional — never crash boot */
@@ -75,53 +83,23 @@ export function useAmbientAudio(scene: AudioScene, enabled = true): void {
 
     return () => {
       alive = false;
-      const old = mountedRef.current ?? playerRef.current;
-      mountedRef.current = null;
+      const old = player ?? playerRef.current;
       playerRef.current = null;
-      if (old) {
-        try {
-          old.pause();
-        } catch {}
-        try {
-          old.release();
-        } catch {}
-        try {
-          (old as any).remove?.();
-        } catch {}
-      }
+      safeStop(old);
     };
   }, [scene, enabled]);
 }
 
 export async function playUiSound(soundFile: any, volume = 0.24): Promise<void> {
   try {
-    const player = createAudioPlayer(soundFile);
-    player.volume = volume;
-    player.play();
-
-    let cleaned = false;
-    const cleanup = () => {
-      if (cleaned) return;
-      cleaned = true;
-      try {
-        sub?.remove();
-      } catch {}
-      try {
-        player.release();
-      } catch {}
-      try {
-        (player as any).remove?.();
-      } catch {}
-    };
-
-    const sub = player.addListener('playbackStatusUpdate', (status: any) => {
-      if (status?.isLoaded && status.didJustFinish) {
-        cleanup();
-      }
-    });
-
-    // absolute fallback — if the status never fires (Android quirk), release after 6s
-    setTimeout(cleanup, 6000);
+    const resolved = resolveUri(soundFile);
+    const player: any = createAudioPlayer(resolved);
+    if (!player) return;
+    try { player.volume = volume; } catch { /* noop */ }
+    try { player.play(); } catch { /* noop */ }
+    // Auto-release after a generous timeout (the shim and native both have
+    // cleanup paths, but we always want to free the audio node).
+    setTimeout(() => safeStop(player), 8000);
   } catch {
     /* fire-and-forget */
   }

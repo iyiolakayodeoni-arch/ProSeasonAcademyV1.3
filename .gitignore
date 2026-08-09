@@ -52,3 +52,8 @@ server/data/
 # download/ is the deliberate exception: a clean, .env-free copy for the founder.
 /*.zip
 image-search/
+
+# expo web build output
+dist/
+web-build/
+

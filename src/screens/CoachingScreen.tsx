@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Linking, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useAudioPlayer, useAudioPlayerStatus } from '../audio/useAudioPlayer';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,

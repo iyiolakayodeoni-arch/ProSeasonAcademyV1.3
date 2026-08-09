@@ -1,6 +1,6 @@
 {
   "name": "proseasonacademy",
-  "version": "1.3.0",
+  "version": "1.3.0-web",
   "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/anton": "^0.4.2",
@@ -11,16 +11,11 @@
     "canvaskit-wasm": "^0.41.0",
     "expo": "~57.0.8",
     "expo-asset": "~57.0.8",
-    "expo-audio": "~57.0.3",
     "expo-constants": "~57.0.7",
-    "expo-file-system": "^57.0.1",
     "expo-font": "^57.0.1",
-    "expo-image-picker": "^57.0.7",
     "expo-linear-gradient": "~57.0.1",
-    "expo-notifications": "~57.0.8",
     "expo-splash-screen": "~57.0.5",
     "expo-status-bar": "~57.0.1",
-    "expo-system-ui": "~57.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.2",
@@ -34,32 +29,24 @@
   "devDependencies": {
     "@types/node": "^26.1.2",
     "@types/react": "~19.2.2",
-    "sharp": "^0.35.3",
     "typescript": "~6.0.3",
     "@storybook/react": "^7.0.0",
-    "@storybook/react-native": "^7.0.0",
     "@storybook/addon-essentials": "^7.0.0",
     "react-native-storybook-loader": "^2.0.5"
   },
 
   "scripts": {
-    "start": "expo start",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
+    "start": "expo start --web",
     "web": "expo start --web",
-    "test:register": "node tests/auth-register.test.mjs",
-    "test:live": "node tests/live-backend.test.mjs",
+    "web:build": "expo export -p web --output-dir dist/web",
+    "web:serve": "npx serve dist/web -l 8081",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/dailyProgram.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/gradleDeprecations.test.js && node tests/honestyGuard.test.js",
+    "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/dailyProgram.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/honestyGuard.test.js",
     "test:ci-smoke": "npm run typecheck && npm test",
-    "test:ui": "node tests/statRing.test.mjs",
     "storybook": "start-storybook -p 7007 -c .storybook",
     "build-storybook": "build-storybook -c .storybook -o storybook-static",
-    "doctor": "expo-doctor",
-    "fix:gradle": "node scripts/fix-gradle-deprecations.cjs",
-    "postinstall": "node scripts/fix-gradle-deprecations.cjs"
+    "doctor": "expo-doctor"
   },
-
 
   "private": true
 }
