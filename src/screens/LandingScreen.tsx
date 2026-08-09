@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image, Platform } from 'react-native';
 import Animated, {
   SharedValue,
@@ -101,8 +101,40 @@ function LivingBackground() {
   );
 }
 
-/* ── scroll-gated reveal, matched to the blueprint's fade-up feel ── */
-function Gate({
+/* ── scroll-gated reveal — the blueprint's fade-up. Web uses a real
+   IntersectionObserver against the DOM scroll region; native drives the
+   same feel from the ScrollView offset. ── */
+function GateWeb({ children, style }: { children?: React.ReactNode; style?: any }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVis(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          if (en.isIntersecting) {
+            setVis(true);
+            io.disconnect();
+          }
+        }
+      },
+      { threshold: 0, rootMargin: '0px 0px -8% 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className={vis ? 'fade-up visible' : 'fade-up'} style={style}>
+      {children}
+    </div>
+  );
+}
+
+function GateNative({
   scrollY,
   children,
   style,
@@ -131,6 +163,10 @@ function Gate({
       {children}
     </Animated.View>
   );
+}
+
+function Gate(props: { scrollY: SharedValue<number>; children?: React.ReactNode; style?: any }) {
+  return WEB ? <GateWeb style={props.style}>{props.children}</GateWeb> : <GateNative {...props} />;
 }
 
 function MonoLabel({ children }: { children: string }) {
@@ -332,21 +368,9 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
     ? `SEASON ONE · ${seats.taken.toLocaleString('en-US')}/${seats.cap.toLocaleString('en-US')} SEATS CLAIMED`
     : 'SEASON ONE · 1,000 SEATS ONLY';
 
-  return (
-    <View style={styles.root}>
-      <LivingBackground />
-      <WebsiteNav onEnter={onEnter} />
-
-      <ScrollView
-        style={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-        onScroll={(e) => {
-          scrollY.value = e.nativeEvent.contentOffset.y;
-        }}
-        scrollEventThrottle={16}
-      >
-        {/* ══ HERO ══ */}
+  const content = (
+    <>
+        {/* ══ HERO ═ */}
         <View style={styles.section} nativeID="top">
           <View style={styles.container}>
             <View style={[styles.heroGrid, isMultiColumn && styles.heroGridWide]}>
@@ -747,7 +771,31 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </View>
           </View>
         </View>
-      </ScrollView>
+    </>
+  );
+
+  return (
+    <View style={styles.root}>
+      <LivingBackground />
+      <WebsiteNav onEnter={onEnter} />
+
+      {/* Web scrolls like a website: a plain DOM scroll region with a
+          definite flex height. Native keeps the RN ScrollView. */}
+      {WEB ? (
+        <div className="psa-site-scroll">{content}</div>
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          onScroll={(e) => {
+            scrollY.value = e.nativeEvent.contentOffset.y;
+          }}
+          scrollEventThrottle={16}
+        >
+          {content}
+        </ScrollView>
+      )}
     </View>
   );
 }

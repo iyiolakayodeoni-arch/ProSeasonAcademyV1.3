@@ -366,6 +366,35 @@ textarea:-webkit-autofill {
    hud conic borders, glass cards, hover shimmer. Constant but subtle.
    ════════════════════════════════════════════════════════════════════════ */
 
+/* ── The website's scroll body (web). A plain DOM scroll region with a
+   definite flex height — the page scrolls like a website, independent of
+   RNW ScrollView flex resolution. ── */
+.psa-site-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Scroll reveals (blueprint fade-up) ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .psa-site-scroll { scroll-behavior: auto; }
+  .fade-up { opacity: 1 !important; transform: none !important; transition: none; }
+}
+
 /* ── arena grid floor, slowly drifting ── */
 .onl-arena-grid {
   position: absolute;
