@@ -11,11 +11,14 @@ import {
 } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
+  FadeIn,
+  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
 import LogoMark from '../components/LogoMark';
@@ -29,6 +32,7 @@ import { COACHES } from '../data/coaches';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
+import { useHover } from '../hooks/useHover';
 
 const HERO = require('../../assets/art/splash-hero.png');
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
@@ -71,10 +75,16 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
 
   const press = useSharedValue(0);
+  // Fine-pointer hover eases the CTA up a breath; press plants it back down.
+  const { hovered: ctaHovered, bind: ctaBind } = useHover();
+  const hov = useSharedValue(0);
+  useEffect(() => {
+    hov.value = withTiming(ctaHovered ? 1 : 0, { duration: 160 });
+  }, [ctaHovered, hov]);
   const btnStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 - press.value * 0.03 }],
-    shadowOpacity: 0.35 + press.value * 0.4,
-    shadowRadius: 12 + press.value * 10,
+    transform: [{ translateY: -1.5 * hov.value }, { scale: 1 - press.value * 0.03 + hov.value * 0.008 }],
+    shadowOpacity: 0.4 + press.value * 0.35 + hov.value * 0.2,
+    shadowRadius: 14 + press.value * 10 + hov.value * 8,
   }));
 
   const nameOk = username.trim().length >= 3;
@@ -188,7 +198,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
               warmAt={{ x: 300, y: 150, r: 400 }}
             />
 
-            <View style={styles.visualContent}>
+            <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.visualContent}>
               <View style={styles.visualCrestWrap}>
                 <LogoMark size={48} loopProps={loopProps} glowStyle={glowStyle} />
               </View>
@@ -212,7 +222,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                   <CoachCard coach={COACHES[0]} width={280} />
                 </View>
               )}
-            </View>
+            </Animated.View>
           </View>
 
           {/* Right Form Panel */}
@@ -223,7 +233,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             keyboardShouldPersistTaps="handled"
             bounces={false}
           >
-            <View style={styles.authBox}>
+            <Animated.View entering={FadeInUp.duration(480).delay(80)} style={styles.authBox}>
               {mode === 'token' && academyToken ? (
                 <View>
                   <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
@@ -389,6 +399,8 @@ export default function SignInScreen({ onSignedIn }: Props) {
                       mode === 'register' ? !canRegister : mode === 'login' ? !canLogin : !canReset
                     }
                     style={{ marginTop: 18 }}
+                    accessibilityRole="button"
+                    {...ctaBind}
                   >
                     <Animated.View
                       style={[
@@ -399,6 +411,19 @@ export default function SignInScreen({ onSignedIn }: Props) {
                           styles.ctaOff,
                       ]}
                     >
+                      <LinearGradient
+                        colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      {!loading && (
+                        <View
+                          pointerEvents="none"
+                          {...({ className: 'psa-sheen' } as any)}
+                          style={{ left: 0 }}
+                        />
+                      )}
                       <Text style={styles.ctaText}>
                         {loading
                           ? mode === 'register'
@@ -437,7 +462,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 <Text style={styles.footer}>PROSEASON ACADEMY</Text>
                 <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
               </View>
-            </View>
+            </Animated.View>
           </ScrollView>
         </View>
 
@@ -662,6 +687,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.35,
