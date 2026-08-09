@@ -36,6 +36,7 @@ import {
   weekOf,
 } from '../../data/dailyProgram';
 import { colors, bodyFont, bodyFontBold, bodyFontHeavy, displayFont, monoFont } from '../../theme';
+import { BaselineCard, loadBaseline } from '../../data/baselineScan';
 import { sfx } from '../../audio/sound';
 
 const TUNNEL = require('../../../assets/art/journey-tunnel.jpg');
@@ -50,11 +51,13 @@ export default function TrackerTab({ coach }: Props) {
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [now, setNow] = useState(Date.now());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [baseline, setBaseline] = useState<BaselineCard | null>(null);
 
   // hydrate once
   useEffect(() => {
     void loadDailyProgram().then(setProg);
-  }, []);
+    void loadBaseline(coach.id).then((session) => setBaseline(session.card)).catch(() => {});
+  }, [coach.id]);
 
   // one-second tick so the countdown breathes live
   useEffect(() => {
@@ -172,8 +175,53 @@ export default function TrackerTab({ coach }: Props) {
         ) : (
           <MonthStrip prog={prog} cur={cur} complete={complete} />
         )}
+
+        {/* Once the five-match baseline is complete, this is the permanent
+            before-and-destination card on the Progress tab. */}
+        {baseline && <BaselineResult card={baseline} />}
       </ScrollView>
     </View>
+  );
+}
+
+function BaselineResult({ card }: { card: BaselineCard }) {
+  const average = Math.round(card.cardStats.reduce((sum, stat) => sum + stat.value, 0) / Math.max(1, card.cardStats.length));
+  const destination = card.ambition?.trim() || 'YOUR NEXT LEVEL';
+
+  return (
+    <Animated.View entering={FadeInUp.delay(200).duration(450)} style={styles.baselineCard}>
+      <View style={styles.baselineTopLine}>
+        <Text style={styles.baselineEyebrow}>BASELINE SEALED · YOUR STARTING POINT</Text>
+        <View style={styles.sealed}><Text style={styles.sealedText}>✓</Text></View>
+      </View>
+      <Text style={styles.baselineTitle}>THIS IS WHERE YOU START.</Text>
+      <Text style={styles.baselineRead}>{card.coachRead}</Text>
+
+      <View style={styles.directionRow}>
+        <View style={styles.directionSide}>
+          <Text style={styles.directionLabel}>YOU ARE HERE</Text>
+          <Text style={styles.directionValue}>{card.tier}</Text>
+          <Text style={styles.directionMeta}>{average} / 99 BASE READ</Text>
+        </View>
+        <View style={styles.directionArrow}><Text style={styles.directionArrowText}>→</Text></View>
+        <View style={[styles.directionSide, styles.destinationSide]}>
+          <Text style={styles.directionLabel}>YOU'RE GOING</Text>
+          <Text numberOfLines={2} style={styles.destinationValue}>{destination}</Text>
+          <Text style={styles.directionMeta}>ONE HONEST DAY AT A TIME</Text>
+        </View>
+      </View>
+
+      <View style={styles.statGrid}>
+        {card.cardStats.map((stat) => (
+          <View key={stat.key} style={styles.statCell}>
+            <Text style={styles.statLabel}>{stat.label}</Text>
+            <View style={styles.statTrack}><View style={[styles.statFill, { width: `${Math.max(7, stat.value)}%` }]} /></View>
+            <Text style={styles.statValue}>{stat.value}</Text>
+          </View>
+        ))}
+      </View>
+      <Text style={styles.baselineFoot}>{card.played} MATCHES · {card.w}W {card.d}D {card.l}L · THE RECEIPTS ARE IN. NOW WE BUILD.</Text>
+    </Animated.View>
   );
 }
 
@@ -296,6 +344,30 @@ const styles = StyleSheet.create({
   doneCard: { marginTop: 14, borderWidth: 1.2, borderColor: colors.primary, borderRadius: 18, backgroundColor: 'rgba(57,255,106,0.06)', padding: 20, alignItems: 'center' },
   doneTitle: { marginTop: 12, fontFamily: displayFont, fontSize: 22, letterSpacing: 0.6, color: colors.primary, textAlign: 'center' },
   doneBody: { marginTop: 10, fontFamily: bodyFont, fontSize: 13, lineHeight: 20, color: '#cfe0d3', textAlign: 'center' },
+
+  baselineCard: { marginTop: 31, padding: 17, borderRadius: 18, backgroundColor: '#101d14', borderWidth: 1, borderColor: 'rgba(242,192,120,0.58)', shadowColor: colors.accent, shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } },
+  baselineTopLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  baselineEyebrow: { fontFamily: monoFont, fontSize: 6.7, fontWeight: '900', letterSpacing: 1.4, color: colors.accent },
+  sealed: { width: 19, height: 19, borderRadius: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primary },
+  sealedText: { fontSize: 12, fontWeight: '900', color: '#07110a' },
+  baselineTitle: { marginTop: 9, fontFamily: displayFont, fontSize: 23, letterSpacing: 0.5, color: colors.fg },
+  baselineRead: { marginTop: 7, fontFamily: bodyFont, fontSize: 12.5, lineHeight: 18, color: colors.muted },
+  directionRow: { flexDirection: 'row', alignItems: 'stretch', marginTop: 17, padding: 12, borderRadius: 12, backgroundColor: 'rgba(4,10,6,0.48)' },
+  directionSide: { flex: 1 },
+  destinationSide: { alignItems: 'flex-end' },
+  directionLabel: { fontFamily: monoFont, fontSize: 6.2, fontWeight: '900', letterSpacing: 1.1, color: colors.muted },
+  directionValue: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 12, letterSpacing: 0.4, color: colors.accent },
+  destinationValue: { marginTop: 5, fontFamily: bodyFontHeavy, fontSize: 12, lineHeight: 14, textAlign: 'right', letterSpacing: 0.25, color: colors.primary },
+  directionMeta: { marginTop: 4, fontFamily: monoFont, fontSize: 5.5, letterSpacing: 0.4, color: 'rgba(143,184,155,0.7)' },
+  directionArrow: { width: 24, alignItems: 'center', justifyContent: 'center' },
+  directionArrowText: { fontFamily: displayFont, fontSize: 23, color: colors.primary },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 16, rowGap: 11 },
+  statCell: { width: '31%' },
+  statLabel: { fontFamily: monoFont, fontSize: 5.8, fontWeight: '900', letterSpacing: 0.7, color: colors.muted },
+  statTrack: { height: 3, marginTop: 5, overflow: 'hidden', borderRadius: 2, backgroundColor: 'rgba(143,184,155,0.18)' },
+  statFill: { height: '100%', borderRadius: 2, backgroundColor: colors.primary },
+  statValue: { marginTop: 3, fontFamily: bodyFontBold, fontSize: 11, color: colors.fg },
+  baselineFoot: { marginTop: 15, fontFamily: monoFont, fontSize: 6.1, lineHeight: 10, letterSpacing: 0.7, color: 'rgba(143,184,155,0.7)' },
 
   sectionLabel: { marginTop: 20, marginLeft: 2, fontFamily: bodyFontHeavy, fontSize: 9, letterSpacing: 1.9, color: colors.muted },
   calendarHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, paddingHorizontal: 2 },

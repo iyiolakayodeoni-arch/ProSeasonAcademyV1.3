@@ -22,6 +22,7 @@ import {
 import { useCannedReplies, addCanned, cannedFor } from '../data/cannedReplies';
 import { publishAnnouncement } from '../data/announcements';
 import { fetchPendingNews, reviewNews, NewsItem } from '../data/newsFeed';
+import { founderCommunityOverview, founderCreateCommunityGroup, founderRunPeerDraw, founderSetCommunityMember, founderSuspendCommunityMember } from '../data/communityProgram';
 
 // ─────────────────────────────────────────────────────────────
 // FOUNDER DESK — the owner's private admin GUI, inside the app.
@@ -1056,6 +1057,8 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
           })}
         </Animated.View>
 
+        <CommunityControl />
+
         <View style={styles.toolRow}>
           <Pressable onPress={() => void refresh()} style={styles.toolBtn} hitSlop={6}>
             <RefreshGlyphIcon size={11} color={colors.primary} />
@@ -1073,6 +1076,29 @@ export default function FounderDesk({ founderKey, onForgetKey, onClose }: { foun
       </Pressable>
     </Animated.View>
   );
+}
+
+function CommunityControl() {
+  const [overview, setOverview] = useState<any | null>(null);
+  const [name, setName] = useState(''); const [description, setDescription] = useState(''); const [academyId, setAcademyId] = useState(''); const [selected, setSelected] = useState<string>(''); const [note, setNote] = useState('');
+  const refresh = async () => setOverview(await founderCommunityOverview());
+  useEffect(() => { void refresh(); }, []);
+  const create = async () => { const r = await founderCreateCommunityGroup(name, description); if (r?.ok) { setName(''); setDescription(''); setNote('GROUP CREATED.'); await refresh(); } else setNote(r?.error ?? 'COULD NOT CREATE GROUP.'); };
+  const add = async (remove = false) => { if (!selected) return setNote('SELECT A GROUP FIRST.'); const r = await founderSetCommunityMember(selected, academyId, remove); setNote(r?.ok ? (remove ? 'MEMBER REMOVED FROM GROUP.' : 'MEMBER ADDED TO GROUP.') : (r?.error ?? 'COULD NOT UPDATE MEMBER.')); if (r?.ok) await refresh(); };
+  const suspend = async (remove = false) => { const r = await founderSuspendCommunityMember(academyId, remove ? '' : 'Founder community suspension', remove); setNote(r?.ok ? (remove ? 'COMMUNITY ACCESS RESTORED.' : 'COMMUNITY ACCESS SUSPENDED.') : (r?.error ?? 'COULD NOT UPDATE ACCESS.')); if (r?.ok) await refresh(); };
+  const draw = async () => { const r = await founderRunPeerDraw(selected ? [selected] : []); setNote(r?.ok ? `DRAW COMPLETE · ${r.pairs} PAIRS · ${r.waiting} WAITING.` : (r?.error ?? 'DRAW FAILED.')); if (r?.ok) await refresh(); };
+  return <Animated.View entering={FadeInDown.delay(245).duration(320)} style={styles.card}>
+    <Text style={styles.cardTag}>COMMUNITY CONTROL · FOUNDER ONLY</Text>
+    <Text style={styles.emptyNote}>CREATE PRIVATE GROUPS, PLACE OR REMOVE MEMBERS, SUSPEND COMMUNITY ACCESS, AND RUN THE FOUR-ACTIVE-DAY PEER DRAW. THESE CONTROLS ARE SECURED BY YOUR FOUNDER ACCOUNT, NOT JUST HIDDEN FROM MEMBERS.</Text>
+    <View style={styles.hallRow}>{(overview?.groups ?? []).map((g: any) => <Pressable key={g.id} onPress={() => setSelected(g.id)} style={[styles.chip, selected === g.id && styles.chipOn]}><Text style={[styles.chipTxt, selected === g.id && styles.chipTxtOn]}>{g.name}</Text></Pressable>)}</View>
+    <TextInput value={name} onChangeText={setName} placeholder="NEW GROUP NAME" placeholderTextColor={colors.muted} style={styles.input}/>
+    <TextInput value={description} onChangeText={setDescription} placeholder="SHORT GROUP DESCRIPTION" placeholderTextColor={colors.muted} style={styles.input}/>
+    <Pressable onPress={create} disabled={name.trim().length < 3}><View style={styles.sendBtn}><Text style={styles.sendTxt}>CREATE GROUP</Text></View></Pressable>
+    <TextInput value={academyId} onChangeText={(v) => setAcademyId(v.toUpperCase())} placeholder="MEMBER ACADEMY ID (E.G. PSA-001)" placeholderTextColor={colors.muted} style={styles.input}/>
+    <View style={styles.hallRow}><Pressable onPress={() => void add(false)} style={styles.chip}><Text style={styles.chipTxt}>ADD TO GROUP</Text></Pressable><Pressable onPress={() => void add(true)} style={styles.chip}><Text style={styles.chipTxt}>REMOVE FROM GROUP</Text></Pressable><Pressable onPress={() => void suspend(false)} style={styles.chip}><Text style={styles.chipTxt}>SUSPEND COMMUNITY</Text></Pressable><Pressable onPress={() => void suspend(true)} style={styles.chip}><Text style={styles.chipTxt}>RESTORE</Text></Pressable></View>
+    <Pressable onPress={draw}><View style={styles.sendBtn}><Text style={styles.sendTxt}>{selected ? 'RUN DRAW FOR SELECTED GROUP' : 'RUN DRAW FOR ALL GROUPS'}</Text></View></Pressable>
+    <Text style={styles.sentNote}>{note || `${(overview?.groups ?? []).length} GROUPS · ${(overview?.pairs ?? []).length} ACTIVE PAIRS · ${(overview?.suspended ?? []).length} COMMUNITY SUSPENSIONS`}</Text>
+  </Animated.View>;
 }
 
 const styles = StyleSheet.create({
