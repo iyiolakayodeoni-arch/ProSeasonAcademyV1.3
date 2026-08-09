@@ -104,20 +104,30 @@ body::before {
 html[data-psa-tier='tv'] #root,
 html[data-psa-tier='tv'] .psa-web-shell {
   width: calc(100% / 1.35);
+  height: calc(100vh / 1.35);
   min-height: calc(100vh / 1.35);
 }
 html[data-psa-tier='desktop'] #root,
 html[data-psa-tier='desktop'] .psa-web-shell {
   width: calc(100% / 1.08);
+  height: calc(100vh / 1.08);
   min-height: calc(100vh / 1.08);
 }
 
-/* ── Shell ── */
+/* ── Shell ──
+   The shell must carry a DEFINITE height (not just min-height): every
+   screen scrolls inside its own ScrollView, so the frame is exactly one
+   viewport tall and the chains below it (webAppRoot → app root → absolute
+   fill → bounded ScrollViews) resolve. With min-height alone, intrinsic
+   sizing lets the landing's full content height win and the page clips
+   with no scrollbar. */
 .psa-web-shell {
   display: flex;
   flex-direction: column;
+  height: 100vh;
   min-height: 100vh;
   width: 100%;
+  overflow: hidden;
   background: transparent;
 }
 

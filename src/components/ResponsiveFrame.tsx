@@ -73,7 +73,8 @@ export default function ResponsiveFrame({ children }: Props) {
 
 const styles = StyleSheet.create({
   nativeRoot: { flex: 1, backgroundColor: '#050a06' },
-  // height comes from the shell's min-height, not a raw 100vh — under the
-  // TV zoom a bare 100vh would render taller than the physical viewport
-  webAppRoot: { flex: 1, width: '100%', backgroundColor: '#050a06' } as any,
+  // The shell (.psa-web-shell) carries the definite viewport height; this
+  // root fills it so every screen's ScrollView is bounded and scrolls
+  // internally instead of stretching the page.
+  webAppRoot: { flex: 1, height: '100%', width: '100%', backgroundColor: '#050a06' } as any,
 });
