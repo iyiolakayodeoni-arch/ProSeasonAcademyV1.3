@@ -289,7 +289,10 @@ function WebsiteNav({ onEnter }: { onEnter: () => void }) {
   };
 
   return (
-    <View {...({ className: WEB ? 'onl-hud' : undefined } as any)} style={styles.nav}>
+    <View
+      {...({ className: WEB ? 'onl-hud psa-site-nav' : undefined } as any)}
+      style={styles.nav}
+    >
       <View style={styles.navInner}>
         <Pressable onPress={() => go('top')} style={styles.navBrand} accessibilityRole="button">
           <LogoMark size={28} />
@@ -356,6 +359,17 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
     void backend.liveSeatCount().then((s) => {
       if (s) setSeats(s);
     });
+  }, []);
+
+  // While the marketing page is mounted, the shell becomes a normal
+  // document scroller (see globalCss: html.psa-page-landing). Removed on
+  // unmount so the member app keeps its bounded, app-like frame.
+  useEffect(() => {
+    if (!WEB || typeof document === 'undefined') return;
+    document.documentElement.classList.add('psa-page-landing');
+    return () => {
+      document.documentElement.classList.remove('psa-page-landing');
+    };
   }, []);
 
   const go = (id: string) => {

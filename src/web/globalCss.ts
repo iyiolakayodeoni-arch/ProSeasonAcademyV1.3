@@ -377,6 +377,60 @@ textarea:-webkit-autofill {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Document-level scroll mode for the marketing page. While the landing
+   is mounted, the whole frame unwinds to natural document flow and the
+   BODY scrolls (overriding Expo's reset overflow:hidden) — the most
+   browser-native scroll there is, immune to flex-height resolution
+   quirks — and the nav bar sticks to the top like a real website header.
+   Removed again when the member app mounts. ── */
+html.psa-page-landing body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+html.psa-page-landing #root {
+  height: auto;
+  min-height: 100vh;
+}
+html.psa-page-landing .psa-web-shell {
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+}
+html.psa-page-landing .psa-site-scroll {
+  overflow: visible;
+}
+/* The app route mounts inside an absolute "fill" (for the splash
+   crossfade). In document scroll mode it must join the flow, otherwise
+   the page collapses to zero height. */
+html.psa-page-landing .psa-app-fill {
+  position: relative !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  height: auto !important;
+}
+/* While the splash plays, the document behind it must not move. */
+html.psa-splash-lock body {
+  overflow: hidden !important;
+}
+
+/* The splash must always cover exactly the viewport, even while the
+   landing page underneath is thousands of px tall. */
+.psa-splash-fill {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9995;
+}
+html.psa-page-landing .psa-site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
 /* ── Scroll reveals (blueprint fade-up) ── */
 .fade-up {
   opacity: 0;

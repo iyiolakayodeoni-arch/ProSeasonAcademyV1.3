@@ -104,6 +104,12 @@ export default function App() {
 
   const markGone = useCallback(() => setSplashGone(true), []);
 
+  // While the splash plays, lock the document behind it (web only).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.documentElement.classList.toggle('psa-splash-lock', !splashGone);
+  }, [splashGone]);
+
   // Release the OS splash only after React has mounted the custom splash
   // screen. SplashScreen.tsx owns the visible animation and must not hide
   // the native splash during its own first effect, otherwise Android can
@@ -281,7 +287,11 @@ export default function App() {
           <WebAppChrome visibleRoute={route} />
 
           {/* active route stays mounted underneath the splash for a true crossfade */}
-          <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
+          <Animated.View
+            {...({ className: 'psa-app-fill' } as any)}
+            style={[styles.fill, appStyle]}
+            pointerEvents={splashGone ? 'auto' : 'none'}
+          >
             {restored && (
               <>
                 {route === 'landing' && <LandingScreen onEnter={() => setRoute('signin')} />}
@@ -296,7 +306,11 @@ export default function App() {
           </Animated.View>
 
           {!splashGone && (
-            <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
+            <Animated.View
+              {...({ className: 'psa-splash-fill' } as any)}
+              style={[styles.fill, splashStyle]}
+              pointerEvents="none"
+            >
               <SplashScreen onFinish={handleSplashFinish} />
             </Animated.View>
           )}
