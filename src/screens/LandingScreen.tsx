@@ -372,6 +372,41 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
     };
   }, []);
 
+  // Scroll watchdog: ~1.2s after mount, verify the document can actually
+  // scroll. If some stylesheet/cascade we cannot foresee still blocks it,
+  // brute-force the chain with inline !important styles (inline important
+  // beats any stylesheet rule) so the website can never ship unscrollable.
+  useEffect(() => {
+    if (!WEB || typeof document === 'undefined') return;
+    const t = setTimeout(() => {
+      try {
+        const body = document.body;
+        const tall = body.scrollHeight > window.innerHeight + 60;
+        const prev = body.scrollTop;
+        body.scrollTop = prev + 2;
+        const moves = body.scrollTop !== prev;
+        body.scrollTop = prev;
+        if (tall && !moves) {
+          const force = (el: HTMLElement | null, props: Record<string, string>) => {
+            if (!el) return;
+            for (const [k, v] of Object.entries(props)) el.style.setProperty(k, v, 'important');
+          };
+          force(body, { 'overflow-y': 'auto', height: 'auto' });
+          force(document.getElementById('root'), { height: 'auto', 'min-height': '100vh' });
+          force(document.querySelector('.psa-web-shell') as HTMLElement | null, {
+            height: 'auto',
+            'min-height': '100vh',
+            overflow: 'visible',
+          });
+          body.scrollTop = 1;
+        }
+      } catch {
+        /* the watchdog must never break the page */
+      }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, []);
+
   const go = (id: string) => {
     if (WEB && typeof document !== 'undefined') {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
