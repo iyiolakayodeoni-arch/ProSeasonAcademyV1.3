@@ -3,7 +3,7 @@
 // Exported as a string so Metro needs no CSS loader.
 
 export const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap');
 
 :root {
   --psa-bg: #050a06;
@@ -46,6 +46,7 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   scrollbar-gutter: stable;
+  scroll-padding-top: 84px;
 }
 
 html, body, #root {
@@ -348,5 +349,171 @@ textarea:-webkit-autofill {
 
 /* Live heartbeat dot */
 .psa-live-dot { animation: psa-pulse 2.1s ease-in-out infinite; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   ONLIVERSITY — ESPORTS MOTION SYSTEM (landing dossier)
+   The manifesto layer: aurora drift, rising particles, arena grid,
+   hud conic borders, glass cards, hover shimmer. Constant but subtle.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── arena grid floor, slowly drifting ── */
+.onl-arena-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(57, 255, 106, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 106, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: onl-grid 16s linear infinite;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 40%, #000 30%, transparent 100%);
+}
+@keyframes onl-grid {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 44px, 44px 0; }
+}
+
+/* ── aurora orbs — three slow hearts that never stop ── */
+.onl-aurora { position: absolute; border-radius: 9999px; filter: blur(120px); }
+.onl-aurora-a {
+  top: -8rem; left: -6rem; width: 520px; height: 520px;
+  background: radial-gradient(circle, rgba(57, 255, 106, 0.16), transparent 70%);
+  animation: onl-aurora-a 22s ease-in-out infinite;
+}
+.onl-aurora-b {
+  top: 33%; right: -8rem; width: 560px; height: 560px;
+  background: radial-gradient(circle, rgba(160, 107, 255, 0.13), transparent 70%);
+  animation: onl-aurora-b 28s ease-in-out infinite;
+}
+.onl-aurora-c {
+  bottom: -10rem; left: 25%; width: 480px; height: 480px;
+  background: radial-gradient(circle, rgba(33, 230, 193, 0.12), transparent 70%);
+  animation: onl-aurora-c 18s ease-in-out infinite;
+}
+@keyframes onl-aurora-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(12%, 8%) scale(1.15); }
+}
+@keyframes onl-aurora-b {
+  0%, 100% { transform: translate(0, 0) scale(0.95); }
+  50%      { transform: translate(-14%, 10%) scale(1.2); }
+}
+@keyframes onl-aurora-c {
+  0%, 100% { transform: translate(0, 0) scale(1.1); }
+  50%      { transform: translate(10%, -12%) scale(0.9); }
+}
+
+/* ── rising particles ── */
+.onl-particle {
+  position: absolute;
+  bottom: -4%;
+  border-radius: 9999px;
+  box-shadow: 0 0 8px currentColor;
+  opacity: var(--p-op, 0.4);
+  animation: onl-rise linear infinite;
+}
+@keyframes onl-rise {
+  0%   { transform: translateY(0) translateX(0); opacity: var(--p-op, 0.4); }
+  85%  { opacity: var(--p-op, 0.4); }
+  100% { transform: translateY(-108vh) translateX(var(--p-x, 0px)); opacity: 0; }
+}
+
+/* ── glass card — the principal surface ── */
+.onl-glass {
+  background: rgba(20, 36, 26, 0.42);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(57, 255, 106, 0.08);
+  border-radius: 20px;
+  transition:
+    background 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .onl-glass:hover {
+    background: rgba(20, 36, 26, 0.6);
+    border-color: rgba(57, 255, 106, 0.16);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(57, 255, 106, 0.04);
+    transform: translateY(-3px);
+  }
+}
+
+/* ── hud conic border — spins alive on hover ── */
+@property --onl-hud {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.onl-hud { position: relative; }
+.onl-hud::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--onl-hud),
+    transparent 0deg,
+    rgba(57, 255, 106, 0.7) 60deg,
+    rgba(33, 230, 193, 0.6) 120deg,
+    transparent 180deg,
+    rgba(160, 107, 255, 0.5) 280deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  animation: onl-hud-spin 3s linear infinite;
+  pointer-events: none;
+}
+.onl-hud:hover::before { opacity: 0.9; }
+@keyframes onl-hud-spin { to { --onl-hud: 360deg; } }
+
+/* ── CTA hover shimmer sweep ── */
+.onl-shimmer { position: relative; overflow: hidden; }
+.onl-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
+  background: linear-gradient(100deg, transparent 10%, rgba(255, 255, 255, 0.4) 50%, transparent 90%);
+  transform: translateX(-120%) skewX(-16deg);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .onl-shimmer:hover::after { animation: onl-sweep 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+}
+@keyframes onl-sweep { to { transform: translateX(260%) skewX(-16deg); } }
+
+/* ── neon headline shimmer ── */
+.onl-neon {
+  background: linear-gradient(100deg, #39ff6a 0%, #bafff0 25%, #21e6c1 50%, #39ff6a 75%, #39ff6a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: onl-neon 6s linear infinite;
+}
+@keyframes onl-neon { to { background-position: 200% center; } }
+
+/* ── glow divider ── */
+.onl-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(57, 255, 106, 0.14), transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onl-arena-grid, .onl-aurora-a, .onl-aurora-b, .onl-aurora-c,
+  .onl-particle, .onl-neon, .onl-hud::before { animation: none !important; }
+  .onl-particle { display: none; }
+}
 `;
 export default GLOBAL_CSS;
