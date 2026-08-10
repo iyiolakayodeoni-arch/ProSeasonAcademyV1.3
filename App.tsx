@@ -305,15 +305,31 @@ export default function App() {
             )}
           </Animated.View>
 
-          {!splashGone && (
-            <Animated.View
-              {...({ className: 'psa-splash-fill' } as any)}
-              style={[styles.fill, splashStyle]}
-              pointerEvents="none"
-            >
-              <SplashScreen onFinish={handleSplashFinish} />
-            </Animated.View>
-          )}
+          {!splashGone &&
+            (Platform.OS === 'web' ? (
+              /* raw fixed-position DOM wrapper: the splash always covers
+                 exactly the viewport, no matter what the page underneath
+                 is doing (the landing scrolls the document behind it) */
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 9995,
+                  pointerEvents: 'none',
+                }}
+              >
+                <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
+                  <SplashScreen onFinish={handleSplashFinish} />
+                </Animated.View>
+              </div>
+            ) : (
+              <Animated.View style={[styles.fill, splashStyle]} pointerEvents="none">
+                <SplashScreen onFinish={handleSplashFinish} />
+              </Animated.View>
+            ))}
         </View>
       </ResponsiveFrame>
     </ErrorBoundary>

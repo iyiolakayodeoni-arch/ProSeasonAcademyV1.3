@@ -160,8 +160,26 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           reads edge-to-edge as a backdrop. Native mirrors the same idea. */}
       {WEB ? (
         <>
-          {/* the photograph is the background — full screen, edge to edge */}
-          <img className="psa-splash-bg" src={heroUri} alt="" draggable={false} />
+          {/* the photograph is the background — full screen, edge to edge.
+              Geometry lives inline so it can never depend on CSS delivery;
+              the class only adds the dolly animation. */}
+          <img
+            className="psa-splash-bg"
+            src={heroUri}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              filter: 'brightness(0.34) saturate(1.1)',
+              pointerEvents: 'none',
+            }}
+          />
           <div className="psa-splash-vignette" />
         </>
       ) : (
