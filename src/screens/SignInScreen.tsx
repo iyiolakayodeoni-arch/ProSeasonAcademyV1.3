@@ -28,11 +28,15 @@ import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
 import InfinityCrest from '../components/InfinityCrest';
 import NeonInput from '../components/NeonInput';
+import PhotoVeil from '../components/PhotoVeil';
 import { useAuth } from '../hooks/useAuth';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
+
+// Landing page background — same as the splash/boot screen.
+const HERO_BG = require('../../assets/art/splash-hero.png');
 
 // Coach Obinna — the face of the arena panel, anchored to the panel floor.
 const OBINNA = require('../../assets/coaches/obinna-card.png');
@@ -106,10 +110,14 @@ const arenaStyles = StyleSheet.create({
 
 export default function SignInScreen({ onSignedIn }: Props) {
   const { isLaptopUp, isPhoneColumn, w, h } = useResponsive();
-  // Keep tablets and narrow/short browser windows stacked. The full arena split
-  // only appears when both columns have enough room to breathe.
-  const splitLayout = isLaptopUp && w >= 1080 && h >= 700;
+  // Desktop: full-page centred form, no split panel.
+  // Tablet / phone: stacked header + form as before.
+  const isDesktop = isLaptopUp && w >= 1080 && h >= 700;
   const compactHeight = h < 650;
+
+  // ScrollView on web needs an explicit height — the flex chain alone won't
+  // give it one. This matches the LandingScreen approach.
+  const scrollH = h;
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -270,6 +278,354 @@ export default function SignInScreen({ onSignedIn }: Props) {
     setInfo(null);
   };
 
+  // ── Shared form content — rendered inside both desktop and mobile layouts ──
+  const formBody = (
+    <Animated.View
+      entering={FadeInUp.duration(480).delay(80)}
+      style={[
+        styles.authBox,
+        !isPhoneColumn && !isDesktop && styles.authBoxTablet,
+        isDesktop && styles.authBoxDesktop,
+      ]}
+    >
+      <View style={styles.accessStrip}>
+        <View style={styles.accessStripLead}>
+          <View style={styles.accessPulse} />
+          <Text style={styles.accessStripText}>MATCHDAY ACCESS</Text>
+        </View>
+        <Text style={styles.accessStripMeta}>SECURE PLAYER GATE · 01</Text>
+      </View>
+      {mode === 'token' && academyToken ? (
+        <View>
+          <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
+          <Text style={styles.tokenTitle}>YOUR SEAT IS LIVE</Text>
+          <Text style={styles.tokenHint}>
+            SAVE THIS. IT IS YOUR SEAT ID — SHOWN ONCE AT SIGN-UP. YOU SIGN IN WITH EMAIL +
+            PASSWORD; THIS TOKEN IS HOW THE FOUNDER FINDS YOU.
+          </Text>
+          <Pressable onPress={() => setTokenRevealed(true)} hitSlop={6}>
+            <View style={styles.tokenBox}>
+              <Text style={styles.tokenValue}>
+                {tokenRevealed ? academyToken : 'TAP TO REVEAL · PSA-••••••'}
+              </Text>
+            </View>
+          </Pressable>
+          <Text style={styles.tokenFine}>
+            STORED ON THIS DEVICE · ALSO IN SETTINGS → PASSWORD & SECURITY
+          </Text>
+          <Pressable
+            onPress={() => {
+              const o = optionForLabel(countryPick);
+              if (o) void verifyLocation({ country: o.label, countryCode: o.code });
+              onSignedIn?.();
+            }}
+            style={{ marginTop: 16 }}
+          >
+            <Animated.View style={[styles.cta, btnStyle]}>
+              <Text style={styles.ctaText}>I SAVED IT — ENTER THE ACADEMY ›</Text>
+            </Animated.View>
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          <Text style={styles.authEyebrow}>ACADEMY PORTAL · ACCESS GATE 01</Text>
+          <Text style={styles.authTitle}>
+            {mode === 'register' ? 'CLAIM YOUR SEAT' : mode === 'login' ? 'SIGN IN' : 'RESET ACCESS'}
+          </Text>
+          <Text style={styles.authSub}>
+            {mode === 'register'
+              ? 'Create your member profile and lock in your coach. The seat is yours when the baseline is sealed.'
+              : mode === 'login'
+                ? 'Sign in to access your 6-month progress and match receipts.'
+                : 'Enter your registered email to receive reset instructions.'}
+          </Text>
+
+          {/* Mode switcher tabs */}
+          <View style={styles.modeRow}>
+            {([
+              ['register', 'CREATE SEAT'],
+              ['login', 'SIGN IN'],
+              ['reset', 'RESET'],
+            ] as const).map(([id, label]) => {
+              const on = mode === id;
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => jumpTo(id)}
+                  style={[styles.modeChip, on && styles.modeChipOn]}
+                >
+                  <Text style={[styles.modeTxt, on && styles.modeTxtOn]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {mode === 'register' && (
+            <>
+              <Text style={styles.geoTitle}>YOUR REGION / COUNTRY</Text>
+              <View style={styles.geoGrid}>
+                {COUNTRY_OPTIONS.map((o) => {
+                  const on = countryPick === o.label;
+                  return (
+                    <Pressable
+                      key={o.label}
+                      onPress={() => pickCountry(o.label)}
+                      hitSlop={3}
+                      style={[styles.geoOption, isDesktop && styles.geoOptionDesktop]}
+                    >
+                      <View style={[styles.geoChip, on && styles.geoChipOn]}>
+                        <Text style={[styles.geoChipTxt, on && styles.geoChipTxtOn]}>
+                          {o.label}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View style={styles.form}>
+                <NeonInput
+                  placeholder="USERNAME / HANDLE"
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="characters"
+                  maxLength={14}
+                />
+                <View style={styles.fieldGap} />
+                <NeonInput
+                  placeholder="EMAIL ADDRESS"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+                <View style={styles.fieldGap} />
+                <NeonInput
+                  placeholder="PASSWORD · 8+ CHARACTERS"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
+            </>
+          )}
+
+          {mode === 'login' && (
+            <View style={styles.form}>
+              <NeonInput
+                placeholder="EMAIL ADDRESS"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+              <View style={styles.fieldGap} />
+              <NeonInput
+                placeholder="PASSWORD"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {mode === 'reset' && (
+            <View style={styles.form}>
+              <Text style={styles.resetHint}>
+                Enter the email associated with your seat. A reset link will be dispatched.
+              </Text>
+              <NeonInput
+                placeholder="EMAIL ADDRESS"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+          )}
+
+          {error && <Text style={styles.doorError}>{error}</Text>}
+          {info && <Text style={styles.infoNote}>{info}</Text>}
+
+          <Pressable
+            onPress={() => {
+              if (mode === 'register') void onRegister();
+              else if (mode === 'login') void onLogin();
+              else void onReset();
+            }}
+            onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
+            onPressOut={() => (press.value = withSpring(0))}
+            disabled={
+              mode === 'register' ? !canRegister : mode === 'login' ? !canLogin : !canReset
+            }
+            style={{ marginTop: 18 }}
+            accessibilityRole="button"
+            {...ctaBind}
+          >
+            <Animated.View
+              style={[
+                styles.cta,
+                btnStyle,
+                loading && styles.ctaBusy,
+                (mode === 'register' ? !canRegister : mode === 'login' ? !canLogin : !canReset) &&
+                  styles.ctaOff,
+              ]}
+            >
+              <LinearGradient
+                colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {!loading && (
+                <View
+                  pointerEvents="none"
+                  {...({ className: 'psa-sheen' } as any)}
+                  style={{ left: 0 }}
+                />
+              )}
+              <Text style={styles.ctaText}>
+                {loading
+                  ? mode === 'register'
+                    ? 'CLAIMING YOUR SEAT…'
+                    : mode === 'login'
+                      ? 'SIGNING IN…'
+                      : 'SENDING…'
+                  : mode === 'register'
+                    ? !countryPick
+                      ? 'PICK YOUR COUNTRY FIRST'
+                      : !nameOk
+                        ? 'ENTER USERNAME'
+                        : !emailOk
+                          ? 'ENTER VALID EMAIL'
+                          : !passOk
+                            ? 'PASSWORD (8+ CHARACTERS)'
+                            : 'CREATE MY ACADEMY SEAT'
+                    : mode === 'login'
+                      ? 'SIGN IN'
+                      : 'SEND RESET LINK'}
+              </Text>
+            </Animated.View>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setInstallHelp(true)}
+            hitSlop={6}
+            style={styles.installLinkWrap}
+          >
+            <Text style={styles.installLink}>HOW TO INSTALL AS A WEB APP / PWA ›</Text>
+          </Pressable>
+        </>
+      )}
+
+      <View style={styles.footerRow}>
+        <Text style={styles.footer}>PROSEASON ACADEMY</Text>
+        <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
+      </View>
+    </Animated.View>
+  );
+
+  // ── DESKTOP LAYOUT — full-page centred form with landing page background ──
+  if (isDesktop) {
+    return (
+      <View style={styles.desktopPage}>
+        {/* Static background image — same as the landing/splash page */}
+        <Image
+          source={HERO_BG}
+          style={styles.desktopBg}
+          resizeMode="cover"
+          blurRadius={3}
+        />
+        <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
+
+        <GridBackground />
+        <ScreenFlash />
+
+        {/* Subtle pitch-line decoration across the full page */}
+        <View pointerEvents="none" style={styles.desktopDecor}>
+          <View style={styles.pitchHalfway} />
+          <View style={styles.pitchCircle} />
+          <View style={styles.desktopGlow} />
+        </View>
+
+        {/* Nav */}
+        <View
+          style={[styles.navWrap, Platform.OS === 'web' && (styles.navWrapWeb as any)]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.navBar}>
+            <Pressable
+              onPress={() => jumpTo('register')}
+              style={({ pressed }) => [styles.navBrand, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="ProSeason Academy"
+            >
+              <View style={styles.navCrestGlow}>
+                <InfinityCrest size={56} bold />
+              </View>
+            </Pressable>
+            <View style={styles.navRight}>
+              <Pressable
+                onPress={() => (mode === 'login' ? jumpTo('register') : jumpTo('login'))}
+                style={({ pressed }) => [styles.navCta, pressed && { opacity: 0.85 }]}
+                accessibilityRole="button"
+              >
+                <LinearGradient
+                  colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={styles.navCtaTxt}>{mode === 'login' ? 'CREATE SEAT ›' : 'SIGN IN ›'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* Full-page scrollable content */}
+        <ScrollView
+          style={[styles.desktopScroll, { height: scrollH }]}
+          contentContainerStyle={styles.desktopFormContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          {/* The arena line — centred above the form */}
+          <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
+            <View style={styles.titleWrapDesktop}>
+              <Text
+                numberOfLines={1}
+                style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}
+              >
+                {ARENA_LINE}
+              </Text>
+              <View style={styles.titleRowDesktop}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.visualTitle, styles.visualTitleDesktop]}
+                >
+                  {ARENA_LINE.slice(0, typedCount)}
+                </Text>
+                <Animated.View style={[styles.caret, styles.caretDesktop, caretStyle]} />
+              </View>
+            </View>
+          </Animated.View>
+
+          {formBody}
+        </ScrollView>
+
+        {installHelp && (
+          <View style={StyleSheet.absoluteFill}>
+            <SideloadAssistant onClose={() => setInstallHelp(false)} />
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // ── MOBILE / TABLET LAYOUT — stacked header + form (unchanged) ──
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -316,16 +672,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </View>
         </View>
 
-        <View style={[styles.pageSplit, splitLayout && styles.pageSplitWide]}>
-          {/* Left arena panel (desktop) / header (mobile) — Obinna's stage.
-              A simple dark-green esports backdrop; no photography, no badges,
-              no counters. The panel always fills its full height. */}
+        <View style={styles.pageSplit}>
+          {/* Left arena panel (mobile/tablet header) — Obinna's stage. */}
           <View
             style={[
               styles.visualPane,
-              !isPhoneColumn && !splitLayout && styles.visualPaneTablet,
-              compactHeight && !splitLayout && styles.visualPaneCompact,
-              splitLayout && styles.visualPaneWide,
+              !isPhoneColumn && styles.visualPaneTablet,
+              compactHeight && styles.visualPaneCompact,
             ]}
           >
             <ArenaBackdrop />
@@ -342,39 +695,31 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <Image
               source={OBINNA}
               resizeMode="contain"
-              style={[styles.obinna, splitLayout ? styles.obinnaWide : styles.obinnaStacked]}
+              style={[styles.obinna, styles.obinnaStacked]}
             />
 
             <Animated.View
               entering={FadeIn.duration(600).delay(120)}
-              style={[styles.visualContent, splitLayout && styles.visualContentWide]}
+              style={styles.visualContent}
             >
-              {/* the arena line — typed character by character, held 5s, looped.
-                  The invisible full line reserves the space so the layout
-                  never jumps while the text types on. */}
               <View style={styles.titleWrap}>
-                <Text
-                  style={[styles.visualTitle, splitLayout && styles.visualTitleWide, styles.titleGhost]}
-                >
+                <Text style={[styles.visualTitle, styles.titleGhost]}>
                   {ARENA_LINE}
                 </Text>
                 <View style={styles.titleRow}>
-                  <Text style={[styles.visualTitle, splitLayout && styles.visualTitleWide]}>
+                  <Text style={styles.visualTitle}>
                     {ARENA_LINE.slice(0, typedCount)}
                   </Text>
-                  <Animated.View style={[styles.caret, splitLayout && styles.caretWide, caretStyle]} />
+                  <Animated.View style={[styles.caret, caretStyle]} />
                 </View>
               </View>
             </Animated.View>
           </View>
 
-          {/* Right Form Panel — open desktop canvas, never a nested mobile card. */}
+          {/* Right Form Panel */}
           <View
             pointerEvents="none"
-            style={[
-              styles.formPitchDecor,
-              splitLayout ? styles.formPitchDecorWide : styles.formPitchDecorStacked,
-            ]}
+            style={[styles.formPitchDecor, styles.formPitchDecorStacked]}
           >
             <View style={styles.pitchHalfway} />
             <View style={styles.pitchCircle} />
@@ -382,262 +727,17 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <View style={styles.formGlow} />
           </View>
           <ScrollView
-            style={styles.formPane}
+            style={[styles.formPane, { height: scrollH }]}
             contentContainerStyle={[
               styles.formContent,
               isPhoneColumn && styles.formContentPhone,
-              !isPhoneColumn && !splitLayout && styles.formContentTablet,
-              splitLayout && styles.formContentWide,
+              !isPhoneColumn && styles.formContentTablet,
             ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             bounces={false}
           >
-            <Animated.View
-              entering={FadeInUp.duration(480).delay(80)}
-              style={[
-                styles.authBox,
-                !isPhoneColumn && !splitLayout && styles.authBoxTablet,
-                splitLayout && styles.authBoxWide,
-              ]}
-            >
-              <View style={styles.accessStrip}>
-                <View style={styles.accessStripLead}>
-                  <View style={styles.accessPulse} />
-                  <Text style={styles.accessStripText}>MATCHDAY ACCESS</Text>
-                </View>
-                <Text style={styles.accessStripMeta}>SECURE PLAYER GATE · 01</Text>
-              </View>
-              {mode === 'token' && academyToken ? (
-                <View>
-                  <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
-                  <Text style={styles.tokenTitle}>YOUR SEAT IS LIVE</Text>
-                  <Text style={styles.tokenHint}>
-                    SAVE THIS. IT IS YOUR SEAT ID — SHOWN ONCE AT SIGN-UP. YOU SIGN IN WITH EMAIL +
-                    PASSWORD; THIS TOKEN IS HOW THE FOUNDER FINDS YOU.
-                  </Text>
-                  <Pressable onPress={() => setTokenRevealed(true)} hitSlop={6}>
-                    <View style={styles.tokenBox}>
-                      <Text style={styles.tokenValue}>
-                        {tokenRevealed ? academyToken : 'TAP TO REVEAL · PSA-••••••'}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  <Text style={styles.tokenFine}>
-                    STORED ON THIS DEVICE · ALSO IN SETTINGS → PASSWORD & SECURITY
-                  </Text>
-                  <Pressable
-                    onPress={() => {
-                      const o = optionForLabel(countryPick);
-                      if (o) void verifyLocation({ country: o.label, countryCode: o.code });
-                      onSignedIn?.();
-                    }}
-                    style={{ marginTop: 16 }}
-                  >
-                    <Animated.View style={[styles.cta, btnStyle]}>
-                      <Text style={styles.ctaText}>I SAVED IT — ENTER THE ACADEMY ›</Text>
-                    </Animated.View>
-                  </Pressable>
-                </View>
-              ) : (
-                <>
-                  <Text style={styles.authEyebrow}>ACADEMY PORTAL · ACCESS GATE 01</Text>
-                  <Text style={styles.authTitle}>
-                    {mode === 'register' ? 'CLAIM YOUR SEAT' : mode === 'login' ? 'SIGN IN' : 'RESET ACCESS'}
-                  </Text>
-                  <Text style={styles.authSub}>
-                    {mode === 'register'
-                      ? 'Create your member profile and lock in your coach. The seat is yours when the baseline is sealed.'
-                      : mode === 'login'
-                        ? 'Sign in to access your 6-month progress and match receipts.'
-                        : 'Enter your registered email to receive reset instructions.'}
-                  </Text>
-
-                  {/* Mode switcher tabs */}
-                  <View style={styles.modeRow}>
-                    {([
-                      ['register', 'CREATE SEAT'],
-                      ['login', 'SIGN IN'],
-                      ['reset', 'RESET'],
-                    ] as const).map(([id, label]) => {
-                      const on = mode === id;
-                      return (
-                        <Pressable
-                          key={id}
-                          onPress={() => jumpTo(id)}
-                          style={[styles.modeChip, on && styles.modeChipOn]}
-                        >
-                          <Text style={[styles.modeTxt, on && styles.modeTxtOn]}>{label}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-
-                  {mode === 'register' && (
-                    <>
-                      <Text style={styles.geoTitle}>YOUR REGION / COUNTRY</Text>
-                      <View style={styles.geoGrid}>
-                        {COUNTRY_OPTIONS.map((o) => {
-                          const on = countryPick === o.label;
-                          return (
-                            <Pressable
-                              key={o.label}
-                              onPress={() => pickCountry(o.label)}
-                              hitSlop={3}
-                              style={[styles.geoOption, splitLayout && styles.geoOptionWide]}
-                            >
-                              <View style={[styles.geoChip, on && styles.geoChipOn]}>
-                                <Text style={[styles.geoChipTxt, on && styles.geoChipTxtOn]}>
-                                  {o.label}
-                                </Text>
-                              </View>
-                            </Pressable>
-                          );
-                        })}
-                      </View>
-
-                      <View style={styles.form}>
-                        <NeonInput
-                          placeholder="USERNAME / HANDLE"
-                          value={username}
-                          onChangeText={setUsername}
-                          autoCapitalize="characters"
-                          maxLength={14}
-                        />
-                        <View style={styles.fieldGap} />
-                        <NeonInput
-                          placeholder="EMAIL ADDRESS"
-                          value={email}
-                          onChangeText={setEmail}
-                          autoCapitalize="none"
-                          keyboardType="email-address"
-                        />
-                        <View style={styles.fieldGap} />
-                        <NeonInput
-                          placeholder="PASSWORD · 8+ CHARACTERS"
-                          value={password}
-                          onChangeText={setPassword}
-                          secureTextEntry
-                          autoCapitalize="none"
-                        />
-                      </View>
-                    </>
-                  )}
-
-                  {mode === 'login' && (
-                    <View style={styles.form}>
-                      <NeonInput
-                        placeholder="EMAIL ADDRESS"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                      />
-                      <View style={styles.fieldGap} />
-                      <NeonInput
-                        placeholder="PASSWORD"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                        autoCapitalize="none"
-                      />
-                    </View>
-                  )}
-
-                  {mode === 'reset' && (
-                    <View style={styles.form}>
-                      <Text style={styles.resetHint}>
-                        Enter the email associated with your seat. A reset link will be dispatched.
-                      </Text>
-                      <NeonInput
-                        placeholder="EMAIL ADDRESS"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                      />
-                    </View>
-                  )}
-
-                  {error && <Text style={styles.doorError}>{error}</Text>}
-                  {info && <Text style={styles.infoNote}>{info}</Text>}
-
-                  <Pressable
-                    onPress={() => {
-                      if (mode === 'register') void onRegister();
-                      else if (mode === 'login') void onLogin();
-                      else void onReset();
-                    }}
-                    onPressIn={() => (press.value = withTiming(1, { duration: 90 }))}
-                    onPressOut={() => (press.value = withSpring(0))}
-                    disabled={
-                      mode === 'register' ? !canRegister : mode === 'login' ? !canLogin : !canReset
-                    }
-                    style={{ marginTop: 18 }}
-                    accessibilityRole="button"
-                    {...ctaBind}
-                  >
-                    <Animated.View
-                      style={[
-                        styles.cta,
-                        btnStyle,
-                        loading && styles.ctaBusy,
-                        (mode === 'register' ? !canRegister : mode === 'login' ? !canLogin : !canReset) &&
-                          styles.ctaOff,
-                      ]}
-                    >
-                      <LinearGradient
-                        colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={StyleSheet.absoluteFill}
-                      />
-                      {!loading && (
-                        <View
-                          pointerEvents="none"
-                          {...({ className: 'psa-sheen' } as any)}
-                          style={{ left: 0 }}
-                        />
-                      )}
-                      <Text style={styles.ctaText}>
-                        {loading
-                          ? mode === 'register'
-                            ? 'CLAIMING YOUR SEAT…'
-                            : mode === 'login'
-                              ? 'SIGNING IN…'
-                              : 'SENDING…'
-                          : mode === 'register'
-                            ? !countryPick
-                              ? 'PICK YOUR COUNTRY FIRST'
-                              : !nameOk
-                                ? 'ENTER USERNAME'
-                                : !emailOk
-                                  ? 'ENTER VALID EMAIL'
-                                  : !passOk
-                                    ? 'PASSWORD (8+ CHARACTERS)'
-                                    : 'CREATE MY ACADEMY SEAT'
-                            : mode === 'login'
-                              ? 'SIGN IN'
-                              : 'SEND RESET LINK'}
-                      </Text>
-                    </Animated.View>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setInstallHelp(true)}
-                    hitSlop={6}
-                    style={styles.installLinkWrap}
-                  >
-                    <Text style={styles.installLink}>HOW TO INSTALL AS A WEB APP / PWA ›</Text>
-                  </Pressable>
-                </>
-              )}
-
-              <View style={styles.footerRow}>
-                <Text style={styles.footer}>PROSEASON ACADEMY</Text>
-                <Text style={styles.footer}>VERSION {APP_VERSION}</Text>
-              </View>
-            </Animated.View>
+            {formBody}
           </ScrollView>
         </View>
 
@@ -653,6 +753,35 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
+
+  // ── Desktop page layout ──
+  desktopPage: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    position: 'relative',
+  },
+  desktopScroll: {
+    // No flex here - we use explicit height in the style prop
+  },
+  desktopFormContent: {
+    flexGrow: 1,
+    alignItems: 'center',
+    paddingHorizontal: 48,
+    paddingTop: 120,
+    paddingBottom: 60,
+  },
+
+  // ── Desktop background ──
+  desktopBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    opacity: 0.25,
+  },
 
   // ── public nav — this door only ──
   navWrap: {
@@ -700,25 +829,47 @@ const styles = StyleSheet.create({
   },
   navCtaTxt: { fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 1.6, color: '#07130b' },
 
+  // ── Desktop full-page layout ──
+  desktopDecor: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
+  desktopGlow: {
+    position: 'absolute',
+    width: 600,
+    height: 600,
+    borderRadius: 300,
+    left: '50%',
+    top: '50%',
+    marginLeft: -300,
+    marginTop: -300,
+    backgroundColor: 'rgba(57,255,106,0.025)',
+  },
+  desktopTitleWrap: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+
+  // ── Mobile / tablet stacked layout ──
   pageSplit: {
     flex: 1,
     flexDirection: 'column',
     position: 'relative',
     overflow: 'hidden',
   },
-  pageSplitWide: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
 
   visualPane: {
     position: 'relative',
-    height: 320,
     backgroundColor: '#04120c',
     overflow: 'hidden',
     paddingHorizontal: 20,
     paddingTop: 78,
     paddingBottom: 0,
+    height: 320,
   },
   visualPaneTablet: {
     height: 400,
@@ -727,16 +878,6 @@ const styles = StyleSheet.create({
   visualPaneCompact: {
     height: 250,
     paddingTop: 70,
-  },
-  // The panel stretches to the full available height — opaque dark green all
-  // the way down, so no strip of page background ever shows beneath it.
-  visualPaneWide: {
-    flex: 1.08,
-    alignSelf: 'stretch',
-    height: '100%',
-    minWidth: 520,
-    paddingHorizontal: 0,
-    paddingTop: 0,
   },
 
   // esports HUD frame
@@ -761,17 +902,18 @@ const styles = StyleSheet.create({
   visualContent: {
     zIndex: 10,
   },
-  visualContentWide: {
-    paddingHorizontal: 48,
-    paddingTop: 104,
-  },
 
   // ── the arena line (typewriter) ──
   titleWrap: {
     position: 'relative',
     maxWidth: 560,
   },
-  // invisible copy of the full line — reserves the final space up front
+  titleWrapDesktop: {
+    position: 'relative',
+    alignSelf: 'center',
+    minWidth: 700,
+    alignItems: 'center',
+  },
   titleGhost: {
     opacity: 0,
   },
@@ -781,6 +923,16 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  titleRowDesktop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
   },
   visualTitle: {
     fontFamily: displayFont,
@@ -792,9 +944,10 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 10,
   },
-  visualTitleWide: {
-    fontSize: 46,
-    lineHeight: 52,
+  visualTitleDesktop: {
+    fontSize: 52,
+    lineHeight: 58,
+    textAlign: 'center',
   },
   caret: {
     width: 5,
@@ -807,9 +960,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
-  caretWide: {
+  caretDesktop: {
     width: 6,
-    height: 40,
+    height: 46,
   },
 
   // ── Obinna — anchored to the floor of the panel ──
@@ -819,15 +972,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     zIndex: 1,
   },
-  obinnaWide: {
-    height: '86%',
-    aspectRatio: 896 / 1200,
-  },
   obinnaStacked: {
     height: '92%',
     aspectRatio: 896 / 1200,
   },
 
+  // ── Form panel decorations ──
   formPitchDecor: {
     position: 'absolute',
     right: 0,
@@ -835,7 +985,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#071009',
   },
-  formPitchDecorWide: { top: 0, width: '48.2%' },
   formPitchDecorStacked: { height: '68%', left: 0 },
   pitchHalfway: {
     position: 'absolute',
@@ -874,12 +1023,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.035)',
   },
   formPane: {
-    flex: 0.92,
+    flex: 1,
     backgroundColor: 'rgba(7, 12, 8, 0.90)',
   },
   formContent: {
-    minHeight: '100%',
-    justifyContent: 'center',
+    flexGrow: 1,
     alignItems: 'center',
   },
   formContentPhone: {
@@ -892,14 +1040,6 @@ const styles = StyleSheet.create({
     paddingTop: 44,
     paddingBottom: 52,
   },
-  // desktop: the registration form hangs from the top of the canvas,
-  // clearing the nav — no longer centred vertically in the pane
-  formContentWide: {
-    justifyContent: 'flex-start',
-    paddingHorizontal: 44,
-    paddingTop: 96,
-    paddingBottom: 48,
-  },
 
   authBox: {
     width: '100%',
@@ -907,7 +1047,8 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   authBoxTablet: { maxWidth: 680 },
-  authBoxWide: { maxWidth: 580 },
+  authBoxDesktop: { maxWidth: 640 },
+
   accessStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1005,7 +1146,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   geoOption: { maxWidth: '100%' },
-  geoOptionWide: { width: '48.9%' },
+  geoOptionDesktop: { width: '32%' },
   geoChip: {
     minHeight: 34,
     justifyContent: 'center',
