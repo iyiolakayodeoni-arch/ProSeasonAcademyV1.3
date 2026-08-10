@@ -532,20 +532,22 @@ export default function SignInScreen({ onSignedIn }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.flex}>
+          {/* Landing page background — same atmospheric slideshow as the splash/boot screen */}
+          <View style={styles.backgroundLayer} pointerEvents="none">
+            <RotatingArtImage
+              sources={[
+                HERO_BG,
+                require('../../assets/art/journey-tunnel.jpg'),
+                require('../../assets/art/locker-room.jpg'),
+              ]}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            />
+            <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
+          </View>
+
           <GridBackground />
           <ScreenFlash />
-
-          {/* Landing page background — same atmospheric slideshow as the splash/boot screen */}
-          <RotatingArtImage
-            sources={[
-              HERO_BG,
-              require('../../assets/art/journey-tunnel.jpg'),
-              require('../../assets/art/locker-room.jpg'),
-            ]}
-            style={{ position: 'absolute', width: w, height: h, opacity: 0.42 }}
-            resizeMode="cover"
-          />
-          <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
 
           {/* Subtle pitch-line decoration across the full page */}
           <View pointerEvents="none" style={styles.desktopDecor}>
@@ -590,7 +592,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
           {/* Full-page centred form */}
           <ScrollView
-            style={styles.flex}
+            style={[styles.flex, styles.scrollableContent]}
             contentContainerStyle={styles.desktopFormContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -758,6 +760,24 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
+
+  // ── Desktop background layer ──
+  backgroundLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+  },
+  backgroundImage: {
+    flex: 1,
+    opacity: 0.42,
+  },
+  scrollableContent: {
+    zIndex: 1,
+    position: 'relative',
+  },
 
   // ── public nav — this door only ──
   navWrap: {
