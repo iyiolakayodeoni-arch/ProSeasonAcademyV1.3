@@ -750,12 +750,12 @@ const styles = StyleSheet.create({
 
   visualPane: {
     position: 'relative',
-    height: 320,
     backgroundColor: '#04120c',
     overflow: 'hidden',
     paddingHorizontal: 20,
     paddingTop: 78,
     paddingBottom: 0,
+    height: 320,
   },
   visualPaneTablet: {
     height: 400,
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
   visualPaneWide: {
     flex: 1.1,
     alignSelf: 'stretch',
-    height: undefined,
+    height: '100%',
     minWidth: 480,
     paddingHorizontal: 0,
     paddingTop: 0,
