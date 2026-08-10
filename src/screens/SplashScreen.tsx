@@ -1,10 +1,8 @@
 import React, { Component, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Constants from 'expo-constants';
+import { View, StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withSequence,
   withTiming,
@@ -24,7 +22,7 @@ import { useSplashAnimation } from '../hooks/useSplashAnimation';
 import InfinityCrest from '../components/InfinityCrest';
 import PitchBackdrop from '../components/PitchBackdrop';
 import { useResponsive } from '../hooks/useResponsive';
-import { colors, monoFont, displayFont, bodyFontStrong, bodyFontItalic } from '../theme';
+import { colors, monoFont } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
 // SPLASH — the infinity-crest pitch opening. A dimmed, blurred football
@@ -40,8 +38,6 @@ import { colors, monoFont, displayFont, bodyFontStrong, bodyFontItalic } from '.
 // crest takes its place so the splash (and the boot) can never deadlock.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Version comes from app.json at runtime — never hardcode it here.
-const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 // Minimum time the splash stays up, so the animation always finishes
 // even when there is nothing heavy to preload yet.
 const MIN_SPLASH_MS = 2600;
@@ -86,30 +82,6 @@ class SafeCrest extends Component<{ size: number }, { failed: boolean }> {
       <InfinityCrest size={this.props.size} />
     );
   }
-}
-
-/** One line of the title card — fades and rises once the faces are ready. */
-function Reveal({
-  ready,
-  delay = 0,
-  distance = 18,
-  children,
-}: {
-  ready: boolean;
-  delay?: number;
-  distance?: number;
-  children?: React.ReactNode;
-}) {
-  const v = useSharedValue(0);
-  useEffect(() => {
-    if (!ready) return;
-    v.value = withDelay(delay, withTiming(1, { duration: 680, easing: Easing.out(Easing.cubic) }));
-  }, [ready, delay, v]);
-  const s = useAnimatedStyle(() => ({
-    opacity: v.value,
-    transform: [{ translateY: (1 - v.value) * distance }],
-  }));
-  return <Animated.View style={s}>{children}</Animated.View>;
 }
 
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
@@ -183,44 +155,25 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       <View style={styles.veil} pointerEvents="none" />
 
       <View style={styles.content}>
-        {/* ── the crest + the wordmark, as a broadcast ident ── */}
-        <View style={styles.mastheadWrap}>
-          <View style={styles.masthead}>
-            <View style={styles.crestBlock}>
-              <Animated.View
-                pointerEvents="none"
-                style={[styles.crestGlow, glowStyle, { width: glowW, height: glowH }]}
-              >
-                <Svg width={glowW} height={glowH} style={StyleSheet.absoluteFill}>
-                  <Defs>
-                    <RadialGradient id="splashCrestGlow" cx="50%" cy="50%" r="50%">
-                      <Stop offset="0%" stopColor="rgba(57,255,106,0.5)" stopOpacity={0.6} />
-                      <Stop offset="55%" stopColor="rgba(57,255,106,0.22)" stopOpacity={0.32} />
-                      <Stop offset="100%" stopColor="rgba(57,255,106,0)" stopOpacity={0} />
-                    </RadialGradient>
-                  </Defs>
-                  <Rect width="100%" height="100%" fill="url(#splashCrestGlow)" />
-                </Svg>
-              </Animated.View>
-              <Reveal ready={fontsLoaded} delay={60}>
-                <SafeCrest size={crestSize} />
-              </Reveal>
-            </View>
-            <Reveal ready={fontsLoaded} delay={260}>
-              <Text style={styles.wordmark}>PROSEASON</Text>
-            </Reveal>
-            <Reveal ready={fontsLoaded} delay={400}>
-              <Text style={[styles.wordmark, styles.wordmarkAccent]}>ACADEMY</Text>
-            </Reveal>
-            <Reveal ready={fontsLoaded} delay={540}>
-              <View style={styles.rule} />
-            </Reveal>
-            <Reveal ready={fontsLoaded} delay={660}>
-              <Text style={styles.tagline}>THE CONSOLE COACHING ACADEMY</Text>
-            </Reveal>
-            <Reveal ready={fontsLoaded} delay={780}>
-              <Text style={styles.taglineSub}>ESPORTS-GRADE REVIEW · ONE MATCH AT A TIME</Text>
-            </Reveal>
+        {/* ── the crest, centred ── */}
+        <View style={styles.crestWrap}>
+          <View style={styles.crestBlock}>
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.crestGlow, glowStyle, { width: glowW, height: glowH }]}
+            >
+              <Svg width={glowW} height={glowH} style={StyleSheet.absoluteFill}>
+                <Defs>
+                  <RadialGradient id="splashCrestGlow" cx="50%" cy="50%" r="50%">
+                    <Stop offset="0%" stopColor="rgba(57,255,106,0.5)" stopOpacity={0.6} />
+                    <Stop offset="55%" stopColor="rgba(57,255,106,0.22)" stopOpacity={0.32} />
+                    <Stop offset="100%" stopColor="rgba(57,255,106,0)" stopOpacity={0} />
+                  </RadialGradient>
+                </Defs>
+                <Rect width="100%" height="100%" fill="url(#splashCrestGlow)" />
+              </Svg>
+            </Animated.View>
+            <SafeCrest size={crestSize} />
           </View>
         </View>
 
@@ -230,7 +183,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             <Animated.View style={[styles.fill, animatedFillStyle]} />
           </View>
           <View style={styles.statusRow}>
-            <Text style={styles.statusText}>Loading the academy…</Text>
             <AnimatedTextInput
               style={styles.pctText}
               animatedProps={pctProps}
@@ -240,8 +192,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           </View>
         </View>
       </View>
-
-      <Text style={styles.footer}>PROSEASONACADEMY • VERSION {APP_VERSION}</Text>
     </View>
   );
 }
@@ -264,69 +214,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 28,
   },
-  mastheadWrap: {
+  crestWrap: {
     flex: 1,
     justifyContent: 'center',
-  },
-  masthead: {
     alignItems: 'center',
-    alignSelf: 'center',
   },
   crestBlock: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 22,
   },
   crestGlow: {
     position: 'absolute',
-  },
-  wordmark: {
-    marginTop: 10,
-    fontFamily: displayFont,
-    fontSize: 46,
-    lineHeight: 46,
-    letterSpacing: 1,
-    color: colors.fg,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 14,
-  },
-  wordmarkAccent: {
-    color: colors.primary,
-    letterSpacing: 4.5,
-  },
-  rule: {
-    width: 34,
-    height: 2,
-    marginTop: 18,
-    marginBottom: 12,
-    backgroundColor: colors.accent,
-    borderRadius: 1,
-  },
-  tagline: {
-    fontFamily: bodyFontStrong,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    color: colors.primary,
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  taglineSub: {
-    marginTop: 8,
-    fontFamily: bodyFontStrong,
-    fontSize: 8.5,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: 'rgba(238,242,236,0.72)',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
   },
   loader: {
     paddingBottom: 74,
@@ -354,20 +252,11 @@ const styles = StyleSheet.create({
   statusRow: {
     marginTop: 13,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-  },
-  statusText: {
-    flexShrink: 1,
-    fontFamily: bodyFontItalic,
-    fontSize: 13.5,
-    letterSpacing: 0.3,
-    color: 'rgba(238,242,236,0.72)',
-    includeFontPadding: false,
   },
   pctText: {
     width: 48,
-    marginLeft: 10,
     padding: 0,
     textAlign: 'right',
     fontFamily: monoFont,
@@ -377,14 +266,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.6)',
     textShadowRadius: 6,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 26,
-    alignSelf: 'center',
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    letterSpacing: 3.2,
-    color: 'rgba(143,184,155,0.55)',
   },
 });
