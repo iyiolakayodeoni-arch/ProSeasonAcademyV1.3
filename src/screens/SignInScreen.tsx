@@ -727,7 +727,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <View style={styles.formGlow} />
           </View>
           <ScrollView
-            style={[styles.formPane, { height: scrollH }]}
+            style={styles.formPane}
             contentContainerStyle={[
               styles.formContent,
               isPhoneColumn && styles.formContentPhone,
