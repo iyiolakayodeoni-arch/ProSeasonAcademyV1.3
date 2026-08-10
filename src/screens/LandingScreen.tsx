@@ -193,36 +193,40 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* ── HERO ── */}
+        {/* ── HERO — text and image side by side on wide screens ── */}
         <View style={[styles.hero, { minWidth: contentW }]} id="top">
-          <Eyebrow>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</Eyebrow>
-          <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>
-            CARRY ONE LESSON.
-          </Text>
-          <Text style={[styles.h1Alt, WEB ? ({ fontFamily: headFont } as any) : null]}>
-            REVIEW THE MATCH.
-          </Text>
-          <Text style={[styles.heroSub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-            You play, you watch yourself honestly, you write the truth down — then you
-            turn that reflection into disciplined progress, one match at a time. No AI
-            telling you what to think. The Mirror records the evidence; you do the seeing.
-          </Text>
-          <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.heroCtas}>
-            <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
-            <CtaSecondary label="SEE THE METHOD" onPress={() => goSection('method')} />
-          </Animated.View>
+          <View style={[styles.heroRow, isWide && styles.heroRowWide]}>
+            <View style={[styles.heroText, isWide && styles.heroTextWide]}>
+              <Eyebrow>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</Eyebrow>
+              <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>
+                CARRY ONE LESSON.
+              </Text>
+              <Text style={[styles.h1Alt, WEB ? ({ fontFamily: headFont } as any) : null]}>
+                REVIEW THE MATCH.
+              </Text>
+              <Text style={[styles.heroSub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+                You play, you watch yourself honestly, you write the truth down — then you
+                turn that reflection into disciplined progress, one match at a time. No AI
+                telling you what to think. The Mirror records the evidence; you do the seeing.
+              </Text>
+              <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.heroCtas}>
+                <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
+                <CtaSecondary label="SEE THE METHOD" onPress={() => goSection('method')} />
+              </Animated.View>
+            </View>
 
-          <View style={styles.heroArt}>
-            <Image source={heroImage} style={styles.heroImage} resizeMode="cover" />
-            <LinearGradient
-              style={StyleSheet.absoluteFill}
-              colors={['rgba(5,10,6,0)', 'rgba(5,10,6,0.9)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-            />
-            <View style={styles.heroCaption}>
-              <Text style={styles.heroCaptionTxt}>THE PLAYER DOES THE SEEING</Text>
-              <Text style={styles.heroCaptionSub}>YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK</Text>
+            <View style={[styles.heroArt, isWide && styles.heroArtWide]}>
+              <Image source={heroImage} style={styles.heroImage} resizeMode="cover" />
+              <LinearGradient
+                style={StyleSheet.absoluteFill}
+                colors={['rgba(5,10,6,0)', 'rgba(5,10,6,0.9)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+              />
+              <View style={styles.heroCaption}>
+                <Text style={styles.heroCaptionTxt}>THE PLAYER DOES THE SEEING</Text>
+                <Text style={styles.heroCaptionSub}>YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -545,6 +549,21 @@ const styles = StyleSheet.create({
     paddingTop: 70,
     paddingHorizontal: 28,
   },
+  heroRow: {
+    flexDirection: 'column',
+    gap: 40,
+  },
+  heroRowWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 56,
+  },
+  heroText: {
+    flexShrink: 1,
+  },
+  heroTextWide: {
+    flex: 1,
+  },
   h1: {
     fontFamily: displayFont,
     fontSize: 66,
@@ -576,12 +595,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   heroArt: {
-    marginTop: 46,
+    marginTop: 0,
     height: 340,
     borderRadius: 20,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.borderSubtle,
+  },
+  heroArtWide: {
+    flex: 1,
+    height: 440,
+    minWidth: 320,
   },
   heroImage: {
     position: 'absolute',
