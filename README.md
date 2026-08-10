@@ -1,14 +1,27 @@
 # ⚽ ProSeasonAcademy
 
-## What this app is
+## What this is
 
-**ProSeasonAcademy helps an EA FC console player learn from a real match.**
+**ProSeasonAcademy helps an EA SPORTS FC console player learn from a real match.**
 
 The player plays a match, names what mattered, and carries one useful lesson into the next match.
 
 > **Play → Review → Carry one lesson forward.**
 
-It is not a tips feed, a social network, a player-card generator, or an AI that tells a player what to think.
+It is a full product: a **public marketing website** (the Dossier) that opens on a branded **splash**, and the **coaching app** behind it. It is not a tips feed, a social network, a player-card generator, or an AI that tells a player what to think.
+
+The signature **infinity crest (∞)** — a lemniscate that draws itself in and out forever — is the product mark used everywhere: the splash, the nav, sign-in, and all in-app headers.
+
+## The marketing website (the Dossier)
+
+A single-page marketing site (modelled on a certain developer platform's confidence) that plays right after the splash:
+
+- **Living pitch background** — a static wall of thin green mowing-lines over a dark pitch with a faint arena grid. The background stays still; the **elements** animate (cards and CTAs rise and fade in staggered).
+- **pxxl-style nav bar** — minimal: logo + brand left, section links, one green **GET STARTED** pill.
+- Sections: Hero → Marquee → **THE METHOD** → **HOW IT WORKS** → **THE JOURNEY** (six chapters) → **EVIDENCE** → CTA → Footer.
+- Confident, self-aware copy ("we cooked, yeah we know", "no fake percentages here") over the real product pitch: the Mirror records the evidence, the player does the seeing.
+
+Lives in `src/screens/LandingScreen.tsx`.
 
 ---
 
@@ -105,9 +118,11 @@ EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY=
 
 ```text
 App.tsx
-  └─ Sign in → Choose coach → Starting Week → Today
+  └─ Splash → Landing (Dossier) → Sign in → Choose coach → Starting Week → Today
 
 src/screens/
+  ├─ LandingScreen.tsx         Marketing website (the Dossier)
+  ├─ SplashScreen.tsx          Branded splash: infinity crest + blurred green pitch-lines
   ├─ tabs/HomeTab.tsx          Today: the next action
   ├─ tabs/JourneyTab.tsx       Progress: evidence across six chapters
   ├─ tabs/SettingsTab.tsx      Profile, help and preferences
@@ -117,6 +132,11 @@ src/screens/
   ├─ MatchVault.tsx            Match History
   ├─ LossJournal.tsx           Loss Notes
   └─ AcademyGuideScreen.tsx    Plain-language first-use guide
+
+src/components/
+  ├─ InfinityCrest.tsx         The ∞ product mark (drawn trail + glow)
+  ├─ LogoMark.tsx              Wrapper that renders InfinityCrest everywhere
+  └─ PitchStrips.tsx           The static green pitch-line background (also the blurred splash backdrop)
 
 src/data/
   ├─ mirrorSession.ts          Match-review state machine

@@ -409,9 +409,23 @@ days, paced on purpose so honesty has time to breathe and nothing is bombarded:
 - **Core funnel measurement.** `src/data/funnel.ts` records only six conversion milestones, locally first and fail-soft. `supabase/funnel.sql` adds the privacy-minimal server table/RLS/rollup when deployed: coach selected → Baseline day one started → baseline complete → first Match Review → second Match Review → lesson verdict. It never records reflections, scores, recordings or chat content.
 - Verified: `npm run typecheck` clean · `npm test` green.
 
-## 2.29 — 2026-08-04 · THE HONESTY GUARD & COACH AUDIT (v1.3)
+## 2.31 — 2026-08-10 · BRAND FACE-LIFT + THE MARKETING WEBSITE
 
-In ProSeasonAcademy, "The app records the evidence; it never does your thinking for you." Because AI is intentionally refused for the player's psychology and we cannot read minds to detect a lie, we ensure players stay honest when typing by detecting and rejecting nonsense, keyboard mashing, repeated spam, evasive shortcuts, and copy-pasted prompts:
+A visual pass across the whole surface — splash, the new marketing site, and the product mark — unifying everything on one identity.
+
+**The infinity crest (∞) is now the product mark everywhere.**
+- New `src/components/InfinityCrest.tsx`: a lemniscate that draws itself in and out forever (via `useTrailLoop`), a faint base line, and a soft halo (SVG under-stroke on native, CSS `psa-crest-pulse` drop-shadow pulse on web).
+- `LogoMark.tsx` is now a thin wrapper over `InfinityCrest` — same `size` / `loopProps` / `glowStyle` API — so **every** screen that uses `<LogoMark/>` (nav header, sign-in, coach select, coaching, setup loader, sideload, terms, Dossier nav) shows the infinity crest instead of the old mirror-journal image. The old `assets/logo-mirror-journal.png` is no longer referenced in code.
+
+**The splash (SPLASH v4).**
+- The hero photograph is gone. The backdrop is now the **blurred green pitch-lines**, dimmed, covering the whole screen — a cool, mysterious opening (restraint: just the crest and the honest loading bar, no wordmark).
+
+**The marketing website (the Dossier) — `src/screens/LandingScreen.tsx`.**
+- Rebuilt from the old landing into a full single-page marketing site, modelled on the confident, self-aware voice of a certain developer platform: minimal pxxl-style nav (logo + brand, links, one **GET STARTED** pill), a hero, marquee, and `[ BRACKETED ]` mono-HUD sections — THE METHOD, HOW IT WORKS, THE JOURNEY, EVIDENCE — with casual asides under the copy ("this was the designer's idea btw", "no fake percentages here", "you cannot outrun your receipts", "we cooked, yeah we know").
+- **Living pitch background** — a new `PitchStrips` component: a *static* wall of thin green mowing-lines over a dark pitch with a faint arena grid and subtle static aurora. The background **never moves**; instead the **foreground elements** animate — cards and CTAs rise and fade in with a staggered `FadeInDown` entrance.
+- **Scrolling fixed on web**: RNW's ScrollView needs an explicit height, so the Dossier measures the sticky nav via `onLayout` and gives the ScrollView the exact leftover viewport height — it now genuinely scrolls.
+
+**Verified:** `npm run typecheck` clean · `npm run web:build` bundles.
 - **Honesty Guard Engine** (`src/data/honestyGuard.ts`): provides robust, coach-voiced validation (`checkHonesty`, `isValidReflection`, `getHonestyFeedback`) checking against:
   - **Too short** (`too_short`): enforces minimum character lengths and word counts.
   - **Keyboard mash** (`keyboard_mash`): detects home-row runs (`qwerty`, `asdfgh`, `zxcvbn`), 6+ consecutive consonants (`/[bcdfghjklmnpqrstvwxz]{6,}/i`), and 4+ identical repeated characters.
