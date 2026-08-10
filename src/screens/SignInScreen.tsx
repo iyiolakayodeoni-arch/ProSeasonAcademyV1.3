@@ -586,7 +586,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
 
           {/* Full-page scrollable form */}
           <ScrollView
-            style={styles.desktopScroll}
+            style={[styles.desktopScroll, { height: h }]}
             contentContainerStyle={styles.desktopFormContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
-    paddingVertical: 48,
+    paddingVertical: 100,
   },
   desktopTitleWrap: {
     marginBottom: 32,
