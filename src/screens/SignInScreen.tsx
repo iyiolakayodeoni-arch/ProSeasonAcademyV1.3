@@ -526,102 +526,92 @@ export default function SignInScreen({ onSignedIn }: Props) {
   // ── DESKTOP LAYOUT — full-page centred form with landing page background ──
   if (isDesktop) {
     return (
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View style={styles.flex}>
-          {/* Static background image — same as the landing/splash page */}
-          <Image
-            source={HERO_BG}
-            style={styles.desktopBg}
-            resizeMode="cover"
-            blurRadius={3}
-          />
-          <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
+      <View style={styles.desktopPage}>
+        {/* Static background image — same as the landing/splash page */}
+        <Image
+          source={HERO_BG}
+          style={styles.desktopBg}
+          resizeMode="cover"
+          blurRadius={3}
+        />
+        <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
 
-          <GridBackground />
-          <ScreenFlash />
+        <GridBackground />
+        <ScreenFlash />
 
-          {/* Subtle pitch-line decoration across the full page */}
-          <View pointerEvents="none" style={styles.desktopDecor}>
-            <View style={styles.pitchHalfway} />
-            <View style={styles.pitchCircle} />
-            <View style={styles.desktopGlow} />
-          </View>
+        {/* Subtle pitch-line decoration across the full page */}
+        <View pointerEvents="none" style={styles.desktopDecor}>
+          <View style={styles.pitchHalfway} />
+          <View style={styles.pitchCircle} />
+          <View style={styles.desktopGlow} />
+        </View>
 
-          {/* Nav */}
-          <View
-            style={[styles.navWrap, Platform.OS === 'web' && (styles.navWrapWeb as any)]}
-            pointerEvents="box-none"
-          >
-            <View style={styles.navBar}>
-              <Pressable
-                onPress={() => jumpTo('register')}
-                style={({ pressed }) => [styles.navBrand, pressed && { opacity: 0.85 }]}
-                accessibilityRole="button"
-                accessibilityLabel="ProSeason Academy"
-              >
-                <View style={styles.navCrestGlow}>
-                  <InfinityCrest size={56} bold />
-                </View>
-              </Pressable>
-              <View style={styles.navRight}>
-                <Pressable
-                  onPress={() => (mode === 'login' ? jumpTo('register') : jumpTo('login'))}
-                  style={({ pressed }) => [styles.navCta, pressed && { opacity: 0.85 }]}
-                  accessibilityRole="button"
-                >
-                  <LinearGradient
-                    colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <Text style={styles.navCtaTxt}>{mode === 'login' ? 'CREATE SEAT ›' : 'SIGN IN ›'}</Text>
-                </Pressable>
+        {/* Nav */}
+        <View
+          style={[styles.navWrap, Platform.OS === 'web' && (styles.navWrapWeb as any)]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.navBar}>
+            <Pressable
+              onPress={() => jumpTo('register')}
+              style={({ pressed }) => [styles.navBrand, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="ProSeason Academy"
+            >
+              <View style={styles.navCrestGlow}>
+                <InfinityCrest size={56} bold />
               </View>
+            </Pressable>
+            <View style={styles.navRight}>
+              <Pressable
+                onPress={() => (mode === 'login' ? jumpTo('register') : jumpTo('login'))}
+                style={({ pressed }) => [styles.navCta, pressed && { opacity: 0.85 }]}
+                accessibilityRole="button"
+              >
+                <LinearGradient
+                  colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={styles.navCtaTxt}>{mode === 'login' ? 'CREATE SEAT ›' : 'SIGN IN ›'}</Text>
+              </Pressable>
             </View>
           </View>
+        </View>
 
-          {/* Full-page scrollable form */}
-          <ScrollView
-            style={[styles.desktopScroll, { height: h }]}
-            contentContainerStyle={styles.desktopFormContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* The arena line — centred above the form */}
-            <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
-              <View style={styles.titleWrapDesktop}>
+        {/* Full-page content - no ScrollView wrapper, let browser handle native scrolling */}
+        <View style={styles.desktopContent}>
+          {/* The arena line — centred above the form */}
+          <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
+            <View style={styles.titleWrapDesktop}>
+              <Text
+                numberOfLines={1}
+                style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}
+              >
+                {ARENA_LINE}
+              </Text>
+              <View style={styles.titleRowDesktop}>
                 <Text
                   numberOfLines={1}
-                  style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}
+                  style={[styles.visualTitle, styles.visualTitleDesktop]}
                 >
-                  {ARENA_LINE}
+                  {ARENA_LINE.slice(0, typedCount)}
                 </Text>
-                <View style={styles.titleRowDesktop}>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.visualTitle, styles.visualTitleDesktop]}
-                  >
-                    {ARENA_LINE.slice(0, typedCount)}
-                  </Text>
-                  <Animated.View style={[styles.caret, styles.caretDesktop, caretStyle]} />
-                </View>
+                <Animated.View style={[styles.caret, styles.caretDesktop, caretStyle]} />
               </View>
-            </Animated.View>
-
-            {formBody}
-          </ScrollView>
-
-          {installHelp && (
-            <View style={StyleSheet.absoluteFill}>
-              <SideloadAssistant onClose={() => setInstallHelp(false)} />
             </View>
-          )}
+          </Animated.View>
+
+          {formBody}
         </View>
-      </KeyboardAvoidingView>
+
+        {installHelp && (
+          <View style={StyleSheet.absoluteFill}>
+            <SideloadAssistant onClose={() => setInstallHelp(false)} />
+          </View>
+        )}
+      </View>
     );
   }
 
@@ -754,6 +744,20 @@ export default function SignInScreen({ onSignedIn }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
 
+  // ── Desktop page layout (native browser scrolling) ──
+  desktopPage: {
+    minHeight: '100vh',
+    backgroundColor: colors.bg,
+    position: 'relative',
+  },
+  desktopContent: {
+    minHeight: '100vh',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 48,
+    paddingVertical: 100,
+  },
+
   // ── Desktop background ──
   desktopBg: {
     position: 'absolute',
@@ -834,13 +838,6 @@ const styles = StyleSheet.create({
     marginLeft: -300,
     marginTop: -300,
     backgroundColor: 'rgba(57,255,106,0.025)',
-  },
-  desktopFormContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 48,
-    paddingVertical: 100,
   },
   desktopTitleWrap: {
     marginBottom: 32,
