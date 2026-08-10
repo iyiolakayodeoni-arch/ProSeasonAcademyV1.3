@@ -36,11 +36,10 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
 
 // Landing page background — same as the splash/boot screen.
-<<<<<<< HEAD
-const HERO_BG = require('../../assets/art/splash-hero.png');
-=======
+
+
 const HERO_BG = require('../../assets/art/pitch-bg.png');
->>>>>>> 7503bf468ce39b203ce77cb76e848b6318742de6
+
 
 // Coach Obinna — the face of the arena panel, anchored to the panel floor.
 const OBINNA = require('../../assets/coaches/obinna-card.png');
