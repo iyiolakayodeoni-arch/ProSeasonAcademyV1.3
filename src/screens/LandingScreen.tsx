@@ -13,7 +13,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-na
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoMark from '../components/LogoMark';
 import Marquee from '../components/Marquee';
-import GridBackground from '../components/GridBackground';
+import PitchStrips from '../components/PitchStrips';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold } from '../theme';
 
@@ -168,10 +168,16 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
   return (
     <View style={styles.root}>
-      <GridBackground />
+      <PitchStrips dim={0.5} />
       <WebsiteNav onEnter={onEnter} onNav={goSection} />
 
-      <ScrollView ref={ref} style={styles.scroll} contentContainerStyle={styles.scrollInner} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={ref}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollInner}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         {/* ── HERO ── */}
         <View style={[styles.hero, { minWidth: contentW }]} id="top">
           <MonoLabel>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</MonoLabel>
@@ -304,10 +310,12 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    minHeight: 0,
     backgroundColor: colors.bg,
   },
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   scrollInner: {
     paddingBottom: 40,

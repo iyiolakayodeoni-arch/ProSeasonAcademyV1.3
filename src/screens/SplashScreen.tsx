@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
-import { Asset } from 'expo-asset';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -30,26 +29,18 @@ import {
 } from '@expo-google-fonts/barlow';
 import { useSplashAnimation } from '../hooks/useSplashAnimation';
 import InfinityCrest from '../components/InfinityCrest';
+import PitchStrips from '../components/PitchStrips';
 import { colors, monoFont, bodyFontItalic } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
 // SPLASH v4 — the first impression. Two actors on a dimmed stage: the
-// infinity crest and the loading bar. The arena photograph sinks into
-// near-black behind them; the crest draws its own trail in and out while
-// the bar earns its fill. No wordmark, no taglines — restraint is the
-// cinema here.
-//
-// The photograph is never cropped. On portrait frames the full vertical
-// artwork is shown edge to edge (contain), and a blurred, dimmed cover copy
-// fills any side gutters so the stage still reads as a photograph on every
-// aspect ratio. Wide frames go full-bleed (cover). This holds on native AND
-// on web.
+// infinity crest and the loading bar. The background is the house pitch —
+// blurred green mowing-strips that cover the whole screen, soft and a little
+// mysterious. The crest draws its own trail in and out while the bar earns
+// its fill. No wordmark, no taglines — restraint is the cinema here.
 // ─────────────────────────────────────────────────────────────────────────
 
 const MIN_SPLASH_MS = 2600;
-
-const HERO_PORTRAIT = require('../../assets/art/splash-hero.png');
-const HERO_WIDE = require('../../assets/art/splash-hero-wide.png');
 
 const WEB = Platform.OS === 'web';
 
@@ -73,22 +64,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const h = frame.h;
   // window aspect for the first paint (frame arrives one layout later)
   const isWideFrame = frame.w > 0 ? frame.w > frame.h * 1.05 : win.width > win.height * 1.05;
-
-  // web uses raw <img> layers (RNW's Image wrapper fights the CSS), so we
-  // need the served asset URL — expo-asset resolves it synchronously; the
-  // tick re-render is a belt-and-braces second pass if it ever doesn't.
-  const [assetTick, setAssetTick] = useState(0);
-  useEffect(() => {
-    setAssetTick(1);
-  }, []);
-  const heroUri = useMemo(
-    () => (WEB ? Asset.fromModule(isWideFrame ? HERO_WIDE : HERO_PORTRAIT).uri : ''),
-    [isWideFrame, assetTick],
-  );
-  const backdropUri = useMemo(
-    () => (WEB ? Asset.fromModule(HERO_PORTRAIT).uri : ''),
-    [assetTick],
-  );
 
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
@@ -130,23 +105,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   // the crest's living pulse comes from CSS (psa-crest-pulse) on web and the
   // SVG under-stroke halo on native; the bar keeps earning its honest fill here.
 
-  // ── the camera: a slow dolly-in on the wide photograph. Keep the portrait
-  //    frame at its natural scale so its top and bottom are never cropped on
-  //    squarer phones/tablets. A soft cover layer behind it fills any side
-  //    gutters without sacrificing any of the vertical composition.
-  const drift = useSharedValue(0);
-  useEffect(() => {
-    drift.value = withTiming(1, { duration: 7200, easing: Easing.out(Easing.quad) });
-  }, [drift]);
-  const photoStyle = useAnimatedStyle(
-    () => ({
-      transform: isWideFrame
-        ? [{ scale: 1.08 + drift.value * 0.1 }, { translateY: -8 * drift.value }]
-        : [{ scale: 1 }],
-    }),
-    [isWideFrame],
-  );
-
   // ── the crest arrives: bloom in from darkness, settle at full presence.
   const enter = useSharedValue(0);
   useEffect(() => {
@@ -180,62 +138,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* ── the stage — the full photograph, never cropped ── */}
-      {!isWideFrame && (
-        WEB ? (
-          <img
-            className="psa-splash-backdrop"
-            src={backdropUri}
-            alt=""
-            draggable={false}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              filter: 'blur(18px) brightness(0.5) saturate(1.05)',
-              transform: 'scale(1.06)',
-              opacity: 0.58,
-              pointerEvents: 'none',
-            }}
-          />
-        ) : (
-          <Animated.Image
-            source={HERO_PORTRAIT}
-            style={styles.photoBackdrop}
-            resizeMode="cover"
-            blurRadius={18}
-          />
-        )
-      )}
-      {WEB ? (
-        <img
-          className={isWideFrame ? 'psa-splash-bg' : undefined}
-          src={heroUri}
-          alt=""
-          draggable={false}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: isWideFrame ? 'cover' : 'contain',
-            objectPosition: 'center',
-            filter: 'brightness(0.5) saturate(1.1)',
-            pointerEvents: 'none',
-          }}
-        />
-      ) : (
-        <Animated.Image
-          source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-          style={[styles.photo, photoStyle]}
-          resizeMode={isWideFrame ? 'cover' : 'contain'}
-        />
-      )}
+      {/* ── the stage — blurred green pitch-strips, covering the whole screen ── */}
+      <PitchStrips blurred dim={0.55} animated />
 
       {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (
@@ -317,22 +221,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#020503',
     overflow: 'hidden',
-  },
-  photo: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  photoBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.58,
-    transform: [{ scale: 1.06 }],
   },
   content: {
     flex: 1,
