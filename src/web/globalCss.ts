@@ -197,6 +197,20 @@ html[data-psa-tier='desktop'] .psa-web-shell {
 }
 .psa-pulse-dot { animation: psa-pulse 1.8s ease-in-out infinite; }
 
+/* ── Splash crest — living glow (InfinityCrest on web) ── */
+@keyframes psa-crest-pulse {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(57,255,106,0.55)); }
+  50% { filter: drop-shadow(0 0 18px rgba(57,255,106,0.95)); }
+}
+.psa-crest-pulse { animation: psa-crest-pulse 2.4s ease-in-out infinite; }
+
+/* ── Splash hero — the slow dolly-in camera (web <img> only) ── */
+@keyframes psa-splash-dolly {
+  from { transform: scale(1.08) translateY(0); }
+  to { transform: scale(1.18) translateY(-8px); }
+}
+.psa-splash-bg { animation: psa-splash-dolly 7.2s ease-out forwards; }
+
 /* ── Scrollbar — premium thin ── */
 @media (hover: hover) and (pointer: fine) {
   *::-webkit-scrollbar { width: 8px; height: 8px; }

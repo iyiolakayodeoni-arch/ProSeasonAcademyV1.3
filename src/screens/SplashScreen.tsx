@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Constants from 'expo-constants';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { Asset } from 'expo-asset';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withRepeat,
   withSequence,
   withTiming,
@@ -29,60 +28,67 @@ import {
   Barlow_700Bold,
   Barlow_800ExtraBold,
 } from '@expo-google-fonts/barlow';
-import { useSplashAnimation, LOOP_PATH_LENGTH } from '../hooks/useSplashAnimation';
-import { useTrailLoop } from '../hooks/useTrailLoop';
-import LogoMark from '../components/LogoMark';
-import { colors, monoFont, displayFont, bodyFontStrong, bodyFontItalic } from '../theme';
+import { useSplashAnimation } from '../hooks/useSplashAnimation';
+import InfinityCrest from '../components/InfinityCrest';
+import { colors, monoFont, bodyFontItalic } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// SPLASH v3 — full-bleed and cinematic. The same honest gate as before
-// (progress is real, the bar holds at 90% until fonts land, onFinish fires
-// once) wearing an establishing-shot skin: a landscape arena on wide
-// viewports, the portrait hero on phones, a slow dolly-in camera, staggered
-// title-card reveals, scrims measured to the real frame, and a floodlight
-// that breathes.
+// SPLASH v4 — the first impression. Two actors on a dimmed stage: the
+// infinity crest and the loading bar. The arena photograph sinks into
+// near-black behind them; the crest draws its own trail in and out while
+// the bar earns its fill. No wordmark, no taglines — restraint is the
+// cinema here.
+//
+// The photograph is never cropped. On portrait frames the full vertical
+// artwork is shown edge to edge (contain), and a blurred, dimmed cover copy
+// fills any side gutters so the stage still reads as a photograph on every
+// aspect ratio. Wide frames go full-bleed (cover). This holds on native AND
+// on web.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Version comes from app.json at runtime — never hardcode it here.
-const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-// Minimum time the splash stays up, so the animation always finishes
-// even when there is nothing heavy to preload yet.
 const MIN_SPLASH_MS = 2600;
 
 const HERO_PORTRAIT = require('../../assets/art/splash-hero.png');
 const HERO_WIDE = require('../../assets/art/splash-hero-wide.png');
 
-/** One line of the title card — fades and rises once the faces are ready. */
-function Reveal({
-  ready,
-  delay = 0,
-  distance = 18,
-  children,
-}: {
-  ready: boolean;
-  delay?: number;
-  distance?: number;
-  children?: React.ReactNode;
-}) {
-  const v = useSharedValue(0);
-  useEffect(() => {
-    if (!ready) return;
-    v.value = withDelay(delay, withTiming(1, { duration: 680, easing: Easing.out(Easing.cubic) }));
-  }, [ready, delay, v]);
-  const s = useAnimatedStyle(() => ({
-    opacity: v.value,
-    transform: [{ translateY: (1 - v.value) * distance }],
-  }));
-  return <Animated.View style={s}>{children}</Animated.View>;
+const WEB = Platform.OS === 'web';
+
+/** Silent boundary: the GPU atmosphere is decoration — if Skia's wasm ever
+    fails on a device, the splash drops it and carries on with the backdrop,
+    crest and bar. The first impression must never crash. */
+class Fx extends React.Component<{ children?: React.ReactNode }, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() {
+    return { err: true };
+  }
+  render() {
+    return this.state.err ? null : this.props.children;
+  }
 }
 
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
-  // Measure the real frame — the Skia scrims must line up with what the
-  // player actually sees, on any viewport.
   const [frame, setFrame] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const win = useWindowDimensions();
   const w = frame.w;
   const h = frame.h;
-  const isWideFrame = w > h * 1.05;
+  // window aspect for the first paint (frame arrives one layout later)
+  const isWideFrame = frame.w > 0 ? frame.w > frame.h * 1.05 : win.width > win.height * 1.05;
+
+  // web uses raw <img> layers (RNW's Image wrapper fights the CSS), so we
+  // need the served asset URL — expo-asset resolves it synchronously; the
+  // tick re-render is a belt-and-braces second pass if it ever doesn't.
+  const [assetTick, setAssetTick] = useState(0);
+  useEffect(() => {
+    setAssetTick(1);
+  }, []);
+  const heroUri = useMemo(
+    () => (WEB ? Asset.fromModule(isWideFrame ? HERO_WIDE : HERO_PORTRAIT).uri : ''),
+    [isWideFrame, assetTick],
+  );
+  const backdropUri = useMemo(
+    () => (WEB ? Asset.fromModule(HERO_PORTRAIT).uri : ''),
+    [assetTick],
+  );
 
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
@@ -93,7 +99,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     Barlow_800ExtraBold,
   });
 
-  // Deferred gate the animation hook waits on (fonts or bust — never hang).
+  // Deferred gate (fonts or bust — never hang).
   const gate = useRef<{ promise: Promise<unknown>; resolve: () => void } | null>(null);
   if (!gate.current) {
     let resolve!: () => void;
@@ -121,8 +127,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     onComplete: finish,
   });
 
-  // the crest's ascent trail — draws on and off while the bar earns its fill
-  const { loopProps, glowStyle } = useTrailLoop({ pathLength: LOOP_PATH_LENGTH, drawMs: 1700, eraseMs: 1700 });
+  // the crest's living pulse comes from CSS (psa-crest-pulse) on web and the
+  // SVG under-stroke halo on native; the bar keeps earning its honest fill here.
 
   // ── the camera: a slow dolly-in on the wide photograph. Keep the portrait
   //    frame at its natural scale so its top and bottom are never cropped on
@@ -132,19 +138,32 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   useEffect(() => {
     drift.value = withTiming(1, { duration: 7200, easing: Easing.out(Easing.quad) });
   }, [drift]);
-  const photoStyle = useAnimatedStyle(() => ({
-    transform: isWideFrame
-      ? [{ scale: 1.08 + drift.value * 0.1 }, { translateY: -8 * drift.value }]
-      : [{ scale: 1 }],
-  }), [isWideFrame]);
+  const photoStyle = useAnimatedStyle(
+    () => ({
+      transform: isWideFrame
+        ? [{ scale: 1.08 + drift.value * 0.1 }, { translateY: -8 * drift.value }]
+        : [{ scale: 1 }],
+    }),
+    [isWideFrame],
+  );
 
-  // ── the floodlight breathes — a slow sine on the warm halo's opacity.
-  const breath = useSharedValue(0.09);
+  // ── the crest arrives: bloom in from darkness, settle at full presence.
+  const enter = useSharedValue(0);
+  useEffect(() => {
+    enter.value = withTiming(1, { duration: 1200, easing: Easing.out(Easing.cubic) });
+  }, [enter]);
+  const crestStyle = useAnimatedStyle(() => ({
+    opacity: enter.value,
+    transform: [{ scale: 0.86 + 0.14 * enter.value }],
+  }));
+
+  // ── the floodlight breathes — dim, behind everything.
+  const breath = useSharedValue(0.06);
   useEffect(() => {
     breath.value = withRepeat(
       withSequence(
-        withTiming(0.17, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.09, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0.06, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
       ),
       -1,
       true,
@@ -161,117 +180,119 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* On portrait frames, a dimmed cover copy fills the gutters behind the
-          uncropped hero. The visible hero uses contain so the full vertical
-          artwork remains on screen at every phone and tablet aspect ratio. */}
+      {/* ── the stage — the full photograph, never cropped ── */}
       {!isWideFrame && (
+        WEB ? (
+          <img
+            className="psa-splash-backdrop"
+            src={backdropUri}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              filter: 'blur(18px) brightness(0.5) saturate(1.05)',
+              transform: 'scale(1.06)',
+              opacity: 0.58,
+              pointerEvents: 'none',
+            }}
+          />
+        ) : (
+          <Animated.Image
+            source={HERO_PORTRAIT}
+            style={styles.photoBackdrop}
+            resizeMode="cover"
+            blurRadius={18}
+          />
+        )
+      )}
+      {WEB ? (
+        <img
+          className={isWideFrame ? 'psa-splash-bg' : undefined}
+          src={heroUri}
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: isWideFrame ? 'cover' : 'contain',
+            objectPosition: 'center',
+            filter: 'brightness(0.5) saturate(1.1)',
+            pointerEvents: 'none',
+          }}
+        />
+      ) : (
         <Animated.Image
-          source={HERO_PORTRAIT}
-          style={styles.photoBackdrop}
-          resizeMode="cover"
-          blurRadius={18}
+          source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
+          style={[styles.photo, photoStyle]}
+          resizeMode={isWideFrame ? 'cover' : 'contain'}
         />
       )}
-      <Animated.Image
-        source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-        style={[styles.photo, photoStyle]}
-        resizeMode={isWideFrame ? 'cover' : 'contain'}
-      />
 
-      {/* GPU-rendered atmosphere measured to the real frame */}
+      {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (
-        <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
-          {/* legibility scrim, rising from the floor — deeper for wide */}
-          <Rect x={0} y={0} width={w} height={h}>
-            <LinearGradient
-              start={vec(0, h * (isWideFrame ? 0.28 : 0.36))}
-              end={vec(0, h * 0.96)}
-              colors={['rgba(10,15,10,0)', 'rgba(10,15,10,0.6)', 'rgba(10,15,10,0.97)']}
-              positions={[0, 0.58, 1]}
-            />
-          </Rect>
-          {/* soft darkening at the very top for the status/notch area */}
-          <Rect x={0} y={0} width={w} height={h}>
-            <LinearGradient
-              start={vec(0, 0)}
-              end={vec(0, h * 0.24)}
-              colors={['rgba(10,15,10,0.66)', 'rgba(10,15,10,0)']}
-            />
-          </Rect>
-          {/* anamorphic side vignette on wide — the frame pulls in */}
-          {isWideFrame && (
-            <Rect x={0} y={0} width={w * 0.24} height={h}>
+        <Fx>
+          <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
+            {/* floor scrim */}
+            <Rect x={0} y={0} width={w} height={h}>
+              <LinearGradient
+                start={vec(0, h * 0.4)}
+                end={vec(0, h * 0.98)}
+                colors={['rgba(4,8,5,0)', 'rgba(4,8,5,0.72)', 'rgba(4,8,5,0.96)']}
+                positions={[0, 0.6, 1]}
+              />
+            </Rect>
+            {/* top scrim */}
+            <Rect x={0} y={0} width={w} height={h}>
               <LinearGradient
                 start={vec(0, 0)}
-                end={vec(w * 0.24, 0)}
-                colors={['rgba(4,8,5,0.55)', 'rgba(4,8,5,0)']}
+                end={vec(0, h * 0.26)}
+                colors={['rgba(4,8,5,0.7)', 'rgba(4,8,5,0)']}
               />
             </Rect>
-          )}
-          {isWideFrame && (
-            <Rect x={w * 0.76} y={0} width={w * 0.24} height={h}>
-              <LinearGradient
-                start={vec(w, 0)}
-                end={vec(w * 0.76, 0)}
-                colors={['rgba(4,8,5,0.55)', 'rgba(4,8,5,0)']}
-              />
-            </Rect>
-          )}
-          {/* emerald halo the wordmark sits inside */}
-          <Circle cx={w / 2} cy={h * 0.32} r={w * 0.66}>
-            <RadialGradient
-              c={vec(w / 2, h * 0.32)}
-              r={w * 0.66}
-              colors={['rgba(57,255,106,0.14)', 'rgba(57,255,106,0)']}
-            />
-          </Circle>
-          {/* warm kiss from the floodlight — slow-breathing */}
-          <Group opacity={breath}>
-            <Circle cx={w * 0.72} cy={h * 0.3} r={w * 0.52}>
+            {/* emerald halo behind the crest — restrained */}
+            <Circle cx={w / 2} cy={h * 0.42} r={Math.min(w, h) * 0.5}>
               <RadialGradient
-                c={vec(w * 0.72, h * 0.3)}
-                r={w * 0.52}
-                colors={['rgba(242,192,120,1)', 'rgba(242,192,120,0)']}
+                c={vec(w / 2, h * 0.42)}
+                r={Math.min(w, h) * 0.5}
+                colors={['rgba(57,255,106,0.10)', 'rgba(57,255,106,0)']}
               />
             </Circle>
-          </Group>
-          {/* film grain — irregularity is what photographs have and terminals don't */}
-          <Fill blendMode="overlay" opacity={0.06}>
-            <FractalNoise freqX={0.9} freqY={0.9} octaves={3} seed={11} />
-          </Fill>
-        </Canvas>
+            {/* warm kiss, breathing */}
+            <Group opacity={breath}>
+              <Circle cx={w * 0.74} cy={h * 0.26} r={w * 0.5}>
+                <RadialGradient
+                  c={vec(w * 0.74, h * 0.26)}
+                  r={w * 0.5}
+                  colors={['rgba(242,192,120,1)', 'rgba(242,192,120,0)']}
+                />
+              </Circle>
+            </Group>
+            {/* film grain */}
+            <Fill blendMode="overlay" opacity={0.05}>
+              <FractalNoise freqX={0.9} freqY={0.9} octaves={3} seed={11} />
+            </Fill>
+          </Canvas>
+        </Fx>
       )}
 
-      <View style={[styles.content, isWideFrame && styles.contentWide]}>
-        {/* ── the crest + the wordmark, as a film title card ── */}
-        <View style={[styles.masthead, isWideFrame && styles.mastheadWide]}>
-          <Reveal ready={fontsLoaded} delay={60}>
-            <LogoMark size={isWideFrame ? 76 : 64} loopProps={loopProps} glowStyle={glowStyle} />
-          </Reveal>
-          <Reveal ready={fontsLoaded} delay={200}>
-            <Text style={[styles.wordmark, isWideFrame && styles.wordmarkWide]}>PROSEASON</Text>
-          </Reveal>
-          <Reveal ready={fontsLoaded} delay={340}>
-            <Text style={[styles.wordmark, styles.wordmarkAccent, isWideFrame && styles.wordmarkWide]}>
-              ACADEMY
-            </Text>
-          </Reveal>
-          <Reveal ready={fontsLoaded} delay={500}>
-            <View style={styles.rule} />
-          </Reveal>
-          <Reveal ready={fontsLoaded} delay={620}>
-            <Text style={[styles.tagline, isWideFrame && styles.centered]}>THE CONSOLE COACHING ACADEMY</Text>
-          </Reveal>
-          <Reveal ready={fontsLoaded} delay={740}>
-            <Text style={[styles.taglineSub, isWideFrame && styles.centered]}>
-              ESPORTS-GRADE REVIEW · ONE MATCH AT A TIME
-            </Text>
-          </Reveal>
+      {/* ── the two actors ── */}
+      <View style={styles.content}>
+        <View style={styles.crestZone}>
+          <Animated.View style={[crestStyle, styles.crestWrap]}>
+            <InfinityCrest size={isWideFrame ? 230 : 170} />
+          </Animated.View>
         </View>
 
-        <View style={styles.spacer} />
-
-        {/* ── the loader — real progress, same gate as before ── */}
+        {/* the bar — real progress, same honest gate */}
         <View style={[styles.loader, isWideFrame && styles.loaderWide]}>
           <View style={styles.track}>
             <Animated.View style={[styles.fill, animatedFillStyle]} />
@@ -287,8 +308,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           </View>
         </View>
       </View>
-
-      <Text style={styles.footer}>PROSEASONACADEMY • VERSION {APP_VERSION}</Text>
     </View>
   );
 }
@@ -296,7 +315,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#020503',
     overflow: 'hidden',
   },
   photo: {
@@ -317,88 +336,33 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: 28,
   },
-  contentWide: {
-    paddingHorizontal: 48,
-  },
-  masthead: {
-    marginTop: 92,
-    alignItems: 'flex-start',
-  },
-  mastheadWide: {
-    // film title card — centered on the wide establishing shot
-    marginTop: 110,
+  crestZone: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
   },
-  wordmark: {
-    marginTop: 14,
-    fontFamily: displayFont,
-    fontSize: 52,
-    lineHeight: 50,
-    letterSpacing: 1,
-    color: colors.fg,
-    textTransform: 'uppercase',
-    textShadowColor: 'rgba(0,0,0,0.55)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 14,
+  crestWrap: {
+    // no shadows here — on web RN shadows become a rectangular box-shadow
+    // that reads as a dark plate behind the mark. The glow lives in the
+    // SVG strokes and the CSS drop-shadow pulse instead.
+    backgroundColor: 'transparent',
   },
-  wordmarkWide: {
-    fontSize: 84,
-    lineHeight: 80,
-    letterSpacing: 2,
-    textAlign: 'center',
-  },
-  wordmarkAccent: {
-    color: colors.primary,
-    letterSpacing: 4.5,
-  },
-  rule: {
-    width: 34,
-    height: 2,
-    marginTop: 18,
-    marginBottom: 12,
-    backgroundColor: colors.accent,
-    borderRadius: 1,
-  },
-  tagline: {
-    fontFamily: bodyFontStrong,
-    fontSize: 11,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    color: colors.primary,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  taglineSub: {
-    marginTop: 8,
-    fontFamily: bodyFontStrong,
-    fontSize: 8.5,
-    letterSpacing: 2.4,
-    textTransform: 'uppercase',
-    color: 'rgba(238,242,236,0.72)',
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 8,
-  },
-  centered: { textAlign: 'center' },
-  spacer: { flex: 1 },
   loader: {
-    paddingBottom: 74,
+    width: '100%',
+    paddingBottom: 84,
   },
   loaderWide: {
-    // the rail sits in a measured column, not stretched across a 1440p hall
-    alignSelf: 'center',
-    width: '100%',
-    maxWidth: 560,
+    maxWidth: 520,
   },
   track: {
     width: '100%',
     height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(238,242,236,0.13)',
+    backgroundColor: 'rgba(238,242,236,0.12)',
     overflow: 'hidden',
   },
   fill: {
@@ -408,11 +372,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.85,
-    shadowRadius: 7,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
   statusRow: {
-    marginTop: 13,
+    marginTop: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -420,9 +384,9 @@ const styles = StyleSheet.create({
   statusText: {
     flexShrink: 1,
     fontFamily: bodyFontItalic,
-    fontSize: 13.5,
-    letterSpacing: 0.3,
-    color: 'rgba(238,242,236,0.72)',
+    fontSize: 12.5,
+    letterSpacing: 0.4,
+    color: 'rgba(238,242,236,0.55)',
     includeFontPadding: false,
   },
   pctText: {
@@ -437,14 +401,5 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.6)',
     textShadowRadius: 6,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 26,
-    alignSelf: 'center',
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    letterSpacing: 3.2,
-    color: 'rgba(143,184,155,0.55)',
   },
 });

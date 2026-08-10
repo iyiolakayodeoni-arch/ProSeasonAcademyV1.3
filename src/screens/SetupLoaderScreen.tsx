@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { Image, View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
@@ -11,6 +11,13 @@ import { colors, monoFont } from '../theme';
 
 // the same night the splash opened on — the boot keeps the world continuous
 const HERO = require('../../assets/art/splash-hero.png');
+// wide frames rotate through the landscape plates only — the tall portrait
+// is reserved for portrait frames (contain) so it is never cropped
+const WIDE_ROTATION = [
+  require('../../assets/art/splash-hero-wide.png'),
+  require('../../assets/art/journey-tunnel.jpg'),
+  require('../../assets/art/locker-room.jpg'),
+];
 
 // Version comes from app.json at runtime — never hardcode it here.
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -30,6 +37,7 @@ type Props = {
 export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
   const [statusIdx, setStatusIdx] = useState(0);
   const { width: scrW, height: scrH } = useWindowDimensions();
+  const isWideFrame = scrW > scrH * 1.05;
 
   const statuses = useMemo(
     () => [
@@ -69,8 +77,23 @@ export default function SetupLoaderScreen({ coachFirstName, onDone }: Props) {
       <GridBackground />
 
       {/* the splash's night, dimmed — booting feels like staying inside the
-          same room, not a jump to a progress screen */}
-      <RotatingArtImage sources={[HERO, require('../../assets/art/journey-tunnel.jpg'), require('../../assets/art/locker-room.jpg')]} style={{ position: 'absolute', width: scrW, height: scrH, opacity: 0.42 }} resizeMode="cover" />
+          same room, not a jump to a progress screen. The portrait hero is
+          never cropped: on portrait frames it sits at its natural scale
+          (contain), and a blurred, dimmed copy fills the side gutters behind
+          it. Wide frames go full-bleed cover with the rotating plates. */}
+      {!isWideFrame && (
+        <Image
+          source={HERO}
+          style={styles.heroBackdrop}
+          resizeMode="cover"
+          blurRadius={18}
+        />
+      )}
+      <RotatingArtImage
+        sources={isWideFrame ? WIDE_ROTATION : HERO}
+        style={{ position: 'absolute', width: scrW, height: scrH, opacity: 0.42 }}
+        resizeMode={isWideFrame ? 'cover' : 'contain'}
+      />
       <PhotoVeil width={scrW} height={scrH} warmAt={{ x: scrW * 0.5, y: scrH * 0.34, r: scrW * 0.8 }} grain={0.05} />
 
       {/* what this loader is for — small kicker over the crest */}
@@ -114,6 +137,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  heroBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.58,
+    transform: [{ scale: 1.06 }],
   },
   kicker: {
     position: 'absolute',
