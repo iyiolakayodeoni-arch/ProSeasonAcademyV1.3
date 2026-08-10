@@ -347,7 +347,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                   intervalMs={7000}
                   blurRadius={8}
                   resizeMode="cover"
-                  style={StyleSheet.absoluteFill as any}
+                  style={styles.slideshowImage}
                 />
                 {/* Dark cinematic overlay so the type always reads cleanly. */}
                 <View style={styles.slideshowOverlay} pointerEvents="none" />
@@ -777,13 +777,22 @@ const styles = StyleSheet.create({
   },
 
   // ── slideshow overlays (desktop only) ──
+  slideshowImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
   slideshowOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(3, 10, 6, 0.52)',
+    backgroundColor: 'rgba(3, 10, 6, 0.45)',
     zIndex: 1,
   },
   slideshowVignette: {
@@ -864,8 +873,10 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
   visualTitleWide: {
-    fontSize: 46,
-    lineHeight: 52,
+    fontSize: 52,
+    lineHeight: 58,
+    textShadowColor: 'rgba(0,0,0,0.95)',
+    textShadowRadius: 20,
   },
   caret: {
     width: 5,
@@ -880,7 +891,7 @@ const styles = StyleSheet.create({
   },
   caretWide: {
     width: 6,
-    height: 40,
+    height: 46,
   },
 
   // ── Obinna — anchored to the floor of the panel ──
