@@ -165,8 +165,8 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
   return (
     <View style={styles.root}>
-      {/* the pitch — a dimmed football-pitch photograph behind the content */}
-      <PitchBackdrop dim={0.72} />
+      {/* the pitch — a dimmed football-pitch photograph pinned behind the whole page */}
+      <PitchBackdrop dim={0.72} fixed />
 
       <View
         onLayout={(e) => {
