@@ -29,10 +29,7 @@
   "devDependencies": {
     "@types/node": "^26.1.2",
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3",
-    "@storybook/react": "^7.0.0",
-    "@storybook/addon-essentials": "^7.0.0",
-    "react-native-storybook-loader": "^2.0.5"
+    "typescript": "~6.0.3"
   },
 
   "scripts": {
@@ -43,8 +40,6 @@
     "typecheck": "tsc --noEmit",
     "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/dailyProgram.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/honestyGuard.test.js",
     "test:ci-smoke": "npm run typecheck && npm test",
-    "storybook": "start-storybook -p 7007 -c .storybook",
-    "build-storybook": "build-storybook -c .storybook -o storybook-static",
     "doctor": "expo-doctor"
   },
 
