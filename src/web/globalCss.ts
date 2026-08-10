@@ -415,11 +415,8 @@ html.psa-page-landing .psa-app-fill {
    the page — with its own slow dolly and a vignette that dims the frame
    edges while the centre stays atmospheric. ── */
 .psa-splash-bg {
-  position: absolute;
-  inset: -8%;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
+  pointer-events: none;
+  object-fit: cover;
   filter: brightness(0.55) saturate(1.1) contrast(1.02);
   animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

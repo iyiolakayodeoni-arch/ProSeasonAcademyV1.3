@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Platform, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
@@ -66,13 +66,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const h = frame.h;
   // window aspect for the first paint (frame arrives one layout later)
   const isWideFrame = frame.w > 0 ? frame.w > frame.h * 1.05 : win.width > win.height * 1.05;
-
-  // web renders the photograph as a true CSS background layer, so it needs
-  // the resolved asset URI
-  const heroUri = useMemo(
-    () => Image.resolveAssetSource(isWideFrame ? HERO_WIDE : HERO_PORTRAIT).uri,
-    [isWideFrame],
-  );
 
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
@@ -149,11 +142,17 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* the arena — a true backdrop on web (CSS background bleeding past
-          every edge), an Image on native */}
+      {/* the arena — on web the image bleeds past every edge and carries
+          its own CSS dolly + dim, so it reads as a backdrop, not a pasted
+          picture; native keeps the animated Image */}
       {WEB ? (
         <>
-          <div className="psa-splash-bg" style={{ backgroundImage: `url(${heroUri})` }} />
+          <Image
+            {...({ className: 'psa-splash-bg' } as any)}
+            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
+            style={styles.photoBleed}
+            resizeMode="cover"
+          />
           <div className="psa-splash-vignette" />
         </>
       ) : (
@@ -254,6 +253,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  // bleeds past every edge so no boundary ever shows on screen
+  photoBleed: {
+    position: 'absolute',
+    top: '-8%',
+    left: '-8%',
+    right: '-8%',
+    bottom: '-8%',
   },
   // the dim — the arena becomes texture, not subject
   dim: {
