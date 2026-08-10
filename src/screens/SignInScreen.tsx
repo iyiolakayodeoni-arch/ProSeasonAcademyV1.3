@@ -581,7 +581,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           >
             {/* The arena line — centred above the form */}
             <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
-              <View style={styles.titleWrap}>
+              <View style={styles.titleWrapDesktop}>
                 <Text style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}>
                   {ARENA_LINE}
                 </Text>
@@ -868,6 +868,9 @@ const styles = StyleSheet.create({
   titleWrap: {
     position: 'relative',
     maxWidth: 560,
+  },
+  titleWrapDesktop: {
+    position: 'relative',
   },
   titleGhost: {
     opacity: 0,
