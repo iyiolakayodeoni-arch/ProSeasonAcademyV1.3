@@ -341,22 +341,14 @@ export default function SignInScreen({ onSignedIn }: Props) {
           >
             {splitLayout ? (
               <>
-                {/* Test: single image to verify positioning */}
-                <Image
-                  source={require('../../assets/art/home-pitch.png')}
-                  style={styles.slideshowImage}
-                  resizeMode="cover"
-                />
                 {/* Atmospheric blurred slideshow — rotates through academy art. */}
-                <View style={styles.slideshowContainer}>
-                  <RotatingArtImage
-                    sources={SLIDESHOW_PLATES}
-                    intervalMs={7000}
-                    blurRadius={8}
-                    resizeMode="cover"
-                    style={styles.slideshowImage}
-                  />
-                </View>
+                <RotatingArtImage
+                  sources={SLIDESHOW_PLATES}
+                  intervalMs={7000}
+                  blurRadius={8}
+                  resizeMode="cover"
+                  style={styles.slideshowImage}
+                />
                 {/* Dark cinematic overlay so the type always reads cleanly. */}
                 <View style={styles.slideshowOverlay} pointerEvents="none" />
                 <View style={styles.slideshowVignette} pointerEvents="none" />
@@ -795,12 +787,10 @@ const styles = StyleSheet.create({
   },
   slideshowImage: {
     position: 'absolute',
-    top: 0,
     left: 0,
+    top: 0,
     right: 0,
     bottom: 0,
-    width: '100%',
-    height: '100%',
   },
   slideshowOverlay: {
     position: 'absolute',
