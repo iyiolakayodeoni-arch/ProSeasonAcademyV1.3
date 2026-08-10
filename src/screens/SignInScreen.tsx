@@ -122,6 +122,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const splitLayout = isLaptopUp && w >= 1080 && h >= 700;
   const compactHeight = h < 650;
 
+  // Calculate explicit dimensions for the slideshow (desktop only)
+  // visualPane has flex: 1.1, formPane has flex: 0.9, total = 2.0
+  // So visualPane width = 1.1 / 2.0 = 55% of window width
+  const slideshowWidth = splitLayout ? Math.floor(w * 0.55) : 0;
+  const slideshowHeight = splitLayout ? h : 0;
+
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -339,31 +345,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
               splitLayout && styles.visualPaneWide,
             ]}
           >
-            {splitLayout ? (
-              <>
-                {/* Atmospheric blurred slideshow — rotates through academy art. */}
-                <RotatingArtImage
-                  sources={SLIDESHOW_PLATES}
-                  intervalMs={7000}
-                  blurRadius={8}
-                  resizeMode="cover"
-                  style={styles.slideshowImage}
-                />
-                {/* Dark cinematic overlay so the type always reads cleanly. */}
-                <View style={styles.slideshowOverlay} pointerEvents="none" />
-                <View style={styles.slideshowVignette} pointerEvents="none" />
-
-                {/* esports HUD corner brackets */}
-                <View pointerEvents="none" style={styles.hudCornersWide}>
-                  <View style={[styles.hudCorner, styles.hudTL]} />
-                  <View style={[styles.hudCorner, styles.hudTR]} />
-                  <View style={[styles.hudCorner, styles.hudBL]} />
-                  <View style={[styles.hudCorner, styles.hudBR]} />
-                </View>
-              </>
-            ) : (
-              <>
-                <ArenaBackdrop />
+            <ArenaBackdrop />
 
                 {/* esports HUD corner brackets */}
                 <View pointerEvents="none" style={styles.hudCorners}>
@@ -774,35 +756,6 @@ const styles = StyleSheet.create({
     minWidth: 480,
     paddingHorizontal: 0,
     paddingTop: 0,
-  },
-
-  // ── slideshow overlays (desktop only) ──
-  slideshowImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%',
-    height: '100%',
-  },
-  slideshowOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(3, 10, 6, 0.45)',
-    zIndex: 1,
-  },
-  slideshowVignette: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: '55%',
-    backgroundColor: 'rgba(2, 6, 4, 0.35)',
-    zIndex: 2,
   },
 
   // esports HUD frame
