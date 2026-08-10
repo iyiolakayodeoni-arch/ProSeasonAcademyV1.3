@@ -1,8 +1,6 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
-import Animated from 'react-native-reanimated';
-
-const LOGO = require('../../assets/logo-mirror-journal.png');
+import { View } from 'react-native';
+import InfinityCrest from './InfinityCrest';
 
 type Props = {
   size?: number;
@@ -11,34 +9,22 @@ type Props = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE MIRROR JOURNAL MARK — ProSeasonAcademy's concept in one icon.
+// THE INFINITY CREST — ProSeasonAcademy's signature mark.
 //
-// A footballer sits with pen and notebook, facing a glowing mirror that
-// reflects the pitch and the ball. It captures the whole product idea:
-// play the match, watch yourself honestly, write the truth down, then turn
-// that reflection into disciplined progress.
+// One lemniscate that keeps drawing itself in and out, forever: the season
+// loops, the review never ends, growth compounds. This is the same mark the
+// splash opens on, applied everywhere in the product.
 //
-// The API intentionally stays the same so every screen that already renders
-// <LogoMark/> now receives the new football/mirror/journal identity.
-// `loopProps` remains accepted for backwards compatibility with the old
-// animated crest usage.
+// `LogoMark` is kept as a thin wrapper over `InfinityCrest` so every screen
+// that already renders <LogoMark/> receives the infinity crest without
+// changing its API. `loopProps` / `glowStyle` remain accepted for backward
+// compatibility with the old animated usages.
 // ─────────────────────────────────────────────────────────────────────────
 
 export default function LogoMark({ size = 132, glowStyle }: Props) {
   return (
-    <Animated.View style={[styles.wrap, { width: size, height: size, borderRadius: size * 0.22 }, glowStyle]}>
-      <Animated.Image
-        source={LOGO}
-        style={{ width: size, height: size, borderRadius: size * 0.22 }}
-        resizeMode="cover"
-      />
-    </Animated.View>
+    <View style={glowStyle}>
+      <InfinityCrest size={size} />
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  wrap: {
-    overflow: 'hidden',
-    backgroundColor: '#031f18',
-  },
-});
