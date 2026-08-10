@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Image, Platform, useWindowDimensions } from 'react-native';
 import Constants from 'expo-constants';
+import { Asset } from 'expo-asset';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -66,6 +67,18 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const h = frame.h;
   // window aspect for the first paint (frame arrives one layout later)
   const isWideFrame = frame.w > 0 ? frame.w > frame.h * 1.05 : win.width > win.height * 1.05;
+
+  // web uses raw <img> layers (RNW's Image wrapper fights the CSS), so we
+  // need the served asset URL — expo-asset resolves it synchronously; the
+  // tick re-render is a belt-and-braces second pass if it ever doesn't
+  const [assetTick, setAssetTick] = useState(0);
+  useEffect(() => {
+    setAssetTick(1);
+  }, []);
+  const heroUri = useMemo(
+    () => (WEB ? Asset.fromModule(isWideFrame ? HERO_WIDE : HERO_PORTRAIT).uri : ''),
+    [isWideFrame, assetTick],
+  );
 
   const [fontsLoaded, fontError] = useFonts({
     Anton_400Regular,
@@ -147,16 +160,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           reads edge-to-edge as a backdrop. Native mirrors the same idea. */}
       {WEB ? (
         <>
-          <Image
-            {...({ className: 'psa-splash-bg' } as any)}
-            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-            resizeMode="cover"
-          />
-          <Image
-            {...({ className: 'psa-splash-full' } as any)}
-            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-            resizeMode="contain"
-          />
+          <img className="psa-splash-bg" src={heroUri} alt="" draggable={false} />
+          <img className="psa-splash-full" src={heroUri} alt="" draggable={false} />
           <div className="psa-splash-vignette" />
         </>
       ) : (
