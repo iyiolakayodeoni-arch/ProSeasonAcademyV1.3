@@ -348,5 +348,19 @@ textarea:-webkit-autofill {
 
 /* Live heartbeat dot */
 .psa-live-dot { animation: psa-pulse 2.1s ease-in-out infinite; }
+
+/* ── Infinity-crest pulse — the mark breathes like a lit sign.
+   Used by InfinityCrest on web (native gets its SVG under-stroke halo). */
+@keyframes psa-crest-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 5px rgba(57, 255, 106, 0.32))
+      drop-shadow(0 0 16px rgba(57, 255, 106, 0.14));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(57, 255, 106, 0.68))
+      drop-shadow(0 0 34px rgba(57, 255, 106, 0.3));
+  }
+}
+.psa-crest-pulse { animation: psa-crest-pulse 2.8s ease-in-out infinite; }
 `;
 export default GLOBAL_CSS;
