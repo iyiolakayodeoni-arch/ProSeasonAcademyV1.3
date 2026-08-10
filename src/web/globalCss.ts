@@ -90,7 +90,11 @@ body::before {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   isolation: isolate;
   /* device-tier scale set by ResponsiveFrame (1 = phone/tablet/laptop,
      1.08 desktop monitors, 1.35 TVs) */
@@ -103,11 +107,13 @@ body::before {
 html[data-psa-tier='tv'] #root,
 html[data-psa-tier='tv'] .psa-web-shell {
   width: calc(100% / 1.35);
+  height: calc(100dvh / 1.35);
   min-height: calc(100vh / 1.35);
 }
 html[data-psa-tier='desktop'] #root,
 html[data-psa-tier='desktop'] .psa-web-shell {
   width: calc(100% / 1.08);
+  height: calc(100dvh / 1.08);
   min-height: calc(100vh / 1.08);
 }
 
@@ -115,8 +121,11 @@ html[data-psa-tier='desktop'] .psa-web-shell {
 .psa-web-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
   width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   background: transparent;
 }
 
