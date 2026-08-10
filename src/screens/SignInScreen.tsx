@@ -7,7 +7,6 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
@@ -48,8 +47,28 @@ type Props = {
   onSignedIn?: () => void;
 };
 
+// Why sign in / sign up — the same marketing register as the landing page.
+const PERKS: { title: string; body: string }[] = [
+  {
+    title: 'YOUR RECEIPTS, NOT OPINIONS',
+    body: 'Every grade is earned from your own match evidence. Nothing is painted on.',
+  },
+  {
+    title: 'ONE LOCKED COACH · SIX MONTHS',
+    body: 'A permanent benchmark in your corner. No swapping, no resets.',
+  },
+  {
+    title: 'ONE LESSON, CARRIED FORWARD',
+    body: 'Play. Review. Carry one honest lesson into the next match.',
+  },
+  {
+    title: 'SEASON ONE · 1,000 SEATS ONLY',
+    body: 'Capped entry. The door closes when the seats are claimed.',
+  },
+];
+
 export default function SignInScreen({ onSignedIn }: Props) {
-  const { isMultiColumn, isWide } = useResponsive();
+  const { isMultiColumn } = useResponsive();
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -171,6 +190,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
     setInfo(result.message);
   };
 
+  const jumpTo = (next: Exclude<Mode, 'token'>) => {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -179,6 +204,67 @@ export default function SignInScreen({ onSignedIn }: Props) {
       <View style={styles.flex}>
         <GridBackground />
         <ScreenFlash />
+
+        {/* ── PUBLIC NAV — lives only on this door. Once the player has left
+            the sign-up screen this bar is gone with it. ── */}
+        <View
+          style={[styles.navWrap, Platform.OS === 'web' && (styles.navWrapWeb as any)]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.navBar}>
+            <Pressable
+              onPress={() => jumpTo('register')}
+              style={({ pressed }) => [styles.navBrand, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+            >
+              <View style={styles.navCrestGlow}>
+                <LogoMark size={32} loopProps={loopProps} glowStyle={glowStyle} />
+              </View>
+              <View style={styles.navBrandCol}>
+                <Text style={styles.navBrandTitle}>PROSEASON ACADEMY</Text>
+                {isMultiColumn && <Text style={styles.navBrandSub}>THE CONSOLE COACHING ACADEMY</Text>}
+              </View>
+            </Pressable>
+
+            {isMultiColumn && (
+              <View style={styles.navLinks}>
+                <Pressable onPress={() => jumpTo('register')} hitSlop={6}>
+                  <Text style={styles.navLink}>THE METHOD</Text>
+                </Pressable>
+                <Pressable onPress={() => jumpTo('register')} hitSlop={6}>
+                  <Text style={styles.navLink}>THE STANDARD</Text>
+                </Pressable>
+                <Pressable onPress={() => jumpTo('reset')} hitSlop={6}>
+                  <Text style={styles.navLink}>RESET ACCESS</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.navRight}>
+              {liveSeats && isMultiColumn && (
+                <View style={styles.navSeatPill}>
+                  <View style={styles.navSeatDot} />
+                  <Text style={styles.navSeatTxt}>
+                    {liveSeats.taken.toLocaleString('en-US')}/{liveSeats.cap.toLocaleString('en-US')}
+                  </Text>
+                </View>
+              )}
+              <Pressable
+                onPress={() => (mode === 'login' ? jumpTo('register') : jumpTo('login'))}
+                style={({ pressed }) => [styles.navCta, pressed && { opacity: 0.85 }]}
+                accessibilityRole="button"
+              >
+                <LinearGradient
+                  colors={['#39ff6a', '#7dff5c', '#c6ff3c']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={styles.navCtaTxt}>{mode === 'login' ? 'CREATE SEAT ›' : 'SIGN IN ›'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
 
         <View style={[styles.pageSplit, isMultiColumn && styles.pageSplitWide]}>
           {/* Left Visual Panel (Desktop) / Header (Mobile) */}
@@ -191,22 +277,58 @@ export default function SignInScreen({ onSignedIn }: Props) {
               ]}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
+              blurRadius={isMultiColumn ? 8 : 14}
             />
             <PhotoVeil
               width={isMultiColumn ? 700 : 430}
-              height={isMultiColumn ? 900 : 260}
+              height={isMultiColumn ? 900 : 340}
               warmAt={{ x: 300, y: 150, r: 400 }}
             />
+            {/* heavy dim — the picture recedes so the gate reads clearly */}
+            <View style={styles.photoDim} pointerEvents="none" />
+            <LinearGradient
+              colors={['rgba(2,5,3,0.55)', 'rgba(2,5,3,0.2)', 'rgba(2,5,3,0.9)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+
+            {/* esports HUD corner brackets */}
+            <View pointerEvents="none" style={styles.hudCorners}>
+              <View style={[styles.hudCorner, styles.hudTL]} />
+              <View style={[styles.hudCorner, styles.hudTR]} />
+              <View style={[styles.hudCorner, styles.hudBL]} />
+              <View style={[styles.hudCorner, styles.hudBR]} />
+            </View>
 
             <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.visualContent}>
-              <View style={styles.visualCrestWrap}>
-                <LogoMark size={48} loopProps={loopProps} glowStyle={glowStyle} />
+              <View style={styles.visualTopRow}>
+                <Text style={styles.visualEyebrow}>SEASON ONE · 1,000 SEATS</Text>
+                <View style={styles.livePill}>
+                  <View style={styles.liveDot} />
+                  <Text style={styles.livePillTxt}>S1 · LIVE</Text>
+                </View>
               </View>
-              <Text style={styles.visualEyebrow}>SEASON ONE · 1,000 SEATS</Text>
-              <Text style={styles.visualTitle}>PROSEASON ACADEMY</Text>
+              <Text style={styles.visualTitle}>ENTER THE ARENA.</Text>
               <Text style={styles.visualSubtitle}>
-                THE FOOTBALL COACHING & MATCH REVIEW PRACTICE FOR SERIOUS FC PLAYERS.
+                THE FOOTBALL COACHING & MATCH REVIEW PRACTICE FOR SERIOUS FC PLAYERS. ONE REAL MATCH
+                AT A TIME — YOUR OWN EVIDENCE BECOMES THE LESSON YOU CARRY INTO THE NEXT GAME.
               </Text>
+
+              {isMultiColumn && (
+                <View style={styles.perkList}>
+                  {PERKS.map((p) => (
+                    <View key={p.title} style={styles.perkRow}>
+                      <View style={styles.perkTick} />
+                      <View style={styles.perkCopy}>
+                        <Text style={styles.perkTitle}>{p.title}</Text>
+                        <Text style={styles.perkBody}>{p.body}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
 
               {liveSeats && (
                 <View style={styles.seatLiveRow}>
@@ -228,7 +350,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           {/* Right Form Panel */}
           <ScrollView
             style={styles.formPane}
-            contentContainerStyle={styles.formContent}
+            contentContainerStyle={[styles.formContent, isMultiColumn && styles.formContentWide]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             bounces={false}
@@ -267,13 +389,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 </View>
               ) : (
                 <>
-                  <Text style={styles.authEyebrow}>ACADEMY PORTAL</Text>
+                  <Text style={styles.authEyebrow}>ACADEMY PORTAL · ACCESS GATE 01</Text>
                   <Text style={styles.authTitle}>
                     {mode === 'register' ? 'CLAIM YOUR SEAT' : mode === 'login' ? 'SIGN IN' : 'RESET ACCESS'}
                   </Text>
                   <Text style={styles.authSub}>
                     {mode === 'register'
-                      ? 'Create your member profile and lock in your coach.'
+                      ? 'Create your member profile and lock in your coach. The seat is yours when the baseline is sealed.'
                       : mode === 'login'
                         ? 'Sign in to access your 6-month progress and match receipts.'
                         : 'Enter your registered email to receive reset instructions.'}
@@ -290,11 +412,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                       return (
                         <Pressable
                           key={id}
-                          onPress={() => {
-                            setMode(id);
-                            setError(null);
-                            setInfo(null);
-                          }}
+                          onPress={() => jumpTo(id)}
                           style={[styles.modeChip, on && styles.modeChipOn]}
                         >
                           <Text style={[styles.modeTxt, on && styles.modeTxtOn]}>{label}</Text>
@@ -479,6 +597,83 @@ export default function SignInScreen({ onSignedIn }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
 
+  // ── public nav — this door only ──
+  navWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 40,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(57, 255, 106, 0.16)',
+    backgroundColor: 'rgba(3, 7, 4, 0.72)',
+  },
+  navWrapWeb: {
+    backdropFilter: 'blur(16px) saturate(1.2)',
+  } as any,
+  navBar: {
+    height: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  navBrand: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  navCrestGlow: {
+    shadowColor: colors.primary,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  navBrandCol: { gap: 1 },
+  navBrandTitle: { fontFamily: displayFont, fontSize: 16, letterSpacing: 1, color: colors.fg },
+  navBrandSub: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.4, color: 'rgba(143,184,155,0.6)' },
+  navLinks: { flexDirection: 'row', alignItems: 'center', gap: 22 },
+  navLink: {
+    fontFamily: bodyFontHeavy,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    color: 'rgba(143,184,155,0.8)',
+  },
+  navRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  navSeatPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(57,255,106,0.08)',
+  },
+  navSeatDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+  },
+  navSeatTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1, color: colors.primary },
+  navCta: {
+    height: 36,
+    minWidth: 104,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: 14,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  navCtaTxt: { fontFamily: bodyFontHeavy, fontSize: 10.5, letterSpacing: 1.6, color: '#07130b' },
+
   pageSplit: {
     flex: 1,
     flexDirection: 'column',
@@ -490,7 +685,7 @@ const styles = StyleSheet.create({
 
   visualPane: {
     position: 'relative',
-    height: 280,
+    height: 340,
     backgroundColor: '#040805',
     overflow: 'hidden',
     justifyContent: 'flex-end',
@@ -501,12 +696,43 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     padding: 48,
+    paddingTop: 84,
   },
+  photoDim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(1, 4, 2, 0.42)',
+  },
+
+  // esports HUD frame
+  hudCorners: {
+    position: 'absolute',
+    top: 76,
+    left: 14,
+    right: 14,
+    bottom: 14,
+  },
+  hudCorner: {
+    position: 'absolute',
+    width: 22,
+    height: 22,
+    borderColor: 'rgba(57,255,106,0.55)',
+  },
+  hudTL: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2 },
+  hudTR: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2 },
+  hudBL: { bottom: 0, left: 0, borderBottomWidth: 2, borderLeftWidth: 2 },
+  hudBR: { bottom: 0, right: 0, borderBottomWidth: 2, borderRightWidth: 2 },
 
   visualContent: {
     zIndex: 10,
   },
-  visualCrestWrap: {
+  visualTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   visualEyebrow: {
@@ -516,6 +742,27 @@ const styles = StyleSheet.create({
     letterSpacing: 2.2,
     color: colors.accent,
   },
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.3)',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    backgroundColor: 'rgba(2,8,4,0.6)',
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.9,
+    shadowRadius: 5,
+  },
+  livePillTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
   visualTitle: {
     marginTop: 6,
     fontFamily: displayFont,
@@ -526,16 +773,44 @@ const styles = StyleSheet.create({
   visualSubtitle: {
     marginTop: 8,
     fontFamily: bodyFont,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 12.5,
+    lineHeight: 18,
     color: 'rgba(238,242,236,0.85)',
-    maxWidth: 420,
+    maxWidth: 440,
   },
+
+  perkList: { marginTop: 18, gap: 10 },
+  perkRow: { flexDirection: 'row', gap: 10 },
+  perkTick: {
+    width: 7,
+    height: 7,
+    marginTop: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.7,
+    shadowRadius: 5,
+  },
+  perkCopy: { flex: 1 },
+  perkTitle: {
+    fontFamily: bodyFontHeavy,
+    fontSize: 10.5,
+    letterSpacing: 1.3,
+    color: colors.fg,
+  },
+  perkBody: {
+    marginTop: 2,
+    fontFamily: bodyFont,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: 'rgba(143,184,155,0.85)',
+  },
+
   seatLiveRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 14,
+    marginTop: 16,
   },
   seatLiveDot: {
     width: 8,
@@ -567,20 +842,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  formContentWide: {
+    paddingTop: 84,
+  },
 
   authBox: {
     width: '100%',
     maxWidth: 480,
-    borderRadius: 22,
-    backgroundColor: 'rgba(12, 20, 14, 0.78)',
-    borderWidth: 1,
-    borderColor: 'rgba(57, 255, 106, 0.16)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(12, 20, 14, 0.55)',
     padding: 28,
     shadowColor: '#000',
-    shadowOpacity: 0.32,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 12,
+    shadowOpacity: 0.3,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
   },
   authEyebrow: {
     fontFamily: monoFont,
