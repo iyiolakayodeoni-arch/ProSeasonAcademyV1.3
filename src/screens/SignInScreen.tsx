@@ -7,6 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import Constants from 'expo-constants';
 import Animated, {
@@ -14,32 +15,32 @@ import Animated, {
   FadeInUp,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withSpring,
   withTiming,
+  cancelAnimation,
+  Easing,
 } from 'react-native-reanimated';
+import Svg, { Defs, Path, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
-import LogoMark from '../components/LogoMark';
-import CoachCard from '../components/CoachCard';
+import InfinityCrest from '../components/InfinityCrest';
 import NeonInput from '../components/NeonInput';
-import PhotoVeil from '../components/PhotoVeil';
-import RotatingArtImage from '../components/RotatingArtImage';
 import { useAuth } from '../hooks/useAuth';
-import { useTrailLoop } from '../hooks/useTrailLoop';
-import { COACHES } from '../data/coaches';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
 
-const HERO = require('../../assets/art/splash-hero.png');
+// Coach Obinna — the face of the arena panel, anchored to the panel floor.
+const OBINNA = require('../../assets/coaches/obinna-card.png');
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
 import { COUNTRY_OPTIONS, optionForLabel, verifyLocation } from '../data/location';
 import * as backend from '../data/backend';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-const HEADER_TRAIL_LENGTH = 260;
 
 type Mode = 'register' | 'login' | 'reset' | 'token';
 
@@ -47,25 +48,61 @@ type Props = {
   onSignedIn?: () => void;
 };
 
-// Why sign in / sign up — the same marketing register as the landing page.
-const PERKS: { title: string; body: string }[] = [
-  {
-    title: 'YOUR RECEIPTS, NOT OPINIONS',
-    body: 'Every grade is earned from your own match evidence. Nothing is painted on.',
+// The arena line — typed out one character at a time, held, then repeated.
+const ARENA_LINE = 'ENTER THE ARENA.';
+const TYPE_MS = 85; // per-character typing speed
+const HOLD_MS = 5000; // hold the full line for five seconds before restarting
+
+/**
+ * The simple dark-green esports stage behind Obinna — solid deep green,
+ * a faint HUD grid and one glow pool where the coach stands. No photography.
+ */
+function ArenaBackdrop() {
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <View style={arenaStyles.solid} />
+      <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Defs>
+          <Pattern id="signInArenaGrid" width="44" height="44" patternUnits="userSpaceOnUse">
+            <Path d="M 44 0 L 0 0 0 44" fill="none" stroke="rgba(57,255,106,0.05)" strokeWidth="1" />
+          </Pattern>
+          <RadialGradient id="signInArenaGlow" cx="50%" cy="92%" r="68%">
+            <Stop offset="0%" stopColor="rgba(57,255,106,0.20)" stopOpacity={1} />
+            <Stop offset="55%" stopColor="rgba(57,255,106,0.07)" stopOpacity={1} />
+            <Stop offset="100%" stopColor="rgba(57,255,106,0)" stopOpacity={0} />
+          </RadialGradient>
+        </Defs>
+        <Rect width="100%" height="100%" fill="url(#signInArenaGrid)" />
+        <Rect width="100%" height="100%" fill="url(#signInArenaGlow)" />
+      </Svg>
+      {/* the floor line Obinna stands on */}
+      <View style={arenaStyles.floor} />
+    </View>
+  );
+}
+
+const arenaStyles = StyleSheet.create({
+  solid: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#04120c',
   },
-  {
-    title: 'ONE LOCKED COACH · SIX MONTHS',
-    body: 'A permanent benchmark in your corner. No swapping, no resets.',
+  floor: {
+    position: 'absolute',
+    left: '8%',
+    right: '8%',
+    bottom: 0,
+    height: 2,
+    backgroundColor: 'rgba(57,255,106,0.28)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
   },
-  {
-    title: 'ONE LESSON, CARRIED FORWARD',
-    body: 'Play. Review. Carry one honest lesson into the next match.',
-  },
-  {
-    title: 'SEASON ONE · 1,000 SEATS ONLY',
-    body: 'Capped entry. The door closes when the seats are claimed.',
-  },
-];
+});
 
 export default function SignInScreen({ onSignedIn }: Props) {
   const { isLaptopUp, isPhoneColumn, w, h } = useResponsive();
@@ -73,7 +110,6 @@ export default function SignInScreen({ onSignedIn }: Props) {
   // only appears when both columns have enough room to breathe.
   const splitLayout = isLaptopUp && w >= 1080 && h >= 700;
   const compactHeight = h < 650;
-  const showFullSquad = splitLayout && h >= 900;
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -83,20 +119,53 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const [info, setInfo] = useState<string | null>(null);
   const [countryPick, setCountryPick] = useState<string | null>(getSettings().country);
   const [seasonFull, setSeasonFull] = useState<backend.SeasonGate | null>(null);
-  const [liveSeats, setLiveSeats] = useState<backend.SeasonGate | null>(null);
   const [academyToken, setAcademyToken] = useState<string | null>(null);
   const [tokenRevealed, setTokenRevealed] = useState(false);
   const [installHelp, setInstallHelp] = useState(false);
 
   const { loading, register, login, requestReset } = useAuth();
 
+  // ── THE ARENA LINE — types on one character at a time, holds the full
+  // line for five seconds, then starts again. Plain timers; nothing to sync.
+  const [typedCount, setTypedCount] = useState(0);
   useEffect(() => {
-    void backend.liveSeatCount().then((seats) => {
-      if (seats) setLiveSeats(seats);
-    });
+    let alive = true;
+    let count = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const tick = () => {
+      if (!alive) return;
+      setTypedCount(count);
+      if (count < ARENA_LINE.length) {
+        count += 1;
+        timer = setTimeout(tick, TYPE_MS);
+      } else {
+        // full line typed — hold, then restart from an empty stage
+        count = 0;
+        timer = setTimeout(tick, HOLD_MS);
+      }
+    };
+    tick();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
-  const { loopProps, glowStyle } = useTrailLoop({ pathLength: HEADER_TRAIL_LENGTH, drawMs: 1800, eraseMs: 1800 });
+  // the blinking block caret that follows the typed characters
+  const caretPulse = useSharedValue(1);
+  useEffect(() => {
+    caretPulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 420, easing: Easing.out(Easing.quad) }),
+        withTiming(0, { duration: 420, easing: Easing.in(Easing.quad) }),
+      ),
+      -1,
+    );
+    return () => {
+      cancelAnimation(caretPulse);
+    };
+  }, [caretPulse]);
+  const caretStyle = useAnimatedStyle(() => ({ opacity: caretPulse.value }));
 
   const press = useSharedValue(0);
   // Fine-pointer hover eases the CTA up a breath; press plants it back down.
@@ -217,43 +286,19 @@ export default function SignInScreen({ onSignedIn }: Props) {
           pointerEvents="box-none"
         >
           <View style={styles.navBar}>
+            {/* the brand is the mark alone — bold, animated, top-left */}
             <Pressable
               onPress={() => jumpTo('register')}
               style={({ pressed }) => [styles.navBrand, pressed && { opacity: 0.85 }]}
               accessibilityRole="button"
+              accessibilityLabel="ProSeason Academy"
             >
               <View style={styles.navCrestGlow}>
-                <LogoMark size={32} loopProps={loopProps} glowStyle={glowStyle} />
-              </View>
-              <View style={styles.navBrandCol}>
-                <Text style={styles.navBrandTitle}>PROSEASON ACADEMY</Text>
-                {splitLayout && <Text style={styles.navBrandSub}>THE CONSOLE COACHING ACADEMY</Text>}
+                <InfinityCrest size={56} bold />
               </View>
             </Pressable>
 
-            {splitLayout && (
-              <View style={styles.navLinks}>
-                <Pressable onPress={() => jumpTo('register')} hitSlop={6}>
-                  <Text style={styles.navLink}>THE METHOD</Text>
-                </Pressable>
-                <Pressable onPress={() => jumpTo('register')} hitSlop={6}>
-                  <Text style={styles.navLink}>THE STANDARD</Text>
-                </Pressable>
-                <Pressable onPress={() => jumpTo('reset')} hitSlop={6}>
-                  <Text style={styles.navLink}>RESET ACCESS</Text>
-                </Pressable>
-              </View>
-            )}
-
             <View style={styles.navRight}>
-              {liveSeats && splitLayout && (
-                <View style={styles.navSeatPill}>
-                  <View style={styles.navSeatDot} />
-                  <Text style={styles.navSeatTxt}>
-                    {liveSeats.taken.toLocaleString('en-US')}/{liveSeats.cap.toLocaleString('en-US')}
-                  </Text>
-                </View>
-              )}
               <Pressable
                 onPress={() => (mode === 'login' ? jumpTo('register') : jumpTo('login'))}
                 style={({ pressed }) => [styles.navCta, pressed && { opacity: 0.85 }]}
@@ -272,7 +317,9 @@ export default function SignInScreen({ onSignedIn }: Props) {
         </View>
 
         <View style={[styles.pageSplit, splitLayout && styles.pageSplitWide]}>
-          {/* Left Visual Panel (Desktop) / Header (Mobile) */}
+          {/* Left arena panel (desktop) / header (mobile) — Obinna's stage.
+              A simple dark-green esports backdrop; no photography, no badges,
+              no counters. The panel always fills its full height. */}
           <View
             style={[
               styles.visualPane,
@@ -281,30 +328,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
               splitLayout && styles.visualPaneWide,
             ]}
           >
-            <RotatingArtImage
-              sources={[
-                HERO,
-                require('../../assets/art/coach-touchline.jpg'),
-                require('../../assets/art/mirror-drill.jpg'),
-              ]}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-              blurRadius={splitLayout ? 8 : 14}
-            />
-            <PhotoVeil
-              width={splitLayout ? 700 : 430}
-              height={splitLayout ? 900 : 340}
-              warmAt={{ x: 300, y: 150, r: 400 }}
-            />
-            {/* heavy dim — the picture recedes so the gate reads clearly */}
-            <View style={styles.photoDim} pointerEvents="none" />
-            <LinearGradient
-              colors={['rgba(2,5,3,0.55)', 'rgba(2,5,3,0.2)', 'rgba(2,5,3,0.9)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
+            <ArenaBackdrop />
 
             {/* esports HUD corner brackets */}
             <View pointerEvents="none" style={styles.hudCorners}>
@@ -314,48 +338,33 @@ export default function SignInScreen({ onSignedIn }: Props) {
               <View style={[styles.hudCorner, styles.hudBR]} />
             </View>
 
-            <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.visualContent}>
-              <View style={styles.visualTopRow}>
-                <Text style={styles.visualEyebrow}>SEASON ONE · 1,000 SEATS</Text>
-                <View style={styles.livePill}>
-                  <View style={styles.liveDot} />
-                  <Text style={styles.livePillTxt}>S1 · LIVE</Text>
+            {/* Coach Obinna — anchored to the floor of the panel */}
+            <Image
+              source={OBINNA}
+              resizeMode="contain"
+              style={[styles.obinna, splitLayout ? styles.obinnaWide : styles.obinnaStacked]}
+            />
+
+            <Animated.View
+              entering={FadeIn.duration(600).delay(120)}
+              style={[styles.visualContent, splitLayout && styles.visualContentWide]}
+            >
+              {/* the arena line — typed character by character, held 5s, looped.
+                  The invisible full line reserves the space so the layout
+                  never jumps while the text types on. */}
+              <View style={styles.titleWrap}>
+                <Text
+                  style={[styles.visualTitle, splitLayout && styles.visualTitleWide, styles.titleGhost]}
+                >
+                  {ARENA_LINE}
+                </Text>
+                <View style={styles.titleRow}>
+                  <Text style={[styles.visualTitle, splitLayout && styles.visualTitleWide]}>
+                    {ARENA_LINE.slice(0, typedCount)}
+                  </Text>
+                  <Animated.View style={[styles.caret, splitLayout && styles.caretWide, caretStyle]} />
                 </View>
               </View>
-              <Text style={styles.visualTitle}>ENTER THE ARENA.</Text>
-              <Text style={styles.visualSubtitle}>
-                THE FOOTBALL COACHING & MATCH REVIEW PRACTICE FOR SERIOUS FC PLAYERS. ONE REAL MATCH
-                AT A TIME — YOUR OWN EVIDENCE BECOMES THE LESSON YOU CARRY INTO THE NEXT GAME.
-              </Text>
-
-              {splitLayout && (
-                <View style={styles.perkList}>
-                  {PERKS.map((p) => (
-                    <View key={p.title} style={styles.perkRow}>
-                      <View style={styles.perkTick} />
-                      <View style={styles.perkCopy}>
-                        <Text style={styles.perkTitle}>{p.title}</Text>
-                        <Text style={styles.perkBody}>{p.body}</Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {liveSeats && (
-                <View style={styles.seatLiveRow}>
-                  <View style={styles.seatLiveDot} />
-                  <Text style={styles.seatLiveTxt}>
-                    {liveSeats.taken.toLocaleString('en-US')} / {liveSeats.cap.toLocaleString('en-US')} SEATS CLAIMED
-                  </Text>
-                </View>
-              )}
-
-              {showFullSquad && (
-                <View style={styles.coachVisualCard}>
-                  <CoachCard coach={COACHES[0]} width={280} />
-                </View>
-              )}
             </Animated.View>
           </View>
 
@@ -667,45 +676,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 12,
   },
-  navBrand: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
+  navBrand: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   navCrestGlow: {
     shadowColor: colors.primary,
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 0 },
   },
-  navBrandCol: { gap: 1 },
-  navBrandTitle: { fontFamily: displayFont, fontSize: 16, letterSpacing: 1, color: colors.fg },
-  navBrandSub: { fontFamily: monoFont, fontSize: 6.2, letterSpacing: 1.4, color: 'rgba(143,184,155,0.6)' },
-  navLinks: { flexDirection: 'row', alignItems: 'center', gap: 22 },
-  navLink: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 10,
-    letterSpacing: 1.8,
-    color: 'rgba(143,184,155,0.8)',
-  },
   navRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  navSeatPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.22)',
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(57,255,106,0.08)',
-  },
-  navSeatDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.9,
-    shadowRadius: 5,
-  },
-  navSeatTxt: { fontFamily: monoFont, fontSize: 7.5, fontWeight: '900', letterSpacing: 1, color: colors.primary },
   navCta: {
     height: 36,
     minWidth: 104,
@@ -736,38 +714,29 @@ const styles = StyleSheet.create({
   visualPane: {
     position: 'relative',
     height: 320,
-    backgroundColor: '#040805',
+    backgroundColor: '#04120c',
     overflow: 'hidden',
-    justifyContent: 'flex-end',
     paddingHorizontal: 20,
     paddingTop: 78,
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   visualPaneTablet: {
     height: 400,
     paddingHorizontal: 40,
-    paddingBottom: 36,
   },
   visualPaneCompact: {
     height: 250,
-    paddingTop: 72,
-    paddingBottom: 18,
+    paddingTop: 70,
   },
+  // The panel stretches to the full available height — opaque dark green all
+  // the way down, so no strip of page background ever shows beneath it.
   visualPaneWide: {
     flex: 1.08,
+    alignSelf: 'stretch',
     height: '100%',
     minWidth: 520,
-    justifyContent: 'center',
-    padding: 48,
-    paddingTop: 90,
-  },
-  photoDim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(1, 4, 2, 0.42)',
+    paddingHorizontal: 0,
+    paddingTop: 0,
   },
 
   // esports HUD frame
@@ -792,107 +761,71 @@ const styles = StyleSheet.create({
   visualContent: {
     zIndex: 10,
   },
-  visualTopRow: {
+  visualContentWide: {
+    paddingHorizontal: 48,
+    paddingTop: 104,
+  },
+
+  // ── the arena line (typewriter) ──
+  titleWrap: {
+    position: 'relative',
+    maxWidth: 560,
+  },
+  // invisible copy of the full line — reserves the final space up front
+  titleGhost: {
+    opacity: 0,
+  },
+  titleRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
   },
-  visualEyebrow: {
-    fontFamily: monoFont,
-    fontSize: 8.5,
-    fontWeight: '900',
-    letterSpacing: 2.2,
-    color: colors.accent,
-  },
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.3)',
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    backgroundColor: 'rgba(2,8,4,0.6)',
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.9,
-    shadowRadius: 5,
-  },
-  livePillTxt: { fontFamily: monoFont, fontSize: 6.8, fontWeight: '900', letterSpacing: 1.2, color: colors.primary },
   visualTitle: {
-    marginTop: 6,
     fontFamily: displayFont,
-    fontSize: 36,
+    fontSize: 34,
+    lineHeight: 40,
     letterSpacing: 1,
     color: colors.fg,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
-  visualSubtitle: {
-    marginTop: 8,
-    fontFamily: bodyFont,
-    fontSize: 12.5,
-    lineHeight: 18,
-    color: 'rgba(238,242,236,0.85)',
-    maxWidth: 440,
+  visualTitleWide: {
+    fontSize: 46,
+    lineHeight: 52,
   },
-
-  perkList: { marginTop: 18, gap: 10 },
-  perkRow: { flexDirection: 'row', gap: 10 },
-  perkTick: {
-    width: 7,
-    height: 7,
-    marginTop: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.7,
-    shadowRadius: 5,
-  },
-  perkCopy: { flex: 1 },
-  perkTitle: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 10.5,
-    letterSpacing: 1.3,
-    color: colors.fg,
-  },
-  perkBody: {
-    marginTop: 2,
-    fontFamily: bodyFont,
-    fontSize: 11.5,
-    lineHeight: 16,
-    color: 'rgba(143,184,155,0.85)',
-  },
-
-  seatLiveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 16,
-  },
-  seatLiveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  caret: {
+    width: 5,
+    height: 28,
+    marginLeft: 5,
+    borderRadius: 1,
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.9,
-    shadowRadius: 6,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
   },
-  seatLiveTxt: {
-    fontFamily: monoFont,
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 1.8,
-    color: colors.primary,
+  caretWide: {
+    width: 6,
+    height: 40,
   },
-  coachVisualCard: {
-    marginTop: 24,
+
+  // ── Obinna — anchored to the floor of the panel ──
+  obinna: {
+    position: 'absolute',
+    bottom: 0,
+    alignSelf: 'center',
+    zIndex: 1,
+  },
+  obinnaWide: {
+    height: '86%',
+    aspectRatio: 896 / 1200,
+  },
+  obinnaStacked: {
+    height: '92%',
+    aspectRatio: 896 / 1200,
   },
 
   formPitchDecor: {
@@ -959,9 +892,12 @@ const styles = StyleSheet.create({
     paddingTop: 44,
     paddingBottom: 52,
   },
+  // desktop: the registration form hangs from the top of the canvas,
+  // clearing the nav — no longer centred vertically in the pane
   formContentWide: {
+    justifyContent: 'flex-start',
     paddingHorizontal: 44,
-    paddingTop: 98,
+    paddingTop: 96,
     paddingBottom: 48,
   },
 

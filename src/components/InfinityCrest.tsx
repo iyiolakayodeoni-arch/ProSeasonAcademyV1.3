@@ -36,13 +36,20 @@ const AnimatedPath = Animated.createAnimatedComponent(Path);
 type Props = {
   /** width of the mark (height is half, the 2:1 lemniscate) */
   size?: number;
+  /** the navigation edition — heavier strokes so the mark reads bold */
+  bold?: boolean;
 };
 
-export default function InfinityCrest({ size = 200 }: Props) {
+export default function InfinityCrest({ size = 200, bold = false }: Props) {
   // the crest owns its own trail so every screen just drops it in
   const { loopProps } = useTrailLoop({ pathLength: CREST_PATH_LENGTH, drawMs: 1700, eraseMs: 1700 });
   const w = size;
   const h = size * 0.5;
+
+  // bold edition: every stroke is thickened so the mark carries more weight
+  const haloWidth = bold ? 19 : 13;
+  const baseWidth = bold ? 4.5 : 2.5;
+  const trailWidth = bold ? 7.5 : 4;
 
   return (
     <View
@@ -56,7 +63,7 @@ export default function InfinityCrest({ size = 200 }: Props) {
             d={CREST_D}
             fill="none"
             stroke="rgba(57,255,106,0.32)"
-            strokeWidth={13}
+            strokeWidth={haloWidth}
             strokeLinecap="round"
             {...({ pathLength: CREST_PATH_LENGTH } as object)}
           />
@@ -66,7 +73,7 @@ export default function InfinityCrest({ size = 200 }: Props) {
           d={CREST_D}
           fill="none"
           stroke="rgba(57,255,106,0.26)"
-          strokeWidth={2.5}
+          strokeWidth={baseWidth}
           strokeLinecap="round"
           {...({ pathLength: CREST_PATH_LENGTH } as object)}
         />
@@ -75,7 +82,7 @@ export default function InfinityCrest({ size = 200 }: Props) {
           d={CREST_D}
           fill="none"
           stroke={colors.primary}
-          strokeWidth={4}
+          strokeWidth={trailWidth}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeDasharray={`${CREST_PATH_LENGTH} ${CREST_PATH_LENGTH}`}
