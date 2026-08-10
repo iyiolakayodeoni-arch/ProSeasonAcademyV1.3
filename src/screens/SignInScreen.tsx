@@ -122,6 +122,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const splitLayout = isLaptopUp && w >= 1080 && h >= 700;
   const compactHeight = h < 650;
 
+  // Calculate explicit dimensions for the slideshow (desktop only)
+  // visualPane has flex: 1.1, formPane has flex: 0.9, total = 2.0
+  // So visualPane width = 1.1 / 2.0 = 55% of window width
+  const slideshowWidth = splitLayout ? Math.floor(w * 0.55) : 0;
+  const slideshowHeight = splitLayout ? h : 0;
+
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -347,7 +353,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                   intervalMs={7000}
                   blurRadius={8}
                   resizeMode="cover"
-                  style={styles.slideshowImage}
+                  style={{ position: 'absolute', left: 0, top: 0, width: slideshowWidth, height: slideshowHeight }}
                 />
                 {/* Dark cinematic overlay so the type always reads cleanly. */}
                 <View style={styles.slideshowOverlay} pointerEvents="none" />
@@ -777,21 +783,6 @@ const styles = StyleSheet.create({
   },
 
   // ── slideshow overlays (desktop only) ──
-  slideshowContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: 'hidden',
-  },
-  slideshowImage: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-  },
   slideshowOverlay: {
     position: 'absolute',
     top: 0,
