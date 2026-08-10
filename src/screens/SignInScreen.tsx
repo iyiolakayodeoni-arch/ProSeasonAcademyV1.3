@@ -115,6 +115,10 @@ export default function SignInScreen({ onSignedIn }: Props) {
   const isDesktop = isLaptopUp && w >= 1080 && h >= 700;
   const compactHeight = h < 650;
 
+  // ScrollView on web needs an explicit height — the flex chain alone won't
+  // give it one. This matches the LandingScreen approach.
+  const scrollH = h;
+
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -580,8 +584,14 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </View>
         </View>
 
-        {/* Full-page content - no ScrollView wrapper, let browser handle native scrolling */}
-        <View style={styles.desktopContent}>
+        {/* Full-page scrollable content */}
+        <ScrollView
+          style={[styles.desktopScroll, { height: scrollH }]}
+          contentContainerStyle={styles.desktopFormContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
           {/* The arena line — centred above the form */}
           <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
             <View style={styles.titleWrapDesktop}>
@@ -604,7 +614,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </Animated.View>
 
           {formBody}
-        </View>
+        </ScrollView>
 
         {installHelp && (
           <View style={StyleSheet.absoluteFill}>
@@ -717,7 +727,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <View style={styles.formGlow} />
           </View>
           <ScrollView
-            style={styles.formPane}
+            style={[styles.formPane, { height: scrollH }]}
             contentContainerStyle={[
               styles.formContent,
               isPhoneColumn && styles.formContentPhone,
@@ -744,14 +754,17 @@ export default function SignInScreen({ onSignedIn }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
 
-  // ── Desktop page layout (native browser scrolling) ──
+  // ── Desktop page layout ──
   desktopPage: {
-    minHeight: '100vh',
+    flex: 1,
     backgroundColor: colors.bg,
     position: 'relative',
   },
-  desktopContent: {
-    minHeight: '100vh',
+  desktopScroll: {
+    flex: 1,
+  },
+  desktopFormContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
@@ -768,9 +781,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     opacity: 0.25,
-  },
-  desktopScroll: {
-    flex: 1,
   },
 
   // ── public nav — this door only ──
