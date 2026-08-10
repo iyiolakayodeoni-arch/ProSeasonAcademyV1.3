@@ -27,7 +27,6 @@ import {
   Barlow_800ExtraBold,
 } from '@expo-google-fonts/barlow';
 import { useSplashAnimation, LOOP_PATH_LENGTH } from '../hooks/useSplashAnimation';
-import { useTrailLoop } from '../hooks/useTrailLoop';
 import InfinityCrest from '../components/InfinityCrest';
 import { colors, monoFont, bodyFontItalic } from '../theme';
 
@@ -46,6 +45,19 @@ const HERO_PORTRAIT = require('../../assets/art/splash-hero.png');
 const HERO_WIDE = require('../../assets/art/splash-hero-wide.png');
 
 const WEB = Platform.OS === 'web';
+
+/** Silent boundary: the GPU atmosphere is decoration — if Skia's wasm
+    ever fails on a device, the splash drops it and carries on with the
+    backdrop, crest and bar. The first impression must never crash. */
+class Fx extends React.Component<{ children?: React.ReactNode }, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() {
+    return { err: true };
+  }
+  render() {
+    return this.state.err ? null : this.props.children;
+  }
+}
 
 export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   const [frame, setFrame] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
@@ -99,8 +111,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
     onComplete: finish,
   });
 
-  // the crest's living trail — draws on and off while the bar earns its fill
-  const trail = useTrailLoop({ pathLength: LOOP_PATH_LENGTH, drawMs: 1700, eraseMs: 1700 });
+  // the crest's living pulse comes from CSS (psa-crest-pulse); the bar
+  // keeps earning its honest fill here.
 
   // ── the camera: a slow dolly-in on the dimmed photograph.
   const drift = useSharedValue(0);
@@ -157,6 +169,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
 
       {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (
+        <Fx>
         <Canvas style={StyleSheet.absoluteFill} pointerEvents="none">
           {/* floor scrim */}
           <Rect x={0} y={0} width={w} height={h}>
@@ -198,13 +211,14 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             <FractalNoise freqX={0.9} freqY={0.9} octaves={3} seed={11} />
           </Fill>
         </Canvas>
+        </Fx>
       )}
 
       {/* ── the two actors ── */}
       <View style={styles.content}>
         <View style={styles.crestZone}>
           <Animated.View style={[crestStyle, styles.crestWrap]}>
-            <InfinityCrest size={isWideFrame ? 190 : 150} trail={trail} />
+            <InfinityCrest size={isWideFrame ? 190 : 150} />
           </Animated.View>
         </View>
 

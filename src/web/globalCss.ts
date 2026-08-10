@@ -450,6 +450,25 @@ html.psa-page-landing .psa-app-fill {
   .psa-splash-bg { animation: none; transform: scale(1.08); }
 }
 
+/* ── The crest's living pulse — opacity + drop-shadow breathing on the
+   infinity mark. Degrades to a calm static mark where unsupported. ── */
+.psa-crest-pulse {
+  animation: psa-crest 3.2s ease-in-out infinite;
+}
+@keyframes psa-crest {
+  0%, 100% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 16px rgba(57, 255, 106, 0.22));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 34px rgba(57, 255, 106, 0.5));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .psa-crest-pulse { animation: none; }
+}
+
 /* While the splash plays, the document behind it must not move. */
 html.psa-splash-lock body {
   overflow: hidden !important;
