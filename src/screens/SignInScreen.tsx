@@ -28,11 +28,16 @@ import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
 import InfinityCrest from '../components/InfinityCrest';
 import NeonInput from '../components/NeonInput';
+import PhotoVeil from '../components/PhotoVeil';
+import RotatingArtImage from '../components/RotatingArtImage';
 import { useAuth } from '../hooks/useAuth';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
+
+// Landing page background — same as the splash/boot screen.
+const HERO_BG = require('../../assets/art/splash-hero-wide.png');
 
 // Coach Obinna — the face of the arena panel, anchored to the panel floor.
 const OBINNA = require('../../assets/coaches/obinna-card.png');
@@ -530,6 +535,14 @@ export default function SignInScreen({ onSignedIn }: Props) {
           <GridBackground />
           <ScreenFlash />
 
+          {/* Landing page background — same atmospheric treatment as the splash/boot screen */}
+          <RotatingArtImage
+            sources={[HERO_BG]}
+            style={{ position: 'absolute', width: w, height: h, opacity: 0.42 }}
+            resizeMode="cover"
+          />
+          <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
+
           {/* Subtle pitch-line decoration across the full page */}
           <View pointerEvents="none" style={styles.desktopDecor}>
             <View style={styles.pitchHalfway} />
@@ -581,7 +594,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           >
             {/* The arena line — centred above the form */}
             <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
-              <View style={styles.titleWrap}>
+              <View style={styles.titleWrapDesktop}>
                 <Text style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}>
                   {ARENA_LINE}
                 </Text>
@@ -803,7 +816,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.025)',
   },
   desktopFormContent: {
-    flexGrow: 1,
+    minHeight: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
@@ -868,6 +881,9 @@ const styles = StyleSheet.create({
   titleWrap: {
     position: 'relative',
     maxWidth: 560,
+  },
+  titleWrapDesktop: {
+    position: 'relative',
   },
   titleGhost: {
     opacity: 0,
