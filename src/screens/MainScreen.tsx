@@ -16,7 +16,6 @@ import ContactSheet from './ContactSheet';
 import FounderDesk from './FounderDesk';
 import TermsSheet from './TermsSheet';
 import OnboardingScreen from './OnboardingScreen';
-import { useAmbientAudio } from '../audio/AudioManager';
 import { useTrailLoop } from '../hooks/useTrailLoop';
 import { Coach } from '../data/coaches';
 import * as backend from '../data/backend';
@@ -58,8 +57,6 @@ export default function MainScreen({ coach, onSignOut }: Props) {
     return () => { alive = false; };
   }, [guideKey]);
   const closeGuide = useCallback(() => { setGuideOpen(false); void AsyncStorage.setItem(guideKey, 'seen').catch(() => {}); }, [guideKey]);
-
-  useAmbientAudio(tab === 'community' ? 'community' : 'home');
 
   if (tos && !tos.accepted) return <TermsSheet onAccepted={checkTos} />;
   if (onboard.ready && onboard.show) return <OnboardingScreen onDone={onboard.dismiss} />;

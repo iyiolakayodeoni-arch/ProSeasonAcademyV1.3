@@ -21,7 +21,6 @@ import { hydrateProgress } from './src/data/progress';
 import { hydrateThread } from './src/data/lessonThread';
 import { hydrateMirror } from './src/data/mirrorSession';
 import { initCloudSync } from './src/data/cloudSync';
-import { initAudio } from './src/audio/sound';
 import {
   endSession,
   getSession,
@@ -34,7 +33,6 @@ import { restoreSession, signOutRemote } from './src/data/authApi';
 import * as backend from './src/data/backend';
 import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
-import { useAmbientAudio, AudioScene } from './src/audio/AudioManager';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { trackFunnel } from './src/data/funnel';
 import WebAppChrome from './src/components/WebAppChrome';
@@ -90,18 +88,6 @@ export default function App() {
   const splashOpacity = useSharedValue(1);
   const appOpacity = useSharedValue(0);
 
-  const audioScene: AudioScene = !splashGone
-    ? 'splash'
-    : route === 'signin' || route === 'landing'
-      ? 'seat'
-      : route === 'coach'
-        ? 'coach-select'
-        : route === 'hub'
-          ? 'home'
-          : 'seat';
-  // MainScreen owns the home/film-room bed so only one loop is active.
-  useAmbientAudio(audioScene, route !== 'hub');
-
   const markGone = useCallback(() => setSplashGone(true), []);
 
   // Release the OS splash only after React has mounted the custom splash
@@ -113,11 +99,6 @@ export default function App() {
       void NativeSplash.hideAsync().catch(() => {});
     });
     return () => cancelAnimationFrame(frame);
-  }, []);
-
-  // wake the academy's ear (audio session policy) — once per launch
-  useEffect(() => {
-    initAudio();
   }, []);
 
   // ── RESTORE: pick up exactly where this player left off ──

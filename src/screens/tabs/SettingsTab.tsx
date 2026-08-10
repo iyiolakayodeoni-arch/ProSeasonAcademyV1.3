@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Linking } from 'react-native';
 import Constants from 'expo-constants';
-import Animated, { FadeIn, FadeInUp, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../../components/GridBackground';
 import ArtBand from '../../components/ArtBand';
 import { colors, monoFont, displayFont, bodyFont, bodyFontBold, bodyFontHeavy } from '../../theme';
@@ -14,16 +14,14 @@ import * as backend from '../../data/backend';
 import { wipeSession } from '../../data/session';
 import { resetOnboarding } from '../../data/onboarding';
 import OnboardingScreen from '../OnboardingScreen';
-import { sfx, syncMusicToSettings } from '../../audio/sound';
 import FounderDesk from '../FounderDesk';
 import { isFounder, signInWithEmail } from '../../data/founderAuth';
 import { deleteAccountRemote, requestPasswordReset, readCachedAcademyToken } from '../../data/authApi';
 import { checkForUpdate, UpdateInfo } from '../../data/updateChecker';
 import ContactSheet from '../ContactSheet';
-import { PLATFORMS, setDisplayName, setPlatform, useSettings, wipeLocalData, setToggle, ToggleKey } from '../../data/settings';
+import { PLATFORMS, setDisplayName, setPlatform, useSettings, wipeLocalData } from '../../data/settings';
 import {
   BellIcon,
-  BroadcastIcon,
   CheckIcon,
   ChevronRightIcon,
   GamepadIcon,
@@ -31,7 +29,6 @@ import {
   LogoutIcon,
   PersonIcon,
   TrashIcon,
-  WavesGlyphIcon,
 } from '../../components/Icons';
 import { useResponsive } from '../../hooks/useResponsive';
 
@@ -40,32 +37,6 @@ const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 type SheetKind = 'edit' | 'platform' | 'password' | 'help' | 'logout' | 'delete' | 'admin' | null;
 
 const FOUNDER_TAPS = 5;
-
-function Toggle({ on, onFlip }: { on: boolean; onFlip: () => void }) {
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: withTiming(on ? 17 : 1, { duration: 180 }) }] }));
-  return (
-    <Pressable
-      onPress={onFlip}
-      hitSlop={8}
-      style={[
-        styles.toggleTrack,
-        {
-          borderColor: on ? colors.primary : colors.border,
-          backgroundColor: on ? 'rgba(57,255,106,0.14)' : '#0c130e',
-        },
-      ]}
-    >
-      <Animated.View
-        style={[
-          styles.toggleKnob,
-          { backgroundColor: on ? colors.primary : '#4a6353' },
-          on && styles.toggleKnobGlow,
-          style,
-        ]}
-      />
-    </Pressable>
-  );
-}
 
 function Row({
   icon,
@@ -192,12 +163,7 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
   };
   const close = () => setSheet(null);
 
-  const flip = (key: ToggleKey) => {
-    const next = !s.toggles[key];
-    sfx('toggle');
-    setToggle(key, next);
-    if (key === 'music') syncMusicToSettings();
-  };
+
 
   return (
     <View style={styles.flex}>
@@ -264,24 +230,6 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
                 <Text style={styles.editBtnTxt}>EDIT PROFILE NAME</Text>
                 <ChevronRightIcon size={12} color="#7ed793" />
               </Pressable>
-            </View>
-
-            {/* Sound Controls */}
-            <Text style={styles.sectionLabel}>AUDIO & FEEDBACK</Text>
-            <View style={styles.card}>
-              <Row
-                icon={<WavesGlyphIcon size={16} color="#57d07c" />}
-                title="Academy ambience"
-                sub="THE QUIET PAD UNDER THE APP"
-                right={<Toggle on={s.toggles.music} onFlip={() => flip('music')} />}
-              />
-              <Row
-                icon={<BroadcastIcon size={16} color="#57d07c" />}
-                title="Sound effects"
-                sub="TAPS, WHISTLES AND FEEDBACK"
-                right={<Toggle on={s.toggles.soundFx} onFlip={() => flip('soundFx')} />}
-                last
-              />
             </View>
 
             {/* Academy Manifesto */}
@@ -840,14 +788,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.4,
     color: colors.primary,
-  },
-
-  toggleTrack: { width: 40, height: 23, borderRadius: 12, borderWidth: 1, justifyContent: 'center' },
-  toggleKnob: { width: 17, height: 17, borderRadius: 9, marginLeft: 2 },
-  toggleKnobGlow: {
-    shadowColor: '#39FF6A',
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
   },
 
   dangerCard: { borderColor: 'rgba(224,96,92,0.3)', backgroundColor: 'rgba(224,96,92,0.045)' },
