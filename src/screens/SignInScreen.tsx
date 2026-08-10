@@ -29,7 +29,6 @@ import ScreenFlash from '../components/ScreenFlash';
 import InfinityCrest from '../components/InfinityCrest';
 import NeonInput from '../components/NeonInput';
 import PhotoVeil from '../components/PhotoVeil';
-import RotatingArtImage from '../components/RotatingArtImage';
 import { useAuth } from '../hooks/useAuth';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
@@ -524,7 +523,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
     </Animated.View>
   );
 
-  // ── DESKTOP LAYOUT — full-page centred form, no split panel ──
+  // ── DESKTOP LAYOUT — full-page centred form with landing page background ──
   if (isDesktop) {
     return (
       <KeyboardAvoidingView
@@ -532,19 +531,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.flex}>
-          {/* Landing page background — same atmospheric slideshow as the splash/boot screen */}
-          <View style={styles.backgroundLayer} pointerEvents="none">
-            <RotatingArtImage
-              sources={[
-                HERO_BG,
-                require('../../assets/art/journey-tunnel.jpg'),
-                require('../../assets/art/locker-room.jpg'),
-              ]}
-              style={styles.backgroundImage}
-              resizeMode="cover"
-            />
-            <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
-          </View>
+          {/* Static background image — same as the landing/splash page */}
+          <Image
+            source={HERO_BG}
+            style={styles.desktopBg}
+            resizeMode="cover"
+          />
+          <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
 
           <GridBackground />
           <ScreenFlash />
@@ -590,13 +583,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </View>
           </View>
 
-          {/* Full-page centred form */}
+          {/* Full-page scrollable form */}
           <ScrollView
-            style={[styles.flex, styles.scrollableContent]}
+            style={styles.desktopScroll}
             contentContainerStyle={styles.desktopFormContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-            bounces={false}
           >
             {/* The arena line — centred above the form */}
             <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
@@ -761,22 +753,19 @@ export default function SignInScreen({ onSignedIn }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
 
-  // ── Desktop background layer ──
-  backgroundLayer: {
+  // ── Desktop background ──
+  desktopBg: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 0,
-  },
-  backgroundImage: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
     opacity: 0.42,
   },
-  scrollableContent: {
-    zIndex: 1,
-    position: 'relative',
+  desktopScroll: {
+    flex: 1,
   },
 
   // ── public nav — this door only ──
@@ -846,7 +835,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.025)',
   },
   desktopFormContent: {
-    minHeight: '100%',
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
