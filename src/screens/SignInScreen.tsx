@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '100%',
-    opacity: 0.42,
+    opacity: 0.25,
   },
   desktopScroll: {
     flex: 1,
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.025)',
   },
   desktopFormContent: {
-    flexGrow: 1,
+    minHeight: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
