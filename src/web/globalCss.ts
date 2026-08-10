@@ -414,30 +414,23 @@ html.psa-page-landing .psa-app-fill {
    background layer bleeding past every edge — never an <img> sitting on
    the page — with its own slow dolly and a vignette that dims the frame
    edges while the centre stays atmospheric. ── */
-/* ── Splash backdrop, two layers (web). The FULL photograph is always
-   visible (object-fit: contain) — never cropped — while a blurred,
-   dimmed copy of the same photo fills the leftover edges edge-to-edge,
-   so the frame still feels like a backdrop, not a pasted picture. The
-   slow dolly lives on the blurred layer only. ── */
+/* ── Splash backdrop (web): the photograph IS the background — one raw
+   <img> covering the entire viewport edge-to-edge, dimmed so the crest
+   and the bar are the focal light. No blur fills, no letterbox. ── */
 .psa-splash-bg {
   position: absolute;
-  inset: -6%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   object-fit: cover;
-  filter: blur(30px) brightness(0.42) saturate(1.15);
+  object-position: center;
+  filter: brightness(0.52) saturate(1.1);
   animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.psa-splash-full {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  object-fit: contain;
-  object-position: center;
-  filter: brightness(0.72) saturate(1.05);
-}
 @keyframes psa-dolly {
-  from { transform: scale(1.02) translateY(0); }
-  to   { transform: scale(1.10) translateY(-1%); }
+  from { transform: scale(1.0) translateY(0); }
+  to   { transform: scale(1.08) translateY(-1%); }
 }
 .psa-splash-vignette {
   position: absolute;

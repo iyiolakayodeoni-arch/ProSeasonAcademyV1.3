@@ -160,8 +160,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           reads edge-to-edge as a backdrop. Native mirrors the same idea. */}
       {WEB ? (
         <>
+          {/* the photograph is the background — full screen, edge to edge */}
           <img className="psa-splash-bg" src={heroUri} alt="" draggable={false} />
-          <img className="psa-splash-full" src={heroUri} alt="" draggable={false} />
           <div className="psa-splash-vignette" />
         </>
       ) : (
@@ -170,14 +170,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
             style={[styles.photo, photoStyle]}
             resizeMode="cover"
-            blurRadius={26}
           />
           <View style={styles.dim} />
-          <Image
-            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-            style={styles.photo}
-            resizeMode="contain"
-          />
         </>
       )}
 
@@ -269,14 +263,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  // the dim — the arena becomes texture, not subject
+  // the dim — keeps the photo a backdrop so the crest and bar lead
   dim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(2,5,3,0.78)',
+    backgroundColor: 'rgba(2,5,3,0.48)',
   },
   content: {
     flex: 1,
