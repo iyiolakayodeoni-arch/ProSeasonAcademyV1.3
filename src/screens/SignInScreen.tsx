@@ -28,6 +28,7 @@ import GridBackground from '../components/GridBackground';
 import ScreenFlash from '../components/ScreenFlash';
 import InfinityCrest from '../components/InfinityCrest';
 import NeonInput from '../components/NeonInput';
+import RotatingArtImage from '../components/RotatingArtImage';
 import { useAuth } from '../hooks/useAuth';
 import SideloadAssistant from './SideloadAssistant';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold, bodyFontHeavy } from '../theme';
@@ -36,6 +37,16 @@ import { useHover } from '../hooks/useHover';
 
 // Coach Obinna — the face of the arena panel, anchored to the panel floor.
 const OBINNA = require('../../assets/coaches/obinna-card.png');
+
+// Academy art plates — rotated through the atmospheric backdrop slideshow.
+const SLIDESHOW_PLATES = [
+  require('../../assets/art/home-pitch.png'),
+  require('../../assets/art/coach-touchline.jpg'),
+  require('../../assets/art/journey-tunnel.jpg'),
+  require('../../assets/art/locker-room.jpg'),
+  require('../../assets/art/vault-match.jpg'),
+  require('../../assets/art/pitch-bg.png'),
+];
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
 import { COUNTRY_OPTIONS, optionForLabel, verifyLocation } from '../data/location';
 import * as backend from '../data/backend';
@@ -317,9 +328,9 @@ export default function SignInScreen({ onSignedIn }: Props) {
         </View>
 
         <View style={[styles.pageSplit, splitLayout && styles.pageSplitWide]}>
-          {/* Left arena panel (desktop) / header (mobile) — Obinna's stage.
-              A simple dark-green esports backdrop; no photography, no badges,
-              no counters. The panel always fills its full height. */}
+          {/* Left arena panel (desktop) / header (mobile) — atmospheric
+              slideshow on desktop, Obinna's esports stage on mobile.
+              The panel always fills its full height. */}
           <View
             style={[
               styles.visualPane,
@@ -328,22 +339,48 @@ export default function SignInScreen({ onSignedIn }: Props) {
               splitLayout && styles.visualPaneWide,
             ]}
           >
-            <ArenaBackdrop />
+            {splitLayout ? (
+              <>
+                {/* Atmospheric blurred slideshow — rotates through academy art. */}
+                <RotatingArtImage
+                  sources={SLIDESHOW_PLATES}
+                  intervalMs={7000}
+                  blurRadius={8}
+                  resizeMode="cover"
+                  style={StyleSheet.absoluteFill as any}
+                />
+                {/* Dark cinematic overlay so the type always reads cleanly. */}
+                <View style={styles.slideshowOverlay} pointerEvents="none" />
+                <View style={styles.slideshowVignette} pointerEvents="none" />
 
-            {/* esports HUD corner brackets */}
-            <View pointerEvents="none" style={styles.hudCorners}>
-              <View style={[styles.hudCorner, styles.hudTL]} />
-              <View style={[styles.hudCorner, styles.hudTR]} />
-              <View style={[styles.hudCorner, styles.hudBL]} />
-              <View style={[styles.hudCorner, styles.hudBR]} />
-            </View>
+                {/* esports HUD corner brackets */}
+                <View pointerEvents="none" style={styles.hudCornersWide}>
+                  <View style={[styles.hudCorner, styles.hudTL]} />
+                  <View style={[styles.hudCorner, styles.hudTR]} />
+                  <View style={[styles.hudCorner, styles.hudBL]} />
+                  <View style={[styles.hudCorner, styles.hudBR]} />
+                </View>
+              </>
+            ) : (
+              <>
+                <ArenaBackdrop />
 
-            {/* Coach Obinna — anchored to the floor of the panel */}
-            <Image
-              source={OBINNA}
-              resizeMode="contain"
-              style={[styles.obinna, splitLayout ? styles.obinnaWide : styles.obinnaStacked]}
-            />
+                {/* esports HUD corner brackets */}
+                <View pointerEvents="none" style={styles.hudCorners}>
+                  <View style={[styles.hudCorner, styles.hudTL]} />
+                  <View style={[styles.hudCorner, styles.hudTR]} />
+                  <View style={[styles.hudCorner, styles.hudBL]} />
+                  <View style={[styles.hudCorner, styles.hudBR]} />
+                </View>
+
+                {/* Coach Obinna — anchored to the floor of the panel */}
+                <Image
+                  source={OBINNA}
+                  resizeMode="contain"
+                  style={[styles.obinna, styles.obinnaStacked]}
+                />
+              </>
+            )}
 
             <Animated.View
               entering={FadeIn.duration(600).delay(120)}
@@ -728,15 +765,35 @@ const styles = StyleSheet.create({
     height: 250,
     paddingTop: 70,
   },
-  // The panel stretches to the full available height — opaque dark green all
-  // the way down, so no strip of page background ever shows beneath it.
+  // The panel stretches to the full available height — the slideshow fills
+  // every pixel so no strip of page background ever shows beneath it.
   visualPaneWide: {
-    flex: 1.08,
+    flex: 1.1,
     alignSelf: 'stretch',
-    height: '100%',
-    minWidth: 520,
+    height: undefined,
+    minWidth: 480,
     paddingHorizontal: 0,
     paddingTop: 0,
+  },
+
+  // ── slideshow overlays (desktop only) ──
+  slideshowOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(3, 10, 6, 0.52)',
+    zIndex: 1,
+  },
+  slideshowVignette: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '55%',
+    backgroundColor: 'rgba(2, 6, 4, 0.35)',
+    zIndex: 2,
   },
 
   // esports HUD frame
@@ -746,6 +803,14 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     bottom: 14,
+  },
+  hudCornersWide: {
+    position: 'absolute',
+    top: 24,
+    left: 24,
+    right: 24,
+    bottom: 24,
+    zIndex: 5,
   },
   hudCorner: {
     position: 'absolute',
@@ -762,8 +827,14 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   visualContentWide: {
-    paddingHorizontal: 48,
-    paddingTop: 104,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: 56,
+    zIndex: 12,
   },
 
   // ── the arena line (typewriter) ──
@@ -835,7 +906,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#071009',
   },
-  formPitchDecorWide: { top: 0, width: '48.2%' },
+  formPitchDecorWide: { top: 0, width: '45%' },
   formPitchDecorStacked: { height: '68%', left: 0 },
   pitchHalfway: {
     position: 'absolute',
@@ -874,7 +945,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.035)',
   },
   formPane: {
-    flex: 0.92,
+    flex: 0.9,
     backgroundColor: 'rgba(7, 12, 8, 0.90)',
   },
   formContent: {
