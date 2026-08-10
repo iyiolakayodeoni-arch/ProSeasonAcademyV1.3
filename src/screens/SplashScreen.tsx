@@ -29,7 +29,7 @@ import {
 } from '@expo-google-fonts/barlow';
 import { useSplashAnimation } from '../hooks/useSplashAnimation';
 import InfinityCrest from '../components/InfinityCrest';
-import PitchStrips from '../components/PitchStrips';
+import PitchBackdrop from '../components/PitchBackdrop';
 import { colors, monoFont, bodyFontItalic } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -138,8 +138,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* ── the stage — blurred green pitch-lines, covering the whole screen ── */}
-      <PitchStrips blurred dim={0.55} />
+      {/* ── the stage — a dimmed, blurred football pitch behind everything ── */}
+      <PitchBackdrop blurred dim={0.72} />
 
       {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (

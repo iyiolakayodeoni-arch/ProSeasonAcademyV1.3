@@ -5,15 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Image,
   Platform,
   useWindowDimensions,
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, FadeInDown } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import LogoMark from '../components/LogoMark';
 import Marquee from '../components/Marquee';
-import PitchStrips from '../components/PitchStrips';
+import PitchBackdrop from '../components/PitchBackdrop';
+import MatchReviewMockup from '../components/MatchReviewMockup';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 
@@ -28,13 +27,6 @@ import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold }
 const WEB = Platform.OS === 'web';
 const headFont = WEB ? "'Space Grotesk', 'Barlow', sans-serif" : displayFont;
 const bodyFace = WEB ? "'Inter', 'Barlow', sans-serif" : bodyFont;
-
-const ART = {
-  heroPortrait: require('../../assets/art/splash-hero.png'),
-  heroWide: require('../../assets/art/splash-hero-wide.png'),
-  mirror: require('../../assets/art/mirror-drill.jpg'),
-  touchline: require('../../assets/art/coach-touchline.jpg'),
-};
 
 /* ── small house primitives ── */
 function Eyebrow({ children }: { children: string }) {
@@ -153,7 +145,6 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const { isWide, isDesktopUp } = useResponsive();
   const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : 28) * 2;
-  const heroImage = isWide ? ART.heroWide : ART.heroPortrait;
 
   const ref = useRef<ScrollView>(null);
   const [navH, setNavH] = useState(0);
@@ -174,8 +165,8 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
   return (
     <View style={styles.root}>
-      {/* the living pitch — thin green stripes, pxxl-calm */}
-      <PitchStrips dim={0.5} />
+      {/* the pitch — a dimmed football-pitch photograph behind the content */}
+      <PitchBackdrop dim={0.72} />
 
       <View
         onLayout={(e) => {
@@ -216,13 +207,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </View>
 
             <View style={[styles.heroArt, isWide && styles.heroArtWide]}>
-              <Image source={heroImage} style={styles.heroImage} resizeMode="cover" />
-              <LinearGradient
-                style={StyleSheet.absoluteFill}
-                colors={['rgba(5,10,6,0)', 'rgba(5,10,6,0.9)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-              />
+              <MatchReviewMockup width={isWide ? Math.min(360, contentW * 0.5) : contentW * 0.9} />
               <View style={styles.heroCaption}>
                 <Text style={styles.heroCaptionTxt}>THE PLAYER DOES THE SEEING</Text>
                 <Text style={styles.heroCaptionSub}>YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK</Text>
@@ -599,25 +584,18 @@ const styles = StyleSheet.create({
     height: 340,
     borderRadius: 20,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroArtWide: {
     flex: 1,
     height: 440,
     minWidth: 320,
   },
-  heroImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
   heroCaption: {
     position: 'absolute',
     left: 20,
-    bottom: 18,
+    bottom: 14,
     right: 20,
   },
   heroCaptionTxt: {
