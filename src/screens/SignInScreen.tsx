@@ -835,12 +835,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.025)',
   },
   desktopFormContent: {
-    minHeight: '100%',
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
-    paddingTop: 100,
-    paddingBottom: 48,
+    paddingVertical: 48,
   },
   desktopTitleWrap: {
     marginBottom: 32,
