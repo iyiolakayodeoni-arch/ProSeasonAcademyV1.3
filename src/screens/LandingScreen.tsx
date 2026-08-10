@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,15 +15,14 @@ import LogoMark from '../components/LogoMark';
 import Marquee from '../components/Marquee';
 import PitchStrips from '../components/PitchStrips';
 import { useResponsive } from '../hooks/useResponsive';
-import { colors, monoFont, displayFont, bodyFont, bodyFontItalic, bodyFontStrong, bodyFontBold } from '../theme';
+import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE DOSSIER — ProSeasonAcademy's public door. Sits right after the splash.
-// A proper marketing page: sticky nav, hero, manifesto, the journey,
-// evidence and a footer — all in the house voice (near-black + one neon,
-// mono labels, glass cards, the arena grid, marquees, fade-ups). The accent
-// is the brand green so it lands as one continuous experience with the
-// splash. No pricing — the product speaks for itself.
+// THE DOSSIER — ProSeasonAcademy's public door, modelled on a certain
+// developer platform's confidence. Same idea, our sport: a football pitch
+// of thin green stripes behind everything, mono HUD labels, and copy that
+// is sure of itself. The Mirror does not think for you. We're not subtle
+// about it. we cooked, yeah we know.
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
@@ -34,15 +33,12 @@ const ART = {
   heroPortrait: require('../../assets/art/splash-hero.png'),
   heroWide: require('../../assets/art/splash-hero-wide.png'),
   mirror: require('../../assets/art/mirror-drill.jpg'),
-  tunnel: require('../../assets/art/journey-tunnel.jpg'),
   touchline: require('../../assets/art/coach-touchline.jpg'),
-  huddle: require('../../assets/art/community-huddle.jpg'),
-  locker: require('../../assets/art/locker-room.jpg'),
 };
 
 /* ── small house primitives ── */
-function MonoLabel({ children }: { children: string }) {
-  return <Text style={styles.monoLabel}>{children}</Text>;
+function Eyebrow({ children }: { children: string }) {
+  return <Text style={styles.eyebrow}>{children}</Text>;
 }
 
 function H2({ children, center }: { children: React.ReactNode; center?: boolean }) {
@@ -59,6 +55,11 @@ function Muted({ children, center }: { children: React.ReactNode; center?: boole
       {children}
     </Text>
   );
+}
+
+/* ── the little self-aware aside pxxl slips under its cards ── */
+function Aside({ children }: { children: string }) {
+  return <Text style={styles.aside}>// {children}</Text>;
 }
 
 function GlassCard({
@@ -109,7 +110,7 @@ function CtaSecondary({ label, onPress }: { label: string; onPress: () => void }
 /* ── sticky nav ── */
 function WebsiteNav({ onEnter, onNav }: { onEnter: () => void; onNav: (id: string) => void }) {
   return (
-    <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
+    <View style={styles.nav}>
       <Pressable onPress={onEnter} style={styles.navBrand}>
         <LogoMark size={30} />
         <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
@@ -149,14 +150,19 @@ const CHAPTERS = [
 ];
 
 export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
-  const { width: winW } = useWindowDimensions();
+  const { width: winW, height: winH } = useWindowDimensions();
   const { isWide, isDesktopUp } = useResponsive();
   const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : 28) * 2;
   const heroImage = isWide ? ART.heroWide : ART.heroPortrait;
 
   const ref = useRef<ScrollView>(null);
+  const [navH, setNavH] = useState(0);
 
-  // Nav anchor scroll for native
+  // ScrollView on web needs an explicit height — the flex chain alone won't
+  // give it one. Measure the sticky nav, then give the scroller the rest.
+  const scrollH = Math.max(0, winH - navH);
+
+  // Nav anchor scroll
   const goSection = (id: string) => {
     if (WEB) {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -168,19 +174,28 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
   return (
     <View style={styles.root}>
+      {/* the living pitch — thin green stripes, pxxl-calm */}
       <PitchStrips dim={0.5} />
-      <WebsiteNav onEnter={onEnter} onNav={goSection} />
+
+      <View
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (h > 0 && h !== navH) setNavH(h);
+        }}
+      >
+        <WebsiteNav onEnter={onEnter} onNav={goSection} />
+      </View>
 
       <ScrollView
         ref={ref}
-        style={styles.scroll}
+        style={[styles.scroll, { height: scrollH }]}
         contentContainerStyle={styles.scrollInner}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
         {/* ── HERO ── */}
         <View style={[styles.hero, { minWidth: contentW }]} id="top">
-          <MonoLabel>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</MonoLabel>
+          <Eyebrow>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</Eyebrow>
           <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>
             CARRY ONE LESSON.
           </Text>
@@ -188,9 +203,9 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             REVIEW THE MATCH.
           </Text>
           <Text style={[styles.heroSub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-            The console coaching academy. You play, you watch yourself honestly,
-            you write the truth down — then you turn that reflection into disciplined
-            progress, one match at a time.
+            You play, you watch yourself honestly, you write the truth down — then you
+            turn that reflection into disciplined progress, one match at a time. No AI
+            telling you what to think. The Mirror records the evidence; you do the seeing.
           </Text>
           <View style={styles.heroCtas}>
             <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
@@ -207,7 +222,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             />
             <View style={styles.heroCaption}>
               <Text style={styles.heroCaptionTxt}>THE PLAYER DOES THE SEEING</Text>
-              <Text style={styles.heroCaptionSub}>YOU DO THE SEEING · THE EVIDENCE MOVES YOU</Text>
+              <Text style={styles.heroCaptionSub}>YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK</Text>
             </View>
           </View>
         </View>
@@ -224,30 +239,62 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* ── THE METHOD ── */}
         <View style={styles.section} id="method">
-          <MonoLabel>THE METHOD</MonoLabel>
-          <H2>ESPORTS-GRADE REVIEW, ONE MATCH AT A TIME.</H2>
+          <Eyebrow>[ METHOD ]</Eyebrow>
+          <H2 center>ESPORTS-GRADE REVIEW, ONE MATCH AT A TIME.</H2>
           <Muted center>
             No subscriptions to judgement. No scoreboard to impress. Just a discipline:
             the match, the mirror, the journal, the next kick.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            {[
-              ['THE MIRROR', 'Review your own decisions on the clip, before the noise gets in.'],
-              ['THE JOURNAL', 'Write the error, the intention, and the correction in one entry.'],
-              ['THE LEDGER', 'Your progress becomes entries — honest, dated, and yours.'],
-            ].map(([t, b]) => (
-              <GlassCard key={t} style={styles.card}>
-                <Text style={styles.cardTitle}>{t}</Text>
-                <Text style={styles.cardBody}>{b}</Text>
-              </GlassCard>
-            ))}
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>01</Text>
+              <Text style={styles.cardTitle}>THE MIRROR</Text>
+              <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
+              <Aside>this was the designer's idea btw</Aside>
+            </GlassCard>
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>02</Text>
+              <Text style={styles.cardTitle}>THE JOURNAL</Text>
+              <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
+              <Aside>we take the truth seriously. deal with it</Aside>
+            </GlassCard>
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>03</Text>
+              <Text style={styles.cardTitle}>THE LEDGER</Text>
+              <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
+              <Aside>no fake percentages here</Aside>
+            </GlassCard>
+          </View>
+        </View>
+
+        {/* ── HOW IT WORKS ── */}
+        <View style={styles.section} id="how">
+          <Eyebrow>[ HOW IT WORKS ]</Eyebrow>
+          <H2 center>PLAY → REVIEW → CARRY ONE LESSON FORWARD.</H2>
+          <Muted center>Your entire job, compressed to one honest loop.</Muted>
+          <View style={[styles.cardRow, { maxWidth: contentW }]}>
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>A</Text>
+              <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
+              <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
+            </GlassCard>
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>B</Text>
+              <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
+              <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
+            </GlassCard>
+            <GlassCard style={styles.card}>
+              <Text style={styles.cardIndex}>C</Text>
+              <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
+              <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
+            </GlassCard>
           </View>
         </View>
 
         {/* ── THE JOURNEY ── */}
         <View style={styles.section} id="journey">
-          <MonoLabel>THE JOURNEY</MonoLabel>
-          <H2>SIX CHAPTERS, EARNED.</H2>
+          <Eyebrow>[ THE JOURNEY ]</Eyebrow>
+          <H2 center>SIX CHAPTERS, EARNED.</H2>
           <Muted center>Your journey — control yourself. Each chapter builds the one after it.</Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             {CHAPTERS.map((c) => (
@@ -262,45 +309,49 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* ── EVIDENCE ── */}
         <View style={styles.section} id="evidence">
-          <MonoLabel>EVIDENCE</MonoLabel>
-          <H2>YOUR EVIDENCE MOVES YOU.</H2>
+          <Eyebrow>[ EVIDENCE ]</Eyebrow>
+          <H2 center>YOUR EVIDENCE MOVES YOU.</H2>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <GlassCard style={styles.evidenceCard}>
               <Text style={styles.evidenceStat}>100%</Text>
               <Text style={styles.cardBody}>of the review is yours. You see it, you name it, you keep it.</Text>
+              <Aside>no AI verdicts</Aside>
             </GlassCard>
             <GlassCard style={styles.evidenceCard}>
               <Text style={styles.evidenceStat}>1×</Text>
               <Text style={styles.cardBody}>lesson per match. One lesson, earned, carried into the next.</Text>
+              <Aside>one is enough. we mean it</Aside>
             </GlassCard>
             <GlassCard style={styles.evidenceCard}>
               <Text style={styles.evidenceStat}>∞</Text>
               <Text style={styles.cardBody}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
+              <Aside>you cannot outrun your receipts</Aside>
             </GlassCard>
           </View>
         </View>
 
         {/* ── CTA ── */}
         <View style={[styles.ctaBanner, { maxWidth: contentW }]}>
-          <MonoLabel>CLAIM YOUR SEAT</MonoLabel>
+          <Eyebrow>CLAIM YOUR SEAT</Eyebrow>
           <Text style={[styles.ctaHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
             THE SEASON STARTS AT THE MIRROR.
           </Text>
           <Muted center>
-            Sign in, lock in your coach, and get your baseline week sorted. The
-            academy is one match review away.
+            One coach, locked permanently. One standard. One thousand seats — when it's
+            full, it's full. Sign in, lock in your coach, and get your baseline week sorted.
           </Muted>
           <View style={styles.heroCtas}>
             <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
             <CtaSecondary label="I ALREADY HAVE AN ACCOUNT" onPress={onEnter} />
           </View>
+          <Aside>all of this, no hidden fees</Aside>
         </View>
 
         {/* ── FOOTER ── */}
         <View style={styles.footer}>
           <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
           <Text style={styles.footerTag}>THE CONSOLE COACHING ACADEMY · REVIEW ONE MATCH AT A TIME</Text>
-          <Text style={styles.footerNote}>© {new Date().getFullYear()} ProSeason Academy. All rights reserved.</Text>
+          <Text style={styles.footerNote}>we cooked, yeah we know · © {new Date().getFullYear()} ProSeason Academy</Text>
         </View>
       </ScrollView>
     </View>
@@ -310,17 +361,16 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    minHeight: 0,
     backgroundColor: colors.bg,
+    overflow: 'hidden',
   },
   scroll: {
-    flex: 1,
-    minHeight: 0,
+    flexShrink: 1,
   },
   scrollInner: {
     paddingBottom: 40,
   },
-  monoLabel: {
+  eyebrow: {
     fontFamily: monoFont,
     fontSize: 10.5,
     letterSpacing: 3.4,
@@ -348,12 +398,27 @@ const styles = StyleSheet.create({
     marginBottom: 28,
     maxWidth: 620,
   },
+  aside: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 0.4,
+    color: colors.primaryDim,
+    marginTop: 12,
+    opacity: 0.85,
+  },
   glassCard: {
     backgroundColor: colors.surfaceGlass,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     borderRadius: 16,
     padding: 22,
+  },
+  cardIndex: {
+    fontFamily: monoFont,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.primaryDim,
+    marginBottom: 10,
   },
   cardTitle: {
     fontFamily: bodyFontStrong,

@@ -29,7 +29,7 @@ import { colors } from '../theme';
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
-const STRIP_W = 132;
+const STRIP_W = 46;
 
 type Props = {
   style?: any;
