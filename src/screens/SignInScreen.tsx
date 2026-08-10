@@ -970,8 +970,6 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.35)',
   },
   ctaBusy: { opacity: 0.75 },
   ctaOff: { opacity: 0.4 },
