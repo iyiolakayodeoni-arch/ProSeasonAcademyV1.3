@@ -68,7 +68,12 @@ const PERKS: { title: string; body: string }[] = [
 ];
 
 export default function SignInScreen({ onSignedIn }: Props) {
-  const { isMultiColumn } = useResponsive();
+  const { isLaptopUp, isPhoneColumn, w, h } = useResponsive();
+  // Keep tablets and narrow/short browser windows stacked. The full arena split
+  // only appears when both columns have enough room to breathe.
+  const splitLayout = isLaptopUp && w >= 1080 && h >= 700;
+  const compactHeight = h < 650;
+  const showFullSquad = splitLayout && h >= 900;
 
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
@@ -222,11 +227,11 @@ export default function SignInScreen({ onSignedIn }: Props) {
               </View>
               <View style={styles.navBrandCol}>
                 <Text style={styles.navBrandTitle}>PROSEASON ACADEMY</Text>
-                {isMultiColumn && <Text style={styles.navBrandSub}>THE CONSOLE COACHING ACADEMY</Text>}
+                {splitLayout && <Text style={styles.navBrandSub}>THE CONSOLE COACHING ACADEMY</Text>}
               </View>
             </Pressable>
 
-            {isMultiColumn && (
+            {splitLayout && (
               <View style={styles.navLinks}>
                 <Pressable onPress={() => jumpTo('register')} hitSlop={6}>
                   <Text style={styles.navLink}>THE METHOD</Text>
@@ -241,7 +246,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             )}
 
             <View style={styles.navRight}>
-              {liveSeats && isMultiColumn && (
+              {liveSeats && splitLayout && (
                 <View style={styles.navSeatPill}>
                   <View style={styles.navSeatDot} />
                   <Text style={styles.navSeatTxt}>
@@ -266,9 +271,16 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </View>
         </View>
 
-        <View style={[styles.pageSplit, isMultiColumn && styles.pageSplitWide]}>
+        <View style={[styles.pageSplit, splitLayout && styles.pageSplitWide]}>
           {/* Left Visual Panel (Desktop) / Header (Mobile) */}
-          <View style={[styles.visualPane, isMultiColumn && styles.visualPaneWide]}>
+          <View
+            style={[
+              styles.visualPane,
+              !isPhoneColumn && !splitLayout && styles.visualPaneTablet,
+              compactHeight && !splitLayout && styles.visualPaneCompact,
+              splitLayout && styles.visualPaneWide,
+            ]}
+          >
             <RotatingArtImage
               sources={[
                 HERO,
@@ -277,11 +289,11 @@ export default function SignInScreen({ onSignedIn }: Props) {
               ]}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"
-              blurRadius={isMultiColumn ? 8 : 14}
+              blurRadius={splitLayout ? 8 : 14}
             />
             <PhotoVeil
-              width={isMultiColumn ? 700 : 430}
-              height={isMultiColumn ? 900 : 340}
+              width={splitLayout ? 700 : 430}
+              height={splitLayout ? 900 : 340}
               warmAt={{ x: 300, y: 150, r: 400 }}
             />
             {/* heavy dim — the picture recedes so the gate reads clearly */}
@@ -316,7 +328,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 AT A TIME — YOUR OWN EVIDENCE BECOMES THE LESSON YOU CARRY INTO THE NEXT GAME.
               </Text>
 
-              {isMultiColumn && (
+              {splitLayout && (
                 <View style={styles.perkList}>
                   {PERKS.map((p) => (
                     <View key={p.title} style={styles.perkRow}>
@@ -339,7 +351,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
                 </View>
               )}
 
-              {isMultiColumn && (
+              {showFullSquad && (
                 <View style={styles.coachVisualCard}>
                   <CoachCard coach={COACHES[0]} width={280} />
                 </View>
@@ -347,15 +359,46 @@ export default function SignInScreen({ onSignedIn }: Props) {
             </Animated.View>
           </View>
 
-          {/* Right Form Panel */}
+          {/* Right Form Panel — open desktop canvas, never a nested mobile card. */}
+          <View
+            pointerEvents="none"
+            style={[
+              styles.formPitchDecor,
+              splitLayout ? styles.formPitchDecorWide : styles.formPitchDecorStacked,
+            ]}
+          >
+            <View style={styles.pitchHalfway} />
+            <View style={styles.pitchCircle} />
+            <View style={styles.pitchBox} />
+            <View style={styles.formGlow} />
+          </View>
           <ScrollView
             style={styles.formPane}
-            contentContainerStyle={[styles.formContent, isMultiColumn && styles.formContentWide]}
+            contentContainerStyle={[
+              styles.formContent,
+              isPhoneColumn && styles.formContentPhone,
+              !isPhoneColumn && !splitLayout && styles.formContentTablet,
+              splitLayout && styles.formContentWide,
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             bounces={false}
           >
-            <Animated.View entering={FadeInUp.duration(480).delay(80)} style={styles.authBox}>
+            <Animated.View
+              entering={FadeInUp.duration(480).delay(80)}
+              style={[
+                styles.authBox,
+                !isPhoneColumn && !splitLayout && styles.authBoxTablet,
+                splitLayout && styles.authBoxWide,
+              ]}
+            >
+              <View style={styles.accessStrip}>
+                <View style={styles.accessStripLead}>
+                  <View style={styles.accessPulse} />
+                  <Text style={styles.accessStripText}>MATCHDAY ACCESS</Text>
+                </View>
+                <Text style={styles.accessStripMeta}>SECURE PLAYER GATE · 01</Text>
+              </View>
               {mode === 'token' && academyToken ? (
                 <View>
                   <Text style={styles.tokenTag}>ACADEMY REFERENCE TOKEN</Text>
@@ -428,7 +471,12 @@ export default function SignInScreen({ onSignedIn }: Props) {
                         {COUNTRY_OPTIONS.map((o) => {
                           const on = countryPick === o.label;
                           return (
-                            <Pressable key={o.label} onPress={() => pickCountry(o.label)} hitSlop={3}>
+                            <Pressable
+                              key={o.label}
+                              onPress={() => pickCountry(o.label)}
+                              hitSlop={3}
+                              style={[styles.geoOption, splitLayout && styles.geoOptionWide]}
+                            >
                               <View style={[styles.geoChip, on && styles.geoChipOn]}>
                                 <Text style={[styles.geoChipTxt, on && styles.geoChipTxtOn]}>
                                   {o.label}
@@ -677,6 +725,8 @@ const styles = StyleSheet.create({
   pageSplit: {
     flex: 1,
     flexDirection: 'column',
+    position: 'relative',
+    overflow: 'hidden',
   },
   pageSplitWide: {
     flexDirection: 'row',
@@ -685,18 +735,31 @@ const styles = StyleSheet.create({
 
   visualPane: {
     position: 'relative',
-    height: 340,
+    height: 320,
     backgroundColor: '#040805',
     overflow: 'hidden',
     justifyContent: 'flex-end',
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 78,
+    paddingBottom: 24,
+  },
+  visualPaneTablet: {
+    height: 400,
+    paddingHorizontal: 40,
+    paddingBottom: 36,
+  },
+  visualPaneCompact: {
+    height: 250,
+    paddingTop: 72,
+    paddingBottom: 18,
   },
   visualPaneWide: {
-    flex: 1.1,
+    flex: 1.08,
     height: '100%',
+    minWidth: 520,
     justifyContent: 'center',
     padding: 48,
-    paddingTop: 84,
+    paddingTop: 90,
   },
   photoDim: {
     position: 'absolute',
@@ -832,25 +895,116 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
 
+  formPitchDecor: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    backgroundColor: '#071009',
+  },
+  formPitchDecorWide: { top: 0, width: '48.2%' },
+  formPitchDecorStacked: { height: '68%', left: 0 },
+  pitchHalfway: {
+    position: 'absolute',
+    top: '49.8%',
+    left: '8%',
+    right: '8%',
+    height: 1,
+    backgroundColor: 'rgba(57,255,106,0.055)',
+  },
+  pitchCircle: {
+    position: 'absolute',
+    top: '38%',
+    left: '39%',
+    width: '22%',
+    aspectRatio: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.065)',
+  },
+  pitchBox: {
+    position: 'absolute',
+    right: '-8%',
+    top: '25%',
+    width: '34%',
+    height: '50%',
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.055)',
+  },
+  formGlow: {
+    position: 'absolute',
+    width: 440,
+    height: 440,
+    borderRadius: 220,
+    right: -180,
+    top: -150,
+    backgroundColor: 'rgba(57,255,106,0.035)',
+  },
   formPane: {
-    flex: 1,
-    backgroundColor: 'rgba(7, 12, 8, 0.96)',
+    flex: 0.92,
+    backgroundColor: 'rgba(7, 12, 8, 0.90)',
   },
   formContent: {
-    padding: 24,
     minHeight: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  formContentPhone: {
+    paddingHorizontal: 18,
+    paddingTop: 26,
+    paddingBottom: 34,
+  },
+  formContentTablet: {
+    paddingHorizontal: 40,
+    paddingTop: 44,
+    paddingBottom: 52,
+  },
   formContentWide: {
-    paddingTop: 84,
+    paddingHorizontal: 44,
+    paddingTop: 98,
+    paddingBottom: 48,
   },
 
   authBox: {
     width: '100%',
-    maxWidth: 480,
-    paddingHorizontal: 28,
-    paddingVertical: 28,
+    maxWidth: 520,
+    paddingVertical: 20,
+  },
+  authBoxTablet: { maxWidth: 680 },
+  authBoxWide: { maxWidth: 580 },
+  accessStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingBottom: 11,
+    marginBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(57,255,106,0.18)',
+  },
+  accessStripLead: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  accessPulse: {
+    width: 7,
+    height: 7,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.9,
+    shadowRadius: 7,
+  },
+  accessStripText: {
+    fontFamily: monoFont,
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 1.8,
+    color: colors.primary,
+  },
+  accessStripMeta: {
+    fontFamily: monoFont,
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    color: 'rgba(143,184,155,0.62)',
   },
   authEyebrow: {
     fontFamily: monoFont,
@@ -911,10 +1065,14 @@ const styles = StyleSheet.create({
   geoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 16,
+    gap: 7,
+    marginBottom: 18,
   },
+  geoOption: { maxWidth: '100%' },
+  geoOptionWide: { width: '48.9%' },
   geoChip: {
+    minHeight: 34,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.3)',
     borderRadius: 8,
@@ -1031,7 +1189,9 @@ const styles = StyleSheet.create({
 
   footerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 8,
     marginTop: 24,
     paddingTop: 14,
     borderTopWidth: 1,
