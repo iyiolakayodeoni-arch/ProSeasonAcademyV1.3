@@ -765,10 +765,10 @@ const styles = StyleSheet.create({
   },
   desktopFormContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 48,
-    paddingVertical: 100,
+    paddingTop: 120,
+    paddingBottom: 60,
   },
 
   // ── Desktop background ──
@@ -1027,8 +1027,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(7, 12, 8, 0.90)',
   },
   formContent: {
-    minHeight: '100%',
-    justifyContent: 'center',
+    flexGrow: 1,
     alignItems: 'center',
   },
   formContentPhone: {
