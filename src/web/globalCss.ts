@@ -417,12 +417,15 @@ html.psa-page-landing .psa-app-fill {
 .psa-splash-bg {
   pointer-events: none;
   object-fit: cover;
+  /* keep the subject (desk + player) in frame instead of hard-cropping
+     the composition on tall viewports */
+  object-position: center 62%;
   filter: brightness(0.55) saturate(1.1) contrast(1.02);
   animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes psa-dolly {
-  from { transform: scale(1.06) translateY(0); }
-  to   { transform: scale(1.18) translateY(-1.5%); }
+  from { transform: scale(1.02) translateY(0); }
+  to   { transform: scale(1.10) translateY(-1%); }
 }
 .psa-splash-vignette {
   position: absolute;
@@ -444,7 +447,7 @@ html.psa-page-landing .psa-app-fill {
     );
 }
 @media (prefers-reduced-motion: reduce) {
-  .psa-splash-bg { animation: none; transform: scale(1.08); }
+  .psa-splash-bg { animation: none; transform: scale(1.04); }
 }
 
 /* ── The crest's living pulse — opacity + drop-shadow breathing on the

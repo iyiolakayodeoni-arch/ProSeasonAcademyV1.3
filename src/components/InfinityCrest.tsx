@@ -1,19 +1,21 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE INFINITY CREST — Onliversity's broken infinity, rebuilt as crisp SVG.
+// THE INFINITY CREST — Onliversity's broken infinity, premium build.
 //
-// One continuous loop with the amber dot resting at the crossing — the
-// interruption point. Bloom is faked with stacked strokes (wide-dim →
-// core) so it renders identically on web and native with no filters and
-// no animation libraries: the living pulse comes from a CSS class on the
-// wrapper (psa-crest-pulse), which degrades to a calm static mark
-// anywhere the class doesn't exist.
+// One continuous loop, amber dot at the crossing (the interruption
+// point). The core line wears a phosphor→ice→phosphor gradient; bloom is
+// stacked strokes from a 20px whisper up to the core, so the mark glows
+// like neon glass on any renderer — no filters, no animation libraries.
+// The living pulse is a CSS class on the wrapper (psa-crest-pulse) and
+// degrades to a calm static mark where unsupported. Transparent
+// background: the crest sits directly on the backdrop, nothing behind it.
 // ─────────────────────────────────────────────────────────────────────────
 
 const GREEN = '#39ff6a';
+const ICE = '#bafff0';
 const AMBER = '#f2c078';
 
 /** One continuous figure-eight. */
@@ -28,23 +30,38 @@ type Props = {
   size?: number;
 };
 
-export default function InfinityCrest({ size = 140 }: Props) {
+export default function InfinityCrest({ size = 160 }: Props) {
   const h = size / 2; // viewBox 240x120 ratio
 
   return (
     <View {...({ className: 'psa-crest-pulse' } as any)} style={{ width: size, height: h }}>
       <Svg width={size} height={h} viewBox="0 0 240 120" fill="none">
-        {/* bloom layers — wide & dim under the core line */}
+        <Defs>
+          <LinearGradient id="psa-crest-grad" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor={GREEN} />
+            <Stop offset="0.5" stopColor={ICE} />
+            <Stop offset="1" stopColor={GREEN} />
+          </LinearGradient>
+          <LinearGradient id="psa-crest-amber" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#ffe3b0" />
+            <Stop offset="1" stopColor={AMBER} />
+          </LinearGradient>
+        </Defs>
+
+        {/* bloom — wide whispers under the core */}
+        <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={22} strokeOpacity={0.05} strokeLinecap="round" />
         <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={14} strokeOpacity={0.10} strokeLinecap="round" />
         <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={8} strokeOpacity={0.22} strokeLinecap="round" />
         {/* the quiet base line */}
-        <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={3.5} strokeOpacity={0.35} strokeLinecap="round" />
-        {/* the bright core line */}
-        <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={4.5} strokeOpacity={0.95} strokeLinecap="round" />
-        {/* amber dot at the crossing — the interruption point */}
-        <Circle cx={120} cy={60} r={11} fill={AMBER} opacity={0.18} />
-        <Circle cx={120} cy={60} r={6.5} fill={AMBER} opacity={0.9} />
-        <Circle cx={118} cy={58} r={2.2} fill="#fff7e8" opacity={0.85} />
+        <Path d={INFINITY_PATH} stroke={GREEN} strokeWidth={3.5} strokeOpacity={0.42} strokeLinecap="round" />
+        {/* the bright core — phosphor→ice→phosphor */}
+        <Path d={INFINITY_PATH} stroke="url(#psa-crest-grad)" strokeWidth={4.5} strokeLinecap="round" />
+
+        {/* the interruption point — amber, softly haloed */}
+        <Circle cx={120} cy={60} r={16} fill={AMBER} opacity={0.10} />
+        <Circle cx={120} cy={60} r={10.5} fill={AMBER} opacity={0.18} />
+        <Circle cx={120} cy={60} r={6.5} fill="url(#psa-crest-amber)" opacity={0.95} />
+        <Circle cx={118} cy={58} r={2.2} fill="#fff7e8" opacity={0.9} />
       </Svg>
     </View>
   );

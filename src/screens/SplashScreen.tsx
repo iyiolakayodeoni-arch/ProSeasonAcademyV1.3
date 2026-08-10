@@ -217,7 +217,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       <View style={styles.content}>
         <View style={styles.crestZone}>
           <Animated.View style={[crestStyle, styles.crestWrap]}>
-            <InfinityCrest size={isWideFrame ? 190 : 150} />
+            <InfinityCrest size={isWideFrame ? 230 : 170} />
           </Animated.View>
         </View>
 
@@ -254,13 +254,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  // bleeds past every edge so no boundary ever shows on screen
+  // bleeds slightly past every edge so no boundary ever shows, without
+  // over-zooming the composition
   photoBleed: {
     position: 'absolute',
-    top: '-8%',
-    left: '-8%',
-    right: '-8%',
-    bottom: '-8%',
+    top: '-4%',
+    left: '-4%',
+    right: '-4%',
+    bottom: '-4%',
   },
   // the dim — the arena becomes texture, not subject
   dim: {
@@ -283,10 +284,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   crestWrap: {
-    shadowColor: colors.primary,
-    shadowOpacity: 0.55,
-    shadowRadius: 34,
-    shadowOffset: { width: 0, height: 0 },
+    // no shadows here — on web RN shadows become a rectangular box-shadow
+    // that reads as a dark plate behind the mark. The glow lives in the
+    // SVG strokes and the CSS drop-shadow pulse instead.
+    backgroundColor: 'transparent',
   },
   loader: {
     width: '100%',
