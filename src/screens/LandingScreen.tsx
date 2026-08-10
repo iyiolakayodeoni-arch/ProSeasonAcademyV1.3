@@ -9,7 +9,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, FadeInDown } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import LogoMark from '../components/LogoMark';
 import Marquee from '../components/Marquee';
@@ -107,12 +107,12 @@ function CtaSecondary({ label, onPress }: { label: string; onPress: () => void }
   );
 }
 
-/* ── sticky nav ── */
+/* ── sticky nav — pxxl-style: minimal, logo left, links, one CTA ── */
 function WebsiteNav({ onEnter, onNav }: { onEnter: () => void; onNav: (id: string) => void }) {
   return (
-    <View style={styles.nav}>
+    <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
       <Pressable onPress={onEnter} style={styles.navBrand}>
-        <LogoMark size={30} />
+        <LogoMark size={26} />
         <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
       </Pressable>
       <View style={styles.navLinks}>
@@ -132,7 +132,7 @@ function WebsiteNav({ onEnter, onNav }: { onEnter: () => void; onNav: (id: strin
         </Pressable>
         <Pressable onPress={onEnter}>
           <View style={styles.navCta}>
-            <Text style={styles.navCtaTxt}>CLAIM YOUR SEAT</Text>
+            <Text style={styles.navCtaTxt}>GET STARTED</Text>
           </View>
         </Pressable>
       </View>
@@ -207,10 +207,10 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             turn that reflection into disciplined progress, one match at a time. No AI
             telling you what to think. The Mirror records the evidence; you do the seeing.
           </Text>
-          <View style={styles.heroCtas}>
+          <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.heroCtas}>
             <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
             <CtaSecondary label="SEE THE METHOD" onPress={() => goSection('method')} />
-          </View>
+          </Animated.View>
 
           <View style={styles.heroArt}>
             <Image source={heroImage} style={styles.heroImage} resizeMode="cover" />
@@ -246,24 +246,30 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             the match, the mirror, the journal, the next kick.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>01</Text>
-              <Text style={styles.cardTitle}>THE MIRROR</Text>
-              <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
-              <Aside>this was the designer's idea btw</Aside>
-            </GlassCard>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>02</Text>
-              <Text style={styles.cardTitle}>THE JOURNAL</Text>
-              <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
-              <Aside>we take the truth seriously. deal with it</Aside>
-            </GlassCard>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>03</Text>
-              <Text style={styles.cardTitle}>THE LEDGER</Text>
-              <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
-              <Aside>no fake percentages here</Aside>
-            </GlassCard>
+            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>01</Text>
+                <Text style={styles.cardTitle}>THE MIRROR</Text>
+                <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
+                <Aside>this was the designer's idea btw</Aside>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>02</Text>
+                <Text style={styles.cardTitle}>THE JOURNAL</Text>
+                <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
+                <Aside>we take the truth seriously. deal with it</Aside>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>03</Text>
+                <Text style={styles.cardTitle}>THE LEDGER</Text>
+                <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
+                <Aside>no fake percentages here</Aside>
+              </GlassCard>
+            </Animated.View>
           </View>
         </View>
 
@@ -273,21 +279,27 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <H2 center>PLAY → REVIEW → CARRY ONE LESSON FORWARD.</H2>
           <Muted center>Your entire job, compressed to one honest loop.</Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>A</Text>
-              <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
-              <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
-            </GlassCard>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>B</Text>
-              <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
-              <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
-            </GlassCard>
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardIndex}>C</Text>
-              <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
-              <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
-            </GlassCard>
+            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>A</Text>
+                <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
+                <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>B</Text>
+                <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
+                <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
+              <GlassCard style={styles.cardFill}>
+                <Text style={styles.cardIndex}>C</Text>
+                <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
+                <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
+              </GlassCard>
+            </Animated.View>
           </View>
         </View>
 
@@ -297,12 +309,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <H2 center>SIX CHAPTERS, EARNED.</H2>
           <Muted center>Your journey — control yourself. Each chapter builds the one after it.</Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            {CHAPTERS.map((c) => (
-              <GlassCard key={c.n} style={styles.chapterCard}>
-                <Text style={styles.chapterNum}>{c.n}</Text>
-                <Text style={styles.cardTitle}>{c.title}</Text>
-                <Text style={styles.cardBody}>{c.body}</Text>
-              </GlassCard>
+            {CHAPTERS.map((c, i) => (
+              <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={styles.chapterCard}>
+                <GlassCard style={styles.cardFill}>
+                  <Text style={styles.chapterNum}>{c.n}</Text>
+                  <Text style={styles.cardTitle}>{c.title}</Text>
+                  <Text style={styles.cardBody}>{c.body}</Text>
+                </GlassCard>
+              </Animated.View>
             ))}
           </View>
         </View>
@@ -312,21 +326,27 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <Eyebrow>[ EVIDENCE ]</Eyebrow>
           <H2 center>YOUR EVIDENCE MOVES YOU.</H2>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <GlassCard style={styles.evidenceCard}>
-              <Text style={styles.evidenceStat}>100%</Text>
-              <Text style={styles.cardBody}>of the review is yours. You see it, you name it, you keep it.</Text>
-              <Aside>no AI verdicts</Aside>
-            </GlassCard>
-            <GlassCard style={styles.evidenceCard}>
-              <Text style={styles.evidenceStat}>1×</Text>
-              <Text style={styles.cardBody}>lesson per match. One lesson, earned, carried into the next.</Text>
-              <Aside>one is enough. we mean it</Aside>
-            </GlassCard>
-            <GlassCard style={styles.evidenceCard}>
-              <Text style={styles.evidenceStat}>∞</Text>
-              <Text style={styles.cardBody}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
-              <Aside>you cannot outrun your receipts</Aside>
-            </GlassCard>
+            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.evidenceCard}>
+              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Text style={styles.evidenceStat}>100%</Text>
+                <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
+                <Aside>no AI verdicts</Aside>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
+              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Text style={styles.evidenceStat}>1×</Text>
+                <Text style={[styles.cardBody, styles.center]}>lesson per match. One lesson, earned, carried into the next.</Text>
+                <Aside>one is enough. we mean it</Aside>
+              </GlassCard>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
+              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Text style={styles.evidenceStat}>∞</Text>
+                <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
+                <Aside>you cannot outrun your receipts</Aside>
+              </GlassCard>
+            </Animated.View>
           </View>
         </View>
 
@@ -412,6 +432,9 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     borderRadius: 16,
     padding: 22,
+  },
+  cardFill: {
+    height: '100%',
   },
   cardIndex: {
     fontFamily: monoFont,
@@ -622,6 +645,8 @@ const styles = StyleSheet.create({
   evidenceCard: {
     flexBasis: 250,
     flexGrow: 1,
+  },
+  evidenceInner: {
     alignItems: 'center',
   },
   evidenceStat: {

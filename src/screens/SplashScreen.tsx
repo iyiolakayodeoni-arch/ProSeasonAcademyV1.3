@@ -138,8 +138,8 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* ── the stage — blurred green pitch-strips, covering the whole screen ── */}
-      <PitchStrips blurred dim={0.55} animated />
+      {/* ── the stage — blurred green pitch-lines, covering the whole screen ── */}
+      <PitchStrips blurred dim={0.55} />
 
       {/* GPU atmosphere, measured to the real frame — quiet now */}
       {w > 0 && h > 0 && (
