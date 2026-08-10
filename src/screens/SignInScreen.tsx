@@ -536,6 +536,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             source={HERO_BG}
             style={styles.desktopBg}
             resizeMode="cover"
+            blurRadius={3}
           />
           <PhotoVeil width={w} height={h} warmAt={{ x: w * 0.5, y: h * 0.34, r: w * 0.8 }} grain={0.05} />
 
