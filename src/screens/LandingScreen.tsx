@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Image,
   Platform,
   useWindowDimensions,
 } from 'react-native';
@@ -27,6 +28,15 @@ import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold }
 const WEB = Platform.OS === 'web';
 const headFont = WEB ? "'Space Grotesk', 'Barlow', sans-serif" : displayFont;
 const bodyFace = WEB ? "'Inter', 'Barlow', sans-serif" : bodyFont;
+
+// 3D esports/EAFC illustrations for the section cards
+const ILLUS = {
+  mirror: require('../../assets/art/illu-mirror.png'),
+  journal: require('../../assets/art/illu-journal.png'),
+  ledger: require('../../assets/art/illu-ledger.png'),
+  intention: require('../../assets/art/illu-intention.png'),
+  moments: require('../../assets/art/illu-moments.png'),
+};
 
 /* ── small house primitives ── */
 function Eyebrow({ children }: { children: string }) {
@@ -207,23 +217,9 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </View>
 
             <View style={[styles.heroArt, isWide && styles.heroArtWide]}>
-              <MatchReviewMockup width={isWide ? Math.min(360, contentW * 0.5) : contentW * 0.9} />
-              <View style={styles.heroCaption}>
-                <Text style={styles.heroCaptionTxt}>THE PLAYER DOES THE SEEING</Text>
-                <Text style={styles.heroCaptionSub}>YOUR JOURNEY IS THE EVIDENCE · THE STANDARD IS THE BENCHMARK</Text>
-              </View>
+              <MatchReviewMockup width={isWide ? Math.min(380, contentW * 0.52) : contentW * 0.92} />
             </View>
           </View>
-        </View>
-
-        {/* ── MARQUEE ── */}
-        <View style={{ width: '100%', paddingVertical: 22 }}>
-          <Marquee pxPerSec={60}>
-            <Text style={styles.marqueeTxt}>
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
-            </Text>
-          </Marquee>
         </View>
 
         {/* ── THE METHOD ── */}
@@ -237,6 +233,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>01</Text>
                 <Text style={styles.cardTitle}>THE MIRROR</Text>
                 <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
@@ -245,6 +242,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>02</Text>
                 <Text style={styles.cardTitle}>THE JOURNAL</Text>
                 <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
@@ -253,6 +251,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>03</Text>
                 <Text style={styles.cardTitle}>THE LEDGER</Text>
                 <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
@@ -270,6 +269,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.intention} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>A</Text>
                 <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
                 <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
@@ -277,6 +277,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>B</Text>
                 <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
                 <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
@@ -284,6 +285,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
+                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>C</Text>
                 <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
                 <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
@@ -301,6 +303,11 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             {CHAPTERS.map((c, i) => (
               <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={styles.chapterCard}>
                 <GlassCard style={styles.cardFill}>
+                  <Image
+                    source={[ILLUS.mirror, ILLUS.journal, ILLUS.ledger, ILLUS.intention, ILLUS.moments, ILLUS.mirror][i % 6]}
+                    style={styles.cardIllu}
+                    resizeMode="cover"
+                  />
                   <Text style={styles.chapterNum}>{c.n}</Text>
                   <Text style={styles.cardTitle}>{c.title}</Text>
                   <Text style={styles.cardBody}>{c.body}</Text>
@@ -317,6 +324,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.evidenceStat}>100%</Text>
                 <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
                 <Aside>no AI verdicts</Aside>
@@ -324,6 +332,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.evidenceStat}>1×</Text>
                 <Text style={[styles.cardBody, styles.center]}>lesson per match. One lesson, earned, carried into the next.</Text>
                 <Aside>one is enough. we mean it</Aside>
@@ -331,6 +340,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.evidenceStat}>∞</Text>
                 <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
                 <Aside>you cannot outrun your receipts</Aside>
@@ -354,6 +364,16 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <CtaSecondary label="I ALREADY HAVE AN ACCOUNT" onPress={onEnter} />
           </View>
           <Aside>all of this, no hidden fees</Aside>
+        </View>
+
+        {/* ── MARQUEE — bottom of the page ── */}
+        <View style={{ width: '100%', paddingVertical: 30, marginTop: 8 }}>
+          <Marquee pxPerSec={60}>
+            <Text style={styles.marqueeTxt}>
+              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
+              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
+            </Text>
+          </Marquee>
         </View>
 
         {/* ── FOOTER ── */}
@@ -581,7 +601,7 @@ const styles = StyleSheet.create({
   },
   heroArt: {
     marginTop: 0,
-    height: 340,
+    height: 380,
     borderRadius: 20,
     overflow: 'hidden',
     alignItems: 'center',
@@ -589,28 +609,8 @@ const styles = StyleSheet.create({
   },
   heroArtWide: {
     flex: 1,
-    height: 440,
+    height: 460,
     minWidth: 320,
-  },
-  heroCaption: {
-    position: 'absolute',
-    left: 20,
-    bottom: 14,
-    right: 20,
-  },
-  heroCaptionTxt: {
-    fontFamily: bodyFontBold,
-    fontSize: 15,
-    letterSpacing: 2,
-    color: colors.fg,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  heroCaptionSub: {
-    fontFamily: monoFont,
-    fontSize: 10,
-    letterSpacing: 2,
-    color: colors.muted,
   },
   marqueeTxt: {
     fontFamily: bodyFontBold,
@@ -633,6 +633,14 @@ const styles = StyleSheet.create({
   card: {
     flexBasis: 250,
     flexGrow: 1,
+  },
+  cardIllu: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
   },
   chapterCard: {
     flexBasis: 250,
