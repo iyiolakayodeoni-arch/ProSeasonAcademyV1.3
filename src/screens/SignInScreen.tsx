@@ -37,7 +37,7 @@ import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
 
 // Landing page background — same as the splash/boot screen.
-const HERO_BG = require('../../assets/art/splash-hero-wide.png');
+const HERO_BG = require('../../assets/art/splash-hero.png');
 
 // Coach Obinna — the face of the arena panel, anchored to the panel floor.
 const OBINNA = require('../../assets/coaches/obinna-card.png');
@@ -535,9 +535,13 @@ export default function SignInScreen({ onSignedIn }: Props) {
           <GridBackground />
           <ScreenFlash />
 
-          {/* Landing page background — same atmospheric treatment as the splash/boot screen */}
+          {/* Landing page background — same atmospheric slideshow as the splash/boot screen */}
           <RotatingArtImage
-            sources={[HERO_BG]}
+            sources={[
+              HERO_BG,
+              require('../../assets/art/journey-tunnel.jpg'),
+              require('../../assets/art/locker-room.jpg'),
+            ]}
             style={{ position: 'absolute', width: w, height: h, opacity: 0.42 }}
             resizeMode="cover"
           />
@@ -595,11 +599,17 @@ export default function SignInScreen({ onSignedIn }: Props) {
             {/* The arena line — centred above the form */}
             <Animated.View entering={FadeIn.duration(600).delay(120)} style={styles.desktopTitleWrap}>
               <View style={styles.titleWrapDesktop}>
-                <Text style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.visualTitle, styles.visualTitleDesktop, styles.titleGhost]}
+                >
                   {ARENA_LINE}
                 </Text>
-                <View style={styles.titleRow}>
-                  <Text style={[styles.visualTitle, styles.visualTitleDesktop]}>
+                <View style={styles.titleRowDesktop}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.visualTitle, styles.visualTitleDesktop]}
+                  >
                     {ARENA_LINE.slice(0, typedCount)}
                   </Text>
                   <Animated.View style={[styles.caret, styles.caretDesktop, caretStyle]} />
@@ -884,6 +894,9 @@ const styles = StyleSheet.create({
   },
   titleWrapDesktop: {
     position: 'relative',
+    alignSelf: 'center',
+    minWidth: 700,
+    alignItems: 'center',
   },
   titleGhost: {
     opacity: 0,
@@ -894,6 +907,16 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  titleRowDesktop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'nowrap',
   },
   visualTitle: {
     fontFamily: displayFont,
