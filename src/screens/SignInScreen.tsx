@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(57,255,106,0.035)',
   },
   formPane: {
-    flex: 1,
+    // No flex here - we use explicit height in the style prop
     backgroundColor: 'rgba(7, 12, 8, 0.90)',
   },
   formContent: {
