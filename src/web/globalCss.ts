@@ -414,14 +414,26 @@ html.psa-page-landing .psa-app-fill {
    background layer bleeding past every edge — never an <img> sitting on
    the page — with its own slow dolly and a vignette that dims the frame
    edges while the centre stays atmospheric. ── */
+/* ── Splash backdrop, two layers (web). The FULL photograph is always
+   visible (object-fit: contain) — never cropped — while a blurred,
+   dimmed copy of the same photo fills the leftover edges edge-to-edge,
+   so the frame still feels like a backdrop, not a pasted picture. The
+   slow dolly lives on the blurred layer only. ── */
 .psa-splash-bg {
+  position: absolute;
+  inset: -6%;
   pointer-events: none;
   object-fit: cover;
-  /* keep the subject (desk + player) in frame instead of hard-cropping
-     the composition on tall viewports */
-  object-position: center 62%;
-  filter: brightness(0.55) saturate(1.1) contrast(1.02);
+  filter: blur(30px) brightness(0.42) saturate(1.15);
   animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.psa-splash-full {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0.72) saturate(1.05);
 }
 @keyframes psa-dolly {
   from { transform: scale(1.02) translateY(0); }
@@ -449,7 +461,6 @@ html.psa-page-landing .psa-app-fill {
 @media (prefers-reduced-motion: reduce) {
   .psa-splash-bg { animation: none; transform: scale(1.04); }
 }
-
 /* ── The crest's living pulse — opacity + drop-shadow breathing on the
    infinity mark. Degrades to a calm static mark where unsupported. ── */
 .psa-crest-pulse {

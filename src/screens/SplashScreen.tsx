@@ -142,16 +142,20 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* the arena — on web the image bleeds past every edge and carries
-          its own CSS dolly + dim, so it reads as a backdrop, not a pasted
-          picture; native keeps the animated Image */}
+      {/* the arena — the FULL photograph is always visible (contain); a
+          blurred, dimmed copy fills the leftover edges so the frame still
+          reads edge-to-edge as a backdrop. Native mirrors the same idea. */}
       {WEB ? (
         <>
           <Image
             {...({ className: 'psa-splash-bg' } as any)}
             source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
-            style={styles.photoBleed}
             resizeMode="cover"
+          />
+          <Image
+            {...({ className: 'psa-splash-full' } as any)}
+            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
+            resizeMode="contain"
           />
           <div className="psa-splash-vignette" />
         </>
@@ -161,8 +165,14 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
             source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
             style={[styles.photo, photoStyle]}
             resizeMode="cover"
+            blurRadius={26}
           />
           <View style={styles.dim} />
+          <Image
+            source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
+            style={styles.photo}
+            resizeMode="contain"
+          />
         </>
       )}
 
@@ -253,15 +263,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-  },
-  // bleeds slightly past every edge so no boundary ever shows, without
-  // over-zooming the composition
-  photoBleed: {
-    position: 'absolute',
-    top: '-4%',
-    left: '-4%',
-    right: '-4%',
-    bottom: '-4%',
   },
   // the dim — the arena becomes texture, not subject
   dim: {
