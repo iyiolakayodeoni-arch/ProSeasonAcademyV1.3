@@ -180,7 +180,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               pointerEvents: 'none',
             }}
           />
-          <div className="psa-splash-vignette" />
         </>
       ) : (
         <>

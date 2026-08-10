@@ -433,25 +433,9 @@ html.psa-page-landing .psa-app-fill {
   from { transform: scale(1.0) translateY(0); }
   to   { transform: scale(1.08) translateY(-1%); }
 }
-.psa-splash-vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 120% 90% at 50% 42%,
-      rgba(2, 5, 3, 0.30) 0%,
-      rgba(2, 5, 3, 0.62) 62%,
-      rgba(2, 5, 3, 0.88) 100%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(2, 5, 3, 0.55),
-      rgba(2, 5, 3, 0) 24%,
-      rgba(2, 5, 3, 0) 68%,
-      rgba(2, 5, 3, 0.82)
-    );
-}
+/* (vignette removed — it crushed the frame edges to black over the
+   dimmed photo and made the backdrop read as a band on a black page.
+   The uniform brightness filter on the image is the only dim now.) */
 @media (prefers-reduced-motion: reduce) {
   .psa-splash-bg { animation: none; transform: scale(1.04); }
 }
