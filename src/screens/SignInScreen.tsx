@@ -768,11 +768,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   desktopScroll: {
-<<<<<<< HEAD
-    // No flex here - we use explicit height in the style prop
-=======
-    flex: 1,
->>>>>>> 7503bf468ce39b203ce77cb76e848b6318742de6
+
   },
   desktopFormContent: {
     flexGrow: 1,
