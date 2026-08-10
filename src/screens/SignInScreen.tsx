@@ -119,6 +119,10 @@ export default function SignInScreen({ onSignedIn }: Props) {
   // give it one. This matches the LandingScreen approach.
   const scrollH = h;
 
+  // On mobile/tablet, calculate remaining height after the visual pane header
+  const visualPaneHeight = compactHeight ? 250 : (!isPhoneColumn ? 400 : 320);
+  const formScrollH = isDesktop ? scrollH : scrollH - visualPaneHeight;
+
   const [mode, setMode] = useState<Mode>('register');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -727,7 +731,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             <View style={styles.formGlow} />
           </View>
           <ScrollView
-            style={[styles.formPane, { height: scrollH }]}
+            style={[styles.formPane, { height: formScrollH }]}
             contentContainerStyle={[
               styles.formContent,
               isPhoneColumn && styles.formContentPhone,
