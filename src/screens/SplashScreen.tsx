@@ -124,15 +124,19 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   // the crest's ascent trail — draws on and off while the bar earns its fill
   const { loopProps, glowStyle } = useTrailLoop({ pathLength: LOOP_PATH_LENGTH, drawMs: 1700, eraseMs: 1700 });
 
-  // ── the camera: a slow dolly-in on the photograph. 7.2s, ease-out — the
-  //    arena breathes toward the player instead of snapping at them.
+  // ── the camera: a slow dolly-in on the wide photograph. Keep the portrait
+  //    frame at its natural scale so its top and bottom are never cropped on
+  //    squarer phones/tablets. A soft cover layer behind it fills any side
+  //    gutters without sacrificing any of the vertical composition.
   const drift = useSharedValue(0);
   useEffect(() => {
     drift.value = withTiming(1, { duration: 7200, easing: Easing.out(Easing.quad) });
   }, [drift]);
   const photoStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1.08 + drift.value * 0.1 }, { translateY: -8 * drift.value }],
-  }));
+    transform: isWideFrame
+      ? [{ scale: 1.08 + drift.value * 0.1 }, { translateY: -8 * drift.value }]
+      : [{ scale: 1 }],
+  }), [isWideFrame]);
 
   // ── the floodlight breathes — a slow sine on the warm halo's opacity.
   const breath = useSharedValue(0.09);
@@ -157,11 +161,21 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
         }
       }}
     >
-      {/* Full-bleed — the arena owns every pixel of the viewport. */}
+      {/* On portrait frames, a dimmed cover copy fills the gutters behind the
+          uncropped hero. The visible hero uses contain so the full vertical
+          artwork remains on screen at every phone and tablet aspect ratio. */}
+      {!isWideFrame && (
+        <Animated.Image
+          source={HERO_PORTRAIT}
+          style={styles.photoBackdrop}
+          resizeMode="cover"
+          blurRadius={18}
+        />
+      )}
       <Animated.Image
         source={isWideFrame ? HERO_WIDE : HERO_PORTRAIT}
         style={[styles.photo, photoStyle]}
-        resizeMode="cover"
+        resizeMode={isWideFrame ? 'cover' : 'contain'}
       />
 
       {/* GPU-rendered atmosphere measured to the real frame */}
@@ -291,6 +305,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+  },
+  photoBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.58,
+    transform: [{ scale: 1.06 }],
   },
   content: {
     flex: 1,
