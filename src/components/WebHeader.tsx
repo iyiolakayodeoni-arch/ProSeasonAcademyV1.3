@@ -7,8 +7,8 @@ import { HomeIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon, GearIcon, BellIco
 import { colors, monoFont, displayFont, bodyFontBold, bodyFontHeavy, radii } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 import { useHover } from '../hooks/useHover';
-import { useSettings, setToggle } from '../data/settings';
-import { syncMusicToSettings, sfx } from '../audio/sound';
+import { useSettings } from '../data/settings';
+import { sfx } from '../audio/sound';
 import { Coach } from '../data/coaches';
 
 export type MainNavTab = 'today' | 'journey' | 'tracker' | 'community' | 'settings';
@@ -95,15 +95,6 @@ export default function WebHeader({
 }: Props) {
   const { isWide, isLaptopUp, isTV, w } = useResponsive();
   const settings = useSettings();
-  const musicOn = settings.toggles.music;
-
-  const toggleSound = () => {
-    sfx('toggle');
-    const next = !musicOn;
-    setToggle('music', next);
-    syncMusicToSettings();
-  };
-
   const initials = (settings.displayName || 'PLAYER').slice(0, 2).toUpperCase();
 
   return (
@@ -168,27 +159,6 @@ export default function WebHeader({
 
         {/* Right: Controls */}
         <View style={styles.rightGroup}>
-          <Pressable
-            onPress={toggleSound}
-            style={({ pressed }) => [
-              styles.soundBtn,
-              musicOn && styles.soundBtnOn,
-              pressed && { opacity: 0.8 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={musicOn ? 'Mute ambient sound' : 'Unmute ambient sound'}
-          >
-            <View style={styles.soundWave}>
-              <View style={[styles.soundBar, styles.soundBar1, musicOn && styles.soundBarOn]} />
-              <View style={[styles.soundBar, styles.soundBar2, musicOn && styles.soundBarOn]} />
-              <View style={[styles.soundBar, styles.soundBar3, musicOn && styles.soundBarOn]} />
-            </View>
-            {isLaptopUp && (
-              <Text style={[styles.soundTxt, musicOn && styles.soundTxtOn]}>
-                {musicOn ? 'AUDIO ON' : 'MUTED'}
-              </Text>
-            )}
-          </Pressable>
 
           {isLaptopUp && onOpenGuide && (
             <Pressable
@@ -373,27 +343,6 @@ const styles = StyleSheet.create({
   },
 
   rightGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  soundBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: 'rgba(143,184,155,0.18)',
-    backgroundColor: 'rgba(12,20,14,0.55)',
-  },
-  soundBtnOn: { borderColor: 'rgba(57,255,106,0.28)', backgroundColor: 'rgba(57,255,106,0.08)' },
-  soundWave: { flexDirection: 'row', alignItems: 'flex-end', gap: 2.5, height: 12 },
-  soundBar: { width: 2.5, borderRadius: 2, backgroundColor: 'rgba(143,184,155,0.5)' },
-  soundBar1: { height: 5 },
-  soundBar2: { height: 11 },
-  soundBar3: { height: 7 },
-  soundBarOn: { backgroundColor: colors.primary },
-  soundTxt: { fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.1, color: colors.muted },
-  soundTxtOn: { color: colors.primary },
-
   iconActionBtn: {
     width: 34,
     height: 34,

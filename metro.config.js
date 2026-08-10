@@ -1,6 +1,6 @@
 // Expo Metro config for web-only ProSeason Academy.
 // - registers .wasm as an asset so canvaskit-wasm resolves for Skia on web.
-// - aliases native-only expo modules (audio, notifications, image-picker,
+// - aliases native-only Expo modules (notifications, image-picker,
 //   file-system, system-ui) to local web shims so the bundle loads cleanly
 //   in the browser without pulling in native code.
 const { getDefaultConfig } = require('expo/metro-config');
@@ -17,7 +17,6 @@ const webExts = ['.web.tsx', '.web.ts', '.web.jsx', '.web.js'];
 config.resolver.sourceExts = Array.from(new Set([...webExts, ...config.resolver.sourceExts]));
 
 const webShims = {
-  'expo-audio': path.resolve(__dirname, 'src/web/expo-audio.ts'),
   'expo-notifications': path.resolve(__dirname, 'src/web/expo-notifications.ts'),
   'expo-image-picker': path.resolve(__dirname, 'src/web/expo-image-picker.ts'),
   'expo-file-system': path.resolve(__dirname, 'src/web/expo-file-system.ts'),
