@@ -425,7 +425,8 @@ html.psa-page-landing .psa-app-fill {
   pointer-events: none;
   object-fit: cover;
   object-position: center;
-  filter: brightness(0.52) saturate(1.1);
+  /* dimmed deep — the crest and the bar are the focal light */
+  filter: brightness(0.34) saturate(1.1);
   animation: psa-dolly 7.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes psa-dolly {

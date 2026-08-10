@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(2,5,3,0.48)',
+    backgroundColor: 'rgba(2,5,3,0.62)',
   },
   content: {
     flex: 1,
