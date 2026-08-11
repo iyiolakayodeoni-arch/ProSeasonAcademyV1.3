@@ -24,20 +24,18 @@ export type PeerReview = {
 
 /** All member endpoints are security-definer RPCs: no client can read another pair's review. */
 export async function myPeerPair(): Promise<PeerPair | null> {
-  if (!supabase) return null;
   const { data, error } = await supabase.rpc('community_my_pair');
   if (error || !Array.isArray(data) || !data[0]) return null;
   return data[0] as PeerPair;
 }
 
 export async function peerReview(pairId: string): Promise<PeerReview[]> {
-  if (!supabase) return [];
   const { data, error } = await supabase.rpc('community_peer_review', { p_pair: pairId });
   return error || !Array.isArray(data) ? [] : data as PeerReview[];
 }
 
 export async function submitPeerReview(pairId: string, answers: { turning: string; own: string; strength: string; next: string }): Promise<boolean> {
-  if (!supabase || Object.values(answers).some((value) => value.trim().length < 8)) return false;
+  if (Object.values(answers).some((value) => value.trim().length < 8)) return false;
   const { data, error } = await supabase.rpc('community_submit_peer_review', {
     p_pair: pairId, p_turning: answers.turning.trim(), p_own: answers.own.trim(), p_strength: answers.strength.trim(), p_next: answers.next.trim(),
   });
@@ -46,7 +44,6 @@ export async function submitPeerReview(pairId: string, answers: { turning: strin
 
 export type FounderCommunityOverview = { groups: any[]; members: any[]; pairs: any[]; suspended: any[] };
 async function admin(action: string, payload: Record<string, unknown> = {}): Promise<any | null> {
-  if (!supabase) return null;
   const response = await supabase.functions.invoke('community-admin', { body: { action, ...payload } });
   return response.error ? null : response.data;
 }

@@ -38,7 +38,6 @@ function map(r: any): NewsItem {
 }
 
 export async function fetchPublishedNews(limit = 30): Promise<NewsItem[]> {
-  if (!supabase) return [];
   try {
     const { data, error } = await supabase.rpc('list_published_news', { p_limit: limit });
     if (error || !data) {
@@ -60,7 +59,6 @@ export async function fetchPublishedNews(limit = 30): Promise<NewsItem[]> {
 
 /** founder: pending drafts awaiting approval */
 export async function fetchPendingNews(): Promise<NewsItem[]> {
-  if (!supabase) return [];
   try {
     const { data, error } = await supabase
       .from('news_drafts')
@@ -79,7 +77,6 @@ export async function reviewNews(
   id: string,
   approve: boolean,
 ): Promise<boolean> {
-  if (!supabase) return false;
   try {
     const { data, error } = await supabase.rpc('founder_review_news', {
       p_id: id,

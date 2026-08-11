@@ -121,7 +121,6 @@ export async function registerForPush(): Promise<{ ok: boolean; token?: string; 
 }
 
 async function syncTokenToBackend(token: string) {
-  if (!supabase) return;
   const quiet = await getQuietHours();
   try {
     await supabase.rpc('register_push_token', {
