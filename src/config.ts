@@ -6,8 +6,7 @@
 // below. Nothing else is contacted at runtime.
 //
 // Both values are read at BUILD time from .env (see .env.example).
-// Blank = the client is null and every backend call fails soft,
-// so the app still runs fully offline-first.
+// Missing credentials = build fails fast with clear error message.
 //
 // The anon key is public by design — every table is guarded by
 // Row Level Security in Postgres. The service_role key must NEVER
@@ -21,8 +20,17 @@
 // screen would need to change.
 // ─────────────────────────────────────────────────────────────
 
-export const PSA_SUPABASE_URL = process.env.EXPO_PUBLIC_PSA_SUPABASE_URL ?? '';
-export const PSA_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY ?? '';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_PSA_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    'Missing Supabase credentials. Please create a .env file with EXPO_PUBLIC_PSA_SUPABASE_URL and EXPO_PUBLIC_PSA_SUPABASE_ANON_KEY. See .env.example for details.'
+  );
+}
+
+export const PSA_SUPABASE_URL = SUPABASE_URL;
+export const PSA_SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;
 
 // Optional OCR backend for native/mobile screenshot reading. When blank, the app
 // falls back to web OCR or pasted-text assist. Point this at a deployed route
