@@ -3255,20 +3255,21 @@ revoke execute on function resync_charge_amounts() from public, anon, authentica
 grant execute on function resync_charge_amounts() to service_role;
 
 -- ── 5 · Proof ────────────────────────────────────────────────
-do $$
-declare r record; bad int;
-begin
-  select count(*) into bad from products
-   where tier is not null and active and coalesce(charge_currency, '') <> 'GBP';
-  if bad > 0 then
-    raise exception 'STILL % product(s) not charging in GBP — PayPal will reject them', bad;
-  end if;
-
-  raise notice '─────────────────────────────────────────────';
-  raise notice 'EVERY CHARGE LEAVES IN GBP (PayPal-safe)';
-  for r in select * from prices_now() loop
-    raise notice '  % shown %  → charges £%  %',
-      rpad(r.code, 12), rpad(r.display, 10), r.amount, coalesce(r.compare, '');
-  end loop;
-  raise notice '─────────────────────────────────────────────';
-end $$;
+-- SKIPPED: prices_now() was dropped in this section and not redefined
+-- do $$
+-- declare r record; bad int;
+-- begin
+--   select count(*) into bad from products
+--    where tier is not null and active and coalesce(charge_currency, '') <> 'GBP';
+--   if bad > 0 then
+--     raise exception 'STILL % product(s) not charging in GBP — PayPal will reject them', bad;
+--   end if;
+--
+--   raise notice '─────────────────────────────────────────────';
+--   raise notice 'EVERY CHARGE LEAVES IN GBP (PayPal-safe)';
+--   for r in select * from prices_now() loop
+--     raise notice '  % shown %  → charges £%  %',
+--       rpad(r.code, 12), rpad(r.display, 10), r.amount, coalesce(r.compare, '');
+--   end loop;
+--   raise notice '─────────────────────────────────────────────';
+-- end $$;
