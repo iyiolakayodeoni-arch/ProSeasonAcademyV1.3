@@ -54,16 +54,6 @@ function compareVersions(a: string, b: string): number {
 export async function checkForUpdate(): Promise<UpdateInfo> {
   const current = Constants.expoConfig?.version ?? '1.3.0';
 
-  if (!supabase) {
-    return {
-      current,
-      latest: current,
-      available: false,
-      apkUrl: null,
-      note: null,
-      checkedAt: Date.now(),
-    };
-  }
 
   try {
     const { data, error } = await supabase

@@ -27,7 +27,7 @@ export type AuthErrorCode =
   | 'SEASON_FULL'
   | 'RATE_LIMITED'
   | 'MISSING_FIELDS'
-  | 'OFFLINE'
+  | 'NETWORK_ERROR'
   | 'SIGNUP_FAILED'
   | 'LOGIN_FAILED'
   | 'PROFILE_FAILED'
@@ -50,7 +50,7 @@ export const AUTH_ERROR_COPY: Record<AuthErrorCode, string> = {
   SEASON_FULL: 'SEASON ONE IS FULL — YOU ARE ON THE WAITLIST.',
   RATE_LIMITED: 'TOO MANY TRIES. WAIT A MINUTE, THEN TRY AGAIN.',
   MISSING_FIELDS: 'EMAIL AND PASSWORD ARE BOTH REQUIRED.',
-  OFFLINE: 'THE ACADEMY DID NOT ANSWER. CHECK YOUR SIGNAL.',
+  NETWORK_ERROR: 'CONNECTION FAILED. CHECK YOUR INTERNET AND TRY AGAIN.',
   SIGNUP_FAILED: 'COULD NOT CREATE YOUR SEAT. TRY AGAIN.',
   LOGIN_FAILED: 'SIGN-IN FAILED. TRY AGAIN.',
   PROFILE_FAILED: 'SEAT CREATED BUT PROFILE FAILED — CONTACT THE FOUNDER.',
@@ -88,13 +88,11 @@ export interface AuthFail {
 }
 
 async function invokeFn(name: string, body: Record<string, unknown>, authed = false): Promise<any> {
-  if (!PSA_SUPABASE_URL || !PSA_SUPABASE_ANON_KEY) return { ok: false, error: 'OFFLINE' };
-
   const headers: Record<string, string> = {
     'content-type': 'application/json',
     apikey: PSA_SUPABASE_ANON_KEY,
   };
-  if (authed && supabase) {
+  if (authed) {
     const { data } = await supabase.auth.getSession();
     if (data.session?.access_token) headers.authorization = `Bearer ${data.session.access_token}`;
   } else {
@@ -116,11 +114,12 @@ async function invokeFn(name: string, body: Record<string, unknown>, authed = fa
       clearTimeout(timer);
     }
     const j = await res.json().catch(() => null);
-    if (!j) return { ok: false, error: res.ok ? 'UNKNOWN' : 'OFFLINE' };
+    if (!j) return { ok: false, error: res.ok ? 'UNKNOWN' : 'NETWORK_ERROR' };
     return j;
-  } catch {
+  } catch (err) {
     // fetch threw: no network, DNS, TLS, or the 12s timeout fired
-    return { ok: false, error: 'OFFLINE' };
+    console.error('[authApi] Network error:', err);
+    return { ok: false, error: 'NETWORK_ERROR' };
   }
 }
 
@@ -139,7 +138,7 @@ function mapProfile(p: any): AuthProfile {
 }
 
 async function applySession(session: { access_token: string; refresh_token: string } | undefined) {
-  if (!supabase || !session?.access_token || !session?.refresh_token) return;
+  if (!session?.access_token || !session?.refresh_token) return;
   await supabase.auth.setSession({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
@@ -238,7 +237,6 @@ export async function requestPasswordReset(email: string): Promise<{ ok: true; m
 
 /** update password while a recovery session is active */
 export async function updatePassword(password: string): Promise<{ ok: true } | AuthFail> {
-  if (!supabase) return { ok: false, error: 'OFFLINE', message: AUTH_ERROR_COPY.OFFLINE };
   if (password.length < 8) return { ok: false, error: 'WEAK_PASSWORD', message: AUTH_ERROR_COPY.WEAK_PASSWORD };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { ok: false, error: 'UPDATE_FAILED', message: AUTH_ERROR_COPY.UPDATE_FAILED };
@@ -257,13 +255,12 @@ export async function deleteAccountRemote(): Promise<{ ok: true } | AuthFail> {
     };
   }
   await clearCachedAcademyToken();
-  if (supabase) await supabase.auth.signOut().catch(() => {});
+  await supabase.auth.signOut().catch(() => {});
   return { ok: true };
 }
 
 /** restore me from a persisted Supabase session */
 export async function restoreSession(): Promise<AuthProfile | null> {
-  if (!supabase) return null;
   try {
     const { data } = await supabase.auth.getSession();
     if (!data.session?.user) return null;
@@ -282,12 +279,11 @@ export async function restoreSession(): Promise<AuthProfile | null> {
 }
 
 export async function signOutRemote(): Promise<void> {
-  if (supabase) await supabase.auth.signOut().catch(() => {});
+  await supabase.auth.signOut().catch(() => {});
 }
 
 /** check username before submit (best-effort; register is the source of truth) */
 export async function checkUsernameAvailable(username: string): Promise<boolean | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.rpc('username_available', { p_username: username.trim() });
     if (error) return null;

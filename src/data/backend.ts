@@ -52,7 +52,6 @@ function withTimeout<T>(p: Promise<T> | PromiseLike<T>, ms: number): Promise<T> 
 }
 
 export async function liveSeatCount(): Promise<SeasonGate | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await withTimeout(supabase.rpc('season_seats'), 12_000);
     if (error) return null;
@@ -90,7 +89,6 @@ export function setMeFromProfile(profile: {
 
 // ── health + auth ────────────────────────────────────────────
 export async function probeHealth(timeoutMs = 2500): Promise<boolean> {
-  if (!supabase) return false;
   try {
     return await Promise.race([
       supabase.from('channels').select('slug').limit(1).then((r) => !r.error),
@@ -107,7 +105,6 @@ export async function ensureAuth(
   platform: string,
   region: string,
 ): Promise<CloudUser | null> {
-  if (!supabase) return null;
   try {
     const { data: sess } = await supabase.auth.getSession();
     if (!sess.session) {
@@ -159,7 +156,7 @@ export interface ServerMatchRow {
 }
 
 export async function pushMatches(matches: { clientId: string }[]): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const rows = matches.map((m: any) => ({
       user_id: me!.id,
@@ -188,7 +185,7 @@ export async function pushMatches(matches: { clientId: string }[]): Promise<bool
 }
 
 export async function pullMatches(): Promise<ServerMatchRow[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase
       .from('matches')
@@ -261,7 +258,6 @@ function mimeOf(fileName: string | null, uri: string | null): string {
 }
 
 async function uploadBenchmarkShot(uri: string, objectPath: string, contentType: string): Promise<string | null> {
-  if (!supabase) return null;
   try {
     const res = await fetch(uri);
     const blob = await res.blob();
@@ -299,7 +295,7 @@ function mapBenchmarkRow(row: any): CloudBenchmarkRow {
 }
 
 export async function pushBenchmarkCheckpoint(snapshot: BenchmarkSnapshot, coachId?: string | null): Promise<CloudBenchmarkRow | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const screenshots: CloudBenchmarkShot[] = [];
     for (let i = 0; i < snapshot.matches.length; i += 1) {
@@ -345,7 +341,7 @@ export async function pushBenchmarkCheckpoint(snapshot: BenchmarkSnapshot, coach
 }
 
 export async function pullBenchmarkCheckpoints(): Promise<CloudBenchmarkRow[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase
       .from('benchmark_checkpoints')
@@ -361,7 +357,7 @@ export async function pullBenchmarkCheckpoints(): Promise<CloudBenchmarkRow[] | 
 }
 
 export async function deleteBenchmarkCheckpoint(clientId: string): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const { error } = await supabase
       .from('benchmark_checkpoints')
@@ -375,7 +371,6 @@ export async function deleteBenchmarkCheckpoint(clientId: string): Promise<boole
 }
 
 export async function founderBenchmarkCards(_key: string, limit = 24): Promise<FounderBenchmarkCard[] | null> {
-  if (!supabase) return null;
   try {
     const { data: session } = await supabase.auth.getSession();
     if (!session.session) return null;
@@ -423,7 +418,6 @@ const mapMsg = (m: any): ServerMessage => ({
 });
 
 export async function listChannels(): Promise<ServerChannel[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.from('channels').select('slug, name, topic');
     if (error) return null;
@@ -436,7 +430,7 @@ export async function listChannels(): Promise<ServerChannel[] | null> {
 /** ensure a per-pair private room exists (channel row) so real DMs can land.
  *  Best-effort — if the cloud won't answer, the caller stays offline-honest. */
 export async function ensureChannel(slug: string, name: string, topic: string): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const { error } = await supabase.from('channels').upsert(
       { slug, name, topic },
@@ -449,7 +443,6 @@ export async function ensureChannel(slug: string, name: string, topic: string): 
 }
 
 export async function pullMessages(slug: string, afterSeq: number, limit = 50): Promise<ServerMessage[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('messages')
@@ -466,7 +459,7 @@ export async function pullMessages(slug: string, afterSeq: number, limit = 50): 
 }
 
 export async function postMessage(slug: string, text: string): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const clean = String(text ?? '').trim().slice(0, 500);
     if (!clean) return false;
@@ -486,7 +479,7 @@ export async function postMessage(slug: string, text: string): Promise<boolean> 
 
 /** validated emoji toggle — the database only ever flips YOUR handle */
 export async function toggleCloudReaction(messageId: number, emoji: string): Promise<string | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('toggle_reaction', { p_message_id: messageId, p_emoji: emoji });
     if (error) return null;
@@ -514,7 +507,6 @@ export interface AdminSummary {
 }
 
 async function founderFn(name: string, _key: string, body?: unknown): Promise<any | null> {
-  if (!supabase) return null;
   try {
     const { data: session } = await supabase.auth.getSession();
     if (!session.session) return null;
@@ -578,7 +570,6 @@ export interface TillBalanceWire {
 
 const offcut: StoreProductWire[] = [];
 export async function storeCatalog(region: string): Promise<StoreCatalogWire | null> {
-  if (!supabase) return null;
   try {
     const [{ data: prods, error }, { data: gl }] = await Promise.all([
       supabase.from('products').select('code, region, title, credits, plan, price, pay_link, price_note').eq('active', true).order('sort', { ascending: true }),
@@ -600,7 +591,7 @@ export async function storeCatalog(region: string): Promise<StoreCatalogWire | n
 }
 
 export async function tillBalance(): Promise<TillBalanceWire | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const [{ data: w }, { data: gl }, { data: led }] = await Promise.all([
       supabase.from('wallets').select('credits, plan, plan_renews').eq('academy_id', me.academyId).maybeSingle(),
@@ -624,7 +615,6 @@ export async function tillBalance(): Promise<TillBalanceWire | null> {
 
 /** atomic spend + go-live gate, resolved server-side against your own wallet */
 export async function tillSpend(amount: number, reason: string): Promise<{ ok: boolean; credits?: number; error?: string } | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.rpc('till_spend', { p_amount: Math.round(amount), p_reason: String(reason).slice(0, 60) });
     if (error) return null;
@@ -675,7 +665,7 @@ const onEventFor = (slug: string) => roomHandlers.get(slug);
 
 /** join a channel room; leaves nothing (rooms are cheap) */
 export function joinRoom(slug: string, handler: (e: CloudEvent) => void) {
-  if (!supabase || !me) return;
+  if (!me) return;
   roomHandlers.set(slug, handler);
   if (rooms.has(slug)) return;
   const ch = supabase
@@ -734,7 +724,7 @@ export async function reportPaymentTrouble(
   product?: string,
   note?: string,
 ): Promise<'SENT' | 'ALREADY_SENT' | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('payment_trouble', {
       p_product: product ?? null,
@@ -761,7 +751,7 @@ export interface ContactRow {
 
 /** send the founder a private note. Returns an error code, or null on success. */
 export async function sendContact(kind: ContactKind, body: string): Promise<string | null> {
-  if (!supabase || !me) return 'OFFLINE';
+  if (!me) return 'NOT_LOGGED_IN';
   const text = String(body ?? '').trim().slice(0, 2000);
   if (!text) return 'EMPTY';
   try {
@@ -780,7 +770,7 @@ export async function sendContact(kind: ContactKind, body: string): Promise<stri
 
 /** unread messages FROM the academy — drives the Settings badge */
 export async function unreadFromAcademy(): Promise<number> {
-  if (!supabase || !me) return 0;
+  if (!me) return 0;
   try {
     const { count, error } = await supabase
       .from('contact_messages')
@@ -795,7 +785,7 @@ export async function unreadFromAcademy(): Promise<number> {
 
 /** the member has now seen them */
 export async function markAcademyRead(): Promise<void> {
-  if (!supabase || !me) return;
+  if (!me) return;
   try {
     await supabase.from('contact_messages')
       .update({ read: true }).eq('from_academy', true).eq('read', false);
@@ -804,7 +794,7 @@ export async function markAcademyRead(): Promise<void> {
 
 /** your own thread — including the founder's replies */
 export async function myContactThread(): Promise<ContactRow[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase
       .from('contact_messages')
@@ -833,7 +823,6 @@ export interface FounderWeek {
 
 /** is the founder in the halls right now? drives the Community banner */
 export async function founderWeek(): Promise<FounderWeek | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('config').select('key, value')
@@ -927,7 +916,6 @@ export async function founderSetPackItems(
 
 /** what a member sees before buying — public */
 export async function packContents(pack: string): Promise<string[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.rpc('pack_contents', { p_pack: pack });
     if (error) return null;
@@ -948,7 +936,7 @@ export interface MyTos {
 
 /** the terms + this member's standing (deadline, warnings) */
 export async function myTos(): Promise<MyTos | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('my_tos');
     if (error) return null;
@@ -967,7 +955,7 @@ export async function myTos(): Promise<MyTos | null> {
 }
 
 export async function acceptTos(version: number): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const { data, error } = await supabase.rpc('accept_tos', { p_version: version });
     return !error && data === true;
@@ -1027,7 +1015,7 @@ export interface ConsultQ {
 
 /** the open questions, with whatever this member already said */
 export async function myConsult(): Promise<ConsultQ[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('my_consult');
     if (error) return null;
@@ -1052,7 +1040,7 @@ export async function answerConsult(
   slug: string,
   a: { choice?: string; amount?: number; note?: string },
 ): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const { data, error } = await supabase.rpc('consult_answer', {
       p_slug: slug,
@@ -1099,7 +1087,6 @@ export interface LivePrice {
 
 /** today's price list, converted at the live rate */
 export async function livePrices(region?: string): Promise<LivePrice[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.rpc('prices_now', { p_region: region ?? null });
     if (error) return null;
@@ -1139,7 +1126,7 @@ export async function startCheckout(
 ): Promise<{
   ok: true; approveUrl: string; display: string; currency: string; provider: string;
 } | { ok: false; error: string }> {
-  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  if (!me) return { ok: false, error: 'NOT_LOGGED_IN' };
   try {
     const resp = await supabase.functions.invoke('pay-start', {
       body: provider ? { product, provider } : { product },
@@ -1180,7 +1167,6 @@ export interface MyClaim {
 
 /** where the money actually goes — held in the DB, not the build */
 export async function payMethods(region: string): Promise<PayMethod[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('pay_methods')
@@ -1198,7 +1184,7 @@ export async function payMethods(region: string): Promise<PayMethod[] | null> {
 export async function claimPayment(
   product: string, method: string, amount?: string, note?: string,
 ): Promise<{ ok: true; reference: string } | { ok: false; error: string }> {
-  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  if (!me) return { ok: false, error: 'NOT_LOGGED_IN' };
   try {
     const { data, error } = await supabase.rpc('claim_payment', {
       p_product: product, p_method: method,
@@ -1216,7 +1202,7 @@ export async function claimPayment(
 }
 
 export async function myClaims(): Promise<MyClaim[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('my_claims');
     if (error) return null;
@@ -1288,7 +1274,7 @@ export interface MyAccess {
 }
 
 export async function myAccess(): Promise<MyAccess | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.rpc('my_access');
     if (error) return null;
@@ -1313,7 +1299,7 @@ export async function myAccess(): Promise<MyAccess | null> {
 
 /** may this member open this stage / trick / the film room? */
 export async function canAccess(item: string): Promise<boolean> {
-  if (!supabase || !me) return false;
+  if (!me) return false;
   try {
     const { data, error } = await supabase.rpc('can_access', { p_item: item });
     return !error && data === true;
@@ -1326,7 +1312,6 @@ export async function canAccess(item: string): Promise<boolean> {
 export interface TierRow { key: string; level: number; title: string; blurb: string | null }
 
 export async function tierLadder(): Promise<TierRow[] | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.from('tiers').select('key, level, title, blurb').order('level');
     if (error) return null;
@@ -1369,7 +1354,7 @@ export async function founderGrantTier(
 // ── ACCESS — what this member has paid for ───────────────────
 /** every item this member owns: 'stage:3', 'trick:mb-…' */
 export async function myUnlocks(): Promise<string[] | null> {
-  if (!supabase || !me) return null;
+  if (!me) return null;
   try {
     const { data, error } = await supabase.from('unlocks').select('item');
     if (error) return null;
@@ -1388,7 +1373,6 @@ export interface AccessRules {
 }
 
 export async function accessRules(): Promise<AccessRules | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('config').select('key, value')
@@ -1412,7 +1396,7 @@ export async function accessRules(): Promise<AccessRules | null> {
  */
 export async function unlockItem(item: string, cost: number):
   Promise<{ ok: true; credits: number } | { ok: false; error: string }> {
-  if (!supabase || !me) return { ok: false, error: 'OFFLINE' };
+  if (!me) return { ok: false, error: 'NOT_LOGGED_IN' };
   try {
     const { data, error } = await supabase.rpc('unlock_item', { p_item: item, p_cost: cost });
     if (error) {

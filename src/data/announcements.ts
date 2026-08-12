@@ -63,10 +63,6 @@ function mapRow(r: any): FounderAnnouncement {
 
 export async function fetchAnnouncements(): Promise<FounderAnnouncement[]> {
   await hydrateReads();
-  if (!supabase) {
-    emit();
-    return cache;
-  }
   try {
     const { data, error } = await supabase.rpc('list_announcements');
     if (error || !data) {
@@ -94,7 +90,6 @@ export async function markAnnouncementRead(id: number): Promise<void> {
   persistReads();
   cache = cache.map((a) => (a.id === id ? { ...a, isRead: true } : a));
   emit();
-  if (!supabase) return;
   try {
     await supabase.rpc('mark_announcement_read', { p_id: id });
   } catch {
@@ -107,7 +102,6 @@ export async function markAllAnnouncementsRead(): Promise<void> {
   persistReads();
   cache = cache.map((a) => ({ ...a, isRead: true }));
   emit();
-  if (!supabase) return;
   try {
     for (const a of cache) await supabase.rpc('mark_announcement_read', { p_id: a.id });
   } catch {
@@ -124,7 +118,6 @@ export async function publishAnnouncement(input: {
   expiresDays?: number;
   author?: string;
 }): Promise<{ ok: true; id: number } | { ok: false; error: string }> {
-  if (!supabase) return { ok: false, error: 'OFFLINE' };
   const title = input.title.trim();
   const body = input.body.trim();
   if (!title || !body) return { ok: false, error: 'EMPTY' };

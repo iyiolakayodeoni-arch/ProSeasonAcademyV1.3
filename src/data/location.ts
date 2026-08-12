@@ -60,7 +60,7 @@ export async function verifyLocation(input: {
   country: string;
   countryCode: string;
 }): Promise<GeoVerifyResult | null> {
-  if (!supabase || !PSA_SUPABASE_URL) return null;
+  if (!PSA_SUPABASE_URL) return null;
   try {
     const { data: session } = await supabase.auth.getSession();
     const token = session.session?.access_token;
@@ -100,7 +100,6 @@ export async function setMyLocationRpc(input: {
   source?: string;
   uncertain?: boolean;
 }): Promise<GeoVerifyResult | null> {
-  if (!supabase) return null;
   try {
     const { data, error } = await supabase.rpc('set_my_location', {
       p_country: input.country,
@@ -125,7 +124,6 @@ export async function setMyLocationRpc(input: {
 
 /** till stays closed until founder opens payments */
 export async function isTillClosed(): Promise<boolean> {
-  if (!supabase) return true;
   try {
     const { data } = await supabase
       .from('config')

@@ -36,7 +36,6 @@ export async function trackFunnel(name: FunnelEvent): Promise<void> {
     // Measurement must never interrupt a player doing their review.
   }
 
-  if (!supabase) return;
   try {
     await supabase.from('funnel_events').insert({ name, occurred_at: new Date(at).toISOString() });
   } catch {
