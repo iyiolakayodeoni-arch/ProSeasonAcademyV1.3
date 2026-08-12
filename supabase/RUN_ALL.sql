@@ -2897,17 +2897,18 @@ revoke execute on function set_fx(numeric, text) from public, anon, authenticate
 grant execute on function set_fx(numeric, text) to service_role;
 
 -- ── 5 · Proof ────────────────────────────────────────────────
-do $$
-declare r record;
-begin
-  raise notice 'LIVE PRICING — naira is the master for Africa';
-  for r in select * from prices_now() loop
-    raise notice '  % · % · %  %',
-      rpad(r.code, 12), rpad(coalesce(r.display, '?'), 8),
-      coalesce(r.price_note, ''),
-      case when r.stale then '⚠ STALE RATE' else '' end;
-  end loop;
-end $$;
+-- SKIPPED: prices_now() is redefined in fx2.sql and fx3.sql below
+-- do $$
+-- declare r record;
+-- begin
+--   raise notice 'LIVE PRICING — naira is the master for Africa';
+--   for r in select * from prices_now() loop
+--     raise notice '  % · % · %  %',
+--       rpad(r.code, 12), rpad(coalesce(r.display, '?'), 8),
+--       coalesce(r.price_note, ''),
+--       case when r.stale then '⚠ STALE RATE' else '' end;
+--   end loop;
+-- end $$;
 
 
 -- ▓▓▓▓▓▓▓▓▓▓ fx2.sql ▓▓▓▓▓▓▓▓▓▓
@@ -3067,21 +3068,22 @@ revoke execute on function subsidy_check() from public, anon, authenticated;
 grant execute on function subsidy_check() to service_role;
 
 -- ── 4 · Proof ────────────────────────────────────────────────
-do $$
-declare r record;
-begin
-  raise notice 'BOTH PRICES REAL — charged in the member''s own currency';
-  for r in select * from prices_now() loop
-    raise notice '  % · %  %', rpad(r.code, 12), rpad(r.display, 10), coalesce(r.compare, '');
-  end loop;
-  raise notice '';
-  raise notice 'SUBSIDY:';
-  for r in select * from subsidy_check() loop
-    raise notice '  % → africa pays %%% of world (target %%%) %',
-      rpad(r.pair, 12), r.africa_pct, r.target_pct,
-      case when r.drifted then '⚠ DRIFTED' else 'ok' end;
-  end loop;
-end $$;
+-- SKIPPED: prices_now() is redefined in fx3.sql below
+-- do $$
+-- declare r record;
+-- begin
+--   raise notice 'BOTH PRICES REAL — charged in the member''s own currency';
+--   for r in select * from prices_now() loop
+--     raise notice '  % · %  %', rpad(r.code, 12), rpad(r.display, 10), coalesce(r.compare, '');
+--   end loop;
+--   raise notice '';
+--   raise notice 'SUBSIDY:';
+--   for r in select * from subsidy_check() loop
+--     raise notice '  % → africa pays %%% of world (target %%%) %',
+--       rpad(r.pair, 12), r.africa_pct, r.target_pct,
+--       case when r.drifted then '⚠ DRIFTED' else 'ok' end;
+--   end loop;
+-- end $$;
 
 
 
