@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, Alert, Platform, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import GridBackground from '../components/GridBackground';
-import ArtBand from '../components/ArtBand';
+import RotatingArtImage from '../components/RotatingArtImage';
 import CoachPresence from '../components/CoachPresence';
 const BOOTS = require('../../assets/art/scan-boots.jpg');
+const TUNNEL = require('../../assets/art/journey-tunnel.jpg');
+const MATCH_ART = require('../../assets/art/vault-match.jpg');
+const DRILL = require('../../assets/art/mirror-drill.jpg');
 import { Coach } from '../data/coaches';
 import {
   BASELINE_SCRIPTS,
@@ -179,12 +181,18 @@ function StatInput({ label, hint, value, onChange, suffix }: { label: string; hi
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const { isMultiColumn } = useResponsive();
+  const { width: winW, height: winH } = useWindowDimensions();
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
   const [step, setStep] = useState<DayStep>('start');
   const [notReady, setNotReady] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Full-bleed background image — no separate ArtBand header
+  // ScrollView on web needs an explicit height — the flex chain alone won't
+  // give it one (min-height parents don't propagate to flex children).
+  const scrollH = Platform.OS === 'web' ? winH : undefined;
   const [gf, setGf] = useState(0);
   const [ga, setGa] = useState(0);
   const [touched, setTouched] = useState(false);
@@ -425,19 +433,21 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   return (
     <View style={styles.root}>
-      <GridBackground />
-      <ArtBand
-        source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
-        width={1380}
-        height={118}
-        warmAt={{ x: 500, y: 34, r: 600 }}
-        grain={0.05}
+      {/* ── Full-bleed background image (rotating plates) ── */}
+      <RotatingArtImage
+        sources={[BOOTS, MATCH_ART, TUNNEL, DRILL]}
+        style={[styles.bgImage, { width: winW, height: winH }]}
+        resizeMode="cover"
       />
+      {/* Dark gradient overlay for readability */}
+      <View style={styles.bgOverlay} pointerEvents="none" />
+
       <ScrollView
         ref={scrollRef}
-        style={{ flex: 1 }}
+        style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        bounces={Platform.OS !== 'web'}
       >
         <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
           <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
@@ -954,15 +964,45 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
+  bgImage: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    width: 0,   // set dynamically via style prop
+    height: 0,  // set dynamically via style prop
+    opacity: 0.45,
+  },
+  bgOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    // @ts-ignore — web gradient
+    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.55) 0%, rgba(5,10,6,0.82) 40%, rgba(5,10,6,0.95) 100%)',
+    backgroundColor: 'rgba(5,10,6,0.88)', // native fallback
+  } as any,
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
   cardContainer: {
-    padding: 24,
-    borderRadius: 18,
-    backgroundColor: 'rgba(15, 26, 19, 0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(57, 255, 106, 0.25)',
+    padding: 26,
+    borderRadius: 16,
+    // Glassmorphism
+    backgroundColor: 'rgba(10, 20, 14, 0.82)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(57, 255, 106, 0.35)',
+    // Gamified glow
+    shadowColor: '#39ff6a',
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 12,
+    // Corner accent hint — top-left green strip
+    borderTopWidth: 2,
+    borderTopColor: colors.primary,
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(57, 255, 106, 0.5)',
   },
 
   eyebrow: {
@@ -1005,49 +1045,57 @@ const styles = StyleSheet.create({
   beatTxt: { flex: 1, color: '#dbe7dd', fontFamily: bodyFont, fontSize: 13.5, lineHeight: 21 },
   bluffBox: {
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(10,20,14,0.72)',
     padding: 14,
   },
   bluffLabel: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1.6 },
   bluffTxt: { color: '#dbe7dd', fontFamily: bodyFont, fontSize: 13, lineHeight: 20, marginTop: 6 },
   cta: {
-    marginTop: 20,
+    marginTop: 22,
     backgroundColor: colors.primary,
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 10,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    // Gamified glow
+    shadowColor: '#39ff6a',
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.7)',
   },
-  ctaTxt: { color: '#0a0f0a', fontFamily: bodyFontHeavy, fontSize: 13.5, letterSpacing: 1 },
+  ctaTxt: { color: '#050a06', fontFamily: monoFont, fontSize: 11, fontWeight: '900', letterSpacing: 1.8 },
 
   weekStrip: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 16,
-    marginBottom: 10,
+    gap: 6,
+    marginTop: 18,
+    marginBottom: 14,
   },
   dayPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayPillDone: { backgroundColor: 'rgba(57,255,106,0.15)', borderColor: colors.primary },
-  dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary },
-  dayPillLocked: { backgroundColor: colors.surface, borderColor: 'rgba(143,184,155,0.4)' },
-  dayPillFuture: { backgroundColor: 'transparent', borderColor: 'rgba(143,184,155,0.15)' },
-  dayPillTxt: { fontFamily: monoFont, fontSize: 8.5, fontWeight: '800' },
+  dayPillDone: { backgroundColor: 'rgba(57,255,106,0.12)', borderColor: 'rgba(57,255,106,0.5)', shadowColor: '#39ff6a', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
+  dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: '#39ff6a', shadowOpacity: 0.6, shadowRadius: 14, shadowOffset: { width: 0, height: 0 } },
+  dayPillLocked: { backgroundColor: 'rgba(10,20,14,0.6)', borderColor: 'rgba(143,184,155,0.2)' },
+  dayPillFuture: { backgroundColor: 'transparent', borderColor: 'rgba(143,184,155,0.12)' },
+  dayPillTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   dayPillTxtDone: { color: colors.primary },
   dayPillTxtNow: { color: '#0a0f0a' },
-  dayPillTxtMuted: { color: 'rgba(143,184,155,0.6)' },
+  dayPillTxtMuted: { color: 'rgba(143,184,155,0.45)' },
 
   heroLine: {
     marginTop: 16,
@@ -1081,32 +1129,38 @@ const styles = StyleSheet.create({
   guideNextTxt: { color: '#0a0f0a', fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1 },
   guideSkip: { color: colors.muted, fontFamily: monoFont, fontSize: 7.5, textAlign: 'right', letterSpacing: 1, marginTop: 9 },
 
-  dayIntro: { flexDirection: 'row', gap: 10, marginTop: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.surface, padding: 12, alignItems: 'flex-start' },
+  dayIntro: { flexDirection: 'row', gap: 10, marginTop: 12, borderWidth: 1.5, borderColor: 'rgba(242,192,120,0.25)', borderRadius: 12, backgroundColor: 'rgba(18,16,8,0.65)', padding: 12, alignItems: 'flex-start' },
   dayIntroTxt: { flex: 1, color: colors.warm, fontFamily: monoFont, fontSize: 11, lineHeight: 17, letterSpacing: 0.3 },
 
   scoreCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    paddingVertical: 18,
-    paddingHorizontal: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.3)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,14,0.78)',
+    paddingVertical: 20,
+    paddingHorizontal: 28,
     marginTop: 14,
+    // HUD glow
+    shadowColor: '#39ff6a',
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
   },
   scoreSide: { alignItems: 'center' },
   scoreLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, marginBottom: 8 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stepBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(10,20,14,0.7)',
   },
   stepBtnTxt: { color: colors.fg, fontFamily: monoFont, fontSize: 18 },
   stepValue: { color: colors.fg, fontFamily: monoFont, fontSize: 24, fontWeight: '800', minWidth: 24, textAlign: 'center' },
@@ -1128,10 +1182,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(242,192,120,0.28)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(18,16,8,0.65)',
     padding: 12,
     alignItems: 'flex-start',
   },
@@ -1148,24 +1202,24 @@ const styles = StyleSheet.create({
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.18)',
+    borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 9,
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(10,20,14,0.7)',
   },
-  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.12)' },
+  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.15)', shadowColor: '#39ff6a', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
   chipTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 10, letterSpacing: 1 },
   chipTxtActive: { color: colors.primary },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 14 },
   statField: {
     width: '48%',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 10,
+    backgroundColor: 'rgba(10,20,14,0.75)',
     padding: 12,
   },
   statFieldHead: { marginBottom: 6 },
@@ -1190,10 +1244,10 @@ const styles = StyleSheet.create({
 
   momentCard: {
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,14,0.72)',
     padding: 16,
   },
   qLabel: {
@@ -1261,11 +1315,13 @@ const styles = StyleSheet.create({
 
   analysisBlock: {
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(242,192,120,0.4)',
-    borderRadius: 14,
-    backgroundColor: 'rgba(20,18,10,0.6)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(242,192,120,0.35)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(18,16,8,0.72)',
     padding: 16,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(242,192,120,0.5)',
   },
   analysisHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   analysisHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, fontWeight: '800' },
@@ -1275,10 +1331,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginTop: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.28)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,14,0.72)',
     padding: 14,
     alignItems: 'center',
   },
@@ -1299,10 +1355,10 @@ const styles = StyleSheet.create({
 
   photoPickBox: {
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.22)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(10,20,14,0.72)',
     padding: 16,
   },
   photoPickLabel: { color: colors.accent, fontFamily: monoFont, fontSize: 8.5, fontWeight: '900', letterSpacing: 1.4 },
@@ -1341,7 +1397,20 @@ const styles = StyleSheet.create({
   },
   photoBtnAltTxt: { color: colors.fg, fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
 
-  cardBox: { marginTop: 18, borderWidth: 1.5, borderRadius: 18, backgroundColor: colors.surface, padding: 22, alignItems: 'center' },
+  cardBox: {
+    marginTop: 18,
+    borderWidth: 1.5,
+    borderRadius: 16,
+    backgroundColor: 'rgba(10,20,14,0.78)',
+    padding: 22,
+    alignItems: 'center',
+    shadowColor: '#39ff6a',
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 0 },
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(57,255,106,0.4)',
+  },
   cardTier: { color: colors.accent, fontFamily: monoFont, fontSize: 22, fontWeight: '900', letterSpacing: 3 },
   cardHandle: { color: colors.fg, fontFamily: monoFont, fontSize: 16, letterSpacing: 1.6, marginTop: 8 },
   cardCoach: { color: colors.muted, fontFamily: monoFont, fontSize: 9.5, letterSpacing: 1.6, marginTop: 4 },
