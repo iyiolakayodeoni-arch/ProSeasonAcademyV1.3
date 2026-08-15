@@ -178,7 +178,7 @@ function StatInput({ label, hint, value, onChange, suffix }: { label: string; hi
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const { isMultiColumn } = useResponsive();
+  const { isMultiColumn, h } = useResponsive();
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
@@ -435,7 +435,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       />
       <ScrollView
         ref={scrollRef}
-        style={{ flex: 1 }}
+        style={[styles.scrollView, { height: h }]}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
@@ -955,6 +955,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
+  scrollView: { flex: 1 },
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
   cardContainer: {
