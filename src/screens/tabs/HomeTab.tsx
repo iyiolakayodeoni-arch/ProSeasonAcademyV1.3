@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform, Easing } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform, Easing, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInUp,
@@ -211,6 +211,8 @@ function ProgressRail({ pct }: { pct: number }) {
 
 export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole }: Props) {
   const { isMultiColumn, isWide, isLaptopUp, bp } = useResponsive();
+  const { height: winH } = useWindowDimensions();
+  const scrollH = Platform.OS === 'web' ? winH - 64 : undefined; // 64 = header height
   const [day, setDay] = useState(1);
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
@@ -237,7 +239,12 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
   return (
     <View style={styles.flex}>
       <GridBackground />
-      <ScrollView contentContainerStyle={[styles.scroll, isWide && styles.scrollWide]} showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView
+        style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
+        contentContainerStyle={[styles.scroll, isWide && styles.scrollWide]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         {/* Premium Live Ticker */}
         <Animated.View entering={FadeIn.duration(420)} style={styles.newsBar}>
           <LinearGradient colors={['#39ff6a', '#2be05a']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.newsFlag}>

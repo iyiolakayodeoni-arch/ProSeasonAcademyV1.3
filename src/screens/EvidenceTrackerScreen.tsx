@@ -8,6 +8,7 @@ import {
   TextInput,
   Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
@@ -324,6 +325,8 @@ function SnapshotCard({
 
 export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach; onClose: () => void }) {
   const { isMultiColumn } = useResponsive();
+  const { height: winH } = useWindowDimensions();
+  const scrollH = Platform.OS === 'web' ? winH - 64 : undefined;
   const tracker = useBenchmarkTracker();
   const cloud = useCloud();
   const settings = useSettings();
@@ -759,7 +762,11 @@ export default function EvidenceTrackerScreen({ coach, onClose }: { coach: Coach
   return (
     <View style={styles.flex}>
       <GridBackground />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
         <Pressable onPress={onClose} hitSlop={10} style={styles.backRow}>
           <Text style={styles.backTxt}>‹ BACK TO PROGRESS</Text>
         </Pressable>

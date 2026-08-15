@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Easing } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Easing, Platform, useWindowDimensions } from 'react-native';
 import Animated, {
   FadeInUp,
   useAnimatedStyle,
@@ -48,6 +48,8 @@ type Props = {
 
 export default function TrackerTab({ coach }: Props) {
   const { isMultiColumn, isWide } = useResponsive();
+  const { height: winH } = useWindowDimensions();
+  const scrollH = Platform.OS === 'web' ? winH - 64 : undefined;
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [now, setNow] = useState(Date.now());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -111,6 +113,7 @@ export default function TrackerTab({ coach }: Props) {
     <View style={styles.root}>
       <GridBackground />
       <ScrollView
+        style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
         showsVerticalScrollIndicator={false}
         bounces={false}
         contentContainerStyle={styles.scroll}
