@@ -39,7 +39,7 @@ const mapAuthError = (msg: string): { code: string; status: number } => {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({}, 204);
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
 
   const sb = service();
