@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, Alert, Platform, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import GridBackground from '../components/GridBackground';
@@ -179,12 +179,19 @@ function StatInput({ label, hint, value, onChange, suffix }: { label: string; hi
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
   const { isMultiColumn } = useResponsive();
+  const { width: winW, height: winH } = useWindowDimensions();
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
   const [step, setStep] = useState<DayStep>('start');
   const [notReady, setNotReady] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  // ArtBand header height consumed above the ScrollView
+  const ART_BAND_H = 118;
+  // ScrollView on web needs an explicit height — the flex chain alone won't
+  // give it one (min-height parents don't propagate to flex children).
+  const scrollH = Platform.OS === 'web' ? Math.max(0, winH - ART_BAND_H) : undefined;
   const [gf, setGf] = useState(0);
   const [ga, setGa] = useState(0);
   const [touched, setTouched] = useState(false);
@@ -428,16 +435,17 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       <GridBackground />
       <ArtBand
         source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
-        width={1380}
+        width={winW}
         height={118}
         warmAt={{ x: 500, y: 34, r: 600 }}
         grain={0.05}
       />
       <ScrollView
         ref={scrollRef}
-        style={{ flex: 1 }}
+        style={[{ flex: 1 }, scrollH != null && { height: scrollH }]}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
+        bounces={Platform.OS !== 'web'}
       >
         <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
           <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
@@ -954,7 +962,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+  root: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
   cardContainer: {
