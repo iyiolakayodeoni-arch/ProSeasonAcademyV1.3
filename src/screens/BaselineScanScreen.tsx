@@ -433,15 +433,14 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   return (
     <View style={styles.root}>
-      {/* ── Full-bleed background image (rotating plates) ── */}
-      <RotatingArtImage
-        sources={[BOOTS, MATCH_ART, TUNNEL, DRILL]}
-        style={styles.bgImage}
-        resizeMode="cover"
+      <GridBackground />
+      <ArtBand
+        source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
+        width={1380}
+        height={118}
+        warmAt={{ x: 500, y: 34, r: 600 }}
+        grain={0.05}
       />
-      {/* Dark gradient overlay for readability */}
-      <View style={styles.bgOverlay} pointerEvents="none" />
-
       <ScrollView
         ref={scrollRef}
         style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
@@ -964,27 +963,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
-  bgImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: '100%' as any,
-    height: '100%' as any,
-    opacity: 0.45,
-  },
-  bgOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // @ts-ignore — web gradient
-    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.55) 0%, rgba(5,10,6,0.82) 40%, rgba(5,10,6,0.95) 100%)',
-    backgroundColor: 'rgba(5,10,6,0.88)', // native fallback
-  } as any,
+  root: { flex: 1, backgroundColor: colors.bg },
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
   cardContainer: {
