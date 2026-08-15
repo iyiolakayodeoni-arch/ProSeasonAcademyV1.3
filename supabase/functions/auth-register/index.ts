@@ -132,13 +132,28 @@ Deno.serve(async (req) => {
   }
 
   // trial + welcome (best effort — older DBs may lack these RPCs)
-  await sb.rpc('grant_trial_one', { p_academy: academy }).catch(() => {});
+  try {
+    await sb.rpc('grant_trial_one', { p_academy: academy });
+  } catch (e) {
+    // ignore - function may not exist in older DBs
+  }
+  
   const { data: trialCfg } = await sb.from('config').select('value').eq('key', 'trial_days').maybeSingle();
-  await sb.rpc('set_deadline', {
-    p_academy: academy,
-    p_days: Number(trialCfg?.value ?? 14),
-  }).catch(() => {});
-  await sb.rpc('welcome_member', { p_academy: academy }).catch(() => {});
+  
+  try {
+    await sb.rpc('set_deadline', {
+      p_academy: academy,
+      p_days: Number(trialCfg?.value ?? 14),
+    });
+  } catch (e) {
+    // ignore - function may not exist
+  }
+  
+  try {
+    await sb.rpc('welcome_member', { p_academy: academy });
+  } catch (e) {
+    // ignore - function may not exist
+  }
 
   // issue a session so the app is signed in immediately
   const { data: sess, error: serr } = await sb.auth.signInWithPassword({ email, password });
