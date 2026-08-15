@@ -1,6 +1,7 @@
 // AUTH-REGISTER — email/password sign-up with auto academy token.
 // Returns the generated academy_id so the app can show it once securely.
 // Duplicate username / email are rejected with clear codes.
+// Fixed: Use try/catch instead of .catch() for RPC calls
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 export const cors = {
