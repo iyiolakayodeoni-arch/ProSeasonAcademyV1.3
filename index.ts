@@ -12,7 +12,11 @@ import App from './App';
 // ready before any Skia canvas mounts. The .wasm binary is served by the
 // dev/build server itself as a Metro asset (same origin as the app); the
 // jsDelivr CDN URL is only a fallback if the asset system ever drops it.
-const CANVASKIT_VERSION = '0.41.0'; // pinned to match canvaskit-wasm dep
+//
+// NOTE: PhotoVeil & AuroraVein now use CSS on web (CanvasKit worklet init
+// is unreliable in react-native-skia v2.x), so this preload is optional —
+// failures must never block the app.
+const CANVASKIT_VERSION = '0.41.1'; // pinned to match canvaskit-wasm dep
 const CANVASKIT_CDN = `https://cdn.jsdelivr.net/npm/canvaskit-wasm@${CANVASKIT_VERSION}/bin/full`;
 
 function canvaskitWasmUri(): string {
@@ -29,6 +33,13 @@ function canvaskitWasmUri(): string {
   return `${CANVASKIT_CDN}/canvaskit.wasm`;
 }
 
+// Skia components use CSS on web now, so CanvasKit preload is best-effort.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { LoadSkiaWeb } = require('@shopify/react-native-skia/lib/module/web');
-LoadSkiaWeb({ locateFile: () => canvaskitWasmUri() }).then(() => registerRootComponent(App));
+try {
+  const { LoadSkiaWeb } = require('@shopify/react-native-skia/lib/module/web');
+  LoadSkiaWeb({ locateFile: () => canvaskitWasmUri() })
+    .then(() => registerRootComponent(App))
+    .catch(() => registerRootComponent(App));
+} catch {
+  registerRootComponent(App);
+}
