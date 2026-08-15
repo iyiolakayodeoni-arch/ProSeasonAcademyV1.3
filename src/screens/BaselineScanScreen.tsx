@@ -178,7 +178,7 @@ function StatInput({ label, hint, value, onChange, suffix }: { label: string; hi
 }
 
 export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; onDone: () => void }) {
-  const { isMultiColumn, h } = useResponsive();
+  const { isMultiColumn } = useResponsive();
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
@@ -426,19 +426,19 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   return (
     <View style={styles.root}>
       <GridBackground />
-      <ArtBand
-        source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
-        width={1380}
-        height={118}
-        warmAt={{ x: 500, y: 34, r: 600 }}
-        grain={0.05}
-      />
       <ScrollView
         ref={scrollRef}
-        style={[styles.scrollView, { height: h }]}
+        style={styles.scrollView}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
+        <ArtBand
+          source={[BOOTS, require('../../assets/art/vault-match.jpg'), require('../../assets/art/mirror-drill.jpg')]}
+          width={1380}
+          height={118}
+          warmAt={{ x: 500, y: 34, r: 600 }}
+          grain={0.05}
+        />
         <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
           <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
             {phase === 'talk' && (
@@ -955,8 +955,17 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  scrollView: { flex: 1 },
-  scroll: { paddingVertical: 14, paddingBottom: 40 },
+  scrollView: { 
+    flex: 1,
+    // Web-specific: ensure ScrollView can scroll
+    ...(Platform.OS === 'web' ? { overflow: 'auto' } : {}),
+  },
+  scroll: { 
+    paddingVertical: 14, 
+    paddingBottom: 40,
+    // Ensure content can grow on web
+    ...(Platform.OS === 'web' ? { minHeight: '100%' } : {}),
+  },
 
   cardContainer: {
     padding: 24,
