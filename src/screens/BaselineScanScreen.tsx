@@ -700,7 +700,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Text style={styles.sessionSub}>
                       Full time. Look at your paper — now type what you wrote.
                     </Text>
-                    <Text style={styles.heroLine}>WHAT WAS THE SCORE?</Text> LET’S LOG THE MATCH.</Text>
+                    <Text style={styles.heroLine}>WHAT WAS THE SCORE?</Text>
                     <View style={styles.scoreCard}>
                       <View style={styles.scoreSide}>
                         <Text style={styles.scoreLabel}>YOU</Text>
