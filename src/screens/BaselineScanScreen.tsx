@@ -61,7 +61,7 @@ function glow(color: string, opacity: number, radius: number, offsetY = 0): any 
 
 const MIN_ANSWER = 12;
 type Phase = 'talk' | 'day' | 'ambition' | 'card';
-type DayStep = 'start' | 'match' | 'stats' | 'review' | 'analysis' | 'dayq';
+type DayStep = 'briefing' | 'score' | 'stats' | 'moments' | 'reflect' | 'checkin';
 
 interface DraftMoment {
   id: string;
@@ -198,7 +198,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const script = useMemo(() => BASELINE_SCRIPTS[coach.id] ?? BASELINE_SCRIPTS.chinedu, [coach.id]);
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
-  const [step, setStep] = useState<DayStep>('start');
+  const [step, setStep] = useState<DayStep>('briefing');
   const [notReady, setNotReady] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -385,7 +385,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
     setSaves('');
     setOffsides('');
     setYellowCards('');
-    setStep('start');
+    setStep('briefing');
     void loadBaseline(coach.id).then((s) => {
       setSession({ ...s });
       const d = currentBaselineDay(s);
@@ -409,7 +409,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   const startMatch = async () => {
     sfx('whoosh');
-    setStep('match');
+    setStep('score');
   };
   const logScore = () => {
     sfx('whoosh');
@@ -418,7 +418,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const confirmStats = () => {
     if (!statsComplete) return;
     sfx('whoosh');
-    setStep('review');
+    setStep('moments');
   };
   const addMoment = () => {
     const name = momentName.trim();
@@ -567,29 +567,84 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </View>
                 )}
 
-                {step === 'start' && (
+                {step === 'briefing' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
-                    <Text style={styles.heroLine}>
-                      YOUR REVIEW ROUTINE — PEN TO PAPER BEFORE YOU TYPE.
+                    <View style={styles.sessionBadge}>
+                      <Text style={styles.sessionBadgeTxt}>SESSION 1</Text>
+                    </View>
+                    <Text style={styles.sessionTitle}>THE BRIEFING</Text>
+                    <Text style={styles.sessionSub}>
+                      Read everything below. Write it all on paper. Then go play your match.
                     </Text>
-                    <Text style={styles.heroSub}>
-                      1. Record your console match as usual before kick-off, play, then watch key moments back.{'\n'}
-                      2. Write the turning point in your own words.{'\n'}
-                      3. Leave the FT stats screen on your TV.{'\n'}
-                      4. Type the four receipts: Possession, shots, on target, and pass accuracy.
+
+                    <View style={styles.penBox}>
+                      <Text style={styles.penIcon}>✏️</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.penTitle}>GET YOUR PEN AND PAPER NOW.</Text>
+                        <Text style={styles.penBody}>
+                          This only works if you write it down by hand. Writing forces you to actually think about what happened — typing alone is not enough.
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.briefSectionTitle}>WRITE THESE FOUR NUMBERS FROM YOUR CONSOLE</Text>
+                    <View style={styles.briefChecklist}>
+                      {['POSSESSION %', 'PASS ACCURACY %', 'TOTAL SHOTS', 'SHOTS ON TARGET'].map((item, i) => (
+                        <View key={i} style={styles.briefCheckItem}>
+                          <View style={styles.briefCheck} />
+                          <Text style={styles.briefCheckTxt}>{item}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <Text style={styles.briefSectionTitle}>WATCH FOR THESE MOMENT TYPES</Text>
+                    <View style={styles.briefTagRow}>
+                      {BASELINE_MOMENT_TAGS.map((tag) => (
+                        <View key={tag} style={styles.briefTag}>
+                          <Text style={styles.briefTagTxt}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={styles.briefNote}>
+                      Pick at least one turning point. Write the minute and what went wrong or right.
                     </Text>
-                    <HelpCard title="YOUR MATCH-DAY CHECKLIST">
-                      Play normally. When full time whistle blows, keep the stats screen open and type the 4 core numbers.
-                    </HelpCard>
+
+                    <Text style={styles.briefSectionTitle}>FOR EACH MOMENT, WRITE DOWN</Text>
+                    <View style={styles.briefChecklist}>
+                      {BASELINE_MOMENT_QUESTIONS.map((q, i) => (
+                        <View key={i} style={styles.briefCheckItem}>
+                          <View style={styles.briefCheck} />
+                          <Text style={styles.briefCheckTxt}>{q.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    <Text style={styles.briefSectionTitle}>YOU WILL ALSO BE ASKED</Text>
+                    <View style={styles.briefQuestionBox}>
+                      <Text style={styles.briefQuestionTxt}>
+                        {script.questions.W[(Math.max(1, day) - 1) % script.questions.W.length]}
+                      </Text>
+                      <Text style={styles.briefQuestionNote}>
+                        The exact question depends on your result. Think about it while you play.
+                      </Text>
+                    </View>
+
                     <Pressable onPress={() => void startMatch()} style={styles.cta}>
-                      <Text style={styles.ctaTxt}>I HAVE READ THE RITUAL — START THE MATCH ›</Text>
+                      <Text style={styles.ctaTxt}>I'VE WRITTEN IT ALL DOWN — NOW I PLAY ›</Text>
                     </Pressable>
                   </Animated.View>
                 )}
 
-                {step === 'match' && (
+                {step === 'score' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
-                    <Text style={styles.heroLine}>FULL TIME. LET’S LOG THE MATCH.</Text>
+                    <View style={styles.sessionBadge2}>
+                      <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
+                    </View>
+                    <Text style={styles.sessionTitle}>ENTER YOUR TRUTH</Text>
+                    <Text style={styles.sessionSub}>
+                      Full time. Look at your paper — now type what you wrote.
+                    </Text>
+                    <Text style={styles.heroLine}>WHAT WAS THE SCORE?</Text> LET’S LOG THE MATCH.</Text>
                     <View style={styles.scoreCard}>
                       <View style={styles.scoreSide}>
                         <Text style={styles.scoreLabel}>YOU</Text>
@@ -661,6 +716,9 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
                 {step === 'stats' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
+                    <View style={styles.sessionBadge2}>
+                      <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
+                    </View>
                     <Text style={styles.heroLine}>THE STATS SCREEN — TYPE THE FOUR NUMBERS.</Text>
                     <Text style={styles.heroSub}>
                       From your FC 26 screen, type possession %, pass accuracy %, total shots, and shots on target.
@@ -702,8 +760,15 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </Animated.View>
                 )}
 
-                {step === 'review' && (
+                {step === 'moments' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
+                    <View style={styles.sessionBadge2}>
+                      <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
+                    </View>
+                    <Text style={styles.heroLine}>TYPE THE MOMENTS YOU WROTE ON PAPER.</Text>
+                    <Text style={styles.heroSub}>
+                      You chose turning points during the match. Look at your paper and enter them here.
+                    </Text>
                     <Text style={styles.heroLine}>REVISIT THE TURNING POINT MOMENT.</Text>
                     <View style={styles.momentCard}>
                       <Text style={styles.qLabel}>NAME THE MOMENT (YOUR WORDS)</Text>
@@ -801,7 +866,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Pressable
                       onPress={() => {
                         sfx('whoosh');
-                        setStep('analysis');
+                        setStep('reflect');
                       }}
                       style={[styles.cta, moments.length === 0 && { opacity: 0.35 }]}
                     >
@@ -810,8 +875,15 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </Animated.View>
                 )}
 
-                {step === 'analysis' && (
+                {step === 'reflect' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
+                    <View style={styles.sessionBadge2}>
+                      <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
+                    </View>
+                    <Text style={styles.heroLine}>NOW TYPE WHAT YOU WROTE ABOUT EACH MOMENT.</Text>
+                    <Text style={styles.heroSub}>
+                      You wrote these on paper during your review. Enter your honest words here.
+                    </Text>
                     <Text style={styles.heroLine}>{first} WALKS YOU THROUGH THE MOMENTS.</Text>
                     {moments.map((m, mi) => (
                       <View key={m.id} style={styles.analysisBlock}>
@@ -839,7 +911,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Pressable
                       onPress={() => {
                         sfx('whoosh');
-                        setStep('dayq');
+                        setStep('checkin');
                       }}
                       style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}
                     >
@@ -848,8 +920,11 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                   </Animated.View>
                 )}
 
-                {step === 'dayq' && (
+                {step === 'checkin' && (
                   <Animated.View entering={FadeInUp.duration(300)}>
+                    <View style={styles.sessionBadge2}>
+                      <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
+                    </View>
                     <Text style={styles.heroLine}>FINAL CHECK-IN FOR MATCH {matchNumberForDay(session, day)}.</Text>
                     <View style={styles.questionCard}>
                       <Image source={coach.portrait} style={styles.beatFace} />
@@ -1107,6 +1182,173 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   heroSub: { marginTop: 8, fontSize: 12, lineHeight: 18, color: '#9db4a3' },
+
+  // ── Session badges ──
+  sessionBadge: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(57,255,106,0.15)',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 8,
+    ...glow('#39ff6a', 0.3, 12),
+  },
+  sessionBadgeTxt: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: colors.primary,
+  },
+  sessionBadge2: {
+    alignSelf: 'center',
+    backgroundColor: 'rgba(242,192,120,0.12)',
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 8,
+  },
+  sessionBadge2Txt: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: colors.accent,
+  },
+  sessionTitle: {
+    color: colors.fg,
+    fontFamily: displayFont,
+    fontSize: 26,
+    lineHeight: 28,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  sessionSub: {
+    color: '#9db4a3',
+    fontFamily: bodyFont,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 12,
+  },
+
+  // ── Briefing elements ──
+  penBox: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(242,192,120,0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(242,192,120,0.3)',
+    alignItems: 'flex-start',
+  },
+  penIcon: { fontSize: 28 },
+  penTitle: {
+    fontFamily: monoFont,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+    color: colors.accent,
+  },
+  penBody: {
+    fontFamily: bodyFont,
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#c4b896',
+    marginTop: 4,
+  },
+  briefSectionTitle: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: colors.primary,
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  briefChecklist: { gap: 6 },
+  briefCheckItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: 'rgba(10,20,14,0.5)',
+  },
+  briefCheck: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    borderWidth: 1.5,
+    borderColor: 'rgba(57,255,106,0.4)',
+    backgroundColor: 'transparent',
+  },
+  briefCheckTxt: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: '#c4d4c8',
+  },
+  briefTagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  briefTag: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.3)',
+    backgroundColor: 'rgba(10,20,14,0.6)',
+  },
+  briefTagTxt: {
+    fontFamily: monoFont,
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 1,
+    color: colors.primary,
+  },
+  briefNote: {
+    fontFamily: bodyFont,
+    fontSize: 11,
+    lineHeight: 16,
+    color: '#8fb89b',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  briefQuestionBox: {
+    marginTop: 8,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: 'rgba(10,20,14,0.6)',
+    borderWidth: 1,
+    borderColor: 'rgba(242,192,120,0.25)',
+  },
+  briefQuestionTxt: {
+    fontFamily: bodyFont,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.fg,
+    fontStyle: 'italic',
+  },
+  briefQuestionNote: {
+    fontFamily: monoFont,
+    fontSize: 8,
+    letterSpacing: 0.8,
+    color: '#8fb89b',
+    marginTop: 8,
+  },
   helpCard: {
     marginTop: 12,
     borderLeftWidth: 3,
