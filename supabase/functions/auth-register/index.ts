@@ -39,7 +39,7 @@ const mapAuthError = (msg: string): { code: string; status: number } => {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return json({}, 204);
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'method' }, 405);
 
   const sb = service();
@@ -122,7 +122,11 @@ Deno.serve(async (req) => {
   const { data: profile, error: perr } = await sb.from('profiles').insert(insert).select().single();
   if (perr) {
     // roll back auth user so they can retry cleanly
-    await sb.auth.admin.deleteUser(user.id).catch(() => {});
+    try {
+      await sb.auth.admin.deleteUser(user.id);
+    } catch (e) {
+      // ignore deletion errors
+    }
     if (String(perr.message).includes('SEASON_FULL')) {
       return json({ ok: false, error: 'SEASON_FULL', season, cap, taken: seats0?.taken ?? cap }, 409);
     }
