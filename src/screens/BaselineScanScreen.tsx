@@ -450,7 +450,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
         <Image
           source={MATCH_ART}
           resizeMode="cover"
-          style={[StyleSheet.absoluteFill, { opacity: 0.55 }]}
+          style={[StyleSheet.absoluteFill, { opacity: 0.78 }]}
         />
       </View>
       {/* Dark gradient overlay for readability */}
@@ -986,8 +986,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     // @ts-ignore — web gradient
-    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.45) 0%, rgba(5,10,6,0.72) 50%, rgba(5,10,6,0.92) 100%)',
-    backgroundColor: 'rgba(5,10,6,0.75)', // native fallback
+    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.32) 0%, rgba(5,10,6,0.55) 50%, rgba(5,10,6,0.85) 100%)',
+    backgroundColor: 'rgba(5,10,6,0.6)', // native fallback
   } as any,
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
@@ -996,16 +996,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     // Glassmorphism
     backgroundColor: 'rgba(10, 20, 14, 0.82)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(57, 255, 106, 0.35)',
+    borderWidth: 2,
+    borderColor: 'rgba(57, 255, 106, 0.45)',
     // Gamified glow
     ...glow('#39ff6a', 0.18, 28, 4),
     elevation: 12,
-    // Corner accent hint — top-left green strip
-    borderTopWidth: 2,
-    borderTopColor: colors.primary,
-    borderLeftWidth: 2,
-    borderLeftColor: 'rgba(57, 255, 106, 0.5)',
   },
 
   eyebrow: {
@@ -1312,13 +1307,11 @@ const styles = StyleSheet.create({
 
   analysisBlock: {
     marginTop: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(242,192,120,0.35)',
+    borderWidth: 2,
+    borderColor: 'rgba(242,192,120,0.4)',
     borderRadius: 12,
     backgroundColor: 'rgba(18,16,8,0.72)',
     padding: 16,
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(242,192,120,0.5)',
   },
   analysisHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   analysisHeadTxt: { color: colors.accent, fontFamily: monoFont, fontSize: 9, letterSpacing: 1.4, fontWeight: '800' },
@@ -1396,14 +1389,13 @@ const styles = StyleSheet.create({
 
   cardBox: {
     marginTop: 18,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderRadius: 16,
+    borderColor: 'rgba(57,255,106,0.4)',
     backgroundColor: 'rgba(10,20,14,0.78)',
     padding: 22,
     alignItems: 'center',
     ...glow('#39ff6a', 0.15, 24),
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(57,255,106,0.4)',
   },
   cardTier: { color: colors.accent, fontFamily: monoFont, fontSize: 22, fontWeight: '900', letterSpacing: 3 },
   cardHandle: { color: colors.fg, fontFamily: monoFont, fontSize: 16, letterSpacing: 1.6, marginTop: 8 },
