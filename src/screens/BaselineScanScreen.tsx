@@ -463,7 +463,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
         showsVerticalScrollIndicator={false}
         bounces={Platform.OS !== 'web'}
       >
-        <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
+        <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto', minHeight: scrollH ?? '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' } as any}>
           <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
             {phase === 'talk' && (
               <View style={styles.cardContainer}>
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.32) 0%, rgba(5,10,6,0.55) 50%, rgba(5,10,6,0.85) 100%)',
     backgroundColor: 'rgba(5,10,6,0.6)', // native fallback
   } as any,
-  scroll: { paddingVertical: 14, paddingBottom: 40 },
+  scroll: { paddingBottom: 40 },
 
   cardContainer: {
     padding: 26,
