@@ -63,6 +63,54 @@ const MIN_ANSWER = 12;
 type Phase = 'talk' | 'day' | 'ambition' | 'card';
 type DayStep = 'briefing' | 'score' | 'stats' | 'moments' | 'reflect' | 'checkin';
 
+const SESSION_STEPS: { key: DayStep; label: string; xp: number }[] = [
+  { key: 'score', label: 'SCORE', xp: 50 },
+  { key: 'stats', label: 'STATS', xp: 50 },
+  { key: 'moments', label: 'MOMENTS', xp: 75 },
+  { key: 'reflect', label: 'REFLECT', xp: 75 },
+  { key: 'checkin', label: 'CHECK-IN', xp: 100 },
+];
+const TOTAL_MATCH_XP = 350;
+
+function SessionProgress({ currentStep, xp }: { currentStep: DayStep; xp: number }) {
+  const currentIdx = SESSION_STEPS.findIndex((s) => s.key === currentStep);
+  return (
+    <View style={styles.progressWrap}>
+      {/* XP bar */}
+      <View style={styles.xpBar}>
+        <View style={styles.xpTrack}>
+          <View style={[styles.xpFill, { width: `${Math.min(100, (xp / TOTAL_MATCH_XP) * 100)}%` }]} />
+        </View>
+        <Text style={styles.xpText}>{xp} / {TOTAL_MATCH_XP} XP</Text>
+      </View>
+      {/* Step dots */}
+      <View style={styles.progressDots}>
+        {SESSION_STEPS.map((s, i) => {
+          const isDone = i < currentIdx;
+          const isCurrent = i === currentIdx;
+          return (
+            <React.Fragment key={s.key}>
+              {i > 0 && <View style={[styles.progressLine, isDone && styles.progressLineDone]} />}
+              <View style={[styles.progressNode, isDone && styles.progressNodeDone, isCurrent && styles.progressNodeCurrent]}>
+                <Text style={[styles.progressNodeTxt, (isDone || isCurrent) && styles.progressNodeTxtActive]}>
+                  {isDone ? '✓' : (i + 1).toString()}
+                </Text>
+              </View>
+            </React.Fragment>
+          );
+        })}
+      </View>
+      <View style={styles.progressLabels}>
+        {SESSION_STEPS.map((s, i) => (
+          <Text key={s.key} style={[styles.progressLabel, i === currentIdx && styles.progressLabelCurrent]}>
+            {s.label}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 interface DraftMoment {
   id: string;
   name: string;
@@ -108,7 +156,10 @@ function WeekStrip({ session }: { session: BaselineSession | null }) {
               : styles.dayPillTxtMuted;
         return (
           <View key={match} style={[styles.dayPill, pill]}>
-            <Text style={[styles.dayPillTxt, txt]}>MATCH {match}</Text>
+            <Text style={[styles.dayPillNum, txt]}>{match}</Text>
+            <Text style={[styles.dayPillTxt, txt]}>
+              {st === 'done' ? '✓' : 'MATCH'}
+            </Text>
           </View>
         );
       })}
@@ -199,6 +250,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   const [session, setSession] = useState<BaselineSession | null>(null);
   const [phase, setPhase] = useState<Phase>('talk');
   const [step, setStep] = useState<DayStep>('briefing');
+  const [matchXP, setMatchXP] = useState(0);
   const [notReady, setNotReady] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -366,6 +418,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       profilePicUri,
     });
     sealBaselineDay(day);
+    setMatchXP(0);
     setGf(0);
     setGa(0);
     setTouched(false);
@@ -413,11 +466,13 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
   };
   const logScore = () => {
     sfx('whoosh');
+    setMatchXP((x) => x + 50);
     setStep('stats');
   };
   const confirmStats = () => {
     if (!statsComplete) return;
     sfx('whoosh');
+    setMatchXP((x) => x + 50);
     setStep('moments');
   };
   const addMoment = () => {
@@ -640,6 +695,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <View style={styles.sessionBadge2}>
                       <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
                     </View>
+                    <SessionProgress currentStep={step} xp={matchXP} />
                     <Text style={styles.sessionTitle}>ENTER YOUR TRUTH</Text>
                     <Text style={styles.sessionSub}>
                       Full time. Look at your paper — now type what you wrote.
@@ -719,6 +775,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <View style={styles.sessionBadge2}>
                       <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
                     </View>
+                    <SessionProgress currentStep={step} xp={matchXP} />
                     <Text style={styles.heroLine}>THE STATS SCREEN — TYPE THE FOUR NUMBERS.</Text>
                     <Text style={styles.heroSub}>
                       From your FC 26 screen, type possession %, pass accuracy %, total shots, and shots on target.
@@ -765,6 +822,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <View style={styles.sessionBadge2}>
                       <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
                     </View>
+                    <SessionProgress currentStep={step} xp={matchXP} />
                     <Text style={styles.heroLine}>TYPE THE MOMENTS YOU WROTE ON PAPER.</Text>
                     <Text style={styles.heroSub}>
                       You chose turning points during the match. Look at your paper and enter them here.
@@ -866,6 +924,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Pressable
                       onPress={() => {
                         sfx('whoosh');
+                        setMatchXP((x) => x + 75);
                         setStep('reflect');
                       }}
                       style={[styles.cta, moments.length === 0 && { opacity: 0.35 }]}
@@ -880,6 +939,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <View style={styles.sessionBadge2}>
                       <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
                     </View>
+                    <SessionProgress currentStep={step} xp={matchXP} />
                     <Text style={styles.heroLine}>NOW TYPE WHAT YOU WROTE ABOUT EACH MOMENT.</Text>
                     <Text style={styles.heroSub}>
                       You wrote these on paper during your review. Enter your honest words here.
@@ -911,6 +971,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <Pressable
                       onPress={() => {
                         sfx('whoosh');
+                        setMatchXP((x) => x + 75);
                         setStep('checkin');
                       }}
                       style={[styles.cta, !allMomentsDone && { opacity: 0.35 }]}
@@ -925,6 +986,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
                     <View style={styles.sessionBadge2}>
                       <Text style={styles.sessionBadge2Txt}>SESSION 2</Text>
                     </View>
+                    <SessionProgress currentStep={step} xp={matchXP} />
                     <Text style={styles.heroLine}>FINAL CHECK-IN FOR MATCH {matchNumberForDay(session, day)}.</Text>
                     <View style={styles.questionCard}>
                       <Image source={coach.portrait} style={styles.beatFace} />
@@ -1168,7 +1230,8 @@ const styles = StyleSheet.create({
   dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary, ...glow('#39ff6a', 0.6, 14) },
   dayPillLocked: { backgroundColor: 'rgba(10,20,14,0.6)', borderColor: 'rgba(143,184,155,0.2)' },
   dayPillFuture: { backgroundColor: 'transparent', borderColor: 'rgba(143,184,155,0.12)' },
-  dayPillTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  dayPillNum: { fontFamily: displayFont, fontSize: 16, lineHeight: 18 },
+  dayPillTxt: { fontFamily: monoFont, fontSize: 7, fontWeight: '900', letterSpacing: 1 },
   dayPillTxtDone: { color: colors.primary },
   dayPillTxtNow: { color: '#0a0f0a' },
   dayPillTxtMuted: { color: 'rgba(143,184,155,0.45)' },
@@ -1348,6 +1411,101 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     color: '#8fb89b',
     marginTop: 8,
+  },
+
+  // ── Session progress bar ──
+  progressWrap: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  xpBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  xpTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(57,255,106,0.12)',
+    overflow: 'hidden',
+  },
+  xpFill: {
+    height: '100%',
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    // @ts-ignore web animation
+    transition: 'width 0.5s ease',
+  } as any,
+  xpText: {
+    fontFamily: monoFont,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: colors.primary,
+    minWidth: 80,
+    textAlign: 'right',
+  },
+  progressDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 0,
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: 'rgba(143,184,155,0.15)',
+  },
+  progressLineDone: {
+    backgroundColor: colors.primary,
+  },
+  progressNode: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'rgba(143,184,155,0.2)',
+    backgroundColor: 'rgba(10,20,14,0.8)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  progressNodeDone: {
+    borderColor: colors.primary,
+    backgroundColor: 'rgba(57,255,106,0.15)',
+  },
+  progressNodeCurrent: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+    ...glow('#39ff6a', 0.5, 12),
+  },
+  progressNodeTxt: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    fontWeight: '900',
+    color: 'rgba(143,184,155,0.4)',
+  },
+  progressNodeTxtActive: {
+    color: '#050a06',
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    paddingHorizontal: 2,
+  },
+  progressLabel: {
+    fontFamily: monoFont,
+    fontSize: 6,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: 'rgba(143,184,155,0.35)',
+    textAlign: 'center',
+    width: 48,
+  },
+  progressLabelCurrent: {
+    color: colors.primary,
   },
   helpCard: {
     marginTop: 12,
