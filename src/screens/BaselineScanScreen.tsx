@@ -46,6 +46,19 @@ import { trackFunnel } from '../data/funnel';
 import { colors, monoFont, displayFont, bodyFont, bodyFontHeavy, gradeColor } from '../theme';
 import { useResponsive } from '../hooks/useResponsive';
 
+// Gamified glow helper — uses CSS boxShadow on web (no deprecation warnings),
+// native shadow props on iOS/Android.
+const WEB = Platform.OS === 'web';
+function glow(color: string, opacity: number, radius: number, offsetY = 0): any {
+  if (WEB) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return { boxShadow: `0 ${offsetY}px ${radius}px rgba(${r},${g},${b},${opacity})` };
+  }
+  return { shadowColor: color, shadowOpacity: opacity, shadowRadius: radius, shadowOffset: { width: 0, height: offsetY } };
+}
+
 const MIN_ANSWER = 12;
 type Phase = 'talk' | 'day' | 'ambition' | 'card';
 type DayStep = 'start' | 'match' | 'stats' | 'review' | 'analysis' | 'dayq';
@@ -993,10 +1006,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(57, 255, 106, 0.35)',
     // Gamified glow
-    shadowColor: '#39ff6a',
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 4 },
+    ...glow('#39ff6a', 0.18, 28, 4),
     elevation: 12,
     // Corner accent hint — top-left green strip
     borderTopWidth: 2,
@@ -1063,10 +1073,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     // Gamified glow
-    shadowColor: '#39ff6a',
-    shadowOpacity: 0.5,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 0 },
+    ...glow('#39ff6a', 0.5, 18),
     elevation: 10,
     borderWidth: 1,
     borderColor: 'rgba(57,255,106,0.7)',
@@ -1088,8 +1095,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dayPillDone: { backgroundColor: 'rgba(57,255,106,0.12)', borderColor: 'rgba(57,255,106,0.5)', shadowColor: '#39ff6a', shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
-  dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: '#39ff6a', shadowOpacity: 0.6, shadowRadius: 14, shadowOffset: { width: 0, height: 0 } },
+  dayPillDone: { backgroundColor: 'rgba(57,255,106,0.12)', borderColor: 'rgba(57,255,106,0.5)', ...glow('#39ff6a', 0.25, 8) },
+  dayPillNow: { backgroundColor: colors.primary, borderColor: colors.primary, ...glow('#39ff6a', 0.6, 14) },
   dayPillLocked: { backgroundColor: 'rgba(10,20,14,0.6)', borderColor: 'rgba(143,184,155,0.2)' },
   dayPillFuture: { backgroundColor: 'transparent', borderColor: 'rgba(143,184,155,0.12)' },
   dayPillTxt: { fontFamily: monoFont, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
@@ -1144,10 +1151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     marginTop: 14,
     // HUD glow
-    shadowColor: '#39ff6a',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
+    ...glow('#39ff6a', 0.12, 20),
   },
   scoreSide: { alignItems: 'center' },
   scoreLabel: { color: colors.muted, fontFamily: monoFont, fontSize: 9, letterSpacing: 2, marginBottom: 8 },
@@ -1209,7 +1213,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     backgroundColor: 'rgba(10,20,14,0.7)',
   },
-  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.15)', shadowColor: '#39ff6a', shadowOpacity: 0.3, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } },
+  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(57,255,106,0.15)', ...glow('#39ff6a', 0.3, 10) },
   chipTxt: { color: colors.muted, fontFamily: monoFont, fontSize: 10, letterSpacing: 1 },
   chipTxtActive: { color: colors.primary },
 
@@ -1404,10 +1408,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,20,14,0.78)',
     padding: 22,
     alignItems: 'center',
-    shadowColor: '#39ff6a',
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 0 },
+    ...glow('#39ff6a', 0.15, 24),
     borderTopWidth: 2,
     borderTopColor: 'rgba(57,255,106,0.4)',
   },
