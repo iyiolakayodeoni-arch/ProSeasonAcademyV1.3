@@ -442,7 +442,7 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       />
       <ScrollView
         ref={scrollRef}
-        style={[{ flex: 1 }, scrollH != null && { height: scrollH }]}
+        style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
         bounces={Platform.OS !== 'web'}
