@@ -122,7 +122,11 @@ Deno.serve(async (req) => {
   const { data: profile, error: perr } = await sb.from('profiles').insert(insert).select().single();
   if (perr) {
     // roll back auth user so they can retry cleanly
-    await sb.auth.admin.deleteUser(user.id).catch(() => {});
+    try {
+      await sb.auth.admin.deleteUser(user.id);
+    } catch (e) {
+      // ignore deletion errors
+    }
     if (String(perr.message).includes('SEASON_FULL')) {
       return json({ ok: false, error: 'SEASON_FULL', season, cap, taken: seats0?.taken ?? cap }, 409);
     }
