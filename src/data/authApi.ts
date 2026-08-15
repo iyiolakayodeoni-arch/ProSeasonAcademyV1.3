@@ -88,6 +88,10 @@ export interface AuthFail {
 }
 
 async function invokeFn(name: string, body: Record<string, unknown>, authed = false): Promise<any> {
+  const url = `${PSA_SUPABASE_URL}/functions/v1/${name}`;
+  console.log('[authApi] Calling:', url);
+  console.log('[authApi] Body:', body);
+  
   const headers: Record<string, string> = {
     'content-type': 'application/json',
     apikey: PSA_SUPABASE_ANON_KEY,
@@ -99,21 +103,25 @@ async function invokeFn(name: string, body: Record<string, unknown>, authed = fa
     headers.authorization = `Bearer ${PSA_SUPABASE_ANON_KEY}`;
   }
 
+  console.log('[authApi] Headers:', headers);
+
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), REQUEST_TIMEOUT_MS);
     let res: Response;
     try {
-      res = await fetch(`${PSA_SUPABASE_URL}/functions/v1/${name}`, {
+      res = await fetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
         signal: ctl.signal,
       });
+      console.log('[authApi] Response status:', res.status);
     } finally {
       clearTimeout(timer);
     }
     const j = await res.json().catch(() => null);
+    console.log('[authApi] Response body:', j);
     if (!j) return { ok: false, error: res.ok ? 'UNKNOWN' : 'NETWORK_ERROR' };
     return j;
   } catch (err) {
