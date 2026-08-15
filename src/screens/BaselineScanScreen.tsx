@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, Image, Alert, Platform, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import RotatingArtImage from '../components/RotatingArtImage';
 import CoachPresence from '../components/CoachPresence';
 const BOOTS = require('../../assets/art/scan-boots.jpg');
 const TUNNEL = require('../../assets/art/journey-tunnel.jpg');
@@ -446,14 +445,16 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
   return (
     <View style={styles.root}>
-      {/* ── Full-bleed background image (rotating plates) ── */}
-      <RotatingArtImage
-        sources={[BOOTS, MATCH_ART, TUNNEL, DRILL]}
-        style={[styles.bgImage, { width: winW, height: winH }]}
-        resizeMode="cover"
-      />
+      {/* ── Full-bleed background image ── */}
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <Image
+          source={MATCH_ART}
+          resizeMode="cover"
+          style={[StyleSheet.absoluteFill, { opacity: 0.55 }]}
+        />
+      </View>
       {/* Dark gradient overlay for readability */}
-      <View style={styles.bgOverlay} pointerEvents="none" />
+      <View pointerEvents="none" style={styles.bgOverlay} />
 
       <ScrollView
         ref={scrollRef}
@@ -978,14 +979,6 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
-  bgImage: {
-    position: 'absolute' as const,
-    top: 0,
-    left: 0,
-    width: 0,   // set dynamically via style prop
-    height: 0,  // set dynamically via style prop
-    opacity: 0.45,
-  },
   bgOverlay: {
     position: 'absolute',
     top: 0,
@@ -993,8 +986,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     // @ts-ignore — web gradient
-    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.55) 0%, rgba(5,10,6,0.82) 40%, rgba(5,10,6,0.95) 100%)',
-    backgroundColor: 'rgba(5,10,6,0.88)', // native fallback
+    backgroundImage: 'linear-gradient(180deg, rgba(5,10,6,0.45) 0%, rgba(5,10,6,0.72) 50%, rgba(5,10,6,0.92) 100%)',
+    backgroundColor: 'rgba(5,10,6,0.75)', // native fallback
   } as any,
   scroll: { paddingVertical: 14, paddingBottom: 40 },
 
