@@ -459,11 +459,11 @@ export default function BaselineScanScreen({ coach, onDone }: { coach: Coach; on
       <ScrollView
         ref={scrollRef}
         style={scrollH != null ? { flexShrink: 1, height: scrollH } : { flex: 1 }}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { minHeight: scrollH, justifyContent: 'center' }]}
         showsVerticalScrollIndicator={false}
         bounces={Platform.OS !== 'web'}
       >
-        <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto', minHeight: scrollH ?? '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' } as any}>
+        <div className="psa-web-container" style={{ width: '100%', maxWidth: 1000, margin: '0 auto' }}>
           <Animated.View key={phase + day} entering={FadeIn.duration(280)}>
             {phase === 'talk' && (
               <View style={styles.cardContainer}>
