@@ -79,7 +79,11 @@ type Route = 'landing' | 'signin' | 'coach' | 'scan' | 'hub';
 
 export default function App() {
   // phase-state routing for now — React Navigation lands with the tab bar build
-  const [route, setRoute] = useState<Route>('signin');
+  const [route, setRoute] = useState<Route>('landing');
+  // On web, every fresh page load starts at the public homepage. Keep the
+  // authenticated destination separately so "Enter the academy" can resume a
+  // returning player without making them sign in again.
+  const [entryRoute, setEntryRoute] = useState<Route>('signin');
   const [coachId, setCoachId] = useState<string | null>(null);
   const [splashGone, setSplashGone] = useState(false);
   /** false until the saved session has been read off the disk */
@@ -101,9 +105,9 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // ── RESTORE: pick up exactly where this player left off ──
-  // Runs while the splash is still on screen, so a returning
-  // player never sees the sign-in door or re-sits the baseline.
+  // ── RESTORE: remember where this player left off ──
+  // Runs while the splash is still on screen. Native resumes that saved
+  // destination immediately; web keeps it ready behind the homepage CTA.
   // EVERY step is fail-soft: a dead network, corrupt storage or a
   // bad server reply must never strand or take down the whole app —
   // boot always lands on a real screen.
@@ -135,10 +139,19 @@ export default function App() {
       // the user to skip the sign-in door. The local `signedIn` boolean alone
       // is no longer sufficient — this removes the local-only fallback path.
       const signedIn = !!cloud;
-      if (!signedIn) setRoute('landing');
-      else if (!s.coachId) setRoute('coach');
-      else if (!s.baselineDone) setRoute('scan');
-      else setRoute('hub');
+      const destination: Route = !signedIn
+        ? 'signin'
+        : !s.coachId
+          ? 'coach'
+          : !s.baselineDone
+            ? 'scan'
+            : 'hub';
+
+      setEntryRoute(destination);
+      // `npm start` launches the web build. Always show that build's public
+      // homepage first instead of dropping a restored session directly into
+      // the main app. Native launches continue to resume where the player left.
+      setRoute(Platform.OS === 'web' ? 'landing' : destination);
       setRestored(true);
     })().catch(() => {
       // absolute last resort — land on the public door, never a dead screen
@@ -224,9 +237,13 @@ export default function App() {
     markSignedIn();
     const s = getSession();
     // a returning player who already locked in skips straight to his floor
-    if (s.coachId && s.baselineDone) setRoute('hub');
-    else if (s.coachId) setRoute('scan');
-    else setRoute('coach');
+    const destination: Route = s.coachId && s.baselineDone
+      ? 'hub'
+      : s.coachId
+        ? 'scan'
+        : 'coach';
+    setEntryRoute(destination);
+    setRoute(destination);
   }, []);
 
   /** coach lock is PERMANENT — from here onboarding only moves forward */
@@ -249,6 +266,7 @@ export default function App() {
     // the ledger and the coach lock survive — only the floor is left
     void signOutRemote();
     endSession();
+    setEntryRoute('signin');
     setRoute('landing');
   }, []);
 
@@ -265,7 +283,7 @@ export default function App() {
           <Animated.View style={[styles.fill, appStyle]} pointerEvents={splashGone ? 'auto' : 'none'}>
             {restored && (
               <>
-                {route === 'landing' && <LandingScreen onEnter={() => setRoute('signin')} />}
+                {route === 'landing' && <LandingScreen onEnter={() => setRoute(entryRoute)} />}
                 {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
                 {route === 'coach' && (
                   <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
