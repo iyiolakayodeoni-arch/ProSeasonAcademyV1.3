@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
   },
   heroArt: {
     marginTop: 0,
-    height: 420,
+    height: 460,
     borderRadius: 20,
     overflow: 'hidden',
     alignItems: 'center',
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
   },
   heroArtWide: {
     flex: 1,
-    height: 500,
+    height: 540,
     minWidth: 320,
   },
   marqueeTxt: {

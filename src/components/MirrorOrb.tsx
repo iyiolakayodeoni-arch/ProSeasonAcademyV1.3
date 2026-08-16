@@ -12,32 +12,33 @@ import Animated, {
   FadeInDown,
   SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Path, Circle } from 'react-native-svg';
+import Svg, { Path, Circle, Polygon, Line } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTrailLoop } from '../hooks/useTrailLoop';
-import { colors, monoFont, displayFont } from '../theme';
+import { colors, monoFont, displayFont, bodyFontBold } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE MIRROR IN THE LOOP — hero visual v2.
+// THE MIRROR IN THE LOOP — hero visual v4.
 //
-// The redesign of the hero art: instead of the flat review panel, a chrome
-// mirror sphere floats at the crossing point of a living infinity loop —
-// the whole idea of the academy in one object. Inside the sphere: the
-// player's reflection, a FIFA-style stat radar, a LIVE REVIEW badge and a
-// moment ticker. Around it: floating stat chips that keep counting, a comet
-// that travels the loop forever, and a pinned promise: NO STOP DATE.
+// Rebuilt to match the approved design image (mockups/hero-v2/hero-redesign.png):
 //
-// The loop trail draws itself in and out via useTrailLoop (same living
-// stroke as the crest); the comet rides a true Bernoulli lemniscate; the
-// sphere bobs, the radar sweeps, and on web the whole stage leans toward
-// the cursor. Serious idea, dopamine delivery.
+//   · a big chrome mirror sphere, centre-right — inside it: a FIFA-style
+//     hexagon radar, a small scoreboard strip (YOU 2–1 ELITE), the player's
+//     reflection, a LIVE REVIEW badge, moment markers and a moment ticker
+//   · the sphere sits at the crossing of a thick, glowing infinity loop —
+//     base halo + living trail + a comet that travels the lemniscate forever
+//   · three floating stat chips around it — COMPOSURE, PASS ACC, MOMENTS —
+//     with mini bars that keep moving
+//   · the promise pinned underneath: ∞ NO STOP DATE · INFINITE LEARNING
+//
+// Same serious idea. Game-grade look. The loop never ends.
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
 
 // lemniscate geometry (viewBox 0 0 400 200, crossing at 200,100)
-const LOOP_A = 80; // half-width of a lobe
-const LOOP_H = 60; // half-height of a lobe
+const LOOP_A = 80;
+const LOOP_H = 60;
 const LOOP_D =
   'M200 100 C200 40 120 40 120 100 C120 160 200 160 200 100 C200 160 280 160 280 100 C280 40 200 40 200 100 Z';
 const LOOP_PATH_LENGTH = 260;
@@ -49,17 +50,42 @@ const MOMENTS = [
   { clock: "1:58", txt: 'ONE LESSON — CARRY IT INTO THE NEXT MATCH' },
 ];
 
+const MOMENT_MARKERS = [12, 47, 80, 100]; // timeline % positions
+
+// hexagon radar — six attributes, the way a FUT card reads
+const HEX_VALS = [71, 84, 63, 58, 76, 45]; // composure, passing, decisions, positioning, pressing, finishing
+
+// the three floating chips (as in the approved image)
 const CHIPS = [
-  { label: 'COMPOSURE', base: 71, suffix: '%', range: [64, 88] },
-  { label: 'PASS ACC', base: 84, suffix: '%', range: [78, 92] },
-  { label: 'DECISIONS', base: 12, suffix: '', range: [9, 16] },
-  { label: 'MOMENTS', base: 3, suffix: '', range: [3, 5], pad: true },
+  { label: 'COMPOSURE', base: 71, suffix: '%', lo: 64, hi: 88 },
+  { label: 'PASS ACC', base: 84, suffix: '%', lo: 78, hi: 92 },
+  { label: 'MOMENTS', base: 3, suffix: '', lo: 3, hi: 5 },
 ];
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/* ── floating stat chip — pulses whenever its number moves ── */
+/* hexagon helpers (viewBox 240) */
+function ringPts(R: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const a = ((-90 + i * 60) * Math.PI) / 180;
+    pts.push(`${(120 + R * Math.cos(a)).toFixed(1)},${(120 + R * Math.sin(a)).toFixed(1)}`);
+  }
+  return pts.join(' ');
+}
+function hexPts(vals: number[], R: number): string {
+  const pts: string[] = [];
+  vals.forEach((v, i) => {
+    const a = ((-90 + i * 60) * Math.PI) / 180;
+    const r = (v / 100) * R;
+    pts.push(`${(120 + r * Math.cos(a)).toFixed(1)},${(120 + r * Math.sin(a)).toFixed(1)}`);
+  });
+  return pts.join(' ');
+}
+const AXIS_PTS = ringPts(99).split(' ').map((p) => p.split(',').map(Number));
+
+/* ── floating stat chip with a mini bar ── */
 function StatChip({
   label,
   value,
@@ -76,13 +102,24 @@ function StatChip({
   scale: number;
 }) {
   const s = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
+  const bar = useSharedValue(0);
+  useEffect(() => {
+    bar.value = withTiming(value, { duration: 900, easing: Easing.out(Easing.cubic) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+  const barStyle = useAnimatedStyle(() => ({ width: `${Math.min(96, Math.max(22, bar.value))}%` }));
   return (
     <Animated.View style={[styles.chip, style, s]}>
-      <Text style={[styles.chipLabel, { fontSize: 9 * scale }]}>{label}</Text>
-      <Text style={[styles.chipValue, { fontSize: 20 * scale }]}>
-        {value}
-        {suffix}
-      </Text>
+      <View style={styles.chipTop}>
+        <Text style={[styles.chipLabel, { fontSize: 8 * scale }]}>{label}</Text>
+        <Text style={[styles.chipValue, { fontSize: 19 * scale }]}>
+          {value}
+          {suffix}
+        </Text>
+      </View>
+      <View style={[styles.chipTrack, { height: 3 * scale }]}>
+        <Animated.View style={[styles.chipFill, barStyle]} />
+      </View>
     </Animated.View>
   );
 }
@@ -90,7 +127,7 @@ function StatChip({
 export default function MirrorOrb({ width = 380 }: { width?: number }) {
   const w = width;
   const s = Math.min(1.25, Math.max(0.78, w / 380));
-  const D = w * 0.6; // sphere diameter
+  const D = w * 0.62; // sphere diameter
 
   // ── the loop trail (draw in, erase out, forever) ──
   const { loopProps } = useTrailLoop({ pathLength: LOOP_PATH_LENGTH, drawMs: 2600, eraseMs: 2600 });
@@ -129,30 +166,31 @@ export default function MirrorOrb({ width = 380 }: { width?: number }) {
   }));
   const bobStyle = useAnimatedStyle(() => ({ transform: [{ translateY: bob.value }] }));
 
-  // ── radar sweep + specular sweep ──
+  // ── radar sweep + specular sweep + live dot blink ──
   const sweep = useSharedValue(0);
   const spec = useSharedValue(0);
+  const liveDot = useSharedValue(1);
   useEffect(() => {
     sweep.value = withRepeat(withTiming(360, { duration: 7000, easing: Easing.linear }), -1, false);
     spec.value = withRepeat(withTiming(360, { duration: 13000, easing: Easing.linear }), -1, false);
-  }, [sweep, spec]);
+    liveDot.value = withRepeat(withSequence(withTiming(0.3, { duration: 600 }), withTiming(1, { duration: 600 })), -1, true);
+  }, [sweep, spec, liveDot]);
   const sweepStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${sweep.value}deg` }] }));
   const specStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${spec.value}deg` }] }));
+  const liveDotStyle = useAnimatedStyle(() => ({ opacity: liveDot.value }));
 
-  // ── stat chips keep counting ──
+  // ── chips keep counting (the dopamine layer) ──
   const [chipVals, setChipVals] = useState<number[]>(CHIPS.map((c) => c.base));
   const p0 = useSharedValue(1);
   const p1 = useSharedValue(1);
   const p2 = useSharedValue(1);
-  const p3 = useSharedValue(1);
-  const pulses = [p0, p1, p2, p3];
+  const pulses = [p0, p1, p2];
   useEffect(() => {
     const iv = setInterval(() => {
       setChipVals((cur) =>
         cur.map((v, i) => {
-          const [lo, hi] = CHIPS[i].range;
-          const next = Math.round(v + (Math.random() - 0.45) * (hi - lo) * 0.6);
-          return Math.min(hi, Math.max(lo, next));
+          const next = Math.round(v + (Math.random() - 0.45) * (CHIPS[i].hi - CHIPS[i].lo) * 0.6);
+          return Math.min(CHIPS[i].hi, Math.max(CHIPS[i].lo, next));
         }),
       );
       pulses.forEach((p) => {
@@ -195,88 +233,109 @@ export default function MirrorOrb({ width = 380 }: { width?: number }) {
     <View
       ref={rigRef}
       {...(WEB ? { onMouseMove: onWebMouseMove, onMouseLeave: onWebMouseLeave } : {})}
-      style={[styles.rig, { width: w, height: w * 1.04 }]}
+      style={[styles.rig, { width: w, height: w * 1.1 }]}
     >
-      {/* ── the infinity loop — two lobes around the crossing ── */}
-      <View style={[styles.loop, { width: w * 0.98, height: w * 0.49, top: w * 0.09, left: w * 0.01 }]}>
+      {/* ── the infinity loop — thick, glowing, wrapping the sphere ── */}
+      <View style={[styles.loop, { width: w * 1.02, height: w * 0.51, top: w * 0.1, left: -w * 0.01 }]}>
         <Svg width="100%" height="100%" viewBox="0 0 400 200">
-          {/* faint base — the loop is always there */}
-          <Path d={LOOP_D} fill="none" stroke="rgba(57,255,106,0.22)" strokeWidth={3} strokeLinecap="round" {...({ pathLength: LOOP_PATH_LENGTH } as object)} />
+          {/* soft halo — makes the loop read as a lit sign */}
+          <Path d={LOOP_D} fill="none" stroke="rgba(57,255,106,0.14)" strokeWidth={13} strokeLinecap="round" {...({ pathLength: LOOP_PATH_LENGTH } as object)} />
+          {/* base line — always faintly visible */}
+          <Path d={LOOP_D} fill="none" stroke="rgba(57,255,106,0.32)" strokeWidth={5} strokeLinecap="round" {...({ pathLength: LOOP_PATH_LENGTH } as object)} />
           {/* the living trail — draws in and out, forever */}
           <AnimatedPath
             animatedProps={loopProps}
             d={LOOP_D}
             fill="none"
             stroke={colors.primary}
-            strokeWidth={4}
+            strokeWidth={5}
             strokeLinecap="round"
             {...({ pathLength: LOOP_PATH_LENGTH } as object)}
           />
           {/* the comet — never stops travelling the loop */}
-          <AnimatedCircle animatedProps={cometProps} r={12} fill="rgba(57,255,106,0.22)" />
-          <AnimatedCircle animatedProps={cometProps} r={5.5} fill={colors.primary} />
+          <AnimatedCircle animatedProps={cometProps} r={14} fill="rgba(57,255,106,0.25)" />
+          <AnimatedCircle animatedProps={cometProps} r={6} fill={colors.primary} />
         </Svg>
       </View>
 
       {/* ── the 3D stage ── */}
-      <Animated.View style={[styles.stage, stageStyle, { width: w, height: w * 0.64, top: w * 0.02 }]}>
+      <Animated.View style={[styles.stage, stageStyle, { width: w, height: w * 0.68, top: w * 0.08 }]}>
         <Animated.View style={[styles.sphereWrap, bobStyle]}>
           <View style={[styles.sphere, { width: D, height: D, borderRadius: D / 2 }]}>
-            {/* chrome shading */}
+            {/* chrome base */}
             <LinearGradient
               style={StyleSheet.absoluteFill}
-              colors={['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.05)', 'rgba(10,22,13,0.2)']}
-              start={{ x: 0.15, y: 0.05 }}
-              end={{ x: 0.85, y: 0.95 }}
+              colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0.07)', 'rgba(10,22,13,0.28)']}
+              start={{ x: 0.12, y: 0.02 }}
+              end={{ x: 0.88, y: 0.98 }}
             />
             <LinearGradient
               style={StyleSheet.absoluteFill}
-              colors={['transparent', 'rgba(0,0,0,0.88)']}
-              start={{ x: 0.5, y: 0.42 }}
+              colors={['transparent', 'rgba(0,0,0,0.9)']}
+              start={{ x: 0.5, y: 0.4 }}
               end={{ x: 0.5, y: 1 }}
             />
             <LinearGradient
               style={StyleSheet.absoluteFill}
-              colors={['rgba(57,255,106,0.10)', 'transparent']}
+              colors={['rgba(57,255,106,0.12)', 'transparent']}
               start={{ x: 0, y: 1 }}
               end={{ x: 1, y: 0 }}
             />
 
-            {/* specular sweep */}
-            <Animated.View style={[styles.sweep, sweepStyle]}>
+            {/* specular glint — the console reflection */}
+            <View style={styles.specGlint} />
+
+            {/* curved pitch reflection — a stadium bowl inside the sphere */}
+            <Svg style={StyleSheet.absoluteFill} viewBox="0 0 240 240">
+              <Path d="M30 186 Q120 136 210 186" stroke="rgba(255,255,255,0.09)" strokeWidth={2} fill="none" />
+              <Path d="M22 202 Q120 148 218 202" stroke="rgba(57,255,106,0.08)" strokeWidth={2} fill="none" />
+              <Path d="M38 218 Q120 172 202 218" stroke="rgba(255,255,255,0.06)" strokeWidth={1.5} fill="none" />
+            </Svg>
+
+            {/* rotating specular cone */}
+            <Animated.View style={[styles.sweep, specStyle]}>
               <Svg width="100%" height="100%" viewBox="0 0 240 240">
-                <Path
-                  d="M120 120 L120 18 A102 102 0 0 1 205 74 Z"
-                  fill="rgba(255,255,255,0.07)"
-                />
-                <Path
-                  d="M120 120 L120 18 A102 102 0 0 1 205 74 Z"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.30)"
-                  strokeWidth={1.5}
-                />
+                <Path d="M120 120 L120 18 A102 102 0 0 1 205 74 Z" fill="rgba(255,255,255,0.07)" />
+                <Path d="M120 120 L120 18 A102 102 0 0 1 205 74 Z" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />
               </Svg>
             </Animated.View>
 
-            {/* FIFA post-match radar */}
-            <View style={styles.radarWrap}>
+            {/* small scoreboard strip — inside the sphere, as in the image */}
+            <View style={[styles.miniBoard, { top: D * 0.03 }]}>
+              <Text style={[styles.miniBoardTeam, { fontSize: 8 * s }]}>YOU</Text>
+              <View style={styles.miniBoardCenter}>
+                <Text style={[styles.miniBoardScore, { fontSize: 13 * s }]}>2 – 1</Text>
+                <Text style={[styles.miniBoardClock, { fontSize: 7 * s }]}>90'</Text>
+              </View>
+              <Text style={[styles.miniBoardTeam, styles.miniBoardTeamRight, { fontSize: 8 * s }]}>ELITE</Text>
+            </View>
+
+            {/* FIFA-style hexagon radar */}
+            <View style={[styles.radarWrap, { top: D * 0.115 }]}>
               <Svg width="100%" height="100%" viewBox="0 0 240 240">
-                <Circle cx={120} cy={120} r={112} fill="none" stroke="rgba(57,255,106,0.16)" strokeWidth={1} />
-                <Circle cx={120} cy={120} r={78} fill="none" stroke="rgba(57,255,106,0.16)" strokeWidth={1} />
-                <Circle cx={120} cy={120} r={44} fill="none" stroke="rgba(57,255,106,0.16)" strokeWidth={1} />
-                {/* four stat petals — composure, pass acc, decisions, positioning */}
-                <Path d="M120 120 L120 26" {...({ pathLength: 100 } as object)} strokeDasharray="71 100" stroke={colors.primary} strokeWidth={7} strokeLinecap="round" fill="none" />
-                <Path d="M120 120 L218 120" {...({ pathLength: 100 } as object)} strokeDasharray="84 100" stroke={colors.primary} strokeWidth={7} strokeLinecap="round" fill="none" />
-                <Path d="M120 120 L120 214" {...({ pathLength: 100 } as object)} strokeDasharray="63 100" stroke={colors.primary} strokeWidth={7} strokeLinecap="round" fill="none" />
-                <Path d="M120 120 L22 120" {...({ pathLength: 100 } as object)} strokeDasharray="58 100" stroke={colors.primary} strokeWidth={7} strokeLinecap="round" fill="none" />
-                <Circle cx={120} cy={26} r={4} fill={colors.primary} />
-                <Circle cx={218} cy={120} r={4} fill={colors.primary} />
-                <Circle cx={120} cy={214} r={4} fill={colors.primary} />
-                <Circle cx={22} cy={120} r={4} fill={colors.primary} />
+                <Polygon points={ringPts(33)} fill="none" stroke="rgba(57,255,106,0.13)" strokeWidth={1} />
+                <Polygon points={ringPts(66)} fill="none" stroke="rgba(57,255,106,0.13)" strokeWidth={1} />
+                <Polygon points={ringPts(99)} fill="none" stroke="rgba(57,255,106,0.16)" strokeWidth={1} />
+                {AXIS_PTS.map(([x, y], i) => (
+                  <Line key={i} x1={120} y1={120} x2={x} y2={y} stroke="rgba(57,255,106,0.12)" strokeWidth={1} />
+                ))}
+                <Polygon
+                  points={hexPts(HEX_VALS, 99)}
+                  fill="rgba(57,255,106,0.16)"
+                  stroke={colors.primary}
+                  strokeWidth={1.8}
+                  strokeLinejoin="round"
+                />
+                {hexPts(HEX_VALS, 99)
+                  .split(' ')
+                  .map((p, i) => {
+                    const [x, y] = p.split(',').map(Number);
+                    return <Circle key={i} cx={x} cy={y} r={3.2} fill={colors.primary} />;
+                  })}
               </Svg>
             </View>
 
-            {/* rotating scan sweep inside the radar */}
+            {/* rotating scan sweep */}
             <Animated.View style={[styles.sweep, sweepStyle, styles.radarSweep]}>
               <Svg width="100%" height="100%" viewBox="0 0 240 240">
                 <Path d="M120 120 L120 20 A100 100 0 0 1 204 79 Z" fill="rgba(57,255,106,0.09)" />
@@ -285,24 +344,32 @@ export default function MirrorOrb({ width = 380 }: { width?: number }) {
 
             {/* the reflection — you */}
             <View style={styles.reflectionWrap}>
-              <Svg width={D * 0.24} height={D * 0.3} viewBox="0 0 84 110" fill="none">
+              <Svg width={D * 0.2} height={D * 0.26} viewBox="0 0 84 110" fill="none">
                 <Circle cx={42} cy={22} r={15} fill="rgba(57,255,106,0.9)" />
                 <Path d="M14 104 C14 72 26 52 42 52 C58 52 70 72 70 104 Z" fill="rgba(57,255,106,0.6)" />
                 <Path d="M30 70 L14 96 M54 70 L70 96 M42 62 L42 84" stroke="rgba(57,255,106,0.8)" strokeWidth={5} strokeLinecap="round" />
               </Svg>
-              <Text style={[styles.reflectionYou, { fontSize: 9 * s }]}>YOU</Text>
+              <Text style={[styles.reflectionYou, { fontSize: 8.5 * s }]}>YOU</Text>
             </View>
 
             {/* live badge */}
-            <View style={[styles.liveBadge, { top: D * 0.05 }]}>
+            <View style={[styles.liveBadge, { top: D * 0.03 }]}>
               <View style={styles.liveDot} />
-              <Text style={[styles.liveTxt, { fontSize: 8.5 * s }]}>LIVE REVIEW</Text>
+              <Text style={[styles.liveTxt, { fontSize: 8 * s }]}>LIVE REVIEW</Text>
             </View>
 
-            {/* moment ticker */}
+            {/* moment markers row */}
+            <View style={[styles.markerRow, { bottom: D * 0.125, width: D * 0.64 }]}>
+              <View style={styles.markerBar} />
+              {MOMENT_MARKERS.map((m, i) => (
+                <View key={i} style={[styles.markerDot, { left: `${m}%` }]} />
+              ))}
+            </View>
+
+            {/* moment lower-third */}
             <View style={[styles.ticker, { bottom: D * 0.045 }]}>
               <Animated.View key={mi} entering={FadeInDown.duration(280)}>
-                <Text numberOfLines={1} style={[styles.tickerTxt, { fontSize: 8.5 * s }]}>
+                <Text numberOfLines={1} style={[styles.tickerTxt, { fontSize: 8 * s }]}>
                   <Text style={styles.tickerClock}>MOMENT {MOMENTS[mi].clock}</Text>
                   {'  ·  '}
                   {MOMENTS[mi].txt}
@@ -313,16 +380,15 @@ export default function MirrorOrb({ width = 380 }: { width?: number }) {
         </Animated.View>
       </Animated.View>
 
-      {/* ── floating stat chips (the dopamine layer) ── */}
-      <StatChip label={CHIPS[0].label} value={chipVals[0]} suffix={CHIPS[0].suffix} pulse={p0} scale={s} style={[styles.chipPos, { top: w * 0.06, left: -w * 0.02 }]} />
-      <StatChip label={CHIPS[1].label} value={chipVals[1]} suffix={CHIPS[1].suffix} pulse={p1} scale={s} style={[styles.chipPos, styles.chipTiltR, { top: w * 0.33, right: -w * 0.05 }]} />
-      <StatChip label={CHIPS[2].label} value={chipVals[2]} suffix={CHIPS[2].suffix} pulse={p2} scale={s} style={[styles.chipPos, styles.chipTiltL, { top: w * 0.56, left: -w * 0.07 }]} />
-      <StatChip label={CHIPS[3].label} value={chipVals[3]} suffix={CHIPS[3].suffix} pulse={p3} scale={s} style={[styles.chipPos, styles.chipTiltR, { top: w * 0.72, right: -w * 0.03 }]} />
+      {/* ── the three floating chips (as in the approved image) ── */}
+      <StatChip label={CHIPS[0].label} value={chipVals[0]} suffix={CHIPS[0].suffix} pulse={p0} scale={s} style={[styles.chipPos, styles.chipTiltL, { top: w * 0.1, left: -w * 0.04 }]} />
+      <StatChip label={CHIPS[1].label} value={chipVals[1]} suffix={CHIPS[1].suffix} pulse={p1} scale={s} style={[styles.chipPos, styles.chipTiltR, { top: w * 0.44, right: -w * 0.08 }]} />
+      <StatChip label={CHIPS[2].label} value={chipVals[2]} suffix={CHIPS[2].suffix} pulse={p2} scale={s} style={[styles.chipPos, styles.chipTiltL, { top: w * 0.72, left: -w * 0.05 }]} />
 
-      {/* ── the promise pinned under the loop ── */}
+      {/* ── the promise pinned under the sphere ── */}
       <View style={[styles.noEnd, { bottom: w * 0.005 }]}>
-        <Text style={[styles.noEndInf, { fontSize: 15 * s }]}>∞</Text>
-        <Text style={[styles.noEndTxt, { fontSize: 9.5 * s }]}>NO STOP DATE · THE LEARNING IS INFINITE</Text>
+        <Text style={[styles.noEndInf, { fontSize: 16 * s }]}>∞</Text>
+        <Text style={[styles.noEndTxt, { fontSize: 9.5 * s }]}>NO STOP DATE · INFINITE LEARNING</Text>
       </View>
     </View>
   );
@@ -332,9 +398,11 @@ const styles = StyleSheet.create({
   rig: {
     position: 'relative',
   },
+  /* ── loop ── */
   loop: {
     position: 'absolute',
   },
+  /* ── stage + sphere ── */
   stage: {
     position: 'absolute',
     alignItems: 'center',
@@ -348,12 +416,22 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#0a130d',
     borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.25)',
+    borderColor: 'rgba(57,255,106,0.32)',
     shadowColor: '#000',
     shadowOpacity: 0.7,
     shadowRadius: 34,
     shadowOffset: { width: 0, height: 18 },
     elevation: 16,
+  },
+  specGlint: {
+    position: 'absolute',
+    top: '5%',
+    left: '9%',
+    width: '36%',
+    height: '20%',
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    transform: [{ rotate: '-18deg' }],
   },
   sweep: {
     position: 'absolute',
@@ -362,17 +440,51 @@ const styles = StyleSheet.create({
   },
   radarWrap: {
     position: 'absolute',
-    width: '74%',
-    height: '74%',
+    width: '72%',
+    height: '72%',
     alignSelf: 'center',
-    top: '13%',
   },
   radarSweep: {
     opacity: 0.9,
   },
+  miniBoard: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '70%',
+    backgroundColor: 'rgba(5,10,6,0.55)',
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: 7,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  miniBoardTeam: {
+    fontFamily: bodyFontBold,
+    letterSpacing: 1.2,
+    color: colors.fg,
+  },
+  miniBoardTeamRight: {
+    textAlign: 'right',
+  },
+  miniBoardCenter: {
+    alignItems: 'center',
+  },
+  miniBoardScore: {
+    fontFamily: displayFont,
+    color: colors.fg,
+    lineHeight: 16,
+  },
+  miniBoardClock: {
+    fontFamily: monoFont,
+    letterSpacing: 1.4,
+    color: colors.muted,
+  },
   reflectionWrap: {
     position: 'absolute',
-    top: '18%',
+    top: '21%',
     alignItems: 'center',
     gap: 2,
   },
@@ -392,8 +504,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderRadius: 999,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
   },
   liveDot: {
     width: 5,
@@ -403,40 +515,61 @@ const styles = StyleSheet.create({
   },
   liveTxt: {
     fontFamily: monoFont,
-    letterSpacing: 2.2,
+    letterSpacing: 2,
     color: colors.primary,
+  },
+  markerRow: {
+    position: 'absolute',
+    alignSelf: 'center',
+    height: 8,
+  },
+  markerBar: {
+    position: 'absolute',
+    top: 3,
+    left: 0,
+    right: 0,
+    height: 1.5,
+    backgroundColor: 'rgba(57,255,106,0.25)',
+  },
+  markerDot: {
+    position: 'absolute',
+    top: 0,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: '#03140a',
   },
   ticker: {
     position: 'absolute',
     alignSelf: 'center',
-    width: '86%',
+    width: '84%',
     backgroundColor: 'rgba(5,10,6,0.62)',
     borderWidth: 1,
     borderColor: colors.borderSubtle,
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 9,
+    borderRadius: 7,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
   tickerTxt: {
     fontFamily: monoFont,
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
     color: colors.fg,
   },
   tickerClock: {
     color: colors.primary,
   },
+  /* ── chips ── */
   chip: {
     position: 'absolute',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-    backgroundColor: colors.surfaceGlass,
+    backgroundColor: 'rgba(12,20,14,0.82)',
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 12,
-    paddingVertical: 9,
-    paddingHorizontal: 13,
+    borderRadius: 11,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     shadowColor: '#000',
     shadowOpacity: 0.45,
     shadowRadius: 22,
@@ -452,6 +585,12 @@ const styles = StyleSheet.create({
   chipTiltL: {
     transform: [{ rotate: '-2.5deg' }],
   },
+  chipTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   chipLabel: {
     fontFamily: monoFont,
     letterSpacing: 2,
@@ -463,6 +602,22 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(57,255,106,0.5)',
     textShadowRadius: 10,
   },
+  chipTrack: {
+    marginTop: 5,
+    borderRadius: 99,
+    backgroundColor: 'rgba(57,255,106,0.12)',
+    overflow: 'hidden',
+  },
+  chipFill: {
+    height: '100%',
+    borderRadius: 99,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  /* ── no-end promise ── */
   noEnd: {
     position: 'absolute',
     alignSelf: 'center',
