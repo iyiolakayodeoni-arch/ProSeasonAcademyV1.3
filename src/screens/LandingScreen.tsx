@@ -9,11 +9,12 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import InfinityCrest from '../components/InfinityCrest';
 import Marquee from '../components/Marquee';
 import PitchBackdrop from '../components/PitchBackdrop';
-import MirrorOrb from '../components/MirrorOrb';
+import Hero from '../components/Hero';
+import { CtaPrimary, CtaSecondary } from '../components/CtaButtons';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 
@@ -74,60 +75,39 @@ function GlassCard({
   return <View style={[styles.glassCard, style]}>{children}</View>;
 }
 
-/* ── primary CTA — the brand green button ── */
-function CtaPrimary({ label, onPress }: { label: string; onPress: () => void }) {
-  const hov = useSharedValue(0);
-  const s = useAnimatedStyle(() => ({
-    transform: [{ translateY: hov.value * -1.5 }],
-    boxShadow: `0 0 ${14 + hov.value * 16}px rgba(57,255,106,${0.25 + hov.value * 0.3})`,
-  }));
-  return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={() => (hov.value = withTiming(1, { duration: 160 }))}
-      onHoverOut={() => (hov.value = withTiming(0, { duration: 160 }))}
-    >
-      <Animated.View style={[styles.ctaPrimary, s]}>
-        <Text style={styles.ctaPrimaryTxt}>{label}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-/* ── secondary CTA — outlined ── */
-function CtaSecondary({ label, onPress }: { label: string; onPress: () => void }) {
-  const hov = useSharedValue(0);
-  const s = useAnimatedStyle(() => ({
-    borderColor: `rgba(57,255,106,${0.5 + hov.value * 0.4})`,
-  }));
-  return (
-    <Pressable onPress={onPress} onHoverIn={() => (hov.value = withTiming(1))} onHoverOut={() => (hov.value = withTiming(0))}>
-      <Animated.View style={[styles.ctaSecondary, s]}>
-        <Text style={styles.ctaSecondaryTxt}>{label}</Text>
-      </Animated.View>
-    </Pressable>
-  );
-}
-
-/* ── sticky nav — pxxl-style: minimal, logo left, links, one CTA ── */
-function WebsiteNav({ onEnter, onNav }: { onEnter: () => void; onNav: (id: string) => void }) {
+/* ── sticky nav — minimal: logo left, /-separated links centre, one CTA ── */
+function WebsiteNav({
+  onEnter,
+  onNav,
+  showLinks,
+}: {
+  onEnter: () => void;
+  onNav: (id: string) => void;
+  showLinks: boolean;
+}) {
+  const links: [string, string][] = [
+    ['METHOD', 'method'],
+    ['JOURNEY', 'journey'],
+    ['EVIDENCE', 'evidence'],
+  ];
   return (
     <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
       <Pressable onPress={onEnter} style={styles.navBrand}>
         <InfinityCrest size={26} />
         <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
       </Pressable>
-      <View style={styles.navLinks}>
-        {[
-          ['METHOD', 'method'],
-          ['JOURNEY', 'journey'],
-          ['EVIDENCE', 'evidence'],
-        ].map(([label, id]) => (
-          <Pressable key={id} onPress={() => onNav(id)}>
-            <Text style={styles.navLink}>{label}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {showLinks && (
+        <View style={styles.navLinks}>
+          {links.map(([label, id], i) => (
+            <React.Fragment key={id}>
+              {i > 0 && <Text style={styles.navSlash}>/</Text>}
+              <Pressable onPress={() => onNav(id)}>
+                <Text style={styles.navLink}>{label}</Text>
+              </Pressable>
+            </React.Fragment>
+          ))}
+        </View>
+      )}
       <View style={styles.navActions}>
         <Pressable onPress={onEnter}>
           <Text style={styles.navSignIn}>SIGN IN</Text>
@@ -184,7 +164,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           if (h > 0 && h !== navH) setNavH(h);
         }}
       >
-        <WebsiteNav onEnter={onEnter} onNav={goSection} />
+        <WebsiteNav onEnter={onEnter} onNav={goSection} showLinks={isWide} />
       </View>
 
       <ScrollView
@@ -194,42 +174,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* ── HERO — text and image side by side on wide screens ── */}
-        <View style={[styles.hero, { minWidth: contentW }]} id="top">
-          <View style={[styles.heroRow, isWide && styles.heroRowWide]}>
-            <View style={[styles.heroText, isWide && styles.heroTextWide]}>
-              <Eyebrow>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</Eyebrow>
-              <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>
-                CARRY ONE LESSON.
-              </Text>
-              <Text style={[styles.h1Alt, WEB ? ({ fontFamily: headFont } as any) : null]}>
-                REVIEW THE MATCH.
-              </Text>
-              <View style={styles.h1LoopRow}>
-                <InfinityCrest size={40} bold />
-                <Text style={[styles.h1Loop, WEB ? ({ fontFamily: headFont } as any) : null]}>
-                  THE LOOP NEVER ENDS
-                </Text>
-              </View>
-              <Text style={[styles.heroSub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-                You play, you watch yourself honestly, you write the truth down — then you
-                turn that reflection into disciplined progress, one match at a time. No AI
-                telling you what to think. The Mirror records the evidence; you do the seeing.{' '}
-                <Text style={styles.heroSubAccent}>No stop date. No graduation. The loop compounds — forever.</Text>
-              </Text>
-              <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.heroCtas}>
-                <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
-                <CtaSecondary label="SEE THE METHOD" onPress={() => goSection('method')} />
-              </Animated.View>
-              <Animated.View entering={FadeInDown.delay(160).duration(600)}>
-                <Text style={styles.penNote}>// THINK WITH YOUR PEN — EVERY STAT IS A QUESTION UNTIL YOU WRITE IT DOWN</Text>
-              </Animated.View>
-            </View>
-
-            <View style={[styles.heroArt, isWide && styles.heroArtWide]}>
-              <MirrorOrb width={isWide ? Math.min(400, contentW * 0.52) : contentW * 0.92} />
-            </View>
-          </View>
+        {/* ── HERO — see components/Hero.tsx (copy overridable there) ── */}
+        <View id="top">
+          <Hero
+            onPrimary={onEnter}
+            onSecondary={() => goSection('method')}
+            isWide={isWide}
+            contentWidth={contentW}
+          />
         </View>
 
         {/* ── THE METHOD ── */}
@@ -479,35 +431,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.muted,
   },
-  ctaPrimary: {
-    backgroundColor: colors.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 26,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  ctaPrimaryTxt: {
-    fontFamily: bodyFontBold,
-    fontSize: 13.5,
-    letterSpacing: 1.5,
-    color: '#03140a',
-    textTransform: 'uppercase',
-  },
-  ctaSecondary: {
-    borderWidth: 1,
-    borderColor: 'rgba(57,255,106,0.5)',
-    paddingVertical: 15,
-    paddingHorizontal: 26,
-    borderRadius: 999,
-    alignItems: 'center',
-  },
-  ctaSecondaryTxt: {
-    fontFamily: bodyFontBold,
-    fontSize: 13.5,
-    letterSpacing: 1.5,
-    color: colors.primary,
-    textTransform: 'uppercase',
-  },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -531,13 +454,20 @@ const styles = StyleSheet.create({
   },
   navLinks: {
     flexDirection: 'row',
-    gap: 24,
+    alignItems: 'center',
+    gap: 16,
   },
   navLink: {
     fontFamily: monoFont,
-    fontSize: 10.5,
+    fontSize: 13,
     letterSpacing: 2,
-    color: colors.muted,
+    color: '#9CA3AF',
+  },
+  navSlash: {
+    fontFamily: monoFont,
+    fontSize: 12,
+    color: colors.mutedDim,
+    opacity: 0.7,
   },
   navActions: {
     flexDirection: 'row',
@@ -562,92 +492,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
     color: '#03140a',
   },
-  hero: {
-    alignSelf: 'center',
-    paddingTop: 70,
-    paddingHorizontal: 28,
-  },
-  heroRow: {
-    flexDirection: 'column',
-    gap: 40,
-  },
-  heroRowWide: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 56,
-  },
-  heroText: {
-    flexShrink: 1,
-  },
-  heroTextWide: {
-    flex: 1,
-  },
-  h1: {
-    fontFamily: displayFont,
-    fontSize: 66,
-    lineHeight: 66,
-    letterSpacing: 1,
-    color: colors.fg,
-    textTransform: 'uppercase',
-  },
-  h1Alt: {
-    fontFamily: displayFont,
-    fontSize: 66,
-    lineHeight: 66,
-    letterSpacing: 1,
-    color: colors.primary,
-    textTransform: 'uppercase',
-    marginBottom: 16,
-  },
-  h1LoopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 18,
-  },
-  h1Loop: {
-    fontFamily: displayFont,
-    fontSize: 30,
-    lineHeight: 34,
-    letterSpacing: 2.5,
-    color: colors.fg,
-    textTransform: 'uppercase',
-  },
-  heroSubAccent: {
-    color: colors.primary,
-  },
-  penNote: {
-    fontFamily: monoFont,
-    fontSize: 10.5,
-    letterSpacing: 0.8,
-    color: colors.mutedDim,
-    marginTop: 20,
-  },
-  heroSub: {
-    fontFamily: bodyFont,
-    fontSize: 18,
-    lineHeight: 28,
-    color: colors.muted,
-    maxWidth: 640,
-    marginBottom: 34,
-  },
   heroCtas: {
     flexDirection: 'row',
     gap: 14,
     flexWrap: 'wrap',
-  },
-  heroArt: {
-    marginTop: 0,
-    height: 460,
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroArtWide: {
-    flex: 1,
-    height: 540,
-    minWidth: 320,
   },
   marqueeTxt: {
     fontFamily: bodyFontBold,
