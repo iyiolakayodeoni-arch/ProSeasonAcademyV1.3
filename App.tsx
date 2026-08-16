@@ -110,6 +110,18 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     void (async () => {
+      // Development mode: always start at sign-in page for easier testing
+      if (__DEV__) {
+        console.log('[App] Development mode: clearing session and starting at sign-in');
+        await endSession().catch(() => {});
+        await signOutRemote().catch(() => {});
+        if (alive) {
+          setRoute('signin');
+          setRestored(true);
+        }
+        return;
+      }
+
       await hydrateSession().catch(() => {});
       // restore Supabase email/password session if the token is still valid
       const cloud = await restoreSession().catch(() => null);
