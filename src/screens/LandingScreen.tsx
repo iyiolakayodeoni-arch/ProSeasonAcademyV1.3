@@ -13,7 +13,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming, FadeInDown } fr
 import InfinityCrest from '../components/InfinityCrest';
 import Marquee from '../components/Marquee';
 import PitchBackdrop from '../components/PitchBackdrop';
-import MatchReviewMockup from '../components/MatchReviewMockup';
+import MirrorOrb from '../components/MirrorOrb';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 
@@ -205,19 +205,29 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <Text style={[styles.h1Alt, WEB ? ({ fontFamily: headFont } as any) : null]}>
                 REVIEW THE MATCH.
               </Text>
+              <View style={styles.h1LoopRow}>
+                <InfinityCrest size={40} bold />
+                <Text style={[styles.h1Loop, WEB ? ({ fontFamily: headFont } as any) : null]}>
+                  THE LOOP NEVER ENDS
+                </Text>
+              </View>
               <Text style={[styles.heroSub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
                 You play, you watch yourself honestly, you write the truth down — then you
                 turn that reflection into disciplined progress, one match at a time. No AI
-                telling you what to think. The Mirror records the evidence; you do the seeing.
+                telling you what to think. The Mirror records the evidence; you do the seeing.{' '}
+                <Text style={styles.heroSubAccent}>No stop date. No graduation. The loop compounds — forever.</Text>
               </Text>
               <Animated.View entering={FadeInDown.delay(80).duration(600)} style={styles.heroCtas}>
                 <CtaPrimary label="START MY MATCH REVIEW" onPress={onEnter} />
                 <CtaSecondary label="SEE THE METHOD" onPress={() => goSection('method')} />
               </Animated.View>
+              <Animated.View entering={FadeInDown.delay(160).duration(600)}>
+                <Text style={styles.penNote}>// THINK WITH YOUR PEN — EVERY STAT IS A QUESTION UNTIL YOU WRITE IT DOWN</Text>
+              </Animated.View>
             </View>
 
             <View style={[styles.heroArt, isWide && styles.heroArtWide]}>
-              <MatchReviewMockup width={isWide ? Math.min(380, contentW * 0.52) : contentW * 0.92} />
+              <MirrorOrb width={isWide ? Math.min(400, contentW * 0.52) : contentW * 0.92} />
             </View>
           </View>
         </View>
@@ -297,8 +307,11 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         {/* ── THE JOURNEY ── */}
         <View style={styles.section} id="journey">
           <Eyebrow>[ THE JOURNEY ]</Eyebrow>
-          <H2 center>SIX CHAPTERS, EARNED.</H2>
-          <Muted center>Your journey — control yourself. Each chapter builds the one after it.</Muted>
+          <H2 center>SIX CHAPTERS. THEN THE LOOP.</H2>
+          <Muted center>
+            No stop date, no graduation. Chapter six hands you back to chapter one — the loop
+            compounds forever, and the mistakes you make are the tuition.
+          </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             {CHAPTERS.map((c, i) => (
               <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={styles.chapterCard}>
@@ -584,7 +597,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.primary,
     textTransform: 'uppercase',
+    marginBottom: 16,
+  },
+  h1LoopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
     marginBottom: 18,
+  },
+  h1Loop: {
+    fontFamily: displayFont,
+    fontSize: 30,
+    lineHeight: 34,
+    letterSpacing: 2.5,
+    color: colors.fg,
+    textTransform: 'uppercase',
+  },
+  heroSubAccent: {
+    color: colors.primary,
+  },
+  penNote: {
+    fontFamily: monoFont,
+    fontSize: 10.5,
+    letterSpacing: 0.8,
+    color: colors.mutedDim,
+    marginTop: 20,
   },
   heroSub: {
     fontFamily: bodyFont,
@@ -601,7 +638,7 @@ const styles = StyleSheet.create({
   },
   heroArt: {
     marginTop: 0,
-    height: 380,
+    height: 420,
     borderRadius: 20,
     overflow: 'hidden',
     alignItems: 'center',
@@ -609,7 +646,7 @@ const styles = StyleSheet.create({
   },
   heroArtWide: {
     flex: 1,
-    height: 460,
+    height: 500,
     minWidth: 320,
   },
   marqueeTxt: {

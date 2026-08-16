@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProSeason Academy — Hero v2 · The Mirror in the Loop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&family=Barlow:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #050a06;
+    --bg-elev: #0a130d;
+    --surface: #0f1a13;
+    --glass: rgba(12, 20, 14, 0.72);
+    --border-subtle: rgba(143, 184, 155, 0.14);
+    --border-strong: rgba(57, 255, 106, 0.28);
+    --fg: #eef2ec;
+    --muted: #8fb89b;
+    --muted-dim: #6b8a75;
+    --primary: #39ff6a;
+    --primary-dim: #1f7a3d;
+    --primary-glow: rgba(57, 255, 106, 0.22);
+    --loss: #e0605c;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --display: 'Space Grotesk', 'Barlow', system-ui, sans-serif;
+    --body: 'Barlow', system-ui, sans-serif;
+    --rx: 0deg;
+    --ry: 0deg;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--body);
+    overflow-x: hidden;
+  }
+
+  ::selection { background: rgba(57,255,106,.3); }
+
+  /* ────────────────────────────── NAV ────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px;
+    background: rgba(5,10,6,.82);
+    border-bottom: 1px solid var(--border-subtle);
+    backdrop-filter: blur(10px);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .brand svg { display: block; }
+  .brand-name {
+    font-family: var(--body); font-weight: 700; font-size: 13px;
+    letter-spacing: 2px; color: var(--fg);
+  }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 2px;
+    color: var(--muted); text-decoration: none; transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--primary); }
+  .nav-actions { display: flex; align-items: center; gap: 18px; }
+  .sign-in {
+    font-family: var(--body); font-weight: 600; font-size: 12px;
+    letter-spacing: 1.5px; color: var(--muted); cursor: pointer;
+    background: none; border: none;
+  }
+  .get-started {
+    font-family: var(--body); font-weight: 700; font-size: 11px;
+    letter-spacing: 1.3px; color: #03140a; text-transform: uppercase;
+    background: var(--primary); border: none; border-radius: 999px;
+    padding: 9px 16px; cursor: pointer;
+    box-shadow: 0 0 18px rgba(57,255,106,.25);
+    transition: box-shadow .2s, transform .2s;
+  }
+  .get-started:hover { box-shadow: 0 0 30px rgba(57,255,106,.45); transform: translateY(-1px); }
+
+  /* ──────────────────────────── HERO ─────────────────────────────── */
+  .hero {
+    position: relative;
+    min-height: calc(100vh - 56px);
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 56px 28px 0;
+    overflow: hidden;
+  }
+
+  /* pitch photo, dimmed — same as the live site */
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url('../../assets/art/pitch-bg.png') center / cover no-repeat;
+    opacity: .5;
+    filter: brightness(.55) saturate(.8);
+    z-index: 0;
+  }
+  .hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 45% at 50% 40%, transparent 0%, rgba(5,10,6,.55) 70%, rgba(5,10,6,.96) 100%),
+      linear-gradient(180deg, rgba(5,10,6,.35), rgba(5,10,6,.9));
+    z-index: 0;
+  }
+
+  /* drifting dopamine particles */
+  .particles { position: absolute; inset: 0; overflow: hidden; z-index: 1; pointer-events: none; }
+  .particle {
+    position: absolute; bottom: -10px;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--primary);
+    box-shadow: 0 0 12px var(--primary);
+    animation: rise linear infinite;
+    opacity: 0;
+  }
+  @keyframes rise {
+    0%   { transform: translateY(0) scale(1); opacity: 0; }
+    10%  { opacity: .7; }
+    100% { transform: translateY(-110vh) scale(.2); opacity: 0; }
+  }
+
+  .hero-inner {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 1280px; margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.05fr .95fr;
+    gap: 48px;
+    align-items: center;
+  }
+
+  /* ── left: copy ── */
+  .eyebrow {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 3.4px;
+    color: var(--primary); text-transform: uppercase; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .eyebrow .tick { width: 26px; height: 1px; background: var(--primary); opacity: .6; }
+
+  h1 { font-family: var(--display); font-weight: 700; line-height: .98; letter-spacing: 1px; text-transform: uppercase; }
+  .h1-line { display: block; font-size: clamp(44px, 5.2vw, 68px); color: var(--fg); }
+  .h1-line.alt { color: var(--primary); }
+  .h1-line.loop {
+    display: flex; align-items: center; gap: 14px;
+    font-size: clamp(24px, 2.6vw, 34px); margin-top: 10px;
+    color: var(--fg); letter-spacing: 2.5px;
+  }
+  .h1-line.loop .inf { color: var(--primary); font-size: 1.25em; animation: infPulse 3s ease-in-out infinite; }
+  @keyframes infPulse {
+    0%, 100% { text-shadow: 0 0 10px rgba(57,255,106,.4); }
+    50%      { text-shadow: 0 0 26px rgba(57,255,106,.9); }
+  }
+
+  .hero-sub {
+    font-family: var(--body); font-weight: 500; font-size: 17px; line-height: 1.65;
+    color: var(--muted); max-width: 560px; margin: 22px 0 30px;
+  }
+  .hero-sub b { color: var(--fg); font-weight: 600; }
+  .hero-sub .no-end { color: var(--primary); font-weight: 600; }
+
+  .ctas { display: flex; gap: 14px; flex-wrap: wrap; }
+  .cta-primary, .cta-secondary {
+    font-family: var(--body); font-weight: 700; font-size: 13.5px;
+    letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer;
+    padding: 15px 26px; border-radius: 999px; text-decoration: none; transition: all .2s;
+  }
+  .cta-primary {
+    background: var(--primary); color: #03140a; border: none;
+    box-shadow: 0 0 18px rgba(57,255,106,.3);
+  }
+  .cta-primary:hover { box-shadow: 0 0 34px rgba(57,255,106,.55); transform: translateY(-1.5px); }
+  .cta-secondary {
+    background: transparent; color: var(--primary);
+    border: 1px solid rgba(57,255,106,.5);
+  }
+  .cta-secondary:hover { border-color: var(--primary); box-shadow: 0 0 20px rgba(57,255,106,.2); }
+
+  /* pen callout — think with your pen */
+  .pen-note {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 22px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 1.2px;
+    color: var(--muted-dim); text-transform: uppercase;
+  }
+  .pen-note .pen-svg { flex: none; }
+  .pen-note .drawn {
+    stroke: var(--primary); stroke-width: 2; stroke-linecap: round; fill: none;
+    stroke-dasharray: 120; stroke-dashoffset: 120;
+    animation: drawLine 2.4s ease-in-out infinite;
+  }
+  @keyframes drawLine { 0%, 10% { stroke-dashoffset: 120; } 55%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 120; } }
+
+  /* ── right: THE MIRROR IN THE LOOP ── */
+  .mirror-rig {
+    position: relative;
+    height: 560px;
+    display: flex; align-items: center; justify-content: center;
+    perspective: 1100px;
+  }
+
+  .mirror-stage {
+    position: relative;
+    width: 430px; height: 430px;
+    transform-style: preserve-3d;
+    transform: rotateX(var(--rx)) rotateY(var(--ry));
+    transition: transform .18s ease-out;
+  }
+
+  /* the infinity loop — two lobes, a comet that never stops */
+  .infinity-loop {
+    position: absolute; inset: 0;
+    filter: drop-shadow(0 0 14px rgba(57,255,106,.45));
+    animation: loopDrift 9s ease-in-out infinite;
+  }
+  @keyframes loopDrift {
+    0%, 100% { transform: scale(1) translateY(0); }
+    50%      { transform: scale(1.015) translateY(-6px); }
+  }
+  .inf-base { stroke: rgba(57,255,106,.22); stroke-width: 3; fill: none; stroke-linecap: round; }
+  .inf-trail {
+    stroke: var(--primary); stroke-width: 4.5; fill: none; stroke-linecap: round;
+    stroke-dasharray: 260; stroke-dashoffset: 0;
+    animation: drawInfinity 5.5s linear infinite;
+  }
+  @keyframes drawInfinity { 0% { stroke-dashoffset: 520; } 100% { stroke-dashoffset: 0; } }
+  .comet { filter: drop-shadow(0 0 10px var(--primary)); }
+
+  /* 3D orbit ring (gyroscope) */
+  .orbit-ring {
+    position: absolute; inset: 34px;
+    border-radius: 50%;
+    transform: rotateX(72deg);
+  }
+  .orbit-ring .ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1.5px dashed rgba(57,255,106,.4);
+    animation: spinZ 16s linear infinite;
+  }
+  .orbit-ring .ring.r2 { inset: 34px; border-color: rgba(57,255,106,.18); animation-duration: 11s; animation-direction: reverse; }
+  @keyframes spinZ { to { transform: rotateZ(360deg); } }
+
+  /* the sphere */
+  .sphere-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    animation: bob 6s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-12px); }
+  }
+
+  .sphere {
+    position: relative;
+    width: 320px; height: 320px; border-radius: 50%;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 31% 26%, rgba(255,255,255,.92) 0%, rgba(255,255,255,.22) 9%, rgba(150,190,160,.16) 24%, rgba(8,18,10,.9) 58%, rgba(2,6,3,.97) 74%, rgba(14,26,17,.75) 100%);
+    box-shadow:
+      inset -22px -30px 60px rgba(0,0,0,.75),
+      inset 14px 18px 40px rgba(255,255,255,.10),
+      0 0 60px rgba(57,255,106,.20),
+      0 40px 90px rgba(0,0,0,.7);
+  }
+
+  /* rotating specular sweep — the "console reflection" */
+  .sphere-shine {
+    position: absolute; inset: -40%;
+    background: conic-gradient(from 0deg,
+      transparent 0deg, rgba(255,255,255,.14) 40deg, transparent 90deg,
+      transparent 180deg, rgba(57,255,106,.10) 230deg, transparent 290deg);
+    animation: spinZ 9s linear infinite;
+    pointer-events: none;
+  }
+
+  /* inner FIFA post-match radar */
+  .sphere-hud {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .radar {
+    width: 240px; height: 240px;
+    animation: spinZ 34s linear infinite;
+  }
+  .radar .axis { stroke: rgba(57,255,106,.16); stroke-width: 1; }
+  .radar .petal {
+    stroke: var(--primary); stroke-width: 7; stroke-linecap: round; fill: none;
+    filter: drop-shadow(0 0 5px rgba(57,255,106,.8));
+  }
+  .radar .petal-dot { fill: var(--primary); }
+
+  /* the reflected player */
+  .reflection {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .reflection .you {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 3px;
+    color: var(--primary); opacity: .9;
+  }
+  .reflection svg { opacity: .92; filter: drop-shadow(0 0 8px rgba(57,255,106,.35)); }
+
+  /* live badge */
+  .live-badge {
+    position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 2.4px; color: var(--primary);
+    background: rgba(5,10,6,.6); border: 1px solid var(--border-strong);
+    border-radius: 999px; padding: 5px 12px;
+    backdrop-filter: blur(6px);
+  }
+  .live-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; box-shadow: 0 0 8px var(--primary); } 50% { opacity: .35; } }
+
+  /* moment ticker inside the sphere */
+  .moment-ticker {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    width: 86%;
+    text-align: center;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1.6px;
+    color: var(--fg);
+    background: rgba(5,10,6,.62); border: 1px solid var(--border-subtle);
+    border-radius: 8px; padding: 8px 10px;
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+  }
+  .moment-ticker .clock { color: var(--primary); }
+  .moment-ticker .row {
+    display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;
+  }
+  .moment-ticker .row.fade { animation: tickFade 2.6s ease-in-out infinite; }
+  @keyframes tickFade {
+    0%   { transform: translateY(6px); opacity: 0; }
+    12%  { transform: translateY(0); opacity: 1; }
+    82%  { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-6px); opacity: 0; }
+  }
+
+  /* ── floating stat chips (dopamine) ── */
+  .chip {
+    position: absolute;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--glass);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 10px 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 30px rgba(0,0,0,.45), 0 0 22px rgba(57,255,106,.08);
+    animation: chipFloat 5s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes chipFloat {
+    0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+    50%      { transform: translateY(-10px) rotate(var(--tilt, 0deg)); }
+  }
+  .chip .lbl { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; color: var(--muted-dim); }
+  .chip .val {
+    font-family: var(--display); font-weight: 700; font-size: 21px; color: var(--primary);
+    text-shadow: 0 0 14px rgba(57,255,106,.5);
+    min-width: 52px; text-align: right;
+  }
+  .chip .bar {
+    width: 56px; height: 4px; border-radius: 99px; background: rgba(57,255,106,.12); overflow: hidden;
+  }
+  .chip .bar i {
+    display: block; height: 100%; border-radius: 99px; background: var(--primary);
+    width: 60%; transition: width .8s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 0 8px var(--primary);
+  }
+  .chip.pulse { animation: chipPulse .45s ease; }
+  @keyframes chipPulse {
+    0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); }
+  }
+
+  .chip.c1 { top: 18px;  left: -6px;  --tilt: -3deg; }
+  .chip.c2 { top: 120px; right: -14px; --tilt: 3deg; animation-delay: .9s; }
+  .chip.c3 { bottom: 96px; left: -22px; --tilt: -2deg; animation-delay: 1.7s; }
+  .chip.c4 { bottom: 26px; right: 8px; --tilt: 2.5deg; animation-delay: 2.4s; }
+
+  /* no-end-date chip pinned below the loop */
+  .no-end {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2.2px;
+    color: var(--primary); text-transform: uppercase;
+    background: rgba(5,10,6,.7); border: 1px solid var(--border-strong);
+    border-radius: 999px; padding: 9px 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 26px rgba(57,255,106,.18);
+    white-space: nowrap;
+    animation: noEndGlow 3.2s ease-in-out infinite;
+  }
+  @keyframes noEndGlow {
+    0%, 100% { box-shadow: 0 0 14px rgba(57,255,106,.12); }
+    50%      { box-shadow: 0 0 30px rgba(57,255,106,.4); }
+  }
+  .no-end .inf { font-size: 16px; }
+
+  /* ── marquee strip under hero ── */
+  .marquee {
+    position: relative; z-index: 2;
+    overflow: hidden;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 16px 0;
+    background: rgba(5,10,6,.6);
+    backdrop-filter: blur(6px);
+    margin-top: 48px;
+  }
+  .marquee-track {
+    display: flex; gap: 48px; width: max-content;
+    animation: marquee 26s linear infinite;
+  }
+  .marquee-track span {
+    font-family: var(--body); font-weight: 700; font-size: 13px;
+    letter-spacing: 3px; color: var(--primary); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .marquee-track .inf-glyph { color: var(--fg); }
+  @keyframes marquee { to { transform: translateX(-50%); } }
+
+  footer {
+    position: relative; z-index: 2;
+    text-align: center; padding: 26px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+    color: var(--muted-dim);
+  }
+
+  /* ── responsive ── */
+  @media (max-width: 1020px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 24px; }
+    .mirror-rig { height: 520px; }
+    .hero { padding-top: 36px; }
+    .nav-links { display: none; }
+  }
+
+  @media (max-width: 520px) {
+    .mirror-stage { transform: scale(.72); }
+    .mirror-rig { height: 420px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav>
+  <div class="brand">
+    <svg width="30" height="15" viewBox="0 0 120 60" fill="none" aria-hidden="true">
+      <path d="M60 30 C60 10 30 10 30 30 C30 50 60 50 60 30 C60 50 90 50 90 30 C90 10 60 10 60 30 Z"
+        stroke="#39ff6a" stroke-width="5" stroke-linecap="round" opacity=".95"/>
+    </svg>
+    <span class="brand-name">PROSEASON ACADEMY</span>
+  </div>
+  <div class="nav-links">
+    <a href="#">METHOD</a><a href="#">JOURNEY</a><a href="#">EVIDENCE</a>
+  </div>
+  <div class="nav-actions">
+    <button class="sign-in">SIGN IN</button>
+    <button class="get-started">GET STARTED</button>
+  </div>
+</nav>
+
+<!-- ══════════════ HERO ══════════════ -->
+<header class="hero">
+  <div class="particles" id="particles"></div>
+
+  <div class="hero-inner">
+    <!-- ── left: copy ── -->
+    <div class="copy">
+      <div class="eyebrow"><span class="tick"></span>PROSEASON ACADEMY — THE CONSOLE COACHING ACADEMY</div>
+
+      <h1>
+        <span class="h1-line">CARRY ONE LESSON.</span>
+        <span class="h1-line alt">REVIEW THE MATCH.</span>
+        <span class="h1-line loop"><span class="inf">∞</span> THE LOOP NEVER ENDS</span>
+      </h1>
+
+      <p class="hero-sub">
+        You play, you watch yourself honestly, you write the truth down — then you turn that
+        reflection into disciplined progress, one match at a time. No AI telling you what to think.
+        <b>The Mirror records the evidence; you do the seeing.</b> No stop date. No graduation.
+        <span class="no-end">The loop compounds — forever.</span>
+      </p>
+
+      <div class="ctas">
+        <a class="cta-primary" href="#">START MY MATCH REVIEW</a>
+        <a class="cta-secondary" href="#">SEE THE METHOD</a>
+      </div>
+
+      <div class="pen-note">
+        <svg class="pen-svg" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+          <g transform="rotate(-42 13 13)">
+            <rect x="9" y="2" width="8" height="13" rx="2" fill="rgba(57,255,106,.9)"/>
+            <path d="M10 15 L13 23 L16 15 Z" fill="rgba(57,255,106,.55)"/>
+          </g>
+          <path class="drawn" d="M2 22 L22 4"/>
+        </svg>
+        // THINK WITH YOUR PEN — EVERY STAT IS A QUESTION UNTIL YOU WRITE IT DOWN
+      </div>
+    </div>
+
+    <!-- ── right: the mirror in the loop ── -->
+    <div class="mirror-rig" id="rig">
+      <div class="mirror-stage" id="stage">
+
+        <!-- the infinity loop around the mirror -->
+        <svg class="infinity-loop" viewBox="0 0 400 200" fill="none" aria-hidden="true">
+          <path class="inf-base"  d="M200 100 C200 40 120 40 120 100 C120 160 200 160 200 100 C200 160 280 160 280 100 C280 40 200 40 200 100 Z" pathLength="260"/>
+          <path class="inf-trail" d="M200 100 C200 40 120 40 120 100 C120 160 200 160 200 100 C200 160 280 160 280 100 C280 40 200 40 200 100 Z" pathLength="260"/>
+          <circle class="comet" r="6" fill="#39ff6a">
+            <animateMotion dur="7s" repeatCount="indefinite"
+              path="M200 100 C200 40 120 40 120 100 C120 160 200 160 200 100 C200 160 280 160 280 100 C280 40 200 40 200 100 Z"/>
+          </circle>
+        </svg>
+
+        <!-- gyroscope ring -->
+        <div class="orbit-ring">
+          <div class="ring"></div>
+          <div class="ring r2"></div>
+        </div>
+
+        <!-- the sphere -->
+        <div class="sphere-wrap">
+          <div class="sphere">
+            <div class="sphere-shine"></div>
+
+            <div class="sphere-hud">
+              <svg class="radar" viewBox="0 0 240 240" fill="none" aria-hidden="true">
+                <circle cx="120" cy="120" r="112" class="axis"/>
+                <circle cx="120" cy="120" r="78"  class="axis"/>
+                <circle cx="120" cy="120" r="44"  class="axis"/>
+                <!-- four stat petals: composure, pass accuracy, decisions, positioning -->
+                <path class="petal" d="M120 120 L120 26"   pathLength="100" stroke-dasharray="71 100"/>
+                <path class="petal" d="M120 120 L218 120"  pathLength="100" stroke-dasharray="84 100"/>
+                <path class="petal" d="M120 120 L120 214"  pathLength="100" stroke-dasharray="63 100"/>
+                <path class="petal" d="M120 120 L22 120"   pathLength="100" stroke-dasharray="58 100"/>
+                <circle class="petal-dot" cx="120" cy="26"  r="4"/>
+                <circle class="petal-dot" cx="218" cy="120" r="4"/>
+                <circle class="petal-dot" cx="120" cy="214" r="4"/>
+                <circle class="petal-dot" cx="22"  cy="120" r="4"/>
+              </svg>
+            </div>
+
+            <!-- reflected player -->
+            <div class="reflection">
+              <svg width="84" height="110" viewBox="0 0 84 110" fill="none" aria-hidden="true">
+                <circle cx="42" cy="22" r="15" fill="rgba(57,255,106,.85)"/>
+                <path d="M14 104 C14 72 26 52 42 52 C58 52 70 72 70 104 Z" fill="rgba(57,255,106,.6)"/>
+                <path d="M30 70 L14 96 M54 70 L70 96 M42 62 L42 84" stroke="rgba(57,255,106,.75)" stroke-width="5" stroke-linecap="round"/>
+              </svg>
+              <span class="you">YOU</span>
+            </div>
+
+            <!-- live badge -->
+            <div class="live-badge"><span class="dot"></span>LIVE REVIEW</div>
+
+            <!-- moment ticker -->
+            <div class="moment-ticker">
+              <span class="row fade" id="ticker"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- floating stat chips -->
+        <div class="chip c1">
+          <span class="lbl">COMPOSURE</span><span class="val" id="v1">71%</span>
+        </div>
+        <div class="chip c2">
+          <span class="lbl">PASS ACC</span><span class="val" id="v2">84%</span>
+        </div>
+        <div class="chip c3">
+          <span class="lbl">DECISIONS</span><span class="val" id="v3">12</span>
+        </div>
+        <div class="chip c4">
+          <span class="lbl">MOMENTS</span><span class="val" id="v4">03</span>
+        </div>
+      </div>
+
+      <!-- pinned below the loop -->
+      <div class="no-end"><span class="inf">∞</span> NO STOP DATE · NO GRADUATION · THE LEARNING IS INFINITE</div>
+    </div>
+  </div>
+
+  <!-- marquee -->
+  <div class="marquee">
+    <div class="marquee-track" id="marquee">
+      <span>PLAY THE MATCH</span><span class="inf-glyph">∞</span>
+      <span>WATCH YOURSELF</span><span class="inf-glyph">∞</span>
+      <span>WRITE THE TRUTH</span><span class="inf-glyph">∞</span>
+      <span>CARRY ONE LESSON</span><span class="inf-glyph">∞</span>
+      <span>REPEAT WITH INTENT</span><span class="inf-glyph">∞</span>
+      <span>PLAY THE MATCH</span><span class="inf-glyph">∞</span>
+      <span>WATCH YOURSELF</span><span class="inf-glyph">∞</span>
+      <span>WRITE THE TRUTH</span><span class="inf-glyph">∞</span>
+      <span>CARRY ONE LESSON</span><span class="inf-glyph">∞</span>
+      <span>REPEAT WITH INTENT</span><span class="inf-glyph">∞</span>
+    </div>
+  </div>
+</header>
+
+<footer>HERO MOCKUP v2 · THE MIRROR IN THE LOOP · NOT THE LIVE SITE · © 2026 PROSEASON ACADEMY</footer>
+
+<script>
+  // ── dopamine particles ──
+  const pc = document.getElementById('particles');
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (9 + Math.random() * 12) + 's';
+    p.style.animationDelay = (Math.random() * 12) + 's';
+    p.style.width = p.style.height = (2 + Math.random() * 4) + 'px';
+    pc.appendChild(p);
+  }
+
+  // ── moment ticker (FIFA post-match lower third) ──
+  const TICKS = [
+    { clock: "0:12", txt: "LOST THE BALL — CHASING THE PASS, NOT THE SPACE" },
+    { clock: "0:47", txt: "THE SWITCH — STAYED NARROW, THEN PLAYED IT" },
+    { clock: "1:22", txt: "SECOND GOAL — MY SHAPE. MY FAULT. WRITTEN DOWN." },
+    { clock: "1:58", txt: "ONE LESSON — CARRY IT INTO THE NEXT MATCH" },
+  ];
+  const tickerEl = document.getElementById('ticker');
+  let ti = 0;
+  const renderTick = () => {
+    tickerEl.textContent = 'MOMENT ' + TICKS[ti].clock + ' · ' + TICKS[ti].txt;
+    ti = (ti + 1) % TICKS.length;
+  };
+  renderTick();
+  setInterval(renderTick, 2600);
+
+  // ── stats that keep moving (numbers never sit still — the loop is live) ──
+  const STATS = [
+    { el: 'v1', base: 71, range: [64, 88], suffix: '%' },
+    { el: 'v2', base: 84, range: [78, 92], suffix: '%' },
+    { el: 'v3', base: 12, range: [9, 16], suffix: '' },
+    { el: 'v4', base: 3,  range: [3, 5],  suffix: '', pad: 2 },
+  ];
+  const chipEls = {};
+  STATS.forEach(s => chipEls[s.el] = document.getElementById(s.el));
+  const animateValue = (el, from, to, dur, suffix, pad) => {
+    const t0 = performance.now();
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      const v = Math.round(from + (to - from) * e);
+      el.textContent = (pad ? String(v).padStart(pad, '0') : v) + suffix;
+      if (k < 1) requestAnimationFrame(step);
+      else el.parentElement.classList.add('pulse');
+    };
+    requestAnimationFrame(step);
+  };
+  setInterval(() => {
+    STATS.forEach(s => {
+      const to = Math.round(s.base + (Math.random() - .45) * (s.range[1] - s.range[0]) * .6);
+      const cur = parseInt(chipEls[s.el].textContent) || s.base;
+      animateValue(chipEls[s.el], cur, to, 700, s.suffix, s.pad || 0);
+    });
+    setTimeout(() => document.querySelectorAll('.chip.pulse').forEach(c => c.classList.remove('pulse')), 600);
+  }, 3200);
+
+  // ── mouse parallax — the mirror leans toward you ──
+  const rig = document.getElementById('rig');
+  const stage = document.getElementById('stage');
+  rig.addEventListener('mousemove', (e) => {
+    const r = rig.getBoundingClientRect();
+    const nx = ((e.clientX - r.left) / r.width) * 2 - 1;   // -1..1
+    const ny = ((e.clientY - r.top) / r.height) * 2 - 1;
+    stage.style.setProperty('--ry', (nx * 7).toFixed(2) + 'deg');
+    stage.style.setProperty('--rx', (-ny * 6).toFixed(2) + 'deg');
+  });
+  rig.addEventListener('mouseleave', () => {
+    stage.style.setProperty('--ry', '0deg');
+    stage.style.setProperty('--rx', '0deg');
+  });
+
+  // ── marquee needs a duplicated track for a seamless loop ──
+  const track = document.getElementById('marquee');
+  track.innerHTML += track.innerHTML;
+</script>
+</body>
+</html>
