@@ -9,7 +9,7 @@ import {
   Platform,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import InfinityCrest from '../components/InfinityCrest';
 import Marquee from '../components/Marquee';
 import PitchBackdrop from '../components/PitchBackdrop';
@@ -111,24 +111,22 @@ const NAV_LINKS_SHORT: [string, string][] = [
 function WebsiteNav({
   onEnter,
   onNav,
+  compact,
+  open,
+  onToggle,
 }: {
   onEnter: () => void;
   onNav: (id: string) => void;
+  compact: boolean;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const { width } = useWindowDimensions();
-  const [open, setOpen] = useState(false);
-  // Phone + tablet share the hamburger. Laptop and up get the full row.
-  const compact = width < 1100;
   const phone = width < 720;
   const links = compact ? NAV_LINKS_SHORT : NAV_LINKS_FULL;
 
-  const go = (id: string) => {
-    setOpen(false);
-    onNav(id);
-  };
-
   return (
-    <View style={[styles.navWrap, WEB ? ({ zIndex: 80 } as any) : null]}>
+    <View style={styles.navWrap}>
       <View style={[styles.nav, compact && styles.navCompact]}>
         <Pressable onPress={onEnter} style={styles.navBrand} accessibilityRole="button">
           <InfinityCrest size={phone ? 22 : 26} />
@@ -145,7 +143,7 @@ function WebsiteNav({
             {links.map(([label, id], i) => (
               <React.Fragment key={id}>
                 {i > 0 && <Text style={styles.navSlash}>/</Text>}
-                <Pressable onPress={() => go(id)} hitSlop={6}>
+                <Pressable onPress={() => onNav(id)} hitSlop={6}>
                   <Text style={styles.navLink}>{label}</Text>
                 </Pressable>
               </React.Fragment>
@@ -168,7 +166,7 @@ function WebsiteNav({
           )}
           {compact && (
             <Pressable
-              onPress={() => setOpen((v) => !v)}
+              onPress={onToggle}
               style={styles.burgerBtn}
               accessibilityRole="button"
               accessibilityLabel={open ? 'Close menu' : 'Open menu'}
@@ -181,23 +179,41 @@ function WebsiteNav({
           )}
         </View>
       </View>
-
-      {compact && open && (
-        <View style={styles.navDrawer}>
-          {links.map(([label, id]) => (
-            <Pressable key={id} onPress={() => go(id)} style={styles.navDrawerItem}>
-              <Text style={styles.navDrawerTxt}>{label}</Text>
-            </Pressable>
-          ))}
-          <Pressable onPress={onEnter} style={styles.navDrawerItem}>
-            <Text style={styles.navDrawerTxt}>SIGN IN</Text>
-          </Pressable>
-          <Pressable onPress={onEnter} style={styles.navDrawerCta}>
-            <Text style={styles.navCtaTxt}>GET STARTED</Text>
-          </Pressable>
-        </View>
-      )}
     </View>
+  );
+}
+
+function NavOverlay({
+  onEnter,
+  onNav,
+  onClose,
+}: {
+  onEnter: () => void;
+  onNav: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <Pressable
+        style={styles.menuScrim}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Close menu"
+      />
+      <Animated.View entering={FadeInDown.duration(220)} style={styles.menuSheet}>
+        {NAV_LINKS_SHORT.map(([label, id]) => (
+          <Pressable key={id} onPress={() => onNav(id)} style={styles.menuItem}>
+            <Text style={styles.menuItemTxt}>{label}</Text>
+          </Pressable>
+        ))}
+        <Pressable onPress={onEnter} style={styles.menuItem}>
+          <Text style={styles.menuItemTxt}>SIGN IN</Text>
+        </Pressable>
+        <Pressable onPress={onEnter} style={styles.menuCta}>
+          <Text style={styles.navCtaTxt}>GET STARTED</Text>
+        </Pressable>
+      </Animated.View>
+    </>
   );
 }
 
@@ -337,16 +353,23 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const { isWide, isDesktopUp } = useResponsive();
   const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : 28) * 2;
+  const compact = winW < 1100;
 
   const ref = useRef<ScrollView>(null);
   const [navH, setNavH] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // ScrollView on web needs an explicit height — the flex chain alone won't
   // give it one. Measure the sticky nav, then give the scroller the rest.
   const scrollH = Math.max(0, winH - navH);
 
+  React.useEffect(() => {
+    if (!compact) setMenuOpen(false);
+  }, [compact]);
+
   // Nav anchor scroll
   const goSection = (id: string) => {
+    setMenuOpen(false);
     if (WEB) {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       return;
@@ -365,9 +388,32 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           const h = e.nativeEvent.layout.height;
           if (h > 0 && h !== navH) setNavH(h);
         }}
+        style={styles.navSlot}
       >
-        <WebsiteNav onEnter={onEnter} onNav={goSection} />
+        <WebsiteNav
+          onEnter={onEnter}
+          onNav={goSection}
+          compact={compact}
+          open={menuOpen}
+          onToggle={() => setMenuOpen((v) => !v)}
+        />
       </View>
+
+      {compact && menuOpen && (
+        <Animated.View
+          entering={FadeIn.duration(160)}
+          style={[styles.menuLayer, { top: navH }]}
+        >
+          <NavOverlay
+            onEnter={() => {
+              setMenuOpen(false);
+              onEnter();
+            }}
+            onNav={goSection}
+            onClose={() => setMenuOpen(false)}
+          />
+        </Animated.View>
+      )}
 
       <ScrollView
         ref={ref}
@@ -741,12 +787,14 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.muted,
   },
+  navSlot: {
+    zIndex: 90,
+  },
   navWrap: {
-    zIndex: 80,
-    backgroundColor: 'rgba(5,10,6,0.94)',
+    zIndex: 90,
+    backgroundColor: 'rgba(5,10,6,0.96)',
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
-    position: 'relative',
   },
   nav: {
     flexDirection: 'row',
@@ -860,34 +908,40 @@ const styles = StyleSheet.create({
     color: colors.fg,
     lineHeight: 20,
   },
-  navDrawer: {
+  menuLayer: {
     position: 'absolute',
-    top: '100%',
     left: 0,
     right: 0,
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 18,
-    backgroundColor: 'rgba(5,10,6,0.97)',
+    bottom: 0,
+    zIndex: 80,
+  },
+  menuScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(3, 7, 4, 0.78)',
+  },
+  menuSheet: {
+    backgroundColor: 'rgba(5,10,6,0.98)',
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
-    gap: 2,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 22,
   },
-  navDrawerItem: {
-    paddingVertical: 13,
+  menuItem: {
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(143,184,155,0.10)',
+    borderBottomColor: 'rgba(143,184,155,0.12)',
   },
-  navDrawerTxt: {
+  menuItemTxt: {
     fontFamily: monoFont,
-    fontSize: 13,
-    letterSpacing: 2.2,
+    fontSize: 15,
+    letterSpacing: 2.4,
     color: colors.fg,
   },
-  navDrawerCta: {
-    marginTop: 12,
+  menuCta: {
+    marginTop: 16,
     backgroundColor: colors.primary,
-    paddingVertical: 13,
+    paddingVertical: 14,
     borderRadius: 999,
     alignItems: 'center',
   },
