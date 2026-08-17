@@ -117,9 +117,10 @@ function WebsiteNav({
 }) {
   const { width } = useWindowDimensions();
   const [open, setOpen] = useState(false);
+  // Phone + tablet share the hamburger. Laptop and up get the full row.
+  const compact = width < 1100;
   const phone = width < 720;
-  const tablet = width >= 720 && width < 1100;
-  const links = tablet || phone ? NAV_LINKS_SHORT : NAV_LINKS_FULL;
+  const links = compact ? NAV_LINKS_SHORT : NAV_LINKS_FULL;
 
   const go = (id: string) => {
     setOpen(false);
@@ -128,26 +129,24 @@ function WebsiteNav({
 
   return (
     <View style={[styles.navWrap, WEB ? ({ zIndex: 80 } as any) : null]}>
-      <View style={[styles.nav, phone && styles.navPhone, tablet && styles.navTablet]}>
+      <View style={[styles.nav, compact && styles.navCompact]}>
         <Pressable onPress={onEnter} style={styles.navBrand} accessibilityRole="button">
           <InfinityCrest size={phone ? 22 : 26} />
-          {!phone && (
-            <Text
-              style={[styles.navBrandTxt, tablet && styles.navBrandTxtTablet]}
-              numberOfLines={1}
-            >
-              PROSEASON ACADEMY
-            </Text>
-          )}
+          <Text
+            style={[styles.navBrandTxt, phone && styles.navBrandTxtPhone]}
+            numberOfLines={1}
+          >
+            {phone ? 'PROSEASON' : 'PROSEASON ACADEMY'}
+          </Text>
         </Pressable>
 
-        {!phone && (
-          <View style={[styles.navLinks, tablet && styles.navLinksTablet]}>
+        {!compact && (
+          <View style={styles.navLinks}>
             {links.map(([label, id], i) => (
               <React.Fragment key={id}>
-                {i > 0 && !tablet && <Text style={styles.navSlash}>/</Text>}
+                {i > 0 && <Text style={styles.navSlash}>/</Text>}
                 <Pressable onPress={() => go(id)} hitSlop={6}>
-                  <Text style={[styles.navLink, tablet && styles.navLinkTablet]}>{label}</Text>
+                  <Text style={styles.navLink}>{label}</Text>
                 </Pressable>
               </React.Fragment>
             ))}
@@ -155,19 +154,19 @@ function WebsiteNav({
         )}
 
         <View style={styles.navActions}>
-          {!phone && !tablet && (
-            <Pressable onPress={onEnter} hitSlop={6}>
-              <Text style={styles.navSignIn}>SIGN IN</Text>
-            </Pressable>
+          {!compact && (
+            <>
+              <Pressable onPress={onEnter} hitSlop={6}>
+                <Text style={styles.navSignIn}>SIGN IN</Text>
+              </Pressable>
+              <Pressable onPress={onEnter}>
+                <View style={styles.navCta}>
+                  <Text style={styles.navCtaTxt}>GET STARTED</Text>
+                </View>
+              </Pressable>
+            </>
           )}
-          {!phone && (
-            <Pressable onPress={onEnter}>
-              <View style={[styles.navCta, tablet && styles.navCtaTablet]}>
-                <Text style={styles.navCtaTxt}>{tablet ? 'START' : 'GET STARTED'}</Text>
-              </View>
-            </Pressable>
-          )}
-          {phone && (
+          {compact && (
             <Pressable
               onPress={() => setOpen((v) => !v)}
               style={styles.burgerBtn}
@@ -183,7 +182,7 @@ function WebsiteNav({
         </View>
       </View>
 
-      {phone && open && (
+      {compact && open && (
         <View style={styles.navDrawer}>
           {links.map(([label, id]) => (
             <Pressable key={id} onPress={() => go(id)} style={styles.navDrawerItem}>
@@ -758,14 +757,9 @@ const styles = StyleSheet.create({
     gap: 16,
     minHeight: 58,
   },
-  navPhone: {
+  navCompact: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    gap: 10,
-  },
-  navTablet: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
     gap: 10,
   },
   navBrand: {
@@ -782,9 +776,9 @@ const styles = StyleSheet.create({
     color: colors.fg,
     flexShrink: 1,
   },
-  navBrandTxtTablet: {
-    fontSize: 11,
-    letterSpacing: 1.1,
+  navBrandTxtPhone: {
+    fontSize: 12,
+    letterSpacing: 1.2,
   },
   navLinks: {
     flexDirection: 'row',

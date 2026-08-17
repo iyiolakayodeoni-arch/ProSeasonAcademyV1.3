@@ -64,14 +64,15 @@ type Props = {
 export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, copy }: Props) {
   const c: HeroCopy = { ...HERO_COPY, ...copy };
   const orbW = isWide ? Math.min(420, contentWidth * 0.44) : Math.min(340, contentWidth * 0.92);
-  // Scale the statement to the column it actually lives in. The old 54 / 38
-  // sizes blew out of a phone and still fought a laptop column.
+  // Fill the column. Longest statement is WRITE HOW YOU FEEL.
   const colW = isWide ? contentWidth * 0.52 : contentWidth;
-  const headSize = Math.round(Math.min(isWide ? 42 : 28, Math.max(isWide ? 30 : 22, colW * (isWide ? 0.072 : 0.078))));
-  const headLine = Math.round(headSize * 1.05);
-  const loopSize = Math.round(Math.min(isWide ? 22 : 16, Math.max(isWide ? 16 : 14, colW * (isWide ? 0.036 : 0.046))));
+  const longest = Math.max(c.line1.length, c.line2.length, 16);
+  const fit = colW / (longest * (isWide ? 0.46 : 0.50));
+  const headSize = Math.round(Math.min(isWide ? 62 : 42, Math.max(isWide ? 38 : 32, fit)));
+  const headLine = Math.round(headSize * 1.02);
+  const loopSize = Math.round(Math.min(isWide ? 28 : 20, Math.max(isWide ? 20 : 16, headSize * 0.42)));
   const loopLine = Math.round(loopSize * 1.2);
-  const crest = isWide ? 28 : 20;
+  const crest = Math.round(Math.min(isWide ? 36 : 26, Math.max(isWide ? 26 : 20, headSize * 0.55)));
 
   return (
     <View style={[styles.hero, { width: contentWidth }]}>
