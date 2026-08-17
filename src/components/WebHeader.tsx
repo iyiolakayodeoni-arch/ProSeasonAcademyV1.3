@@ -28,7 +28,7 @@ interface Props {
 const NAV_ITEMS: { id: MainNavTab; label: string; short: string; icon: any }[] = [
   { id: 'today', label: 'TODAY', short: 'TODAY', icon: HomeIcon },
   { id: 'journey', label: 'THE LOOP', short: 'LOOP', icon: JourneyIcon },
-  { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', short: 'EVIDENCE', icon: ScanGlyphIcon },
+  { id: 'tracker', label: 'THE NUMBERS', short: 'NUMBERS', icon: ScanGlyphIcon },
   { id: 'community', label: 'CLUBHOUSE', short: 'CLUB', icon: WavesGlyphIcon },
   { id: 'settings', label: 'SETTINGS', short: 'ME', icon: GearIcon },
 ];
@@ -93,7 +93,7 @@ export default function WebHeader({
   onOpenFounderDesk,
   isFounder = false,
 }: Props) {
-  const { isWide, isLaptopUp, isTV, w } = useResponsive();
+  const { isWide, isLaptopUp, isDesktopUp, isTV, w } = useResponsive();
   const settings = useSettings();
   const initials = (settings.displayName || 'PLAYER').slice(0, 2).toUpperCase();
 
@@ -122,10 +122,13 @@ export default function WebHeader({
           <View style={styles.brandTextCol}>
             <View style={styles.brandTitleRow}>
               {/* fit a 320px handset without ellipsising the wordmark */}
-              <Text style={[styles.brandTitle, w < 400 && { fontSize: 13, letterSpacing: 0.6 }]}>
-                PROSEASON ACADEMY
+              <Text
+                numberOfLines={1}
+                style={[styles.brandTitle, w < 420 && { fontSize: 12, letterSpacing: 0.5 }]}
+              >
+                {w < 380 ? 'PROSEASON' : 'PROSEASON ACADEMY'}
               </Text>
-              {w >= 360 && (
+              {isLaptopUp && (
                 <View style={styles.livePill}>
                   <View style={[styles.liveDot, styles.liveDotPulse]} />
                   <Text style={styles.liveTxt}>S1 · LIVE</Text>
@@ -148,7 +151,7 @@ export default function WebHeader({
               <NavItem
                 key={id}
                 id={id}
-                label={isLaptopUp ? label : short}
+                label={isDesktopUp ? label : short}
                 Icon={Icon}
                 active={activeTab === id}
                 onSelect={onSelectTab}
@@ -224,7 +227,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
+    overflow: 'hidden',
+    gap: 10,
     // subtle premium shadow
     shadowColor: '#000',
     shadowOpacity: 0.25,
@@ -234,7 +239,7 @@ const styles = StyleSheet.create({
   headerWeb: {
     backdropFilter: 'blur(16px) saturate(1.2)',
   } as any,
-  brandGroup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandGroup: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1, minWidth: 0 },
   crestGlow: {
     shadowColor: colors.primary,
     shadowOpacity: 0.55,
@@ -290,22 +295,25 @@ const styles = StyleSheet.create({
   navBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
     backgroundColor: 'rgba(15, 26, 19, 0.55)',
     borderWidth: 1,
     borderColor: 'rgba(57, 255, 106, 0.12)',
     borderRadius: 14,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     paddingVertical: 4,
+    flexShrink: 1,
+    minWidth: 0,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 5,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     borderRadius: 10,
     position: 'relative',
+    flexShrink: 1,
   },
   navItemActive: {
     backgroundColor: 'rgba(57, 255, 106, 0.11)',

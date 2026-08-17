@@ -92,51 +92,112 @@ function GlassCard({
   return <View style={[styles.glassCard, style]}>{children}</View>;
 }
 
-/* ── sticky nav — minimal: logo left, /-separated links centre, one CTA ── */
+/* ── pinned nav — laptop: full row · tablet: short labels · phone: menu ── */
+const NAV_LINKS_FULL: [string, string][] = [
+  ['METHOD', 'method'],
+  ['THE LOOP', 'loop'],
+  ['TODAY', 'today'],
+  ['THE SCENE', 'scene'],
+  ['JOURNEY', 'journey'],
+];
+const NAV_LINKS_SHORT: [string, string][] = [
+  ['METHOD', 'method'],
+  ['LOOP', 'loop'],
+  ['TODAY', 'today'],
+  ['SCENE', 'scene'],
+  ['JOURNEY', 'journey'],
+];
+
 function WebsiteNav({
   onEnter,
   onNav,
-  showLinks,
 }: {
   onEnter: () => void;
   onNav: (id: string) => void;
-  showLinks: boolean;
 }) {
-  const links: [string, string][] = [
-    ['METHOD', 'method'],
-    ['THE LOOP', 'loop'],
-    ['TODAY', 'today'],
-    ['THE SCENE', 'scene'],
-    ['JOURNEY', 'journey'],
-  ];
+  const { width } = useWindowDimensions();
+  const [open, setOpen] = useState(false);
+  const phone = width < 720;
+  const tablet = width >= 720 && width < 1100;
+  const links = tablet || phone ? NAV_LINKS_SHORT : NAV_LINKS_FULL;
+
+  const go = (id: string) => {
+    setOpen(false);
+    onNav(id);
+  };
+
   return (
-    <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
-      <Pressable onPress={onEnter} style={styles.navBrand}>
-        <InfinityCrest size={26} />
-        <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
-      </Pressable>
-      {showLinks && (
-        <View style={styles.navLinks}>
-          {links.map(([label, id], i) => (
-            <React.Fragment key={id}>
-              {i > 0 && <Text style={styles.navSlash}>/</Text>}
-              <Pressable onPress={() => onNav(id)}>
-                <Text style={styles.navLink}>{label}</Text>
-              </Pressable>
-            </React.Fragment>
+    <View style={[styles.navWrap, WEB ? ({ zIndex: 80 } as any) : null]}>
+      <View style={[styles.nav, phone && styles.navPhone, tablet && styles.navTablet]}>
+        <Pressable onPress={onEnter} style={styles.navBrand} accessibilityRole="button">
+          <InfinityCrest size={phone ? 22 : 26} />
+          {!phone && (
+            <Text
+              style={[styles.navBrandTxt, tablet && styles.navBrandTxtTablet]}
+              numberOfLines={1}
+            >
+              PROSEASON ACADEMY
+            </Text>
+          )}
+        </Pressable>
+
+        {!phone && (
+          <View style={[styles.navLinks, tablet && styles.navLinksTablet]}>
+            {links.map(([label, id], i) => (
+              <React.Fragment key={id}>
+                {i > 0 && !tablet && <Text style={styles.navSlash}>/</Text>}
+                <Pressable onPress={() => go(id)} hitSlop={6}>
+                  <Text style={[styles.navLink, tablet && styles.navLinkTablet]}>{label}</Text>
+                </Pressable>
+              </React.Fragment>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.navActions}>
+          {!phone && !tablet && (
+            <Pressable onPress={onEnter} hitSlop={6}>
+              <Text style={styles.navSignIn}>SIGN IN</Text>
+            </Pressable>
+          )}
+          {!phone && (
+            <Pressable onPress={onEnter}>
+              <View style={[styles.navCta, tablet && styles.navCtaTablet]}>
+                <Text style={styles.navCtaTxt}>{tablet ? 'START' : 'GET STARTED'}</Text>
+              </View>
+            </Pressable>
+          )}
+          {phone && (
+            <Pressable
+              onPress={() => setOpen((v) => !v)}
+              style={styles.burgerBtn}
+              accessibilityRole="button"
+              accessibilityLabel={open ? 'Close menu' : 'Open menu'}
+            >
+              <View style={[styles.burgerLine, open && styles.burgerHide]} />
+              <View style={[styles.burgerLine, open && styles.burgerHide]} />
+              <View style={[styles.burgerLine, open && styles.burgerHide]} />
+              {open && <Text style={styles.burgerClose}>✕</Text>}
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      {phone && open && (
+        <View style={styles.navDrawer}>
+          {links.map(([label, id]) => (
+            <Pressable key={id} onPress={() => go(id)} style={styles.navDrawerItem}>
+              <Text style={styles.navDrawerTxt}>{label}</Text>
+            </Pressable>
           ))}
+          <Pressable onPress={onEnter} style={styles.navDrawerItem}>
+            <Text style={styles.navDrawerTxt}>SIGN IN</Text>
+          </Pressable>
+          <Pressable onPress={onEnter} style={styles.navDrawerCta}>
+            <Text style={styles.navCtaTxt}>GET STARTED</Text>
+          </Pressable>
         </View>
       )}
-      <View style={styles.navActions}>
-        <Pressable onPress={onEnter}>
-          <Text style={styles.navSignIn}>SIGN IN</Text>
-        </Pressable>
-        <Pressable onPress={onEnter}>
-          <View style={styles.navCta}>
-            <Text style={styles.navCtaTxt}>GET STARTED</Text>
-          </View>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -306,7 +367,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           if (h > 0 && h !== navH) setNavH(h);
         }}
       >
-        <WebsiteNav onEnter={onEnter} onNav={goSection} showLinks={isWide} />
+        <WebsiteNav onEnter={onEnter} onNav={goSection} />
       </View>
 
       <ScrollView
@@ -681,37 +742,72 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.muted,
   },
+  navWrap: {
+    zIndex: 80,
+    backgroundColor: 'rgba(5,10,6,0.94)',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+    position: 'relative',
+  },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 28,
     paddingVertical: 14,
-    backgroundColor: 'rgba(5,10,6,0.82)',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
+    gap: 16,
+    minHeight: 58,
+  },
+  navPhone: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  navTablet: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
   },
   navBrand: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+    flexShrink: 1,
+    minWidth: 0,
   },
   navBrandTxt: {
     fontFamily: bodyFontBold,
     fontSize: 13,
     letterSpacing: 2,
     color: colors.fg,
+    flexShrink: 1,
+  },
+  navBrandTxtTablet: {
+    fontSize: 11,
+    letterSpacing: 1.1,
   },
   navLinks: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
+    gap: 14,
+    flexShrink: 1,
+    flexGrow: 1,
+    minWidth: 0,
+  },
+  navLinksTablet: {
+    gap: 8,
+    flexWrap: 'nowrap',
   },
   navLink: {
     fontFamily: monoFont,
-    fontSize: 13,
-    letterSpacing: 2,
+    fontSize: 12,
+    letterSpacing: 1.6,
     color: '#9CA3AF',
+  },
+  navLinkTablet: {
+    fontSize: 10,
+    letterSpacing: 1,
   },
   navSlash: {
     fontFamily: monoFont,
@@ -722,7 +818,8 @@ const styles = StyleSheet.create({
   navActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 18,
+    gap: 14,
+    flexShrink: 0,
   },
   navSignIn: {
     fontFamily: bodyFontStrong,
@@ -736,11 +833,69 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 999,
   },
+  navCtaTablet: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
   navCtaTxt: {
     fontFamily: bodyFontBold,
     fontSize: 11,
     letterSpacing: 1.3,
     color: '#03140a',
+  },
+  burgerBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  burgerLine: {
+    width: 18,
+    height: 1.5,
+    backgroundColor: colors.fg,
+    borderRadius: 1,
+  },
+  burgerHide: {
+    opacity: 0,
+  },
+  burgerClose: {
+    position: 'absolute',
+    fontFamily: bodyFontBold,
+    fontSize: 18,
+    color: colors.fg,
+    lineHeight: 20,
+  },
+  navDrawer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 18,
+    backgroundColor: 'rgba(5,10,6,0.97)',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSubtle,
+    gap: 2,
+  },
+  navDrawerItem: {
+    paddingVertical: 13,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(143,184,155,0.10)',
+  },
+  navDrawerTxt: {
+    fontFamily: monoFont,
+    fontSize: 13,
+    letterSpacing: 2.2,
+    color: colors.fg,
+  },
+  navDrawerCta: {
+    marginTop: 12,
+    backgroundColor: colors.primary,
+    paddingVertical: 13,
+    borderRadius: 999,
+    alignItems: 'center',
   },
   heroCtas: {
     flexDirection: 'row',

@@ -15,8 +15,8 @@ import { MainNavTab } from './WebHeader';
 
 const TABS: { id: MainNavTab; label: string; Icon: any }[] = [
   { id: 'today', label: 'TODAY', Icon: HomeIcon },
-  { id: 'journey', label: 'PROGRESS', Icon: JourneyIcon },
-  { id: 'tracker', label: 'EVIDENCE', Icon: ScanGlyphIcon },
+  { id: 'journey', label: 'LOOP', Icon: JourneyIcon },
+  { id: 'tracker', label: 'NUMBERS', Icon: ScanGlyphIcon },
   { id: 'community', label: 'CLUB', Icon: WavesGlyphIcon },
   { id: 'settings', label: 'ME', Icon: GearIcon },
 ];
