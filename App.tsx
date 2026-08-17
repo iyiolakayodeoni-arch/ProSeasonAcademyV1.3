@@ -12,11 +12,10 @@ import Animated, {
 import SplashScreen from './src/screens/SplashScreen';
 import LandingScreen from './src/screens/LandingScreen';
 import SignInScreen from './src/screens/SignInScreen';
-import CoachSelectScreen from './src/screens/CoachSelectScreen';
 import BaselineScanScreen from './src/screens/BaselineScanScreen';
 import MainScreen from './src/screens/MainScreen';
 import ResponsiveFrame from './src/components/ResponsiveFrame';
-import { COACHES } from './src/data/coaches';
+import { COACHES, SOLO_COACH_ID } from './src/data/coaches';
 import { hydrateProgress } from './src/data/progress';
 import { hydrateThread } from './src/data/lessonThread';
 import { hydrateMirror } from './src/data/mirrorSession';
@@ -34,7 +33,6 @@ import * as backend from './src/data/backend';
 import { setAcademyId, setDisplayName, setEmail } from './src/data/settings';
 import { colors } from './src/theme';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { trackFunnel } from './src/data/funnel';
 import WebAppChrome from './src/components/WebAppChrome';
 
 // Keep the native OS splash as a plain academy background until
@@ -72,7 +70,8 @@ if ((globalThis as any).ErrorUtils?.setGlobalHandler) {
   });
 }
 
-// SPLASH → DOSSIER (landing) → SIGN IN → CHOOSE A COACH → BASELINE WEEK → TODAY.
+// SPLASH → DOSSIER (landing) → SIGN IN → BASELINE WEEK → TODAY.
+// No coach. The work is the player's.
 // The old coach lore, orientation carousel, referral survey and fake setup
 // loader were all extra stops before a player could understand the work.
 type Route = 'landing' | 'signin' | 'coach' | 'scan' | 'hub';
@@ -126,26 +125,22 @@ export default function App() {
       }
       if (!alive) return;
       const s = getSession();
-      if (s.coachId) {
-        // the lock is permanent — his ledger AND his lesson thread load
-        // before the map renders; a bad file must not block the boot
-        await hydrateProgress(s.coachId).catch(() => {});
-        await hydrateThread(s.coachId).catch(() => {});
-        await hydrateMirror(s.coachId).catch(() => {});
-        if (!alive) return;
-        setCoachId(s.coachId);
-      }
+      const pathId = s.coachId || SOLO_COACH_ID;
+      if (!s.coachId) lockCoach(SOLO_COACH_ID);
+      await hydrateProgress(pathId).catch(() => {});
+      await hydrateThread(pathId).catch(() => {});
+      await hydrateMirror(pathId).catch(() => {});
+      if (!alive) return;
+      setCoachId(pathId);
       // Only a verified server session (restored from Supabase auth) allows
       // the user to skip the sign-in door. The local `signedIn` boolean alone
       // is no longer sufficient — this removes the local-only fallback path.
       const signedIn = !!cloud;
       const destination: Route = !signedIn
         ? 'signin'
-        : !s.coachId
-          ? 'coach'
-          : !s.baselineDone
-            ? 'scan'
-            : 'hub';
+        : !s.baselineDone
+          ? 'scan'
+          : 'hub';
 
       setEntryRoute(destination);
       // `npm start` launches the web build. Always show that build's public
@@ -237,24 +232,15 @@ export default function App() {
     markSignedIn();
     const s = getSession();
     // a returning player who already locked in skips straight to his floor
-    const destination: Route = s.coachId && s.baselineDone
-      ? 'hub'
-      : s.coachId
-        ? 'scan'
-        : 'coach';
+    if (!s.coachId) lockCoach(SOLO_COACH_ID);
+    const pathId = getSession().coachId || SOLO_COACH_ID;
+    setCoachId(pathId);
+    void hydrateProgress(pathId);
+    void hydrateThread(pathId);
+    void hydrateMirror(pathId);
+    const destination: Route = s.baselineDone ? 'hub' : 'scan';
     setEntryRoute(destination);
     setRoute(destination);
-  }, []);
-
-  /** coach lock is PERMANENT — from here onboarding only moves forward */
-  const handleLocked = useCallback((id: string) => {
-    lockCoach(id);
-    void trackFunnel('coach_selected'); // persisted; a second call can never overwrite it
-    setCoachId(id);
-    void hydrateProgress(id);
-    void hydrateThread(id);
-    void hydrateMirror(id);
-    setRoute('scan'); // the programme starts at the baseline, not another intro screen
   }, []);
 
   const handleBaselineDone = useCallback(() => {
@@ -285,9 +271,7 @@ export default function App() {
               <>
                 {route === 'landing' && <LandingScreen onEnter={() => setRoute(entryRoute)} />}
                 {route === 'signin' && <SignInScreen onSignedIn={handleSignedIn} />}
-                {route === 'coach' && (
-                  <CoachSelectScreen onBack={() => setRoute('signin')} onLocked={handleLocked} />
-                )}
+                {route === 'coach' && <SignInScreen onSignedIn={handleSignedIn} />}
                 {route === 'scan' && <BaselineScanScreen coach={lockedCoach} onDone={handleBaselineDone} />}
                 {route === 'hub' && <MainScreen coach={lockedCoach} onSignOut={handleSignOut} />}
               </>

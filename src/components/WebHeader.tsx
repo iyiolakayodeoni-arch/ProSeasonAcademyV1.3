@@ -134,7 +134,7 @@ export default function WebHeader({
             </View>
             {isLaptopUp && (
               <Text style={styles.brandSub}>
-                COACH {coach?.name.toUpperCase() || 'CHINEDU OKAFOR'} · FC 26 REVIEW PRACTICE
+                FC 26 REVIEW PRACTICE · THE LOOP
               </Text>
             )}
           </View>

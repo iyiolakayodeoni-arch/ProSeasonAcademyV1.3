@@ -17,6 +17,7 @@ import Hero from '../components/Hero';
 import { CtaPrimary, CtaSecondary } from '../components/CtaButtons';
 import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
+import { THE_FIFTY, sceneFeed, sceneTimeLabel } from '../data/theFifty';
 
 // ─────────────────────────────────────────────────────────────────────────
 // THE DOSSIER — ProSeasonAcademy's public door, modelled on a certain
@@ -38,6 +39,14 @@ const ILLUS = {
   intention: require('../../assets/art/illu-intention.png'),
   moments: require('../../assets/art/illu-moments.png'),
 };
+
+const SCENE_ART = {
+  huddle: require('../../assets/art/community-huddle.jpg'),
+  vault: require('../../assets/art/vault-match.jpg'),
+  boots: require('../../assets/art/scan-boots.jpg'),
+  locker: require('../../assets/art/locker-room.jpg'),
+};
+const SCENE_ART_CYCLE = [SCENE_ART.vault, SCENE_ART.boots, SCENE_ART.huddle, SCENE_ART.locker];
 
 /* ── small house primitives ── */
 function Eyebrow({ children }: { children: string }) {
@@ -87,8 +96,10 @@ function WebsiteNav({
 }) {
   const links: [string, string][] = [
     ['METHOD', 'method'],
+    ['THE LOOP', 'loop'],
+    ['TODAY', 'today'],
+    ['THE SCENE', 'scene'],
     ['JOURNEY', 'journey'],
-    ['EVIDENCE', 'evidence'],
   ];
   return (
     <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
@@ -124,11 +135,135 @@ function WebsiteNav({
 
 const CHAPTERS = [
   { n: '01', title: 'PLAY THE MATCH', body: 'Drop in the footage. No setup, no spreadsheet. The session starts the second the whistle does.' },
-  { n: '02', title: 'WATCH YOURSELF', body: 'The mirror holds no grudge. You review your own decisions before anyone else gets a word in.' },
-  { n: '03', title: 'WRITE THE TRUTH', body: 'Log the error, the intention, the correction. Honesty here is the whole point.' },
-  { n: '04', title: 'ONE LESSON', body: 'Every match distils to a single lesson you carry forward. One lesson, earned, is enough.' },
-  { n: '05', title: 'REPEAT WITH INTENT', body: 'Next session. Same ritual. The repetition is the training — not the drill, the discipline.' },
+  { n: '02', title: 'WATCH YOURSELF', body: 'Watch the tape once. Then stop. The first job is not analysis — it is noticing what the match did to you.' },
+  { n: '03', title: 'WRITE THE FEELING', body: 'On paper first. No discipline, no pretence. Exactly how you feel. Then type that same line into the app.' },
+  { n: '04', title: 'THE LESSONS', body: 'Every key moment leaves a rule from your own game. We list them. That list is what the match taught you.' },
+  { n: '05', title: 'REPEAT THE LOOP', body: 'Next match. Same ritual. The repetition is the training — not the drill, the discipline.' },
   { n: '06', title: 'COMPOUND', body: 'Week over week the ledger fills. Progress stops being a feeling and becomes an entry.' },
+];
+
+const LOOP_STEPS = [
+  {
+    n: '01',
+    when: 'TONIGHT',
+    title: 'THE FEELING',
+    body: 'Watch the tape once. Then stop being a footballer. Write exactly how you feel on a piece of paper — no pressure, no discipline, no pretending. Then type that same line into the app. We keep it. We do not use it yet.',
+    aside: 'the feeling is true. it is also dirty',
+  },
+  {
+    n: '02',
+    when: '24 HOURS LATER',
+    title: 'THE MOMENTS',
+    body: 'Now you are calm. Write the moments that actually changed the game — the ones that mattered to you. Paper first. Then the app. If you write it down, it stays in your head.',
+    aside: 'not every event. the ones that turned it',
+  },
+  {
+    n: '03',
+    when: 'EACH MOMENT',
+    title: 'THE QUESTIONS',
+    body: 'Name it. Mark the time. Reconstruct the game state before you judge anything. What they were actually doing. What you were actually doing. Whether you were even present. Then who won the exchange, why it failed, and one rule you can drill next time.',
+    aside: 'paper first. then you type it',
+  },
+  {
+    n: '04',
+    when: 'FROM YOUR OWN GAME',
+    title: 'THE LESSONS',
+    body: 'You do not invent a lesson because the app asked for one. The last answer on each moment is the lesson. We list them. Then one final question. Then you enter the match numbers so the card can be built.',
+    aside: 'not from a youtube clip. from you, watching you',
+  },
+  {
+    n: '05',
+    when: 'THE RECEIPT',
+    title: 'THE CARD',
+    body: 'One card. Your stats — read against that opponent. Not two scoreboards. How you actually played in relation to them, in this match, shareable. The card is not the work. It is the receipt.',
+    aside: 'you vs them. one object. not both sheets',
+  },
+];
+
+const LOOP_QUESTIONS = [
+  { n: '01', t: 'RECONSTRUCT THE GAME STATE', d: 'Score, time left, formation, numbers, phase of play. No context, no right to judge the decision.' },
+  { n: '02', t: 'WHAT WERE THEY ACTUALLY DOING', d: 'Shape and movement in the 2–3 seconds before. What they did — not what you assumed they would do.' },
+  { n: '03', t: 'WHAT WERE YOU ACTUALLY DOING', d: 'Position, real options, body shape, and what your first touch already committed you to.' },
+  { n: '04', t: 'WERE YOU PRESENT', d: 'Reading what was in front of you — or running a plan the picture had already killed.' },
+  { n: '05', t: 'YOUR THINKING. THEIR THINKING.', d: 'Your intention in one sentence. Then flip it: what were they trying to bait or deny.' },
+  { n: '06', t: 'WHO WON THE EXCHANGE', d: 'Not goal / no goal. Space, timing, decision. You can lose the moment with a process that was right.' },
+  { n: '07', t: 'WHY IT FAILED — OR WORKED', d: 'Perception, decision, or execution. Most players blame the last one. Check the other two first.' },
+  { n: '08', t: 'ONE RULE FOR NEXT TIME', d: 'Not “be better.” A sentence you can drill and recognise live.' },
+];
+
+const SCENE_PILLARS = [
+  {
+    n: '01',
+    title: 'THE FIFTY',
+    body: 'About fifty of the top FC pro players, kept in one book. What they are doing in public. Their titles. Their story as it moves.',
+    aside: 'tracked. not worshipped',
+    art: SCENE_ART.huddle,
+  },
+  {
+    n: '02',
+    title: 'TITLES & THE SCENE',
+    body: 'Who lifted what. Who dropped. The FC 26 pro scene as it actually stands this week — not a rumour thread.',
+    aside: 'the ladder, written down',
+    art: SCENE_ART.vault,
+  },
+  {
+    n: '03',
+    title: 'NEWS & MECHANICS',
+    body: 'New skills, reworked systems, PlayStyles, patch notes — with the input and a three-step way to learn each one.',
+    aside: 'the world you are training in',
+    art: SCENE_ART.boots,
+  },
+];
+
+const HOME_FEATURES = [
+  {
+    n: '01',
+    badge: 'PRIMARY',
+    title: 'OPEN MY SIX MONTHS',
+    body: 'Day N of 180 is waiting on the board. One mission. Finish what you started. The Loop lives here.',
+  },
+  {
+    n: '02',
+    badge: '7-MATCH INGEST',
+    title: 'EVIDENCE & CHECKPOINTS',
+    body: 'Upload the post-match stats screen. The numbers build your card — you against that opponent.',
+  },
+  {
+    n: '03',
+    badge: 'LIVE BOOK',
+    title: 'THE SCENE · THE FIFTY',
+    body: 'Fifty current FC Pro names. Titles, public handles, the feed, and the mechanics book.',
+  },
+  {
+    n: '04',
+    badge: 'STANDARD',
+    title: 'THE LOOP',
+    body: 'The only guide. Watch once. Write how you feel. Wait a day. Take the match apart. No coach. Nothing else.',
+  },
+  {
+    n: '05',
+    badge: 'PATCH NOTES',
+    title: 'FC UPDATES & ACADEMY',
+    body: 'Founder notes, approved news, MetaBot tricks. Only the receipts that help you win.',
+  },
+  {
+    n: '06',
+    badge: 'GUIDE',
+    title: 'LEARN THE BASICS',
+    body: 'New foundations first. The simple, repeatable things that win difficult matches.',
+  },
+  {
+    n: '07',
+    badge: 'LIVE',
+    title: 'CLUBHOUSE COMMUNITY',
+    body: 'Bring a question, a score, or an honest lesson. The halls are optional. The Loop is not.',
+  },
+  {
+    n: '08',
+    badge: 'LOCKED IN',
+    title: 'STARTING BASELINE',
+    body: 'A sealed starting week. What good looks like, beside your own evidence. No coach. The work is yours.',
+  },
 ];
 
 export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
@@ -149,7 +284,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
       document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
-    const y: Record<string, number> = { method: 900, journey: 1900, evidence: 3000 };
+    const y: Record<string, number> = { method: 900, loop: 1750, today: 3200, scene: 4200, journey: 5600, evidence: 6700 };
     ref.current?.scrollTo({ y: y[id] ?? 0, animated: true });
   };
 
@@ -178,7 +313,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         <View id="top">
           <Hero
             onPrimary={onEnter}
-            onSecondary={() => goSection('method')}
+            onSecondary={() => goSection('loop')}
             isWide={isWide}
             contentWidth={contentW}
           />
@@ -187,82 +322,189 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         {/* ── THE METHOD ── */}
         <View style={styles.section} id="method">
           <Eyebrow>[ METHOD ]</Eyebrow>
-          <H2 center>ESPORTS-GRADE REVIEW, ONE MATCH AT A TIME.</H2>
+          <H2 center>THE LOOP IS THE ONLY GUIDE.</H2>
           <Muted center>
-            No subscriptions to judgement. No scoreboard to impress. Just a discipline:
-            the match, the mirror, the journal, the next kick.
+            No coach. Nothing talking at you. The ritual is the teacher — tonight the feeling,
+            tomorrow the film room. Mix those two heads and you lie to yourself.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
+                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>01</Text>
-                <Text style={styles.cardTitle}>THE MIRROR</Text>
-                <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
-                <Aside>this was the designer's idea btw</Aside>
+                <Text style={styles.cardTitle}>PAPER FIRST</Text>
+                <Text style={styles.cardBody}>
+                  Write it by hand before you type it. Typing too early makes it neat. Neat is fake. If you write it down, it stays in your head.
+                </Text>
+                <Aside>there is a reason we ask for the biro</Aside>
               </GlassCard>
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
+                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>02</Text>
-                <Text style={styles.cardTitle}>THE JOURNAL</Text>
-                <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
-                <Aside>we take the truth seriously. deal with it</Aside>
+                <Text style={styles.cardTitle}>TWO HEADS</Text>
+                <Text style={styles.cardBody}>
+                  Tonight you capture the feeling before you can edit it. Tomorrow you do the film room, when you can actually see.
+                </Text>
+                <Aside>mix them and you lie to yourself</Aside>
               </GlassCard>
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
                 <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
                 <Text style={styles.cardIndex}>03</Text>
-                <Text style={styles.cardTitle}>THE LEDGER</Text>
-                <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
-                <Aside>no fake percentages here</Aside>
+                <Text style={styles.cardTitle}>THE CARD COMES LAST</Text>
+                <Text style={styles.cardBody}>
+                  After the thinking, you get one card: your performance in relation to that opponent. Not their sheet next to yours. Yours, against them.
+                </Text>
+                <Aside>no flex without the film room</Aside>
               </GlassCard>
             </Animated.View>
           </View>
         </View>
 
-        {/* ── HOW IT WORKS ── */}
-        <View style={styles.section} id="how">
-          <Eyebrow>[ HOW IT WORKS ]</Eyebrow>
-          <H2 center>PLAY → REVIEW → CARRY ONE LESSON FORWARD.</H2>
-          <Muted center>Your entire job, compressed to one honest loop.</Muted>
+        {/* ── THE LOOP — how we actually work ── */}
+        <View style={styles.section} id="loop">
+          <Eyebrow>[ THE LOOP ]</Eyebrow>
+          <H2 center>THIS IS HOW WE ACTUALLY WORK.</H2>
+          <Muted center>
+            Play. Watch it once. Write how you feel. Wait a day. Then take the match
+            apart — on paper first, then in the app. Then you get the card.
+          </Muted>
+
+          <View style={[styles.loopRail, { maxWidth: contentW }]}>
+            {LOOP_STEPS.map((step, i) => (
+              <Animated.View key={step.n} entering={FadeInDown.delay(80 + i * 70).duration(600)} style={styles.loopStep}>
+                <View style={styles.loopSpine}>
+                  <Text style={styles.loopNum}>{step.n}</Text>
+                  {i < LOOP_STEPS.length - 1 && <View style={styles.loopLine} />}
+                </View>
+                <GlassCard style={styles.loopCard}>
+                  <Text style={styles.loopWhen}>{step.when}</Text>
+                  <Text style={styles.cardTitle}>{step.title}</Text>
+                  <Text style={styles.cardBody}>{step.body}</Text>
+                  <Aside>{step.aside}</Aside>
+                </GlassCard>
+              </Animated.View>
+            ))}
+          </View>
+
+          <View style={[styles.questionsBoard, { maxWidth: contentW }]}>
+            <Text style={styles.questionsEyebrow}>[ THE QUESTIONS · EVERY KEY MOMENT ]</Text>
+            <Text style={[styles.questionsHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
+              YOU CANNOT HIDE IN “I JUST MISSED IT.”
+            </Text>
+            <Text style={[styles.questionsLead, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+              Name the moment. Choose the time. Answer these on paper. Then type them in the app.
+            </Text>
+            <View style={styles.questionsGrid}>
+              {LOOP_QUESTIONS.map((q) => (
+                <View key={q.n} style={styles.questionItem}>
+                  <Text style={styles.questionN}>{q.n}</Text>
+                  <Text style={styles.questionT}>{q.t}</Text>
+                  <Text style={styles.questionD}>{q.d}</Text>
+                </View>
+              ))}
+            </View>
+            <Aside>perception · decision · execution — check the first two first</Aside>
+          </View>
+
+          <View style={[styles.loopClose, { maxWidth: contentW }]}>
+            <InfinityCrest size={36} />
+            <Text style={[styles.loopCloseTxt, WEB ? ({ fontFamily: headFont } as any) : null]}>
+              NEXT MATCH. SAME LOOP. FOREVER.
+            </Text>
+          </View>
+        </View>
+
+        {/* ── TODAY — the home screen, advertised ── */}
+        <View style={styles.section} id="today">
+          <Eyebrow>[ TODAY ]</Eyebrow>
+          <H2 center>THIS IS THE HOME SCREEN.</H2>
+          <Muted center>
+            You open Today. One job is green. Everything else is a workspace.
+            The Loop guides you. These are the rooms around it — not a person.
+          </Muted>
+          <View style={[styles.homePrimary, { maxWidth: contentW }]}>
+            <Text style={styles.homePrimaryBadge}>THE ONE TAP</Text>
+            <Text style={[styles.homePrimaryTitle, WEB ? ({ fontFamily: headFont } as any) : null]}>
+              OPEN MY SIX MONTHS
+            </Text>
+            <Text style={[styles.homePrimaryBody, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+              Day of 180. Today’s mission. Season sealed, days left — real receipts, not a painted bar.
+            </Text>
+          </View>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.intention} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>A</Text>
-                <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
-                <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>B</Text>
-                <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
-                <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>C</Text>
-                <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
-                <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
-              </GlassCard>
-            </Animated.View>
+            {HOME_FEATURES.map((f, i) => (
+              <Animated.View key={f.n} entering={FadeInDown.delay(80 + i * 50).duration(520)} style={styles.homeCard}>
+                <GlassCard style={styles.cardFill}>
+                  <Text style={styles.loopWhen}>{f.badge}</Text>
+                  <Text style={styles.cardTitle}>{f.title}</Text>
+                  <Text style={styles.cardBody}>{f.body}</Text>
+                </GlassCard>
+              </Animated.View>
+            ))}
+          </View>
+        </View>
+
+        {/* ── ROLE MODEL UPDATES / THE SCENE ── */}
+        <View style={styles.section} id="scene">
+          <Eyebrow>[ ROLE MODEL UPDATES ]</Eyebrow>
+          <H2 center>FIFTY PROS. ONE FEED.</H2>
+          <Muted center>
+            {THE_FIFTY.length} current FC Pro names in the book. Public titles. Public results.
+            RvPLegend is world champion. Vejrgang took the Open and the eCL. You scroll it like Instagram.
+          </Muted>
+
+          <View style={[styles.cardRow, { maxWidth: contentW }]}>
+            {SCENE_PILLARS.map((p, i) => (
+              <Animated.View key={p.n} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={styles.card}>
+                <GlassCard style={styles.cardFill}>
+                  <Image source={p.art} style={styles.cardIllu} resizeMode="cover" />
+                  <Text style={styles.cardIndex}>{p.n}</Text>
+                  <Text style={styles.cardTitle}>{p.title}</Text>
+                  <Text style={styles.cardBody}>{p.body}</Text>
+                  <Aside>{p.aside}</Aside>
+                </GlassCard>
+              </Animated.View>
+            ))}
+          </View>
+
+          <View style={[styles.sceneBoard, { maxWidth: Math.min(contentW, 560) }]}>
+            <View style={styles.sceneBoardHead}>
+              <Text style={styles.questionsEyebrow}>[ THE FEED ]</Text>
+              <Text style={styles.sceneLive}>LIVE</Text>
+            </View>
+            <Text style={[styles.questionsHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
+              SCROLL IT LIKE INSTAGRAM.
+            </Text>
+            <Text style={[styles.questionsLead, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+              Players. Titles. News. Mechanics. One stream. The Loop is the work. This is the world you are training in.
+            </Text>
+            {sceneFeed().slice(0, 4).map((post, i) => (
+              <View key={post.id} style={styles.scenePost}>
+                <View style={styles.scenePostTop}>
+                  <Text style={styles.sceneHandle}>{post.handle}</Text>
+                  <Text style={styles.sceneTime}>{sceneTimeLabel(post.date)}</Text>
+                </View>
+                <Image source={SCENE_ART_CYCLE[i % SCENE_ART_CYCLE.length]} style={styles.scenePostArt} resizeMode="cover" />
+                <Text style={styles.sceneTag}>{post.kind}</Text>
+                <Text style={styles.sceneHeadline}>{post.headline}</Text>
+                <Text style={styles.sceneBody}>{post.body}</Text>
+              </View>
+            ))}
+            <Aside>public tournament record only. we do not invent their lives</Aside>
           </View>
         </View>
 
         {/* ── THE JOURNEY ── */}
         <View style={styles.section} id="journey">
           <Eyebrow>[ THE JOURNEY ]</Eyebrow>
-          <H2 center>SIX CHAPTERS. THEN THE LOOP.</H2>
+          <H2 center>SIX CHAPTERS. THE LOOP IS THE WORK.</H2>
           <Muted center>
-            No stop date, no graduation. Chapter six hands you back to chapter one — the loop
-            compounds forever, and the mistakes you make are the tuition.
+            No stop date, no graduation. The chapters give the road a shape. The Loop is
+            what you actually do — session by session, infinitely. The mistakes are the tuition.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             {CHAPTERS.map((c, i) => (
@@ -298,9 +540,9 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
                 <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.evidenceStat}>1×</Text>
-                <Text style={[styles.cardBody, styles.center]}>lesson per match. One lesson, earned, carried into the next.</Text>
-                <Aside>one is enough. we mean it</Aside>
+                <Text style={styles.evidenceStat}>24H</Text>
+                <Text style={[styles.cardBody, styles.center]}>between the feeling and the film room. Tonight you write how you feel. Tomorrow you see.</Text>
+                <Aside>calm is part of the method</Aside>
               </GlassCard>
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
@@ -318,11 +560,11 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         <View style={[styles.ctaBanner, { maxWidth: contentW }]}>
           <Eyebrow>CLAIM YOUR SEAT</Eyebrow>
           <Text style={[styles.ctaHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
-            THE SEASON STARTS AT THE MIRROR.
+            THE LOOP IS THE GUIDE. NOTHING ELSE.
           </Text>
           <Muted center>
-            One coach, locked permanently. One standard. One thousand seats — when it's
-            full, it's full. Sign in, lock in your coach, and get your baseline week sorted.
+            One thousand seats — when it's full, it's full. Sign in, seal the baseline,
+            start the Loop. No coach. No voice in your ear. The ritual is the teacher.
           </Muted>
           <View style={styles.heroCtas}>
             <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
@@ -335,8 +577,8 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         <View style={{ width: '100%', paddingVertical: 30, marginTop: 8 }}>
           <Marquee pxPerSec={60}>
             <Text style={styles.marqueeTxt}>
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
+              PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
+              PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
             </Text>
           </Marquee>
         </View>
@@ -344,7 +586,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         {/* ── FOOTER ── */}
         <View style={styles.footer}>
           <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
-          <Text style={styles.footerTag}>THE CONSOLE COACHING ACADEMY · REVIEW ONE MATCH AT A TIME</Text>
+          <Text style={styles.footerTag}>THE CONSOLE ACADEMY · THE LOOP · SESSION BY SESSION</Text>
           <Text style={styles.footerNote}>we cooked, yeah we know · © {new Date().getFullYear()} ProSeason Academy</Text>
         </View>
       </ScrollView>
@@ -595,5 +837,253 @@ const styles = StyleSheet.create({
     fontFamily: bodyFont,
     fontSize: 12,
     color: colors.mutedDim,
+  },
+  loopRail: {
+    width: '100%',
+    gap: 8,
+    marginTop: 8,
+  },
+  loopStep: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: 16,
+  },
+  loopSpine: {
+    width: 42,
+    alignItems: 'center',
+  },
+  loopNum: {
+    fontFamily: displayFont,
+    fontSize: 22,
+    color: colors.primary,
+    lineHeight: 26,
+  },
+  loopLine: {
+    flex: 1,
+    width: 1,
+    marginTop: 8,
+    marginBottom: 4,
+    backgroundColor: 'rgba(57,255,106,0.28)',
+  },
+  loopCard: {
+    flex: 1,
+    marginBottom: 10,
+  },
+  loopWhen: {
+    fontFamily: monoFont,
+    fontSize: 10.5,
+    letterSpacing: 2.4,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  questionsBoard: {
+    width: '100%',
+    marginTop: 36,
+    padding: 28,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+  },
+  questionsEyebrow: {
+    fontFamily: monoFont,
+    fontSize: 10.5,
+    letterSpacing: 2.6,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    marginBottom: 14,
+  },
+  questionsHead: {
+    fontFamily: displayFont,
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: 0.4,
+    color: colors.fg,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  questionsLead: {
+    fontFamily: bodyFont,
+    fontSize: 15,
+    lineHeight: 23,
+    color: colors.muted,
+    textAlign: 'center',
+    maxWidth: 520,
+    marginBottom: 22,
+  },
+  questionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  questionItem: {
+    flexBasis: 240,
+    flexGrow: 1,
+    backgroundColor: colors.surfaceGlass,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: 14,
+    padding: 16,
+  },
+  questionN: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 2,
+    color: colors.primaryDim,
+    marginBottom: 8,
+  },
+  questionT: {
+    fontFamily: bodyFontStrong,
+    fontSize: 13,
+    letterSpacing: 1.1,
+    color: colors.fg,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  questionD: {
+    fontFamily: bodyFont,
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: colors.muted,
+  },
+  loopClose: {
+    width: '100%',
+    marginTop: 36,
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 8,
+  },
+  loopCloseTxt: {
+    fontFamily: displayFont,
+    fontSize: 22,
+    letterSpacing: 1.2,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  sceneBoard: {
+    width: '100%',
+    marginTop: 40,
+    padding: 22,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+  },
+  sceneBoardHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  sceneLive: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 2,
+    color: '#03140a',
+    backgroundColor: colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  scenePost: {
+    width: '100%',
+    marginTop: 16,
+    backgroundColor: colors.surfaceGlass,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: 16,
+    padding: 14,
+  },
+  scenePostTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sceneHandle: {
+    fontFamily: bodyFontBold,
+    fontSize: 12,
+    letterSpacing: 1.4,
+    color: colors.fg,
+  },
+  sceneTime: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.mutedDim,
+  },
+  scenePostArt: {
+    width: '100%',
+    height: 160,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  sceneTag: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 2.2,
+    color: colors.primary,
+    marginBottom: 6,
+  },
+  sceneHeadline: {
+    fontFamily: bodyFontStrong,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.fg,
+    marginBottom: 6,
+  },
+  sceneBody: {
+    fontFamily: bodyFont,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.muted,
+  },
+  homePrimary: {
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    marginBottom: 22,
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+  },
+  homePrimaryBadge: {
+    fontFamily: monoFont,
+    fontSize: 10,
+    letterSpacing: 2.4,
+    color: '#03140a',
+    marginBottom: 10,
+  },
+  homePrimaryTitle: {
+    fontFamily: displayFont,
+    fontSize: 32,
+    lineHeight: 36,
+    letterSpacing: 0.6,
+    color: '#03140a',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  homePrimaryBody: {
+    fontFamily: bodyFont,
+    fontSize: 15,
+    lineHeight: 22,
+    color: 'rgba(3,20,10,0.78)',
+    textAlign: 'center',
+    maxWidth: 520,
+  },
+  homeCard: {
+    flexBasis: 240,
+    flexGrow: 1,
   },
 });

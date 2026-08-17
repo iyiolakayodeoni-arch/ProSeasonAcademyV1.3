@@ -41,8 +41,6 @@ import { useHover } from '../hooks/useHover';
 const HERO_BG = require('../../assets/art/pitch-bg.png');
 
 
-// Coach Obinna — the face of the arena panel, anchored to the panel floor.
-const OBINNA = require('../../assets/coaches/obinna-card.png');
 import { getSettings, setCountry, setDisplayName } from '../data/settings';
 import { COUNTRY_OPTIONS, optionForLabel, verifyLocation } from '../data/location';
 import * as backend from '../data/backend';
@@ -62,7 +60,7 @@ const HOLD_MS = 5000; // hold the full line for five seconds before restarting
 
 /**
  * The simple dark-green esports stage behind Obinna — solid deep green,
- * a faint HUD grid and one glow pool where the coach stands. No photography.
+ * a faint HUD grid and one glow pool. No photography. No coach.
  */
 function ArenaBackdrop() {
   return (
@@ -82,7 +80,7 @@ function ArenaBackdrop() {
         <Rect width="100%" height="100%" fill="url(#signInArenaGrid)" />
         <Rect width="100%" height="100%" fill="url(#signInArenaGlow)" />
       </Svg>
-      {/* the floor line Obinna stands on */}
+      {/* the floor line */}
       <View style={arenaStyles.floor} />
     </View>
   );
@@ -341,7 +339,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
           </Text>
           <Text style={styles.authSub}>
             {mode === 'register'
-              ? 'Create your member profile and lock in your coach. The seat is yours when the baseline is sealed.'
+              ? 'Create your member profile. The Loop is the guide — no coach. The seat is yours when the baseline is sealed.'
               : mode === 'login'
                 ? 'Sign in to access your 6-month progress and match receipts.'
                 : 'Enter your registered email to receive reset instructions.'}
@@ -697,13 +695,6 @@ export default function SignInScreen({ onSignedIn }: Props) {
               <View style={[styles.hudCorner, styles.hudBL]} />
               <View style={[styles.hudCorner, styles.hudBR]} />
             </View>
-
-            {/* Coach Obinna — anchored to the floor of the panel */}
-            <Image
-              source={OBINNA}
-              resizeMode="contain"
-              style={[styles.obinna, styles.obinnaStacked]}
-            />
 
             <Animated.View
               entering={FadeIn.duration(600).delay(120)}

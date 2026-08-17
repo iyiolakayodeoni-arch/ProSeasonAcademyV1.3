@@ -45,12 +45,14 @@ const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const PITCH = require('../../assets/art/home-pitch.png');
 
 const COMBO_MAP: Record<string, ControllerButton[]> = {
-  'controlled-sprint': ['R1', 'LS'],
-  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'explosive-stepover': ['L1', 'RS_FLICK'],
+  'lane-change': ['L1', 'RS_FLICK'],
   'driven-pass': ['R1', 'CROSS'],
   'second-ball': ['LS', 'CIRCLE'],
-  'lane-change': ['L1', 'RS_FLICK'],
   'tactics-window': ['DPAD_DOWN', 'DPAD_UP'],
+  'controlled-sprint': ['R1', 'LS'],
+  'late-cross': ['L1', 'R1', 'CIRCLE'],
+  'shield-trap': ['L2', 'LS'],
 };
 
 const CHIPS = ['ALL', 'FOUNDER', 'NEWS', 'META WATCH', 'ROLE MODEL STORY', 'COACH & GROUP'] as const;

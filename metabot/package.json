@@ -9,6 +9,7 @@
     "pending": "node src/approve.js pending",
     "approve": "node src/approve.js approve",
     "reject": "node src/approve.js reject",
-    "export": "node src/exportForApp.js"
+    "export": "node src/exportForApp.js",
+    "scene": "node src/collectors/fiftySocials.js"
   }
 }

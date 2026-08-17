@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, Image, Platform, Easing } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, Platform, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeInUp,
@@ -32,6 +32,7 @@ type Props = {
   onOpenHalls: () => void;
   onOpenGuide: () => void;
   onOpenRole: () => void;
+  onOpenScene?: () => void;
 };
 
 function greeting() {
@@ -209,14 +210,14 @@ function ProgressRail({ pct }: { pct: number }) {
   );
 }
 
-export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole }: Props) {
+export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole, onOpenScene }: Props) {
   const { isMultiColumn, isWide, isLaptopUp, bp } = useResponsive();
   const [day, setDay] = useState(1);
   const [prog, setProg] = useState<DailyProgram | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
   const settings = useSettings();
   const { items: announcements } = useAnnouncements();
-  const firstName = coach.name.split(' ')[0];
+
 
   useEffect(() => {
     void loadDailyProgram().then((program) => {
@@ -258,13 +259,13 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
             <Animated.View entering={FadeInUp.delay(40).duration(480)} style={[styles.heroCard, Platform.OS === 'web' && (styles.heroBlur as any)]}>
               <LinearGradient colors={['rgba(57,255,106,0.18)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:1}} style={StyleSheet.absoluteFill} />
               <View style={styles.heroTopRow}>
-                <Text style={styles.heroDay}>DAY {day} OF 180 · {firstName.toUpperCase()} IS ON THE TOUCHLINE</Text>
+                <Text style={styles.heroDay}>DAY {day} OF 180 · THE LOOP IS WAITING</Text>
                 <View style={styles.dayPill}>
                   <Text style={styles.dayPillTxt}>DAY {day}</Text>
                 </View>
               </View>
               <TypedGreeting name={settings.displayName || 'PLAYER'} />
-              <Text style={styles.heroSub}>“{firstName}, speaking. You have one job: show up honestly, review the tape, and let the work stack.”</Text>
+              <Text style={styles.heroSub}>One job: show up honestly, review the tape, and let the work stack.</Text>
               <View style={styles.heroStatsRow}>
                 <View style={styles.heroStat}>
                   <Text style={styles.heroStatVal}>{pct}%</Text>
@@ -304,7 +305,8 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
                 tablets keep a comfortable single rail beside the sidebar */}
             <View style={[styles.routesGrid, isLaptopUp && styles.routesGridWide]}>
               {onOpenTracker && <PremiumCard delay={160} wide={isLaptopUp} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
-              <PremiumCard delay={200} wide={isLaptopUp} label="ROLE MODEL STORY" badge="STANDARD" line="“Study the standard. Calm defending, clean composure, and winning from habits.”" onPress={onOpenRole} />
+              <PremiumCard delay={180} wide={isLaptopUp} label="THE SCENE · THE FIFTY" badge="LIVE BOOK" line="“Fifty current FC Pro names. Titles, mechanics, the feed. Public record only.”" onPress={onOpenScene ?? onOpenUpdates} />
+              <PremiumCard delay={200} wide={isLaptopUp} label="THE LOOP" badge="THE GUIDE" line="“No coach. The ritual is the teacher. Watch once, write how you feel, wait a day.”" onPress={onOpenJourney} />
               <PremiumCard delay={240} wide={isLaptopUp} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
               <PremiumCard delay={280} wide={isLaptopUp} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
               <PremiumCard delay={320} wide={isLaptopUp} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
@@ -313,26 +315,6 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
 
           {/* Right Sidebar */}
           <View style={[styles.colSide, isMultiColumn && styles.colSideWide, isMultiColumn && bp === 'tablet' && styles.colSideTablet]}>
-            <Animated.View entering={FadeInUp.delay(100).duration(480)} style={[styles.coachCard, Platform.OS === 'web' && (styles.glassBlur as any)]}>
-              <LinearGradient colors={['rgba(242,192,120,0.10)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:0}} style={styles.coachAccent} />
-              <View style={styles.coachTopRow}>
-                <Image source={coach.portrait} style={styles.coachAvatar} />
-                <View style={styles.coachMeta}>
-                  <Text style={styles.coachTag}>PERMANENT GUIDE</Text>
-                  <Text style={styles.coachName}>{coach.name.toUpperCase()}</Text>
-                  <Text style={styles.coachTitle}>{coach.title}</Text>
-                </View>
-                <View style={styles.coachLive}>
-                  <View style={styles.coachLiveDot} />
-                </View>
-              </View>
-              <Text style={styles.coachQuote}>“{coach.oneLiner}”</Text>
-              <View style={styles.benchmarkBox}>
-                <Text style={styles.benchmarkTag}>WHAT GOOD LOOKS LIKE</Text>
-                <Text style={styles.benchmarkTxt}>Calm under pressure. Clean positioning. No panic clearances. Winning through discipline.</Text>
-              </View>
-            </Animated.View>
-
             <Animated.View entering={FadeInUp.delay(160).duration(480)} style={[styles.widget, Platform.OS === 'web' && (styles.glassBlur as any)]}>
               <View style={styles.widgetHeader}>
                 <Text style={styles.widgetTag}>6-MONTH PROGRAM</Text>

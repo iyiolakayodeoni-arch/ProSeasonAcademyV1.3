@@ -68,7 +68,7 @@ export default function AcademyGuideScreen({ onClose }: Props) {
           <Text style={styles.kicker}>THE SIMPLE ANSWER</Text>
           <Text style={styles.answerTitle}>IT HELPS YOU LEARN FROM THE MATCH YOU JUST PLAYED.</Text>
           <Text style={styles.answerBody}>
-            ProSeasonAcademy is a private review practice for EA FC console players. It does not play for you, analyse your mind with AI, or promise a shortcut. It helps you notice your own repeated decisions and take one useful lesson into the next match.
+            ProSeasonAcademy is a private review practice for EA FC console players. There is no coach. The Loop is the only guide — watch the match once, write how you feel, wait a day, then take it apart. It does not play for you or promise a shortcut.
           </Text>
         </Animated.View>
 
@@ -100,7 +100,7 @@ export default function AcademyGuideScreen({ onClose }: Props) {
           <Text style={styles.notTitle}>WHAT IT IS NOT</Text>
           <View style={styles.notRow}><CheckIcon size={11} color={colors.accent} /><Text style={styles.notCopy}>Not a news feed you need to keep up with.</Text></View>
           <View style={styles.notRow}><CheckIcon size={11} color={colors.accent} /><Text style={styles.notCopy}>Not a social app you need to perform in.</Text></View>
-          <View style={styles.notRow}><CheckIcon size={11} color={colors.accent} /><Text style={styles.notCopy}>Not a stats card generator pretending to be coaching.</Text></View>
+          <View style={styles.notRow}><CheckIcon size={11} color={colors.accent} /><Text style={styles.notCopy}>Not a coach. Not a voice in your ear. The Loop is the guide.</Text></View>
           <Text style={styles.notBottom}>Updates, halls and detailed stats exist to support the work—not replace it.</Text>
         </Animated.View>
 

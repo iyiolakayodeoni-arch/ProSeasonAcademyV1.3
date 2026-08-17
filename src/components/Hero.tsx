@@ -38,16 +38,15 @@ export type HeroCopy = {
 };
 
 export const HERO_COPY: HeroCopy = {
-  line1: 'CARRY ONE LESSON.',
-  line2: 'REVIEW THE MATCH.',
+  line1: 'WATCH IT ONCE.',
+  line2: 'WRITE HOW YOU FEEL.',
   line3: 'THE LOOP NEVER ENDS',
-  // placeholder — swap real copy in via the `copy` prop
   subtext:
-    'Learn one lesson from every match you play, then carry it forward — honest review, written down, in ProSeason Academy.',
+    'The Loop is the only guide. No coach. Tonight the feeling. Tomorrow the film room. Paper first. The card comes last.',
   ctaPrimary: 'START MY MATCH REVIEW',
-  ctaSecondary: 'SEE THE METHOD',
-  microLabel: '// THINK WITH YOUR PEN',
-  badge: 'NO STOP DATE · INFINITE LEARNING',
+  ctaSecondary: 'SEE THE LOOP',
+  microLabel: '// PAPER FIRST. ALWAYS.',
+  badge: 'THE LOOP · SESSION BY SESSION · FOREVER',
   stats: HERO_STATS,
 };
 

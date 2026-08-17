@@ -12,6 +12,7 @@ import SettingsTab from './tabs/SettingsTab';
 import AcademyUpdatesScreen from './AcademyUpdatesScreen';
 import AcademyGuideScreen from './AcademyGuideScreen';
 import RoleModelFeedSheet from './RoleModelFeedSheet';
+import SceneFeedScreen from './SceneFeedScreen';
 import ContactSheet from './ContactSheet';
 import FounderDesk from './FounderDesk';
 import TermsSheet from './TermsSheet';
@@ -47,6 +48,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
   const [updatesOpen, setUpdatesOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
+  const [sceneOpen, setSceneOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
   const [deskOpen, setDeskOpen] = useState(false);
 
@@ -71,7 +73,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
       <View style={styles.body}>
         <div className="psa-web-container" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%' }}>
           <Animated.View key={tab} entering={FadeIn.duration(260)} style={{ flex: 1 }}>
-            {tab === 'today' && <ErrorBoundary key="today"><HomeTab coach={coach} onOpenJourney={() => setTab('journey')} onOpenTracker={() => setTab('tracker')} onOpenUpdates={() => setUpdatesOpen(true)} onOpenHalls={() => setTab('community')} onOpenGuide={() => setGuideOpen(true)} onOpenRole={() => setRoleOpen(true)} /></ErrorBoundary>}
+            {tab === 'today' && <ErrorBoundary key="today"><HomeTab coach={coach} onOpenJourney={() => setTab('journey')} onOpenTracker={() => setTab('tracker')} onOpenUpdates={() => setUpdatesOpen(true)} onOpenHalls={() => setTab('community')} onOpenGuide={() => setGuideOpen(true)} onOpenRole={() => setRoleOpen(true)} onOpenScene={() => setSceneOpen(true)} /></ErrorBoundary>}
             {tab === 'journey' && <ErrorBoundary key="journey"><TrackerTab coach={coach} /></ErrorBoundary>}
             {tab === 'tracker' && <ErrorBoundary key="tracker"><EvidenceTrackerScreen coach={coach} onClose={() => setTab('today')} /></ErrorBoundary>}
             {tab === 'community' && <ErrorBoundary key="community"><CommunityTab onClose={() => setTab('today')} /></ErrorBoundary>}
@@ -83,6 +85,7 @@ export default function MainScreen({ coach, onSignOut }: Props) {
 
       {updatesOpen && <ModalWrapper onClose={() => setUpdatesOpen(false)}><AcademyUpdatesScreen coach={coach} onClose={() => setUpdatesOpen(false)} /></ModalWrapper>}
       {roleOpen && <ModalWrapper onClose={() => setRoleOpen(false)}><RoleModelFeedSheet coach={coach} onClose={() => setRoleOpen(false)} /></ModalWrapper>}
+      {sceneOpen && <ModalWrapper onClose={() => setSceneOpen(false)}><SceneFeedScreen onClose={() => setSceneOpen(false)} /></ModalWrapper>}
       {guideOpen && <ModalWrapper onClose={closeGuide}><AcademyGuideScreen onClose={closeGuide} /></ModalWrapper>}
       {contactOpen && <ModalWrapper onClose={() => setContactOpen(false)}><ContactSheet onClose={() => setContactOpen(false)} /></ModalWrapper>}
       {deskOpen && <ModalWrapper onClose={() => setDeskOpen(false)}><FounderDesk founderKey="authenticated-founder" onForgetKey={() => setDeskOpen(false)} onClose={() => setDeskOpen(false)} /></ModalWrapper>}

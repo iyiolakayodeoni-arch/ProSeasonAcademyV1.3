@@ -38,7 +38,7 @@
     "web:build": "expo export -p web --output-dir dist/web",
     "web:serve": "npx serve dist/web -l 8081",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/dailyProgram.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/honestyGuard.test.js",
+    "test": "node tests/mirrorSession.test.js && node tests/baselineWeek.test.js && node tests/dailyProgram.test.js && node tests/benchmarkTracker.test.js && node tests/statsScreenOcr.test.js && node tests/honestyGuard.test.js && node tests/theFifty.test.js",
     "test:ci-smoke": "npm run typecheck && npm test",
     "doctor": "expo-doctor"
   },
