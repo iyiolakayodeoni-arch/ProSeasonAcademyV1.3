@@ -77,12 +77,13 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
     <View style={[styles.hero, { width: contentWidth }]}>
       <View style={[styles.row, isWide && styles.rowWide]}>
         {/* ── left column — the statement ── */}
-        <View style={[styles.text, isWide && styles.textWide]}>
-          <Animated.View entering={FadeInDown.duration(600)}>
+        <View style={[styles.text, isWide ? styles.textWide : styles.textNarrow]}>
+          <Animated.View entering={FadeInDown.duration(600)} style={!isWide && styles.headlineBlockNarrow}>
             <Text
               style={[
                 styles.h1,
                 { fontSize: headSize, lineHeight: headLine },
+                !isWide && styles.h1Narrow,
                 WEB ? ({ fontFamily: headFont } as any) : null,
               ]}
             >
@@ -93,17 +94,19 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
                 styles.h1,
                 styles.h1Green,
                 { fontSize: headSize, lineHeight: headLine },
+                !isWide && styles.h1Narrow,
                 WEB ? ({ fontFamily: headFont } as any) : null,
               ]}
             >
               {c.line2}
             </Text>
-            <View style={styles.loopRow}>
+            <View style={[styles.loopRow, !isWide && styles.loopRowNarrow]}>
               <InfinityCrest size={crest} bold />
               <Text
                 style={[
                   styles.h1Loop,
                   { fontSize: loopSize, lineHeight: loopLine },
+                  !isWide && styles.h1LoopNarrow,
                   WEB ? ({ fontFamily: headFont } as any) : null,
                 ]}
               >
@@ -113,16 +116,16 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(60).duration(600)}>
-            <Text style={[styles.sub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>{c.subtext}</Text>
+            <Text style={[styles.sub, !isWide && styles.subNarrow, WEB ? ({ fontFamily: bodyFace } as any) : null]}>{c.subtext}</Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(120).duration(600)} style={styles.ctas}>
+          <Animated.View entering={FadeInDown.delay(120).duration(600)} style={[styles.ctas, !isWide && styles.ctasNarrow]}>
             <CtaPrimary label={c.ctaPrimary} onPress={onPrimary} />
             <CtaSecondary label={c.ctaSecondary} onPress={onSecondary} />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(600)}>
-            <Text style={styles.penNote}>{c.microLabel}</Text>
+            <Text style={[styles.penNote, !isWide && styles.penNoteNarrow]}>{c.microLabel}</Text>
           </Animated.View>
         </View>
 
@@ -166,6 +169,14 @@ const styles = StyleSheet.create({
   textWide: {
     flex: 1.05,
   },
+  textNarrow: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  headlineBlockNarrow: {
+    width: '100%',
+    alignItems: 'center',
+  },
   /* headline size is computed from the column width — these are fallbacks */
   h1: {
     fontFamily: displayFont,
@@ -176,6 +187,10 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     flexShrink: 1,
   },
+  h1Narrow: {
+    textAlign: 'center',
+    width: '100%',
+  },
   h1Green: {
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.35)',
@@ -184,10 +199,15 @@ const styles = StyleSheet.create({
   loopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     gap: 8,
     marginTop: 8,
     maxWidth: '100%',
+  },
+  loopRowNarrow: {
+    justifyContent: 'center',
+    alignSelf: 'center',
+    width: '100%',
   },
   h1Loop: {
     fontFamily: displayFont,
@@ -197,8 +217,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textTransform: 'uppercase',
     flexShrink: 1,
-    flexGrow: 1,
     minWidth: 0,
+  },
+  h1LoopNarrow: {
+    flexGrow: 0,
+    textAlign: 'center',
   },
   sub: {
     fontFamily: bodyFont,
@@ -208,11 +231,19 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     marginTop: 26,
   },
+  subNarrow: {
+    textAlign: 'center',
+    alignSelf: 'center',
+  },
   ctas: {
     flexDirection: 'row',
     gap: 12,
     flexWrap: 'wrap',
     marginTop: 28,
+  },
+  ctasNarrow: {
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   penNote: {
     fontFamily: monoFont,
@@ -220,6 +251,10 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
     color: colors.mutedDim,
     marginTop: 24,
+  },
+  penNoteNarrow: {
+    textAlign: 'center',
+    alignSelf: 'center',
   },
   art: {
     alignItems: 'center',
