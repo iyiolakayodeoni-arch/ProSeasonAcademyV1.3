@@ -27,7 +27,7 @@ interface Props {
 
 const NAV_ITEMS: { id: MainNavTab; label: string; short: string; icon: any }[] = [
   { id: 'today', label: 'TODAY', short: 'TODAY', icon: HomeIcon },
-  { id: 'journey', label: '6-MONTH PROGRESS', short: 'PROGRESS', icon: JourneyIcon },
+  { id: 'journey', label: 'THE LOOP', short: 'LOOP', icon: JourneyIcon },
   { id: 'tracker', label: 'EVIDENCE & CHECKPOINTS', short: 'EVIDENCE', icon: ScanGlyphIcon },
   { id: 'community', label: 'CLUBHOUSE', short: 'CLUB', icon: WavesGlyphIcon },
   { id: 'settings', label: 'SETTINGS', short: 'ME', icon: GearIcon },

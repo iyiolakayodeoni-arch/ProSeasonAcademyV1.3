@@ -341,7 +341,7 @@ export default function SignInScreen({ onSignedIn }: Props) {
             {mode === 'register'
               ? 'Create your member profile. The Loop is the guide — no coach. The seat is yours when the baseline is sealed.'
               : mode === 'login'
-                ? 'Sign in to access your 6-month progress and match receipts.'
+                ? 'Sign in to your Loop and match receipts.'
                 : 'Enter your registered email to receive reset instructions.'}
           </Text>
 

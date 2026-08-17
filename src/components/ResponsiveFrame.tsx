@@ -33,8 +33,8 @@ function ensureGlobalCSS() {
   ensureMeta('apple-mobile-web-app-capable', 'yes');
   ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
   ensureMeta('mobile-web-app-capable', 'yes');
-  ensureMeta('description', 'ProSeason Academy — Premium football coaching & 6-month development platform for FC players.');
-  if (document && !document.title) document.title = 'ProSeason Academy — Premium Football Coaching';
+  ensureMeta('description', 'ProSeason Academy — FC 26 review practice. The Loop. Session by session.');
+  if (document && !document.title) document.title = 'ProSeason Academy — The Loop';
   cssInjected = true;
 }
 

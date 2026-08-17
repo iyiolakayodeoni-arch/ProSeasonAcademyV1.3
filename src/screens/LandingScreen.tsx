@@ -40,6 +40,14 @@ const ILLUS = {
   moments: require('../../assets/art/illu-moments.png'),
 };
 
+const LOOP_ART = {
+  feeling: require('../../assets/art/loop-feeling.jpg'),
+  moments: require('../../assets/art/loop-moments.jpg'),
+  questions: require('../../assets/art/loop-questions.jpg'),
+  lessons: require('../../assets/art/loop-lessons.jpg'),
+  card: require('../../assets/art/loop-card.jpg'),
+};
+
 const SCENE_ART = {
   huddle: require('../../assets/art/community-huddle.jpg'),
   vault: require('../../assets/art/vault-match.jpg'),
@@ -149,6 +157,7 @@ const LOOP_STEPS = [
     title: 'THE FEELING',
     body: 'Watch the tape once. Then stop being a footballer. Write exactly how you feel on a piece of paper — no pressure, no discipline, no pretending. Then type that same line into the app. We keep it. We do not use it yet.',
     aside: 'the feeling is true. it is also dirty',
+    art: LOOP_ART.feeling,
   },
   {
     n: '02',
@@ -156,6 +165,7 @@ const LOOP_STEPS = [
     title: 'THE MOMENTS',
     body: 'Now you are calm. Write the moments that actually changed the game — the ones that mattered to you. Paper first. Then the app. If you write it down, it stays in your head.',
     aside: 'not every event. the ones that turned it',
+    art: LOOP_ART.moments,
   },
   {
     n: '03',
@@ -163,6 +173,7 @@ const LOOP_STEPS = [
     title: 'THE QUESTIONS',
     body: 'Name it. Mark the time. Reconstruct the game state before you judge anything. What they were actually doing. What you were actually doing. Whether you were even present. Then who won the exchange, why it failed, and one rule you can drill next time.',
     aside: 'paper first. then you type it',
+    art: LOOP_ART.questions,
   },
   {
     n: '04',
@@ -170,6 +181,7 @@ const LOOP_STEPS = [
     title: 'THE LESSONS',
     body: 'You do not invent a lesson because the app asked for one. The last answer on each moment is the lesson. We list them. Then one final question. Then you enter the match numbers so the card can be built.',
     aside: 'not from a youtube clip. from you, watching you',
+    art: LOOP_ART.lessons,
   },
   {
     n: '05',
@@ -177,6 +189,7 @@ const LOOP_STEPS = [
     title: 'THE CARD',
     body: 'One card. Your stats — read against that opponent. Not two scoreboards. How you actually played in relation to them, in this match, shareable. The card is not the work. It is the receipt.',
     aside: 'you vs them. one object. not both sheets',
+    art: LOOP_ART.card,
   },
 ];
 
@@ -218,15 +231,15 @@ const SCENE_PILLARS = [
 const HOME_FEATURES = [
   {
     n: '01',
-    badge: 'PRIMARY',
-    title: 'OPEN MY SIX MONTHS',
-    body: 'Day N of 180 is waiting on the board. One mission. Finish what you started. The Loop lives here.',
+    badge: 'THE GUIDE',
+    title: 'THE LOOP',
+    body: 'Watch once. Write how you feel. Wait a day. Take the match apart. Session by session. Forever.',
   },
   {
     n: '02',
-    badge: '7-MATCH INGEST',
-    title: 'EVIDENCE & CHECKPOINTS',
-    body: 'Upload the post-match stats screen. The numbers build your card — you against that opponent.',
+    badge: 'YOU TYPE IT',
+    title: 'THE NUMBERS',
+    body: 'Type the match numbers after the work. Your stats against that opponent. Nothing to upload.',
   },
   {
     n: '03',
@@ -236,30 +249,24 @@ const HOME_FEATURES = [
   },
   {
     n: '04',
-    badge: 'STANDARD',
-    title: 'THE LOOP',
-    body: 'The only guide. Watch once. Write how you feel. Wait a day. Take the match apart. No coach. Nothing else.',
-  },
-  {
-    n: '05',
     badge: 'PATCH NOTES',
     title: 'FC UPDATES & ACADEMY',
     body: 'Founder notes, approved news, MetaBot tricks. Only the receipts that help you win.',
   },
   {
-    n: '06',
+    n: '05',
     badge: 'GUIDE',
     title: 'LEARN THE BASICS',
     body: 'New foundations first. The simple, repeatable things that win difficult matches.',
   },
   {
-    n: '07',
+    n: '06',
     badge: 'LIVE',
     title: 'CLUBHOUSE COMMUNITY',
     body: 'Bring a question, a score, or an honest lesson. The halls are optional. The Loop is not.',
   },
   {
-    n: '08',
+    n: '07',
     badge: 'LOCKED IN',
     title: 'STARTING BASELINE',
     body: 'A sealed starting week. What good looks like, beside your own evidence. No coach. The work is yours.',
@@ -381,6 +388,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                   {i < LOOP_STEPS.length - 1 && <View style={styles.loopLine} />}
                 </View>
                 <GlassCard style={styles.loopCard}>
+                  <Image source={step.art} style={[styles.loopArt, isWide && styles.loopArtWide]} resizeMode="cover" />
                   <Text style={styles.loopWhen}>{step.when}</Text>
                   <Text style={styles.cardTitle}>{step.title}</Text>
                   <Text style={styles.cardBody}>{step.body}</Text>
@@ -429,10 +437,10 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.homePrimary, { maxWidth: contentW }]}>
             <Text style={styles.homePrimaryBadge}>THE ONE TAP</Text>
             <Text style={[styles.homePrimaryTitle, WEB ? ({ fontFamily: headFont } as any) : null]}>
-              OPEN MY SIX MONTHS
+              ENTER THE LOOP
             </Text>
             <Text style={[styles.homePrimaryBody, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-              Day of 180. Today’s mission. Season sealed, days left — real receipts, not a painted bar.
+              The ritual is the teacher. No stop date. You type it. The card comes last.
             </Text>
           </View>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
@@ -868,6 +876,18 @@ const styles = StyleSheet.create({
   loopCard: {
     flex: 1,
     marginBottom: 10,
+  },
+  loopArt: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    backgroundColor: '#06110b',
+  },
+  loopArtWide: {
+    height: 280,
   },
   loopWhen: {
     fontFamily: monoFont,

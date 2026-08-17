@@ -17,7 +17,6 @@ import Marquee from '../../components/Marquee';
 import { ChevronRightIcon, JourneyIcon, ScanGlyphIcon, WavesGlyphIcon } from '../../components/Icons';
 import { Coach } from '../../data/coaches';
 import { useSettings } from '../../data/settings';
-import { currentDay, loadDailyProgram, DailyProgram, doneCount, TOTAL_DAYS } from '../../data/dailyProgram';
 import { useAnnouncements } from '../../data/announcements';
 import { bodyFont, bodyFontBold, bodyFontHeavy, colors, displayFont, monoFont, radii, elevation } from '../../theme';
 import { useResponsive } from '../../hooks/useResponsive';
@@ -164,76 +163,20 @@ function PremiumCard({
   );
 }
 
-// The 6-month rail — the fill earns its width from real receipts, then
-// settles into place with one eased grow; a quiet shimmer keeps it alive.
-function ProgressRail({ pct }: { pct: number }) {
-  const grow = useSharedValue(0);
-  const shimmer = useSharedValue(-1);
-
-  useEffect(() => {
-    grow.value = withTiming(1, { duration: 950, easing: Easing.out(Easing.cubic) });
-    shimmer.value = withRepeat(
-      withSequence(
-        withDelay(2400, withTiming(0, { duration: 0 })),
-        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
-      ),
-      -1,
-      false,
-    );
-  }, [grow, shimmer]);
-
-  const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: grow.value }] }));
-  const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -50 + shimmer.value * 480 }],
-  }));
-
-  return (
-    <View style={styles.progressTrack}>
-      <Animated.View style={[{ width: `${pct}%`, height: '100%' }, fillStyle]}>
-        <LinearGradient
-          colors={['#39ff6a', '#2be05a']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.progressFill, { width: '100%' }]}
-        />
-        <Animated.View style={[styles.progressShimmer, shimmerStyle]}>
-          <LinearGradient
-            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.45)', 'rgba(255,255,255,0)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill}
-          />
-        </Animated.View>
-      </Animated.View>
-      <View style={[styles.progressGlow, { width: `${pct}%` }]} />
-    </View>
-  );
-}
-
 export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpdates, onOpenHalls, onOpenGuide, onOpenRole, onOpenScene }: Props) {
   const { isMultiColumn, isWide, isLaptopUp, bp } = useResponsive();
-  const [day, setDay] = useState(1);
-  const [prog, setProg] = useState<DailyProgram | null>(null);
   const [baseline, setBaseline] = useState<BaselineCard | null>(null);
   const settings = useSettings();
   const { items: announcements } = useAnnouncements();
 
-
   useEffect(() => {
-    void loadDailyProgram().then((program) => {
-      setProg(program);
-      setDay(Math.min(currentDay(program), 180));
-    });
     void loadBaseline(coach.id).then((b) => setBaseline(b.card)).catch(() => {});
   }, [coach.id]);
 
   const news = useMemo(() => {
     if (announcements.length) return announcements[0].title.toUpperCase();
-    return 'THE ACADEMY IS LIVE · CHECK IN, PLAY HONEST, BUILD YOUR GAME';
+    return 'THE LOOP IS LIVE · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY';
   }, [announcements]);
-
-  const doneDays = prog ? doneCount(prog) : 0;
-  const pct = Math.round((doneDays / TOTAL_DAYS) * 100);
 
   return (
     <View style={styles.flex}>
@@ -259,27 +202,27 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
             <Animated.View entering={FadeInUp.delay(40).duration(480)} style={[styles.heroCard, Platform.OS === 'web' && (styles.heroBlur as any)]}>
               <LinearGradient colors={['rgba(57,255,106,0.18)', 'transparent']} start={{x:0,y:0}} end={{x:1,y:1}} style={StyleSheet.absoluteFill} />
               <View style={styles.heroTopRow}>
-                <Text style={styles.heroDay}>DAY {day} OF 180 · THE LOOP IS WAITING</Text>
+                <Text style={styles.heroDay}>THE LOOP · SESSION BY SESSION · FOREVER</Text>
                 <View style={styles.dayPill}>
-                  <Text style={styles.dayPillTxt}>DAY {day}</Text>
+                  <Text style={styles.dayPillTxt}>∞</Text>
                 </View>
               </View>
               <TypedGreeting name={settings.displayName || 'PLAYER'} />
-              <Text style={styles.heroSub}>One job: show up honestly, review the tape, and let the work stack.</Text>
+              <Text style={styles.heroSub}>One job: show up honestly, review the tape, and let the work stack. No stop date.</Text>
               <View style={styles.heroStatsRow}>
                 <View style={styles.heroStat}>
-                  <Text style={styles.heroStatVal}>{pct}%</Text>
-                  <Text style={styles.heroStatLbl}>SEASON</Text>
+                  <Text style={styles.heroStatVal}>TONIGHT</Text>
+                  <Text style={styles.heroStatLbl}>THE FEELING</Text>
                 </View>
                 <View style={styles.heroDivider} />
                 <View style={styles.heroStat}>
-                  <Text style={styles.heroStatVal}>{doneDays}</Text>
-                  <Text style={styles.heroStatLbl}>SEALED</Text>
+                  <Text style={styles.heroStatVal}>24H</Text>
+                  <Text style={styles.heroStatLbl}>THE MOMENTS</Text>
                 </View>
                 <View style={styles.heroDivider} />
                 <View style={styles.heroStat}>
-                  <Text style={styles.heroStatVal}>{TOTAL_DAYS - doneDays}</Text>
-                  <Text style={styles.heroStatLbl}>LEFT</Text>
+                  <Text style={styles.heroStatVal}>LAST</Text>
+                  <Text style={styles.heroStatLbl}>THE CARD</Text>
                 </View>
               </View>
             </Animated.View>
@@ -289,9 +232,9 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
                 primary
                 delay={120}
                 icon={JourneyIcon}
-                label="OPEN MY SIX MONTHS"
-                badge={`DAY ${day} WAITING`}
-                line={`“Day ${day} is waiting on the board. Open today's mission and finish what you started.”`}
+                label="ENTER THE LOOP"
+                badge="THE GUIDE"
+                line="“Watch it once. Write how you feel. Wait a day. Then take the match apart. Paper first. You type it.”"
                 onPress={onOpenJourney}
               />
             </View>
@@ -304,9 +247,8 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
             {/* two-up only where the main column actually has room (laptop+);
                 tablets keep a comfortable single rail beside the sidebar */}
             <View style={[styles.routesGrid, isLaptopUp && styles.routesGridWide]}>
-              {onOpenTracker && <PremiumCard delay={160} wide={isLaptopUp} icon={ScanGlyphIcon} label="EVIDENCE & CHECKPOINTS" badge="7-MATCH INGEST" line="“Upload post-match stats screens. Let your evidence build your development card.”" onPress={onOpenTracker} />}
+              {onOpenTracker && <PremiumCard delay={160} wide={isLaptopUp} icon={ScanGlyphIcon} label="THE NUMBERS" badge="YOU TYPE IT" line="“Type the match numbers after the work. Your stats in relation to that opponent. Nothing to upload.”" onPress={onOpenTracker} />}
               <PremiumCard delay={180} wide={isLaptopUp} label="THE SCENE · THE FIFTY" badge="LIVE BOOK" line="“Fifty current FC Pro names. Titles, mechanics, the feed. Public record only.”" onPress={onOpenScene ?? onOpenUpdates} />
-              <PremiumCard delay={200} wide={isLaptopUp} label="THE LOOP" badge="THE GUIDE" line="“No coach. The ritual is the teacher. Watch once, write how you feel, wait a day.”" onPress={onOpenJourney} />
               <PremiumCard delay={240} wide={isLaptopUp} label="FC UPDATES & ACADEMY" badge="PATCH NOTES" line="“Important gameplay and tuning updates. Only the receipts that help you win.”" onPress={onOpenUpdates} />
               <PremiumCard delay={280} wide={isLaptopUp} label="LEARN THE BASICS" badge="GUIDE" line="“New foundations first. The simple, repeatable things win difficult matches.”" onPress={onOpenGuide} />
               <PremiumCard delay={320} wide={isLaptopUp} icon={WavesGlyphIcon} label="CLUBHOUSE COMMUNITY" badge="LIVE" line="“The clubhouse is open. Bring a question, a score, or an honest lesson.”" onPress={onOpenHalls} />
@@ -317,19 +259,19 @@ export default function HomeTab({ coach, onOpenJourney, onOpenTracker, onOpenUpd
           <View style={[styles.colSide, isMultiColumn && styles.colSideWide, isMultiColumn && bp === 'tablet' && styles.colSideTablet]}>
             <Animated.View entering={FadeInUp.delay(160).duration(480)} style={[styles.widget, Platform.OS === 'web' && (styles.glassBlur as any)]}>
               <View style={styles.widgetHeader}>
-                <Text style={styles.widgetTag}>6-MONTH PROGRAM</Text>
+                <Text style={styles.widgetTag}>THE LOOP</Text>
                 <View style={styles.widgetPctPill}>
-                  <Text style={styles.widgetPct}>{pct}%</Text>
+                  <Text style={styles.widgetPct}>∞</Text>
                 </View>
               </View>
-              <ProgressRail pct={Math.max(6, pct)} />
+              <Text style={styles.loopWidgetLead}>No stop date. Session by session. You write it on paper. Then you type it.</Text>
               <View style={styles.widgetStatsRow}>
-                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>{doneDays}</Text><Text style={styles.widgetStatLbl}>DAYS SEALED</Text></View>
-                <View style={styles.widgetStatCenter}><Text style={styles.widgetStatVal}>{day}</Text><Text style={styles.widgetStatLbl}>CURRENT DAY</Text></View>
-                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>{TOTAL_DAYS - doneDays}</Text><Text style={styles.widgetStatLbl}>DAYS LEFT</Text></View>
+                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>01</Text><Text style={styles.widgetStatLbl}>FEELING</Text></View>
+                <View style={styles.widgetStatCenter}><Text style={styles.widgetStatVal}>02</Text><Text style={styles.widgetStatLbl}>MOMENTS</Text></View>
+                <View style={styles.widgetStat}><Text style={styles.widgetStatVal}>03</Text><Text style={styles.widgetStatLbl}>THE CARD</Text></View>
               </View>
               <Pressable onPress={onOpenJourney} style={({ pressed }) => [styles.widgetBtn, pressed && { opacity: 0.85 }]}>
-                <Text style={styles.widgetBtnTxt}>VIEW FULL 180-DAY TRACK ›</Text>
+                <Text style={styles.widgetBtnTxt}>ENTER THE LOOP ›</Text>
               </Pressable>
             </Animated.View>
 
@@ -423,7 +365,8 @@ const styles = StyleSheet.create({
   heroSub: { marginTop: 10, fontFamily: bodyFont, fontSize: 13.5, lineHeight: 21, color: 'rgba(214,226,217,0.92)' },
   heroStatsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 16, backgroundColor: 'rgba(5,10,6,0.45)', borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: 'rgba(57,255,106,0.08)' },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatVal: { fontFamily: monoFont, fontSize: 16, fontWeight: '900', color: colors.fg, letterSpacing: 0.5 },
+  heroStatVal: { fontFamily: monoFont, fontSize: 12, fontWeight: '900', color: colors.fg, letterSpacing: 0.8 },
+  loopWidgetLead: { marginTop: 12, fontFamily: bodyFont, fontSize: 13, lineHeight: 19, color: 'rgba(214,226,217,0.9)' },
   heroStatLbl: { marginTop: 2, fontFamily: monoFont, fontSize: 6.5, fontWeight: '800', letterSpacing: 1.2, color: colors.muted },
   heroDivider: { width: 1, height: 28, backgroundColor: 'rgba(57,255,106,0.12)' },
 

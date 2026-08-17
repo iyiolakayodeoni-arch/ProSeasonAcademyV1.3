@@ -63,7 +63,15 @@ type Props = {
 
 export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, copy }: Props) {
   const c: HeroCopy = { ...HERO_COPY, ...copy };
-  const orbW = isWide ? Math.min(460, contentWidth * 0.48) : Math.min(400, contentWidth * 0.94);
+  const orbW = isWide ? Math.min(420, contentWidth * 0.44) : Math.min(340, contentWidth * 0.92);
+  // Scale the statement to the column it actually lives in. The old 54 / 38
+  // sizes blew out of a phone and still fought a laptop column.
+  const colW = isWide ? contentWidth * 0.52 : contentWidth;
+  const headSize = Math.round(Math.min(isWide ? 42 : 28, Math.max(isWide ? 30 : 22, colW * (isWide ? 0.072 : 0.078))));
+  const headLine = Math.round(headSize * 1.05);
+  const loopSize = Math.round(Math.min(isWide ? 22 : 16, Math.max(isWide ? 16 : 14, colW * (isWide ? 0.036 : 0.046))));
+  const loopLine = Math.round(loopSize * 1.2);
+  const crest = isWide ? 28 : 20;
 
   return (
     <View style={[styles.hero, { width: contentWidth }]}>
@@ -71,13 +79,36 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
         {/* ── left column — the statement ── */}
         <View style={[styles.text, isWide && styles.textWide]}>
           <Animated.View entering={FadeInDown.duration(600)}>
-            <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line1}</Text>
-            <Text style={[styles.h1, styles.h1Green, WEB ? ({ fontFamily: headFont } as any) : null]}>
+            <Text
+              style={[
+                styles.h1,
+                { fontSize: headSize, lineHeight: headLine },
+                WEB ? ({ fontFamily: headFont } as any) : null,
+              ]}
+            >
+              {c.line1}
+            </Text>
+            <Text
+              style={[
+                styles.h1,
+                styles.h1Green,
+                { fontSize: headSize, lineHeight: headLine },
+                WEB ? ({ fontFamily: headFont } as any) : null,
+              ]}
+            >
               {c.line2}
             </Text>
             <View style={styles.loopRow}>
-              <InfinityCrest size={isWide ? 64 : 48} bold />
-              <Text style={[styles.h1Loop, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line3}</Text>
+              <InfinityCrest size={crest} bold />
+              <Text
+                style={[
+                  styles.h1Loop,
+                  { fontSize: loopSize, lineHeight: loopLine },
+                  WEB ? ({ fontFamily: headFont } as any) : null,
+                ]}
+              >
+                {c.line3}
+              </Text>
             </View>
           </Animated.View>
 
@@ -135,14 +166,15 @@ const styles = StyleSheet.create({
   textWide: {
     flex: 1.05,
   },
-  /* headline — heavy condensed, tight leading (~0.95) */
+  /* headline size is computed from the column width — these are fallbacks */
   h1: {
     fontFamily: displayFont,
-    fontSize: 54,
-    lineHeight: 52,
-    letterSpacing: 0.5,
+    fontSize: 28,
+    lineHeight: 30,
+    letterSpacing: 0.4,
     color: colors.fg,
     textTransform: 'uppercase',
+    flexShrink: 1,
   },
   h1Green: {
     color: colors.primary,
@@ -152,17 +184,21 @@ const styles = StyleSheet.create({
   loopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+    maxWidth: '100%',
   },
   h1Loop: {
     fontFamily: displayFont,
-    fontSize: 38,
-    lineHeight: 40,
-    letterSpacing: 1,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: 1.2,
     color: colors.primary,
     textTransform: 'uppercase',
     flexShrink: 1,
+    flexGrow: 1,
+    minWidth: 0,
   },
   sub: {
     fontFamily: bodyFont,
