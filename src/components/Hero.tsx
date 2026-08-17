@@ -62,9 +62,28 @@ type Props = {
   copy?: Partial<HeroCopy>;
 };
 
+const clampN = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
 export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, copy }: Props) {
   const c: HeroCopy = { ...HERO_COPY, ...copy };
   const orbW = isWide ? Math.min(460, contentWidth * 0.48) : Math.min(400, contentWidth * 0.94);
+
+  // ── fluid headline sizing (mirrors the mockup's CSS clamp()) ──
+  // The fixed 54/38px sizes overflow the text column on laptop widths
+  // (1024–1439px the column is only ~390px wide), wrapping the headline and
+  // the "THE LOOP NEVER ENDS" line awkwardly around the crest. Size the type
+  // to the column so every line fits on ONE line at any width.
+  const textColW = isWide ? (contentWidth - 48) * (1.05 / 2.05) : contentWidth;
+  // avg uppercase glyph width ≈ 0.6em in the headline face (Space Grotesk / Anton)
+  const AVG = 0.6;
+  const longestH1 = Math.max(c.line1.length, c.line2.length, 1);
+  const h1Size = Math.floor(clampN(textColW / (longestH1 * AVG), 32, 54));
+  // loop row: crest scales with the text (crest ≈ 1.68× the font size, like 64:38)
+  const loopChars = Math.max(c.line3.length, 1);
+  const loopSize = Math.floor(
+    clampN((textColW - 14 - loopChars) / (loopChars * AVG + 1.68), 22, 38)
+  );
+  const crestSize = Math.round(clampN(loopSize * 1.68, 40, 64));
 
   return (
     <View style={[styles.hero, { width: contentWidth }]}>
@@ -72,13 +91,36 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
         {/* ── left column — the statement ── */}
         <View style={[styles.text, isWide && styles.textWide]}>
           <Animated.View entering={FadeInDown.duration(600)}>
-            <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line1}</Text>
-            <Text style={[styles.h1, styles.h1Green, WEB ? ({ fontFamily: headFont } as any) : null]}>
+            <Text
+              style={[
+                styles.h1,
+                { fontSize: h1Size, lineHeight: Math.round(h1Size * 0.97) },
+                WEB ? ({ fontFamily: headFont } as any) : null,
+              ]}
+            >
+              {c.line1}
+            </Text>
+            <Text
+              style={[
+                styles.h1,
+                styles.h1Green,
+                { fontSize: h1Size, lineHeight: Math.round(h1Size * 0.97) },
+                WEB ? ({ fontFamily: headFont } as any) : null,
+              ]}
+            >
               {c.line2}
             </Text>
             <View style={styles.loopRow}>
-              <InfinityCrest size={isWide ? 64 : 48} bold />
-              <Text style={[styles.h1Loop, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line3}</Text>
+              <InfinityCrest size={crestSize} bold />
+              <Text
+                style={[
+                  styles.h1Loop,
+                  { fontSize: loopSize, lineHeight: Math.round(loopSize * 1.08) },
+                  WEB ? ({ fontFamily: headFont, whiteSpace: 'nowrap' } as any) : null,
+                ]}
+              >
+                {c.line3}
+              </Text>
             </View>
           </Animated.View>
 

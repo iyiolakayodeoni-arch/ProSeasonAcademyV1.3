@@ -3,7 +3,7 @@
 // Exported as a string so Metro needs no CSS loader.
 
 export const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
 
 :root {
   --psa-bg: #050a06;
