@@ -92,6 +92,15 @@ function GlassCard({
   return <View style={[styles.glassCard, style]}>{children}</View>;
 }
 
+/** Whole picture, scaled to the box. Never cropped. */
+function FitArt({ source, tall }: { source: any; tall?: boolean }) {
+  return (
+    <View style={[styles.artFrame, tall && styles.artFrameTall]}>
+      <Image source={source} style={styles.artFill} resizeMode="contain" />
+    </View>
+  );
+}
+
 /* ── pinned nav — laptop: full row · tablet: short labels · phone: menu ── */
 const NAV_LINKS_FULL: [string, string][] = [
   ['METHOD', 'method'],
@@ -443,7 +452,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.journal} />
                 <Text style={styles.cardIndex}>01</Text>
                 <Text style={styles.cardTitle}>PAPER FIRST</Text>
                 <Text style={styles.cardBody}>
@@ -454,7 +463,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.mirror} />
                 <Text style={styles.cardIndex}>02</Text>
                 <Text style={styles.cardTitle}>TWO HEADS</Text>
                 <Text style={styles.cardBody}>
@@ -465,7 +474,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
               <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.ledger} />
                 <Text style={styles.cardIndex}>03</Text>
                 <Text style={styles.cardTitle}>THE CARD COMES LAST</Text>
                 <Text style={styles.cardBody}>
@@ -494,7 +503,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                   {i < LOOP_STEPS.length - 1 && <View style={styles.loopLine} />}
                 </View>
                 <GlassCard style={styles.loopCard}>
-                  <Image source={step.art} style={[styles.loopArt, isWide && styles.loopArtWide]} resizeMode="cover" />
+                  <FitArt source={step.art} tall />
                   <Text style={styles.loopWhen}>{step.when}</Text>
                   <Text style={styles.cardTitle}>{step.title}</Text>
                   <Text style={styles.cardBody}>{step.body}</Text>
@@ -575,7 +584,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             {SCENE_PILLARS.map((p, i) => (
               <Animated.View key={p.n} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={styles.card}>
                 <GlassCard style={styles.cardFill}>
-                  <Image source={p.art} style={styles.cardIllu} resizeMode="cover" />
+                  <FitArt source={p.art} />
                   <Text style={styles.cardIndex}>{p.n}</Text>
                   <Text style={styles.cardTitle}>{p.title}</Text>
                   <Text style={styles.cardBody}>{p.body}</Text>
@@ -602,7 +611,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
                   <Text style={styles.sceneHandle}>{post.handle}</Text>
                   <Text style={styles.sceneTime}>{sceneTimeLabel(post.date)}</Text>
                 </View>
-                <Image source={SCENE_ART_CYCLE[i % SCENE_ART_CYCLE.length]} style={styles.scenePostArt} resizeMode="cover" />
+                <FitArt source={SCENE_ART_CYCLE[i % SCENE_ART_CYCLE.length]} />
                 <Text style={styles.sceneTag}>{post.kind}</Text>
                 <Text style={styles.sceneHeadline}>{post.headline}</Text>
                 <Text style={styles.sceneBody}>{post.body}</Text>
@@ -624,11 +633,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             {CHAPTERS.map((c, i) => (
               <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={styles.chapterCard}>
                 <GlassCard style={styles.cardFill}>
-                  <Image
-                    source={[ILLUS.mirror, ILLUS.journal, ILLUS.ledger, ILLUS.intention, ILLUS.moments, ILLUS.mirror][i % 6]}
-                    style={styles.cardIllu}
-                    resizeMode="cover"
-                  />
+                  <FitArt source={[ILLUS.mirror, ILLUS.journal, ILLUS.ledger, ILLUS.intention, ILLUS.moments, ILLUS.mirror][i % 6]} />
                   <Text style={styles.chapterNum}>{c.n}</Text>
                   <Text style={styles.cardTitle}>{c.title}</Text>
                   <Text style={styles.cardBody}>{c.body}</Text>
@@ -645,7 +650,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.mirror} />
                 <Text style={styles.evidenceStat}>100%</Text>
                 <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
                 <Aside>no AI verdicts</Aside>
@@ -653,7 +658,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.journal} />
                 <Text style={styles.evidenceStat}>24H</Text>
                 <Text style={[styles.cardBody, styles.center]}>between the feeling and the film room. Tonight you write how you feel. Tomorrow you see.</Text>
                 <Aside>calm is part of the method</Aside>
@@ -661,7 +666,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Animated.View>
             <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
               <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
+                <FitArt source={ILLUS.ledger} />
                 <Text style={styles.evidenceStat}>∞</Text>
                 <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
                 <Aside>you cannot outrun your receipts</Aside>
@@ -972,13 +977,23 @@ const styles = StyleSheet.create({
     flexBasis: 250,
     flexGrow: 1,
   },
-  cardIllu: {
+  artFrame: {
     width: '100%',
-    height: 150,
+    aspectRatio: 16 / 9,
     borderRadius: 10,
     marginBottom: 14,
+    overflow: 'hidden',
+    backgroundColor: '#06110b',
     borderWidth: 1,
     borderColor: colors.borderSubtle,
+  },
+  artFrameTall: {
+    aspectRatio: 16 / 9,
+    marginBottom: 16,
+  },
+  artFill: {
+    width: '100%',
+    height: '100%',
   },
   chapterCard: {
     flexBasis: 250,
@@ -1082,15 +1097,10 @@ const styles = StyleSheet.create({
   },
   loopArt: {
     width: '100%',
-    height: 200,
+    aspectRatio: 16 / 9,
     borderRadius: 10,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
     backgroundColor: '#06110b',
-  },
-  loopArtWide: {
-    height: 280,
   },
   loopWhen: {
     fontFamily: monoFont,
@@ -1245,11 +1255,10 @@ const styles = StyleSheet.create({
   },
   scenePostArt: {
     width: '100%',
-    height: 160,
+    aspectRatio: 16 / 9,
     borderRadius: 10,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    backgroundColor: '#06110b',
   },
   sceneTag: {
     fontFamily: monoFont,
