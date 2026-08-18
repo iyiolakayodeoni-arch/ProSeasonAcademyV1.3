@@ -16,6 +16,7 @@ import PitchBackdrop from '../components/PitchBackdrop';
 import Hero from '../components/Hero';
 import { CtaPrimary, CtaSecondary } from '../components/CtaButtons';
 import { useResponsive } from '../hooks/useResponsive';
+import { useHover } from '../hooks/useHover';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 import { THE_FIFTY, sceneFeed, sceneTimeLabel } from '../data/theFifty';
 
@@ -652,11 +653,12 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             </Text>
             <View style={styles.questionsGrid}>
               {LOOP_QUESTIONS.map((q) => (
-                <View key={q.n} style={styles.questionItem}>
-                  <Text style={styles.questionN}>{q.n}</Text>
-                  <Text style={styles.questionT}>{q.t}</Text>
-                  <Text style={styles.questionD}>{q.d}</Text>
-                </View>
+                <LiveQuestion
+                  key={q.n}
+                  q={q}
+                  open={activeQ === q.n}
+                  onPress={() => setActiveQ(q.n)}
+                />
               ))}
             </View>
             <Aside>perception · decision · execution — check the first two first</Aside>
@@ -810,15 +812,6 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <Text style={styles.marqueeTxt}>
               PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
               PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
-            </Text>
-          </Marquee>
-        </View>
-
-        {/* ── FOOTER ── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
-          <Text style={styles.footerTag}>THE CONSOLE ACADEMY · THE LOOP · SESSION BY SESSION</Text>
-          <Text style=E LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
             </Text>
           </Marquee>
         </View>
@@ -1451,6 +1444,16 @@ const styles = StyleSheet.create({
     marginBottom: 22,
     backgroundColor: colors.primary,
     borderRadius: 20,
+    // @ts-ignore web
+    transition: 'transform 180ms ease, box-shadow 180ms ease',
+    cursor: 'pointer',
+  },
+  homePrimaryHot: {
+    transform: [{ translateY: -3 }, { scale: 1.01 }],
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
   },
   homePrimaryBadge: {
     fontFamily: monoFont,
@@ -1475,13 +1478,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: 'rgba(3,20,10,0.78)',
     textAlign: 'center',
-    maxWidth: 520,
-  },
-  homeCard: {
-    flexBasis: 240,
-    flexGrow: 1,
-  },
-});
     maxWidth: 520,
   },
   homeCard: {
