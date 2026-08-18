@@ -81,7 +81,7 @@ export const ROLE_MODEL_FEED: RoleFeedEntry[] = [
     id: 'rm-20',
     type: 'trick',
     daysAgo: 0,
-    tag: 'TRICK SHOWCASE · THE FILM ROOM',
+    tag: 'TRICK SHOWCASE · THE LOOP',
     headline: 'The Tackle Personality play — patience is a button, and I held it.',
     body:
       'Everyone in my DMs swears I press B faster than them. Wrong. I press it a full second later, and that second is the whole trick. FC 26 punished the panic lunge — miss, and the recovery lag hands your man three free yards. So I jockey, L2/LT, track the touch, and only when they take a heavy one do I strike. A clean tackle with the elite animation beats ten desperate ones every single time. The ladder does not reward the fastest thumb. It rewards the one that waits.',
@@ -150,7 +150,7 @@ export const ROLE_MODEL_FEED: RoleFeedEntry[] = [
     id: 'rm-15',
     type: 'trick',
     daysAgo: 3,
-    tag: 'TRICK SHOWCASE · THE FILM ROOM',
+    tag: 'TRICK SHOWCASE · THE LOOP',
     headline: 'The Shield Trap — stand your ground and let them break on you.',
     body:
       'You receive the ball with a defender breathing down your neck and your instinct is to run. Stop it. In FC 26, hold L2/LT as the ball arrives and you trigger Shield Trapping — your body becomes the wall and the strength model does the rest. They come in hard, they bounce off your back, and suddenly you have a free second to turn, dribble, or find the outlet. It is the same lesson as the tackle: the person who is calm wins the physical fight.',
@@ -207,7 +207,7 @@ export const ROLE_MODEL_FEED: RoleFeedEntry[] = [
     id: 'rm-11',
     type: 'trick',
     daysAgo: 6,
-    tag: 'TRICK SHOWCASE · THE FILM ROOM',
+    tag: 'TRICK SHOWCASE · THE LOOP',
     headline: 'The Inverted Overload — my fullback is my best playmaker.',
     body:
       'Invert your wingback and watch the midfield suddenly look three-versus-two. As your RB drifts central with the ball under R1 close control, the opponent’s winger has to decide between following him or leaving the flank naked — either way you win. Once the defender commits inward, the diagonal is already open behind him. This is the highest-value thing I have added to my game this season, and I want it in yours too.',
@@ -249,7 +249,7 @@ export const ROLE_MODEL_FEED: RoleFeedEntry[] = [
     id: 'rm-8',
     type: 'trick',
     daysAgo: 9,
-    tag: 'TRICK SHOWCASE · THE FILM ROOM',
+    tag: 'TRICK SHOWCASE · THE LOOP',
     headline: 'The Box Crash Run — how I score against the teams that refuse to come out.',
     body:
       'The parked bus is a wall until it is not. Keep the ball with your striker, let the defenders man-mark him tight inside the box, and your Box Crasher CDM ghosts in from deep completely unmarked. The defensive AI is busy wrestling the decoy, so the second wave arrives free. Hit the lofted through ball and finish it one touch. I have ended more parked buses this season this way than any other way — it is a get-out-of-parking-free card when you use it right.',
@@ -289,7 +289,7 @@ export const ROLE_MODEL_FEED: RoleFeedEntry[] = [
     id: 'rm-5',
     type: 'trick',
     daysAgo: 14,
-    tag: 'TRICK SHOWCASE · THE FILM ROOM',
+    tag: 'TRICK SHOWCASE · THE LOOP',
     headline: 'Why I stopped tackle-spamming — and the 85+ detail that changed my defence.',
     body:
       'I used to press the tackle button like it owed me money. FC 26 cured me of that: a missed lunge now costs you a real recovery delay, and the game rewards patience with Tackle Personality — defenders with an elite Stand Tackle unlock premium stop-them-dead animations. So I pick the right centre-back, jockey, and only commit when the gap is certain. Since I stopped spamming, my clean-sheet rate has doubled. Patience is literally a stat in this game.',

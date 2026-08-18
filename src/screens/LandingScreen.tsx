@@ -588,7 +588,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <H2 center>THE LOOP IS THE ONLY GUIDE.</H2>
           <Muted center>
             No coach. Nothing talking at you. The ritual is the teacher — tonight the feeling,
-            tomorrow the film room. Mix those two heads and you lie to yourself.
+            tomorrow the moments. Mix those two heads and you lie to yourself.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <HoverCard delay={100} style={styles.card}>
@@ -605,7 +605,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <Text style={styles.cardIndex}>02</Text>
               <Text style={styles.cardTitle}>TWO HEADS</Text>
               <Text style={styles.cardBody}>
-                Tonight you capture the feeling before you can edit it. Tomorrow you do the film room, when you can actually see.
+                Tonight you capture the feeling before you can edit it. Tomorrow you name the moments, when you can actually see.
               </Text>
               <Aside>mix them and you lie to yourself</Aside>
             </HoverCard>
@@ -616,7 +616,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <Text style={styles.cardBody}>
                 After the thinking, you get one card: your performance in relation to that opponent. Not their sheet next to yours. Yours, against them.
               </Text>
-              <Aside>no flex without the film room</Aside>
+              <Aside>no flex without the work</Aside>
             </HoverCard>
           </View>
         </View>
@@ -774,7 +774,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.journal} />
                 <Text style={styles.evidenceStat}>24H</Text>
-                <Text style={[styles.cardBody, styles.center]}>between the feeling and the film room. Tonight you write how you feel. Tomorrow you see.</Text>
+                <Text style={[styles.cardBody, styles.center]}>between the feeling and the moments. Tonight you write how you feel. Tomorrow you see.</Text>
                 <Aside>calm is part of the method</Aside>
               </View>
             </HoverCard>

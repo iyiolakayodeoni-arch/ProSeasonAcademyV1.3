@@ -42,7 +42,7 @@ export const HERO_COPY: HeroCopy = {
   line2: 'WRITE HOW YOU FEEL.',
   line3: 'THE LOOP NEVER ENDS',
   subtext:
-    'The Loop is the only guide. No coach. Tonight the feeling. Tomorrow the film room. Paper first. The card comes last.',
+    'The Loop is the only guide. No coach. Tonight the feeling. Tomorrow the moments. Paper first. The card comes last.',
   ctaPrimary: 'START MY MATCH REVIEW',
   ctaSecondary: 'SEE THE LOOP',
   microLabel: '// PAPER FIRST. ALWAYS.',

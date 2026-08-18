@@ -359,7 +359,7 @@ export default function SettingsTab({ onSignOut }: { onSignOut: () => void }) {
                 <Text style={styles.sheetEyebrow}>EDIT PROFILE</Text>
                 <Text style={styles.sheetTitle}>CALL YOURSELF SOMETHING</Text>
                 <Text style={styles.sheetBody}>
-                  Letters, numbers and underscores — 12 characters max. This is the handle your coach calls out in the film room.
+                  Letters, numbers and underscores — 12 characters max. This is the handle the academy knows you by.
                 </Text>
                 <TextInput
                   value={nameDraft}

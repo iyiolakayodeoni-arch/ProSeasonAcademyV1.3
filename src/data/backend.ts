@@ -1297,7 +1297,7 @@ export async function myAccess(): Promise<MyAccess | null> {
   }
 }
 
-/** may this member open this stage / trick / the film room? */
+/** may this member open this stage / trick / the loop? */
 export async function canAccess(item: string): Promise<boolean> {
   if (!me) return false;
   try {

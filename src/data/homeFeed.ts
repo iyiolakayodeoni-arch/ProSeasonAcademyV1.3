@@ -78,7 +78,7 @@ export interface FeedCardData {
 }
 
 export function nextGroupSessionLabel(now = Date.now()): string {
-  // Compulsory coach-group film rooms every 4 days. Anchor is stable,
+  // Group session windows every 4 days. Anchor is stable,
   // then roll forward so every build shows the next real window.
   const anchor = Date.UTC(2026, 6, 29, 18, 0, 0); // 29 Jul 2026, 18:00 UTC
   const every = 4 * 86_400_000;
@@ -231,11 +231,10 @@ export function roleModelCrossPosts(coach: Coach): FeedCardData[] {
 
 // ticker line = coach notes first, then the freshest meta headlines,
 // with one line of house wit threaded through the middle
-export function buildTicker(coach: Coach): string[] {
-  const first = coach.name.split(' ')[0];
+export function buildTicker(_coach: Coach): string[] {
   const manual = [
     'FOUNDER CONSOLE LOGS: REPOSITIONED FOR CONTROLLER GRINDERS ONLY',
-    `NEXT ${first.toUpperCase()} RIVALS FILM ROOM: ${nextGroupSessionLabel()}`,
+    `NEXT LOOP SESSION: ${nextGroupSessionLabel()}`,
   ];
   const botHeads = metabotPosts()
     .slice(0, 4)

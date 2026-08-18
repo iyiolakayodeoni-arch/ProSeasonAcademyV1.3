@@ -138,7 +138,7 @@ export function resolveStageLesson(stageN: number, refs: Record<number, string>)
   return candidate ? { status: 'ok', plan: toPlan(candidate), fromRef: false } : { status: 'empty' };
 }
 
-// ── coach chat copy — written film-room messages around the live mechanic ──
+// ── coach chat copy — written stage-room messages around the live mechanic ──
 // `**…**` marks the inline highlight; parsed into colored spans at render.
 
 export interface CoachChat {

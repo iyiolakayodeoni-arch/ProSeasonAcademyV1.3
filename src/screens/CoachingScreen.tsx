@@ -14,7 +14,7 @@ import LogoMark from '../components/LogoMark';
 import ArtBand from '../components/ArtBand';
 import CoachPresence from '../components/CoachPresence';
 
-// the touchline — the film room is his ground; the whole screen is his room
+// the touchline — the stage room's ground; the whole screen is the room
 const TOUCHLINE = require('../../assets/art/coach-touchline.jpg');
 import LessonAnimation from '../components/LessonAnimation';
 import {
@@ -301,7 +301,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
           : 'START A MATCH REVIEW ›';
 
   // Plain language appears before the coach briefing. A player should be able
-  // to choose the correct path without reading the film-room lore first.
+  // to choose the correct path without reading the room lore first.
   const simpleActionLabel =
     status === 'passed' || (cleared && status === 'ready')
       ? 'SEE MY PROGRESS'
@@ -377,7 +377,7 @@ export default function CoachingScreen({ coach, stage, onClose }: Props) {
   return (
     <View style={styles.root}>
       <GridBackground />
-      {/* ── header — the film room's window onto the touchline ── */}
+      {/* ── header — the stage room's window onto the touchline ── */}
       <ArtBand
         source={[TOUCHLINE, require('../../assets/art/mirror-drill.jpg'), require('../../assets/art/locker-room.jpg')]}
         width={bandW}

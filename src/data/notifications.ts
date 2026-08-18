@@ -2,6 +2,7 @@
 // NOTIFICATIONS — Expo push token registration, prefs, quiet hours.
 // Delivery is drained by push-dispatch edge function.
 // Deep links: home | journey | community | settings | film-room | scan
+// film-room is a legacy deep-link key. Nothing on the site is called that.
 // ─────────────────────────────────────────────────────────────
 
 import { useEffect, useState } from 'react';
