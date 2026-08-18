@@ -101,6 +101,144 @@ function FitArt({ source, tall }: { source: any; tall?: boolean }) {
   );
 }
 
+function HoverCard({
+  children,
+  style,
+  delay = 80,
+  onPress,
+}: {
+  children: React.ReactNode;
+  style?: object;
+  delay?: number;
+  onPress?: () => void;
+}) {
+  const { hovered, bind } = useHover();
+  return (
+    <Animated.View entering={FadeInDown.delay(delay).duration(560)} style={style}>
+      <Pressable
+        onPress={onPress}
+        {...bind}
+        style={[styles.glassCard, styles.cardFill, hovered && styles.glassHot]}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function NavLink({ label, onPress }: { label: string; onPress: () => void }) {
+  const { hovered, bind } = useHover();
+  return (
+    <Pressable onPress={onPress} hitSlop={6} {...bind}>
+      <Text style={[styles.navLink, hovered && styles.navLinkHot]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function LoopStep({
+  step,
+  last,
+  delay,
+  active,
+  onPress,
+}: {
+  step: {
+    n: string;
+    when: string;
+    title: string;
+    body: string;
+    aside: string;
+    art: any;
+  };
+  last: boolean;
+  delay: number;
+  active: boolean;
+  onPress: () => void;
+}) {
+  const { hovered, bind } = useHover();
+  const on = active || hovered;
+  return (
+    <Animated.View entering={FadeInDown.delay(delay).duration(560)} style={styles.loopStep}>
+      <View style={styles.loopSpine}>
+        <Text style={[styles.loopNum, on && styles.loopNumHot]}>{step.n}</Text>
+        {!last && <View style={[styles.loopLine, on && styles.loopLineHot]} />}
+      </View>
+      <Pressable
+        onPress={onPress}
+        {...bind}
+        style={[styles.glassCard, styles.loopCard, on && styles.glassHot]}
+      >
+        <FitArt source={step.art} tall />
+        <Text style={styles.loopWhen}>{step.when}</Text>
+        <Text style={styles.cardTitle}>{step.title}</Text>
+        <Text style={styles.cardBody}>{step.body}</Text>
+        <Aside>{step.aside}</Aside>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function LiveQuestion({
+  q,
+  open,
+  onPress,
+}: {
+  q: { n: string; t: string; d: string };
+  open: boolean;
+  onPress: () => void;
+}) {
+  const { hovered, bind } = useHover();
+  const on = open || hovered;
+  return (
+    <Pressable onPress={onPress} {...bind} style={[styles.questionItem, on && styles.questionHot]}>
+      <Text style={[styles.questionN, on && styles.questionNHot]}>{q.n}</Text>
+      <Text style={styles.questionT}>{q.t}</Text>
+      <Text style={styles.questionD}>{q.d}</Text>
+    </Pressable>
+  );
+}
+
+function HomePrimary({ onPress, contentW }: { onPress: () => void; contentW: number }) {
+  const { hovered, bind } = useHover();
+  return (
+    <Pressable
+      onPress={onPress}
+      {...bind}
+      style={[styles.homePrimary, { maxWidth: contentW }, hovered && styles.homePrimaryHot]}
+    >
+      <Text style={styles.homePrimaryBadge}>THE ONE TAP</Text>
+      <Text style={[styles.homePrimaryTitle, WEB ? ({ fontFamily: headFont } as any) : null]}>
+        ENTER THE LOOP
+      </Text>
+      <Text style={[styles.homePrimaryBody, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+        The ritual is the teacher. No stop date. You type it. The card comes last.
+      </Text>
+    </Pressable>
+  );
+}
+
+function LivePost({
+  post,
+  art,
+}: {
+  post: { handle: string; date: string; kind: string; headline: string; body: string };
+  art: any;
+}) {
+  const { hovered, bind } = useHover();
+  return (
+    <Pressable {...bind} style={[styles.scenePost, hovered && styles.scenePostHot]}>
+      <View style={styles.scenePostTop}>
+        <Text style={styles.sceneHandle}>{post.handle}</Text>
+        <Text style={styles.sceneTime}>{sceneTimeLabel(post.date)}</Text>
+      </View>
+      <FitArt source={art} />
+      <Text style={styles.sceneTag}>{post.kind}</Text>
+      <Text style={styles.sceneHeadline}>{post.headline}</Text>
+      <Text style={styles.sceneBody}>{post.body}</Text>
+    </Pressable>
+  );
+}
+
 /* ── pinned nav — laptop: full row · tablet: short labels · phone: menu ── */
 const NAV_LINKS_FULL: [string, string][] = [
   ['METHOD', 'method'],
@@ -367,6 +505,8 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   const ref = useRef<ScrollView>(null);
   const [navH, setNavH] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState('01');
+  const [activeQ, setActiveQ] = useState('01');
 
   // ScrollView on web needs an explicit height — the flex chain alone won't
   // give it one. Measure the sticky nav, then give the scroller the rest.
@@ -450,39 +590,33 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             tomorrow the film room. Mix those two heads and you lie to yourself.
           </Muted>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <FitArt source={ILLUS.journal} />
-                <Text style={styles.cardIndex}>01</Text>
-                <Text style={styles.cardTitle}>PAPER FIRST</Text>
-                <Text style={styles.cardBody}>
-                  Write it by hand before you type it. Typing too early makes it neat. Neat is fake. If you write it down, it stays in your head.
-                </Text>
-                <Aside>there is a reason we ask for the biro</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <FitArt source={ILLUS.mirror} />
-                <Text style={styles.cardIndex}>02</Text>
-                <Text style={styles.cardTitle}>TWO HEADS</Text>
-                <Text style={styles.cardBody}>
-                  Tonight you capture the feeling before you can edit it. Tomorrow you do the film room, when you can actually see.
-                </Text>
-                <Aside>mix them and you lie to yourself</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <FitArt source={ILLUS.ledger} />
-                <Text style={styles.cardIndex}>03</Text>
-                <Text style={styles.cardTitle}>THE CARD COMES LAST</Text>
-                <Text style={styles.cardBody}>
-                  After the thinking, you get one card: your performance in relation to that opponent. Not their sheet next to yours. Yours, against them.
-                </Text>
-                <Aside>no flex without the film room</Aside>
-              </GlassCard>
-            </Animated.View>
+            <HoverCard delay={100} style={styles.card}>
+              <FitArt source={ILLUS.journal} />
+              <Text style={styles.cardIndex}>01</Text>
+              <Text style={styles.cardTitle}>PAPER FIRST</Text>
+              <Text style={styles.cardBody}>
+                Write it by hand before you type it. Typing too early makes it neat. Neat is fake. If you write it down, it stays in your head.
+              </Text>
+              <Aside>there is a reason we ask for the biro</Aside>
+            </HoverCard>
+            <HoverCard delay={180} style={styles.card}>
+              <FitArt source={ILLUS.mirror} />
+              <Text style={styles.cardIndex}>02</Text>
+              <Text style={styles.cardTitle}>TWO HEADS</Text>
+              <Text style={styles.cardBody}>
+                Tonight you capture the feeling before you can edit it. Tomorrow you do the film room, when you can actually see.
+              </Text>
+              <Aside>mix them and you lie to yourself</Aside>
+            </HoverCard>
+            <HoverCard delay={260} style={styles.card}>
+              <FitArt source={ILLUS.ledger} />
+              <Text style={styles.cardIndex}>03</Text>
+              <Text style={styles.cardTitle}>THE CARD COMES LAST</Text>
+              <Text style={styles.cardBody}>
+                After the thinking, you get one card: your performance in relation to that opponent. Not their sheet next to yours. Yours, against them.
+              </Text>
+              <Aside>no flex without the film room</Aside>
+            </HoverCard>
           </View>
         </View>
 
@@ -497,19 +631,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
           <View style={[styles.loopRail, { maxWidth: contentW }]}>
             {LOOP_STEPS.map((step, i) => (
-              <Animated.View key={step.n} entering={FadeInDown.delay(80 + i * 70).duration(600)} style={styles.loopStep}>
-                <View style={styles.loopSpine}>
-                  <Text style={styles.loopNum}>{step.n}</Text>
-                  {i < LOOP_STEPS.length - 1 && <View style={styles.loopLine} />}
-                </View>
-                <GlassCard style={styles.loopCard}>
-                  <FitArt source={step.art} tall />
-                  <Text style={styles.loopWhen}>{step.when}</Text>
-                  <Text style={styles.cardTitle}>{step.title}</Text>
-                  <Text style={styles.cardBody}>{step.body}</Text>
-                  <Aside>{step.aside}</Aside>
-                </GlassCard>
-              </Animated.View>
+              <LoopStep
+                key={step.n}
+                step={step}
+                last={i === LOOP_STEPS.length - 1}
+                delay={80 + i * 70}
+                active={activeStep === step.n}
+                onPress={() => setActiveStep(step.n)}
+              />
             ))}
           </View>
 
@@ -549,24 +678,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             You open Today. One job is green. Everything else is a workspace.
             The Loop guides you. These are the rooms around it — not a person.
           </Muted>
-          <View style={[styles.homePrimary, { maxWidth: contentW }]}>
-            <Text style={styles.homePrimaryBadge}>THE ONE TAP</Text>
-            <Text style={[styles.homePrimaryTitle, WEB ? ({ fontFamily: headFont } as any) : null]}>
-              ENTER THE LOOP
-            </Text>
-            <Text style={[styles.homePrimaryBody, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-              The ritual is the teacher. No stop date. You type it. The card comes last.
-            </Text>
-          </View>
+          <HomePrimary onPress={onEnter} contentW={contentW} />
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             {HOME_FEATURES.map((f, i) => (
-              <Animated.View key={f.n} entering={FadeInDown.delay(80 + i * 50).duration(520)} style={styles.homeCard}>
-                <GlassCard style={styles.cardFill}>
-                  <Text style={styles.loopWhen}>{f.badge}</Text>
-                  <Text style={styles.cardTitle}>{f.title}</Text>
-                  <Text style={styles.cardBody}>{f.body}</Text>
-                </GlassCard>
-              </Animated.View>
+              <HoverCard key={f.n} delay={80 + i * 50} style={styles.homeCard} onPress={onEnter}>
+                <Text style={styles.loopWhen}>{f.badge}</Text>
+                <Text style={styles.cardTitle}>{f.title}</Text>
+                <Text style={styles.cardBody}>{f.body}</Text>
+              </HoverCard>
             ))}
           </View>
         </View>
@@ -582,15 +701,13 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             {SCENE_PILLARS.map((p, i) => (
-              <Animated.View key={p.n} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={styles.card}>
-                <GlassCard style={styles.cardFill}>
-                  <FitArt source={p.art} />
-                  <Text style={styles.cardIndex}>{p.n}</Text>
-                  <Text style={styles.cardTitle}>{p.title}</Text>
-                  <Text style={styles.cardBody}>{p.body}</Text>
-                  <Aside>{p.aside}</Aside>
-                </GlassCard>
-              </Animated.View>
+              <HoverCard key={p.n} delay={100 + i * 80} style={styles.card}>
+                <FitArt source={p.art} />
+                <Text style={styles.cardIndex}>{p.n}</Text>
+                <Text style={styles.cardTitle}>{p.title}</Text>
+                <Text style={styles.cardBody}>{p.body}</Text>
+                <Aside>{p.aside}</Aside>
+              </HoverCard>
             ))}
           </View>
 
@@ -606,16 +723,11 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
               Players. Titles. News. Mechanics. One stream. The Loop is the work. This is the world you are training in.
             </Text>
             {sceneFeed().slice(0, 4).map((post, i) => (
-              <View key={post.id} style={styles.scenePost}>
-                <View style={styles.scenePostTop}>
-                  <Text style={styles.sceneHandle}>{post.handle}</Text>
-                  <Text style={styles.sceneTime}>{sceneTimeLabel(post.date)}</Text>
-                </View>
-                <FitArt source={SCENE_ART_CYCLE[i % SCENE_ART_CYCLE.length]} />
-                <Text style={styles.sceneTag}>{post.kind}</Text>
-                <Text style={styles.sceneHeadline}>{post.headline}</Text>
-                <Text style={styles.sceneBody}>{post.body}</Text>
-              </View>
+              <LivePost
+                key={post.id}
+                post={post}
+                art={SCENE_ART_CYCLE[i % SCENE_ART_CYCLE.length]}
+              />
             ))}
             <Aside>public tournament record only. we do not invent their lives</Aside>
           </View>
@@ -648,30 +760,30 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           <Eyebrow>[ EVIDENCE ]</Eyebrow>
           <H2 center>YOUR EVIDENCE MOVES YOU.</H2>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+            <HoverCard delay={100} style={styles.evidenceCard}>
+              <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.mirror} />
                 <Text style={styles.evidenceStat}>100%</Text>
                 <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
                 <Aside>no AI verdicts</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+              </View>
+            </HoverCard>
+            <HoverCard delay={180} style={styles.evidenceCard}>
+              <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.journal} />
                 <Text style={styles.evidenceStat}>24H</Text>
                 <Text style={[styles.cardBody, styles.center]}>between the feeling and the film room. Tonight you write how you feel. Tomorrow you see.</Text>
                 <Aside>calm is part of the method</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
+              </View>
+            </HoverCard>
+            <HoverCard delay={260} style={styles.evidenceCard}>
+              <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.ledger} />
                 <Text style={styles.evidenceStat}>∞</Text>
                 <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
                 <Aside>you cannot outrun your receipts</Aside>
-              </GlassCard>
-            </Animated.View>
+              </View>
+            </HoverCard>
           </View>
         </View>
 
@@ -698,6 +810,15 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <Text style={styles.marqueeTxt}>
               PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
               PLAY · WATCH ONCE · WRITE HOW YOU FEEL · WAIT A DAY · NAME THE MOMENTS · ASK THE QUESTIONS · KEEP THE LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
+            </Text>
+          </Marquee>
+        </View>
+
+        {/* ── FOOTER ── */}
+        <View style={styles.footer}>
+          <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
+          <Text style={styles.footerTag}>THE CONSOLE ACADEMY · THE LOOP · SESSION BY SESSION</Text>
+          <Text style=E LESSONS · THE CARD · THE LOOP · THE FIFTY · THE SCENE ·
             </Text>
           </Marquee>
         </View>
@@ -767,6 +888,17 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     borderRadius: 16,
     padding: 22,
+    // @ts-ignore web
+    transition: 'transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease',
+    cursor: 'pointer',
+  },
+  glassHot: {
+    borderColor: 'rgba(57,255,106,0.55)',
+    transform: [{ translateY: -4 }],
+    shadowColor: colors.primary,
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
   },
   cardFill: {
     height: '100%',
@@ -851,6 +983,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 1.6,
     color: '#9CA3AF',
+    // @ts-ignore web
+    transition: 'color 150ms ease',
+  },
+  navLinkHot: {
+    color: colors.primary,
   },
   navLinkTablet: {
     fontSize: 10,
@@ -1083,6 +1220,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.primary,
     lineHeight: 26,
+    opacity: 0.7,
+  },
+  loopNumHot: {
+    opacity: 1,
+    textShadowColor: 'rgba(57,255,106,0.45)',
+    textShadowRadius: 12,
   },
   loopLine: {
     flex: 1,
@@ -1090,6 +1233,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 4,
     backgroundColor: 'rgba(57,255,106,0.28)',
+  },
+  loopLineHot: {
+    backgroundColor: 'rgba(57,255,106,0.7)',
   },
   loopCard: {
     flex: 1,
@@ -1162,6 +1308,13 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     borderRadius: 14,
     padding: 16,
+    // @ts-ignore web
+    transition: 'border-color 160ms ease, transform 160ms ease',
+    cursor: 'pointer',
+  },
+  questionHot: {
+    borderColor: 'rgba(57,255,106,0.5)',
+    transform: [{ translateY: -2 }],
   },
   questionN: {
     fontFamily: monoFont,
@@ -1169,6 +1322,9 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: colors.primaryDim,
     marginBottom: 8,
+  },
+  questionNHot: {
+    color: colors.primary,
   },
   questionT: {
     fontFamily: bodyFontStrong,
@@ -1234,6 +1390,13 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSubtle,
     borderRadius: 16,
     padding: 14,
+    // @ts-ignore web
+    transition: 'border-color 160ms ease, transform 160ms ease',
+    cursor: 'pointer',
+  },
+  scenePostHot: {
+    borderColor: 'rgba(57,255,106,0.45)',
+    transform: [{ translateY: -3 }],
   },
   scenePostTop: {
     flexDirection: 'row',
@@ -1312,6 +1475,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: 'rgba(3,20,10,0.78)',
     textAlign: 'center',
+    maxWidth: 520,
+  },
+  homeCard: {
+    flexBasis: 240,
+    flexGrow: 1,
+  },
+});
     maxWidth: 520,
   },
   homeCard: {
