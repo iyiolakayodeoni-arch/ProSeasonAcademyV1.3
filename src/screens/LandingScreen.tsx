@@ -32,6 +32,11 @@ const WEB = Platform.OS === 'web';
 const headFont = WEB ? "'Space Grotesk', 'Barlow', sans-serif" : displayFont;
 const bodyFace = WEB ? "'Inter', 'Barlow', sans-serif" : bodyFont;
 
+function usePhone() {
+  const { width } = useWindowDimensions();
+  return width < 720;
+}
+
 // 3D esports/EAFC illustrations for the section cards
 const ILLUS = {
   mirror: require('../../assets/art/illu-mirror.png'),
@@ -59,20 +64,23 @@ const SCENE_ART_CYCLE = [SCENE_ART.vault, SCENE_ART.boots, SCENE_ART.huddle, SCE
 
 /* ── small house primitives ── */
 function Eyebrow({ children }: { children: string }) {
-  return <Text style={styles.eyebrow}>{children}</Text>;
+  const phone = usePhone();
+  return <Text style={[styles.eyebrow, phone && styles.eyebrowPhone]}>{children}</Text>;
 }
 
 function H2({ children, center }: { children: React.ReactNode; center?: boolean }) {
+  const phone = usePhone();
   return (
-    <Text style={[styles.h2, WEB ? ({ fontFamily: headFont } as any) : null, center && styles.center]}>
+    <Text style={[styles.h2, phone && styles.h2Phone, WEB ? ({ fontFamily: headFont } as any) : null, center && styles.center]}>
       {children}
     </Text>
   );
 }
 
 function Muted({ children, center }: { children: React.ReactNode; center?: boolean }) {
+  const phone = usePhone();
   return (
-    <Text style={[styles.muted, center && styles.center, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+    <Text style={[styles.muted, phone && styles.mutedPhone, center && styles.center, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
       {children}
     </Text>
   );
@@ -90,7 +98,8 @@ function GlassCard({
   children?: React.ReactNode;
   style?: object;
 }) {
-  return <View style={[styles.glassCard, style]}>{children}</View>;
+  const phone = usePhone();
+  return <View style={[styles.glassCard, phone && styles.glassCardPhone, style]}>{children}</View>;
 }
 
 /** Whole picture, scaled to the box. Never cropped. */
@@ -114,12 +123,13 @@ function HoverCard({
   onPress?: () => void;
 }) {
   const { hovered, bind } = useHover();
+  const phone = usePhone();
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(560)} style={style}>
       <Pressable
         onPress={onPress}
         {...bind}
-        style={[styles.glassCard, styles.cardFill, hovered && styles.glassHot]}
+        style={[styles.glassCard, styles.cardFill, hovered && styles.glassHot, phone && styles.glassCardPhone]}
       >
         {children}
       </Pressable>
@@ -157,17 +167,18 @@ function LoopStep({
   onPress: () => void;
 }) {
   const { hovered, bind } = useHover();
+  const phone = usePhone();
   const on = active || hovered;
   return (
-    <Animated.View entering={FadeInDown.delay(delay).duration(560)} style={styles.loopStep}>
-      <View style={styles.loopSpine}>
-        <Text style={[styles.loopNum, on && styles.loopNumHot]}>{step.n}</Text>
+    <Animated.View entering={FadeInDown.delay(delay).duration(560)} style={[styles.loopStep, phone && styles.loopStepPhone]}>
+      <View style={[styles.loopSpine, phone && styles.loopSpinePhone]}>
+        <Text style={[styles.loopNum, phone && styles.loopNumPhone, on && styles.loopNumHot]}>{step.n}</Text>
         {!last && <View style={[styles.loopLine, on && styles.loopLineHot]} />}
       </View>
       <Pressable
         onPress={onPress}
         {...bind}
-        style={[styles.glassCard, styles.loopCard, on && styles.glassHot]}
+        style={[styles.glassCard, styles.loopCard, on && styles.glassHot, phone && styles.glassCardPhone]}
       >
         <FitArt source={step.art} tall />
         <Text style={styles.loopWhen}>{step.when}</Text>
@@ -189,29 +200,31 @@ function LiveQuestion({
   onPress: () => void;
 }) {
   const { hovered, bind } = useHover();
+  const phone = usePhone();
   const on = open || hovered;
   return (
-    <Pressable onPress={onPress} {...bind} style={[styles.questionItem, on && styles.questionHot]}>
+    <Pressable onPress={onPress} {...bind} style={[styles.questionItem, on && styles.questionHot, phone && styles.questionItemPhone]}>
       <Text style={[styles.questionN, on && styles.questionNHot]}>{q.n}</Text>
-      <Text style={styles.questionT}>{q.t}</Text>
-      <Text style={styles.questionD}>{q.d}</Text>
+      <Text style={[styles.questionT, phone && styles.questionTPhone]}>{q.t}</Text>
+      <Text style={[styles.questionD, phone && styles.questionDPhone]}>{q.d}</Text>
     </Pressable>
   );
 }
 
 function HomePrimary({ onPress, contentW }: { onPress: () => void; contentW: number }) {
   const { hovered, bind } = useHover();
+  const phone = usePhone();
   return (
     <Pressable
       onPress={onPress}
       {...bind}
-      style={[styles.homePrimary, { maxWidth: contentW }, hovered && styles.homePrimaryHot]}
+      style={[styles.homePrimary, { maxWidth: contentW }, hovered && styles.homePrimaryHot, phone && styles.homePrimaryPhone]}
     >
-      <Text style={styles.homePrimaryBadge}>THE ONE TAP</Text>
-      <Text style={[styles.homePrimaryTitle, WEB ? ({ fontFamily: headFont } as any) : null]}>
+      <Text style={[styles.homePrimaryBadge, phone && styles.homePrimaryBadgePhone]}>THE ONE TAP</Text>
+      <Text style={[styles.homePrimaryTitle, phone && styles.homePrimaryTitlePhone, WEB ? ({ fontFamily: headFont } as any) : null]}>
         ENTER THE LOOP
       </Text>
-      <Text style={[styles.homePrimaryBody, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+      <Text style={[styles.homePrimaryBody, phone && styles.homePrimaryBodyPhone, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
         The ritual is the teacher. No stop date. You type it. The card comes last.
       </Text>
     </Pressable>
@@ -500,7 +513,8 @@ const HOME_FEATURES = [
 export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const { isWide, isDesktopUp } = useResponsive();
-  const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : 28) * 2;
+  const phone = winW < 720;
+  const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : phone ? 16 : 24) * 2;
   const compact = winW < 1100;
 
   const ref = useRef<ScrollView>(null);
@@ -583,7 +597,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── THE METHOD ── */}
-        <View style={styles.section} id="method">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="method">
           <Eyebrow>[ METHOD ]</Eyebrow>
           <H2 center>THE LOOP IS THE ONLY GUIDE.</H2>
           <Muted center>
@@ -622,7 +636,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── THE LOOP — how we actually work ── */}
-        <View style={styles.section} id="loop">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="loop">
           <Eyebrow>[ THE LOOP ]</Eyebrow>
           <H2 center>THIS IS HOW WE ACTUALLY WORK.</H2>
           <Muted center>
@@ -643,12 +657,12 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             ))}
           </View>
 
-          <View style={[styles.questionsBoard, { maxWidth: contentW }]}>
-            <Text style={styles.questionsEyebrow}>[ THE QUESTIONS · EVERY KEY MOMENT ]</Text>
-            <Text style={[styles.questionsHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
+          <View style={[styles.questionsBoard, phone && styles.questionsBoardPhone, { maxWidth: contentW }]}>
+            <Text style={[styles.questionsEyebrow, phone && styles.questionsEyebrowPhone]}>[ THE QUESTIONS · EVERY KEY MOMENT ]</Text>
+            <Text style={[styles.questionsHead, phone && styles.questionsHeadPhone, WEB ? ({ fontFamily: headFont } as any) : null]}>
               YOU CANNOT HIDE IN “I JUST MISSED IT.”
             </Text>
-            <Text style={[styles.questionsLead, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+            <Text style={[styles.questionsLead, phone && styles.questionsLeadPhone, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
               Name the moment. Choose the time. Answer these on paper. Then type them in the app.
             </Text>
             <View style={styles.questionsGrid}>
@@ -665,15 +679,15 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
           </View>
 
           <View style={[styles.loopClose, { maxWidth: contentW }]}>
-            <InfinityCrest size={36} />
-            <Text style={[styles.loopCloseTxt, WEB ? ({ fontFamily: headFont } as any) : null]}>
+            <InfinityCrest size={phone ? 24 : 36} />
+            <Text style={[styles.loopCloseTxt, phone && styles.loopCloseTxtPhone, WEB ? ({ fontFamily: headFont } as any) : null]}>
               NEXT MATCH. SAME LOOP. FOREVER.
             </Text>
           </View>
         </View>
 
         {/* ── TODAY — the home screen, advertised ── */}
-        <View style={styles.section} id="today">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="today">
           <Eyebrow>[ TODAY ]</Eyebrow>
           <H2 center>THIS IS THE HOME SCREEN.</H2>
           <Muted center>
@@ -693,7 +707,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── ROLE MODEL UPDATES / THE SCENE ── */}
-        <View style={styles.section} id="scene">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="scene">
           <Eyebrow>[ ROLE MODEL UPDATES ]</Eyebrow>
           <H2 center>FIFTY PROS. ONE FEED.</H2>
           <Muted center>
@@ -713,15 +727,15 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             ))}
           </View>
 
-          <View style={[styles.sceneBoard, { maxWidth: Math.min(contentW, 560) }]}>
+          <View style={[styles.sceneBoard, phone && styles.sceneBoardPhone, { maxWidth: Math.min(contentW, 560) }]}>
             <View style={styles.sceneBoardHead}>
-              <Text style={styles.questionsEyebrow}>[ THE FEED ]</Text>
+              <Text style={[styles.questionsEyebrow, phone && styles.questionsEyebrowPhone]}>[ THE FEED ]</Text>
               <Text style={styles.sceneLive}>LIVE</Text>
             </View>
-            <Text style={[styles.questionsHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
+            <Text style={[styles.questionsHead, phone && styles.questionsHeadPhone, WEB ? ({ fontFamily: headFont } as any) : null]}>
               SCROLL IT LIKE INSTAGRAM.
             </Text>
-            <Text style={[styles.questionsLead, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+            <Text style={[styles.questionsLead, phone && styles.questionsLeadPhone, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
               Players. Titles. News. Mechanics. One stream. The Loop is the work. This is the world you are training in.
             </Text>
             {sceneFeed().slice(0, 4).map((post, i) => (
@@ -736,7 +750,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── THE JOURNEY ── */}
-        <View style={styles.section} id="journey">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="journey">
           <Eyebrow>[ THE JOURNEY ]</Eyebrow>
           <H2 center>SIX CHAPTERS. THE LOOP IS THE WORK.</H2>
           <Muted center>
@@ -758,14 +772,14 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── EVIDENCE ── */}
-        <View style={styles.section} id="evidence">
+        <View style={[styles.section, phone && styles.sectionPhone]} id="evidence">
           <Eyebrow>[ EVIDENCE ]</Eyebrow>
           <H2 center>YOUR EVIDENCE MOVES YOU.</H2>
           <View style={[styles.cardRow, { maxWidth: contentW }]}>
             <HoverCard delay={100} style={styles.evidenceCard}>
               <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.mirror} />
-                <Text style={styles.evidenceStat}>100%</Text>
+                <Text style={[styles.evidenceStat, phone && styles.evidenceStatPhone]}>100%</Text>
                 <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
                 <Aside>no AI verdicts</Aside>
               </View>
@@ -773,7 +787,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <HoverCard delay={180} style={styles.evidenceCard}>
               <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.journal} />
-                <Text style={styles.evidenceStat}>24H</Text>
+                <Text style={[styles.evidenceStat, phone && styles.evidenceStatPhone]}>24H</Text>
                 <Text style={[styles.cardBody, styles.center]}>between the feeling and the moments. Tonight you write how you feel. Tomorrow you see.</Text>
                 <Aside>calm is part of the method</Aside>
               </View>
@@ -781,7 +795,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <HoverCard delay={260} style={styles.evidenceCard}>
               <View style={styles.evidenceInner}>
                 <FitArt source={ILLUS.ledger} />
-                <Text style={styles.evidenceStat}>∞</Text>
+                <Text style={[styles.evidenceStat, phone && styles.evidenceStatPhone]}>∞</Text>
                 <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
                 <Aside>you cannot outrun your receipts</Aside>
               </View>
@@ -790,16 +804,16 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
         </View>
 
         {/* ── CTA ── */}
-        <View style={[styles.ctaBanner, { maxWidth: contentW }]}>
+        <View style={[styles.ctaBanner, phone && styles.ctaBannerPhone, { maxWidth: contentW }]}>
           <Eyebrow>CLAIM YOUR SEAT</Eyebrow>
-          <Text style={[styles.ctaHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
+          <Text style={[styles.ctaHead, phone && styles.ctaHeadPhone, WEB ? ({ fontFamily: headFont } as any) : null]}>
             THE LOOP IS THE GUIDE. NOTHING ELSE.
           </Text>
           <Muted center>
             One thousand seats — when it's full, it's full. Sign in, seal the baseline,
             start the Loop. No coach. No voice in your ear. The ritual is the teacher.
           </Muted>
-          <View style={styles.heroCtas}>
+          <View style={[styles.heroCtas, phone && styles.heroCtasPhone]}>
             <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
             <CtaSecondary label="I ALREADY HAVE AN ACCOUNT" onPress={onEnter} />
           </View>
@@ -818,9 +832,9 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
 
         {/* ── FOOTER ── */}
         <View style={styles.footer}>
-          <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
-          <Text style={styles.footerTag}>THE CONSOLE ACADEMY · THE LOOP · SESSION BY SESSION</Text>
-          <Text style={styles.footerNote}>we cooked, yeah we know · © {new Date().getFullYear()} ProSeason Academy</Text>
+          <Text style={[styles.footerBrand, phone && styles.footerBrandPhone]}>PROSEASON ACADEMY</Text>
+          <Text style={[styles.footerTag, phone && styles.footerTagPhone]}>THE CONSOLE ACADEMY · THE LOOP · SESSION BY SESSION</Text>
+          <Text style={[styles.footerNote, phone && styles.footerNotePhone]}>we cooked, yeah we know · © {new Date().getFullYear()} ProSeason Academy</Text>
         </View>
       </ScrollView>
     </View>
@@ -858,6 +872,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
     textTransform: 'uppercase',
     marginBottom: 14,
+    width: '100%',
   },
   muted: {
     fontFamily: bodyFont,
@@ -866,6 +881,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginBottom: 28,
     maxWidth: 620,
+    width: '100%',
   },
   aside: {
     fontFamily: monoFont,
@@ -910,6 +926,7 @@ const styles = StyleSheet.create({
     color: colors.fg,
     textTransform: 'uppercase',
     marginBottom: 10,
+    flexShrink: 1,
   },
   cardBody: {
     fontFamily: bodyFont,
@@ -1095,6 +1112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 28,
     paddingVertical: 64,
+    width: '100%',
   },
   cardRow: {
     flexDirection: 'row',
@@ -1266,6 +1284,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textTransform: 'uppercase',
     marginBottom: 14,
+    textAlign: 'center',
   },
   questionsHead: {
     fontFamily: displayFont,
@@ -1483,5 +1502,154 @@ const styles = StyleSheet.create({
   homeCard: {
     flexBasis: 240,
     flexGrow: 1,
+  },
+  eyebrowPhone: {
+    fontSize: 9.5,
+    letterSpacing: 2,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  h2Phone: {
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: 0.15,
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+  mutedPhone: {
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 20,
+    maxWidth: '100%',
+    paddingHorizontal: 2,
+  },
+  sectionPhone: {
+    paddingHorizontal: 16,
+    paddingVertical: 40,
+  },
+  glassCardPhone: {
+    padding: 16,
+    borderRadius: 14,
+  },
+  questionsBoardPhone: {
+    padding: 16,
+    marginTop: 24,
+    borderRadius: 14,
+  },
+  questionsEyebrowPhone: {
+    fontSize: 9,
+    letterSpacing: 1.1,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  questionsHeadPhone: {
+    fontSize: 18,
+    lineHeight: 24,
+    letterSpacing: 0.15,
+  },
+  questionsLeadPhone: {
+    fontSize: 13.5,
+    lineHeight: 20,
+    marginBottom: 16,
+    maxWidth: '100%',
+  },
+  questionItemPhone: {
+    padding: 12,
+    flexBasis: '100%',
+  },
+  questionTPhone: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    lineHeight: 16,
+  },
+  questionDPhone: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  loopCloseTxtPhone: {
+    fontSize: 16,
+    letterSpacing: 0.5,
+    lineHeight: 22,
+    paddingHorizontal: 8,
+  },
+  loopStepPhone: {
+    gap: 10,
+  },
+  loopSpinePhone: {
+    width: 26,
+  },
+  loopNumPhone: {
+    fontSize: 15,
+    lineHeight: 18,
+  },
+  evidenceStatPhone: {
+    fontSize: 32,
+  },
+  ctaBannerPhone: {
+    padding: 18,
+    marginVertical: 24,
+    borderRadius: 16,
+  },
+  ctaHeadPhone: {
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: 0.2,
+  },
+  heroCtasPhone: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+  },
+  homePrimaryPhone: {
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+  },
+  homePrimaryBadgePhone: {
+    fontSize: 9,
+    letterSpacing: 1.6,
+  },
+  homePrimaryTitlePhone: {
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: 0.2,
+  },
+  homePrimaryBodyPhone: {
+    fontSize: 13.5,
+    lineHeight: 20,
+  },
+  sceneBoardPhone: {
+    padding: 14,
+    marginTop: 28,
+    borderRadius: 14,
+  },
+  footerBrandPhone: {
+    fontSize: 12,
+    letterSpacing: 1.6,
+    textAlign: 'center',
+  },
+  footerTagPhone: {
+    fontSize: 9,
+    letterSpacing: 0.9,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    lineHeight: 14,
+  },
+  footerNotePhone: {
+    fontSize: 11,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  loopWhenPhone: {
+    fontSize: 9.5,
+    letterSpacing: 1.2,
+  },
+  cardTitlePhone: {
+    fontSize: 13.5,
+    letterSpacing: 0.8,
+  },
+  cardBodyPhone: {
+    fontSize: 13.5,
+    lineHeight: 20,
   },
 });

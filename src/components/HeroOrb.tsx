@@ -279,11 +279,15 @@ export default function HeroOrb({
         </>
       )}
 
-      {/* ── floating HUD stat cards ── */}
-      <StatCard stat={stats[0]} float={f0} scale={s} style={{ top: w * 0.30, left: -w * 0.015 }} />
-      <StatCard stat={stats[1]} float={f1} scale={s} style={{ top: w * 0.40, right: -w * 0.02 }} />
-      {!compact && stats[2] && (
-        <StatCard stat={stats[2]} float={f2} scale={s} style={{ top: w * 0.74, right: w * 0.06 }} />
+      {/* ── floating HUD stat cards — hide on compact so they don't spill off a phone ── */}
+      {!compact && (
+        <>
+          <StatCard stat={stats[0]} float={f0} scale={s} style={{ top: w * 0.30, left: -w * 0.015 }} />
+          <StatCard stat={stats[1]} float={f1} scale={s} style={{ top: w * 0.40, right: -w * 0.02 }} />
+          {stats[2] && (
+            <StatCard stat={stats[2]} float={f2} scale={s} style={{ top: w * 0.74, right: w * 0.06 }} />
+          )}
+        </>
       )}
     </View>
   );
