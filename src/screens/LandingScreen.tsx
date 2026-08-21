@@ -603,7 +603,7 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
             <HoverCard delay={180} style={styles.card}>
               <FitArt source={ILLUS.mirror} />
               <Text style={styles.cardIndex}>02</Text>
-              <Text style={styles.cardTitle}>TWO HEADS</Text>
+              <Text style={styles.cardTitle}>TWO MINDSTATES</Text>
               <Text style={styles.cardBody}>
                 Tonight you capture the feeling before you can edit it. Tomorrow you name the moments, when you can actually see.
               </Text>
