@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import InfinityCrest from './InfinityCrest';
-import HeroOrb, { HERO_STATS, HeroStat } from './HeroOrb';
+import HeroArt from './HeroArt';
+import { HERO_STATS, HeroStat } from './HeroOrb';
 import { CtaPrimary, CtaSecondary } from './CtaButtons';
 import { colors, monoFont, displayFont, bodyFont, radii } from '../theme';
 
@@ -96,12 +97,12 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
           </Animated.View>
         </View>
 
-        {/* ── right column — the HUD orb ── */}
+        {/* ── right column — the 3D loop illustration ── */}
         <Animated.View
           entering={FadeInDown.delay(120).duration(700)}
           style={[styles.art, isWide && styles.artWide]}
         >
-          <HeroOrb width={orbW} stats={c.stats} compact={!isWide} />
+          <HeroArt width={orbW} />
         </Animated.View>
       </View>
 
