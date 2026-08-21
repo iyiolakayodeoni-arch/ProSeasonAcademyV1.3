@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, Pressable } from 'react-native';
+import { Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { colors, bodyFontBold, radii } from '../theme';
 
@@ -10,6 +10,7 @@ import { colors, bodyFontBold, radii } from '../theme';
 // ─────────────────────────────────────────────────────────────────────────
 
 export function CtaPrimary({ label, onPress }: { label: string; onPress: () => void }) {
+  const phone = useWindowDimensions().width < 720;
   const hov = useSharedValue(0);
   const s = useAnimatedStyle(() => ({
     transform: [{ translateY: hov.value * -1.5 }],
@@ -21,14 +22,15 @@ export function CtaPrimary({ label, onPress }: { label: string; onPress: () => v
       onHoverIn={() => (hov.value = withTiming(1, { duration: 160 }))}
       onHoverOut={() => (hov.value = withTiming(0, { duration: 160 }))}
     >
-      <Animated.View style={[styles.ctaPrimary, s]}>
-        <Text style={styles.ctaPrimaryTxt}>{label}</Text>
+      <Animated.View style={[styles.ctaPrimary, phone && styles.ctaPhone, s]}>
+        <Text style={[styles.ctaPrimaryTxt, phone && styles.ctaTxtPhone]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );
 }
 
 export function CtaSecondary({ label, onPress }: { label: string; onPress: () => void }) {
+  const phone = useWindowDimensions().width < 720;
   const hov = useSharedValue(0);
   const s = useAnimatedStyle(() => ({
     borderColor: `rgba(57,255,106,${0.5 + hov.value * 0.4})`,
@@ -39,8 +41,8 @@ export function CtaSecondary({ label, onPress }: { label: string; onPress: () =>
       onHoverIn={() => (hov.value = withTiming(1))}
       onHoverOut={() => (hov.value = withTiming(0))}
     >
-      <Animated.View style={[styles.ctaSecondary, s]}>
-        <Text style={styles.ctaSecondaryTxt}>{label}</Text>
+      <Animated.View style={[styles.ctaSecondary, phone && styles.ctaPhone, s]}>
+        <Text style={[styles.ctaSecondaryTxt, phone && styles.ctaTxtPhone]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );
@@ -75,5 +77,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     color: colors.primary,
     textTransform: 'uppercase',
+  },
+  ctaPhone: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  ctaTxtPhone: {
+    fontSize: 11.5,
+    letterSpacing: 1,
+    textAlign: 'center',
   },
 });

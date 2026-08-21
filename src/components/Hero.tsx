@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import InfinityCrest from './InfinityCrest';
 import HeroOrb, { HERO_STATS, HeroStat } from './HeroOrb';
@@ -62,21 +62,29 @@ type Props = {
 };
 
 export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, copy }: Props) {
+  const { width: winW } = useWindowDimensions();
+  const phone = !isWide || winW < 720;
   const c: HeroCopy = { ...HERO_COPY, ...copy };
-  const orbW = isWide ? Math.min(420, contentWidth * 0.44) : Math.min(340, contentWidth * 0.92);
+  const orbW = isWide
+    ? Math.min(420, contentWidth * 0.44)
+    : Math.min(phone ? 240 : 300, contentWidth * 0.78);
   // Fill the column. Longest statement is WRITE HOW YOU FEEL.
   const colW = isWide ? contentWidth * 0.52 : contentWidth;
   const longest = Math.max(c.line1.length, c.line2.length, 16);
-  const fit = colW / (longest * (isWide ? 0.46 : 0.50));
-  const headSize = Math.round(Math.min(isWide ? 62 : 42, Math.max(isWide ? 38 : 32, fit)));
-  const headLine = Math.round(headSize * 1.02);
-  const loopSize = Math.round(Math.min(isWide ? 28 : 20, Math.max(isWide ? 20 : 16, headSize * 0.42)));
-  const loopLine = Math.round(loopSize * 1.2);
-  const crest = Math.round(Math.min(isWide ? 36 : 26, Math.max(isWide ? 26 : 20, headSize * 0.55)));
+  const fit = colW / (longest * (isWide ? 0.46 : 0.62));
+  const headSize = Math.round(
+    Math.min(isWide ? 62 : phone ? 28 : 36, Math.max(isWide ? 38 : phone ? 22 : 28, fit)),
+  );
+  const headLine = Math.round(headSize * 1.08);
+  const loopSize = Math.round(
+    Math.min(isWide ? 28 : phone ? 15 : 18, Math.max(isWide ? 20 : phone ? 13 : 15, headSize * 0.48)),
+  );
+  const loopLine = Math.round(loopSize * 1.25);
+  const crest = Math.round(Math.min(isWide ? 36 : 22, Math.max(isWide ? 26 : 16, headSize * 0.5)));
 
   return (
-    <View style={[styles.hero, { width: contentWidth }]}>
-      <View style={[styles.row, isWide && styles.rowWide]}>
+    <View style={[styles.hero, { width: contentWidth }, phone && styles.heroPhone]}>
+      <View style={[styles.row, isWide && styles.rowWide, phone && styles.rowPhone]}>
         {/* ── left column — the statement ── */}
         <View style={[styles.text, isWide ? styles.textWide : styles.textNarrow]}>
           <Animated.View entering={FadeInDown.duration(600)} style={!isWide && styles.headlineBlockNarrow}>
@@ -85,6 +93,7 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
                 styles.h1,
                 { fontSize: headSize, lineHeight: headLine },
                 !isWide && styles.h1Narrow,
+                phone && styles.h1Phone,
                 WEB ? ({ fontFamily: headFont } as any) : null,
               ]}
             >
@@ -96,6 +105,7 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
                 styles.h1Green,
                 { fontSize: headSize, lineHeight: headLine },
                 !isWide && styles.h1Narrow,
+                phone && styles.h1Phone,
                 WEB ? ({ fontFamily: headFont } as any) : null,
               ]}
             >
@@ -108,6 +118,7 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
                   styles.h1Loop,
                   { fontSize: loopSize, lineHeight: loopLine },
                   !isWide && styles.h1LoopNarrow,
+                  phone && styles.h1LoopPhone,
                   WEB ? ({ fontFamily: headFont } as any) : null,
                 ]}
               >
@@ -117,16 +128,30 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(60).duration(600)}>
-            <Text style={[styles.sub, !isWide && styles.subNarrow, WEB ? ({ fontFamily: bodyFace } as any) : null]}>{c.subtext}</Text>
+            <Text
+              style={[
+                styles.sub,
+                !isWide && styles.subNarrow,
+                phone && styles.subPhone,
+                WEB ? ({ fontFamily: bodyFace } as any) : null,
+              ]}
+            >
+              {c.subtext}
+            </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(120).duration(600)} style={[styles.ctas, !isWide && styles.ctasNarrow]}>
+          <Animated.View
+            entering={FadeInDown.delay(120).duration(600)}
+            style={[styles.ctas, !isWide && styles.ctasNarrow, phone && styles.ctasPhone]}
+          >
             <CtaPrimary label={c.ctaPrimary} onPress={onPrimary} />
             <CtaSecondary label={c.ctaSecondary} onPress={onSecondary} />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(600)}>
-            <Text style={[styles.penNote, !isWide && styles.penNoteNarrow]}>{c.microLabel}</Text>
+            <Text style={[styles.penNote, !isWide && styles.penNoteNarrow, phone && styles.penNotePhone]}>
+              {c.microLabel}
+            </Text>
           </Animated.View>
         </View>
 
@@ -135,15 +160,15 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
           entering={FadeInDown.delay(120).duration(700)}
           style={[styles.art, isWide && styles.artWide]}
         >
-          <HeroOrb width={orbW} stats={c.stats} compact={!isWide} />
+          <HeroOrb width={orbW} stats={c.stats} compact={phone || !isWide} />
         </Animated.View>
       </View>
 
       {/* ── the promise badge, centred under both columns ── */}
       <Animated.View entering={FadeInDown.delay(280).duration(600)} style={styles.badgeRow}>
-        <View style={styles.badge}>
-          <InfinityCrest size={26} />
-          <Text style={styles.badgeTxt}>{c.badge}</Text>
+        <View style={[styles.badge, phone && styles.badgePhone]}>
+          <InfinityCrest size={phone ? 16 : 26} />
+          <Text style={[styles.badgeTxt, phone && styles.badgeTxtPhone]}>{c.badge}</Text>
         </View>
       </Animated.View>
     </View>
@@ -155,9 +180,15 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingTop: 64,
   },
+  heroPhone: {
+    paddingTop: 28,
+  },
   row: {
     flexDirection: 'column',
     gap: 44,
+  },
+  rowPhone: {
+    gap: 20,
   },
   rowWide: {
     flexDirection: 'row',
@@ -192,6 +223,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: '100%',
   },
+  h1Phone: {
+    letterSpacing: 0.1,
+  },
   h1Green: {
     color: colors.primary,
     textShadowColor: 'rgba(57,255,106,0.35)',
@@ -209,6 +243,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
     width: '100%',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   h1Loop: {
     fontFamily: displayFont,
@@ -224,6 +260,9 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     textAlign: 'center',
   },
+  h1LoopPhone: {
+    letterSpacing: 0.6,
+  },
   sub: {
     fontFamily: bodyFont,
     fontSize: 15,
@@ -236,6 +275,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     alignSelf: 'center',
   },
+  subPhone: {
+    fontSize: 13.5,
+    lineHeight: 20,
+    marginTop: 16,
+    maxWidth: '100%',
+    paddingHorizontal: 4,
+  },
   ctas: {
     flexDirection: 'row',
     gap: 12,
@@ -245,6 +291,14 @@ const styles = StyleSheet.create({
   ctasNarrow: {
     justifyContent: 'center',
     alignSelf: 'center',
+  },
+  ctasPhone: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    width: '100%',
+    maxWidth: 320,
+    marginTop: 18,
+    gap: 10,
   },
   penNote: {
     fontFamily: monoFont,
@@ -256,6 +310,11 @@ const styles = StyleSheet.create({
   penNoteNarrow: {
     textAlign: 'center',
     alignSelf: 'center',
+  },
+  penNotePhone: {
+    fontSize: 10,
+    letterSpacing: 1,
+    marginTop: 14,
   },
   art: {
     alignItems: 'center',
@@ -269,6 +328,8 @@ const styles = StyleSheet.create({
   badgeRow: {
     alignItems: 'center',
     marginTop: 40,
+    width: '100%',
+    paddingHorizontal: 4,
   },
   badge: {
     flexDirection: 'row',
@@ -285,6 +346,15 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 0 },
     elevation: 8,
+    maxWidth: '100%',
+  },
+  badgePhone: {
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    marginTop: -16,
   },
   badgeTxt: {
     fontFamily: monoFont,
@@ -292,5 +362,12 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: colors.primary,
     textTransform: 'uppercase',
+    flexShrink: 1,
+  },
+  badgeTxtPhone: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    lineHeight: 13,
   },
 });
