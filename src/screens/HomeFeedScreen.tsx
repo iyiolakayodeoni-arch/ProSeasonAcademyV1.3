@@ -76,9 +76,9 @@ export default function HomeFeedScreen() {
 
       {/* ── main column ── */}
       <View style={styles.mainCol}>
-        {/* top bar */}
+        {/* top bar — the bar hugs its content (no full-bleed band) */}
         <View style={styles.topbar}>
-          <View style={[styles.topbarInner, { width: contentW, gap: isPhone ? 10 : 14 }]}>
+          <View style={[styles.topbarBox, { gap: isPhone ? 10 : 14 }]}>
             {isPhone && (
               <>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuOpen(true)} hitSlop={8}>
@@ -89,20 +89,20 @@ export default function HomeFeedScreen() {
                 </TouchableOpacity>
               </>
             )}
-            <View style={[styles.search, !isPhone && styles.searchWide]}>
-              <Text style={styles.searchText} numberOfLines={1}>
-                Search
-              </Text>
-              {isPhone ? (
-                <TouchableOpacity style={styles.iconBtn} hitSlop={8}>
-                  <SearchIcon size={20} />
-                </TouchableOpacity>
-              ) : (
+            {isPhone ? (
+              <TouchableOpacity style={styles.iconBtn} hitSlop={8}>
+                <SearchIcon size={20} />
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.search}>
+                <Text style={styles.searchText} numberOfLines={1}>
+                  Search
+                </Text>
                 <View style={styles.searchIconBox}>
                   <SearchIcon size={19} color={colors.fg} />
                 </View>
-              )}
-            </View>
+              </View>
+            )}
             <View style={styles.bellBtn}>
               <BellIcon size={isPhone ? 19 : 21} />
               <View style={styles.bellDot} />
@@ -113,9 +113,9 @@ export default function HomeFeedScreen() {
           </View>
         </View>
 
-        {/* category chips */}
+        {/* category chips — the chip row hugs the chips */}
         <View style={styles.chipsRow}>
-          <View style={[styles.chipsInner, { width: contentW }]}>
+          <View style={styles.chipsBox}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRowContent}>
               {FEED_CATEGORIES.map((c) => {
                 const active = c.id === category;
@@ -437,20 +437,23 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.fg,
   },
-  // ── top bar ──
+  // ── top bar (hugs its content — the box is only as long as it needs) ──
   topbar: {
     height: TOPBAR_H,
-    backgroundColor: 'rgba(5,10,6,0.86)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(57,255,106,0.10)',
     zIndex: 20,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  topbarInner: {
-    height: '100%',
+  topbarBox: {
+    height: TOPBAR_H - 12,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(5,10,6,0.86)',
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.14)',
+    borderRadius: 14,
+    paddingLeft: 12,
+    paddingRight: 12,
   },
   iconBtn: {
     padding: 6,
@@ -458,7 +461,7 @@ const styles = StyleSheet.create({
   search: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
+    height: 38,
     minWidth: 260,
     maxWidth: 560,
     // hug its content — the bar is only as long as it needs to be
@@ -469,10 +472,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingLeft: 16,
   },
-  searchWide: {
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
   searchText: {
     flex: 1,
     fontFamily: bodyFont,
@@ -480,7 +479,7 @@ const styles = StyleSheet.create({
     color: colors.mutedDim,
   },
   searchIconBox: {
-    width: 52,
+    width: 48,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
@@ -525,22 +524,27 @@ const styles = StyleSheet.create({
     color: colors.fg,
     letterSpacing: 0.5,
   },
-  // ── chips ─
+  // ── chips (the row hugs the chips — border ends where the chips end) ──
   chipsRow: {
     height: CHIPS_H,
-    backgroundColor: 'rgba(5,10,6,0.92)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(57,255,106,0.10)',
     zIndex: 20,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingLeft: 24,
   },
-  chipsInner: {
-    height: '100%',
+  chipsBox: {
+    height: CHIPS_H - 12,
     justifyContent: 'center',
+    backgroundColor: 'rgba(5,10,6,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(57,255,106,0.14)',
+    borderRadius: 14,
+    paddingLeft: 8,
+    paddingRight: 8,
   },
   chipsRowContent: {
     gap: 8,
-    paddingHorizontal: 20,
+    paddingHorizontal: 4,
   },
   chip: {
     paddingHorizontal: 13,
