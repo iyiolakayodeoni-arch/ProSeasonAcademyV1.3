@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import LandingScreen from './src/screens/LandingScreen';
+import HomeFeedScreen from './src/screens/HomeFeedScreen';
 import { colors } from './src/theme';
 
 // Font names MUST match the strings used in src/theme.ts
@@ -19,6 +20,7 @@ const FONTS = {
 
 export default function App() {
   const [fontsLoaded] = useFonts(FONTS);
+  const [screen, setScreen] = useState<'landing' | 'feed'>('landing');
 
   // Web: paint the page dark behind the app so there is no white flash.
   useEffect(() => {
@@ -40,7 +42,11 @@ export default function App() {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <LandingScreen onEnter={() => {}} />
+      {screen === 'landing' ? (
+        <LandingScreen onEnter={() => setScreen('feed')} />
+      ) : (
+        <HomeFeedScreen />
+      )}
     </View>
   );
 }
