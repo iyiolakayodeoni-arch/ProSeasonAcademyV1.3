@@ -11,9 +11,12 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withRepeat,
+  FadeInUp,
   Easing,
 } from 'react-native-reanimated';
 import InfinityCrest from '../components/InfinityCrest';
+import PitchBackdrop from '../components/PitchBackdrop';
 import FeedCard from '../components/feed/FeedCard';
 import {
   MenuIcon,
@@ -48,27 +51,38 @@ export default function HomeFeedScreen() {
 
   const contentW = Math.min(width, 1440);
   const cols = width >= 1280 ? 3 : width >= 768 ? 2 : 1;
+  const isPhone = width < 768;
   const gap = 18;
-  const pad = width >= 768 ? 24 : 14;
+  const pad = isPhone ? 14 : 24;
   const cardW = Math.min((contentW - pad * 2 - gap * (cols - 1)) / cols, 460);
 
   return (
     <View style={styles.root}>
+      {/* ambient world behind the feed — dimmed pitch + drifting glows */}
+      <PitchBackdrop dim={0.84} fixed />
+      <FeedOrbs />
+
       {/* ── top bar ── */}
       <View style={styles.topbarOuter}>
-        <View style={[styles.topbar, { width: contentW }]}>
+        <View style={[styles.topbar, { width: contentW, gap: isPhone ? 10 : 14 }]}>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setMenuOpen(true)} hitSlop={8}>
-            <MenuIcon size={23} />
+            <MenuIcon size={isPhone ? 21 : 23} />
           </TouchableOpacity>
           <TouchableOpacity hitSlop={6} onPress={() => {}}>
-            <InfinityCrest size={42} bold />
+            <InfinityCrest size={isPhone ? 34 : 42} bold />
           </TouchableOpacity>
-          <View style={styles.search}>
-            <SearchIcon size={18} />
-            <Text style={styles.searchText}>Search</Text>
-          </View>
+          {isPhone ? (
+            <TouchableOpacity style={styles.iconBtn} hitSlop={8}>
+              <SearchIcon size={20} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.search}>
+              <SearchIcon size={18} />
+              <Text style={styles.searchText}>Search</Text>
+            </View>
+          )}
           <View style={styles.bellBtn}>
-            <BellIcon size={21} />
+            <BellIcon size={isPhone ? 19 : 21} />
             <View style={styles.bellDot} />
           </View>
           <View style={styles.avatarBtn}>
@@ -113,6 +127,31 @@ export default function HomeFeedScreen() {
   );
 }
 
+// ── ambient drifting glows behind the feed ──
+
+function FeedOrbs() {
+  const t1 = useSharedValue(0);
+  const t2 = useSharedValue(0);
+  useEffect(() => {
+    t1.value = withRepeat(withTiming(1, { duration: 8000, easing: Easing.inOut(Easing.ease) }), -1, true);
+    t2.value = withRepeat(withTiming(1, { duration: 10500, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [t1, t2]);
+  const s1 = useAnimatedStyle(() => ({
+    opacity: 0.5 + t1.value * 0.3,
+    transform: [{ translateY: t1.value * -40 }, { translateX: t1.value * 22 }],
+  }));
+  const s2 = useAnimatedStyle(() => ({
+    opacity: 0.4 + t2.value * 0.28,
+    transform: [{ translateY: t2.value * 36 }, { translateX: t2.value * -28 }],
+  }));
+  return (
+    <>
+      <Animated.View style={[styles.feedOrb, styles.feedOrbGreen, s1]} />
+      <Animated.View style={[styles.feedOrb, styles.feedOrbGold, s2]} />
+    </>
+  );
+}
+
 // ── feed grid with the infinite-scroll mechanism ──
 
 function FeedGrid({
@@ -131,8 +170,14 @@ function FeedGrid({
   return (
     <View style={styles.gridWrap}>
       <View style={styles.grid}>
-        {items.map((it: FeedItem) => (
-          <FeedCard key={it.id} item={it} compact={compact} width={cardW} />
+        {items.map((it: FeedItem, i) => (
+          <Animated.View
+            key={it.id}
+            entering={FadeInUp.delay(Math.min(i % 4, 3) * 70).duration(500)}
+            style={{ width: cardW }}
+          >
+            <FeedCard item={it} compact={compact} width={cardW} />
+          </Animated.View>
         ))}
       </View>
       {loading ? <LoadingMore /> : null}
@@ -223,6 +268,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   // top bar
+  // top bar + chips are centred inside the content column on wide screens
   topbarOuter: {
     position: 'absolute',
     top: 0,
@@ -233,6 +279,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(57,255,106,0.10)',
     overflow: 'hidden',
+    alignItems: 'center',
   },
   topbar: {
     height: TOPBAR_H,
@@ -313,6 +360,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(57,255,106,0.10)',
     overflow: 'hidden',
+    alignItems: 'center',
   },
   chips: {
     height: CHIPS_H,
@@ -353,6 +401,31 @@ const styles = StyleSheet.create({
   },
   gridWrap: {
     alignItems: 'center',
+  },
+  feedOrb: {
+    position: 'absolute',
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    zIndex: 1,
+  },
+  feedOrbGreen: {
+    top: 180,
+    left: -140,
+    backgroundColor: 'rgba(57,255,106,0.04)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.16,
+    shadowRadius: 90,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  feedOrbGold: {
+    top: 700,
+    right: -160,
+    backgroundColor: 'rgba(242,192,120,0.04)',
+    shadowColor: colors.accent,
+    shadowOpacity: 0.14,
+    shadowRadius: 90,
+    shadowOffset: { width: 0, height: 0 },
   },
   grid: {
     flexDirection: 'row',

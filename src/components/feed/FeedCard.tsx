@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import SkillMedia from './SkillMedia';
 import {
   HeartIcon,
@@ -74,13 +79,25 @@ export default function FeedCard({ item, compact, width }: Props) {
   const [saved, setSaved] = useState(false);
   const [following, setFollowing] = useState(false);
 
+  // hover lift (web)
+  const hov = useSharedValue(0);
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ translateY: hov.value * -5 }],
+    borderColor: `rgba(57,255,106,${0.14 + hov.value * 0.3})`,
+  }));
+
   const isCreator = item.kind === 'creator';
   const isNews = item.kind === 'news';
   const isProseasonNews = isNews && item.tags.includes('proseason');
   const mediaWidth = Math.max(120, width - 28);
 
   return (
-    <View style={[styles.card, { width }]}>
+    <Pressable
+      onHoverIn={() => (hov.value = withTiming(1, { duration: 180 }))}
+      onHoverOut={() => (hov.value = withTiming(0, { duration: 260 }))}
+      style={{ width }}
+    >
+    <Animated.View style={[styles.card, lift]}>
       {/* ── media ─ */}
       {!isCreator && !isNews && (
         <SkillMedia
@@ -214,7 +231,8 @@ export default function FeedCard({ item, compact, width }: Props) {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </Animated.View>
+    </Pressable>
   );
 }
 
