@@ -42,7 +42,7 @@ const TOPBAR_H = 64;
 const CHIPS_H = 54;
 
 export default function HomeFeedScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
   const [category, setCategory] = useState('foryou');
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -99,9 +99,10 @@ export default function HomeFeedScreen() {
 
       {/* ── the feed ── */}
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { height: winH }]}
         contentContainerStyle={[styles.scrollInner, { paddingTop: TOPBAR_H + CHIPS_H + 16, paddingHorizontal: pad }]}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <FeedGrid key={category} category={category} cols={cols} cardW={cardW} compact={cols > 1} />
       </ScrollView>
@@ -181,14 +182,14 @@ function Drawer({ open, onClose, screenWidth }: { open: boolean; onClose: () => 
 
   return (
     <>
-      <TouchableOpacity
-        activeOpacity={1}
-        disabled={!open}
-        style={styles.backdropTouch}
-        onPress={onClose}
-      >
-        <Animated.View style={[styles.backdrop, backdropStyle]} />
-      </TouchableOpacity>
+      {/* When closed the wrapper ignores ALL pointer events, so the
+          invisible layer can never sit on top of the feed and eat
+          scroll gestures. */}
+      <View pointerEvents={open ? 'auto' : 'none'} style={styles.backdropTouch}>
+        <TouchableOpacity activeOpacity={1} style={styles.backdropHit} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle]} />
+        </TouchableOpacity>
+      </View>
       <Animated.View style={[styles.drawer, { width: drawerW }, drawerStyle]}>
         <View style={styles.drawerBrand}>
           <InfinityCrest size={54} bold />
@@ -419,6 +420,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 30,
+  },
+  backdropHit: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   backdrop: {
     position: 'absolute',

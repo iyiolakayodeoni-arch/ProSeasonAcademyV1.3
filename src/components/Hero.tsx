@@ -7,8 +7,7 @@ import { CtaPrimary, CtaSecondary } from './CtaButtons';
 import { colors, monoFont, displayFont, bodyFont, radii } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE HERO — the landing page's opening statement, matched to
-// mockups/hero-v2/hero-redesign.png.
+// THE HERO — the landing page's opening statement.
 //
 //   left  · three stacked headline lines (cream / green / ∞ + green),
 //           placeholder subtext, the two house CTAs, and the pen note
@@ -17,8 +16,8 @@ import { colors, monoFont, displayFont, bodyFont, radii } from '../theme';
 //           floating stat cards) — see HeroOrb.tsx
 //   below · the centred promise badge: ∞ NO STOP DATE · INFINITE LEARNING
 //
-// Every line of copy lives in HERO_COPY (overridable via the `copy` prop)
-// so real wording can be swapped in without touching layout code.
+// `scale` adapts the whole block to screen size (phones shrink the
+// headline, gaps and CTAs so nothing crowds or mis-centers).
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
@@ -58,41 +57,49 @@ type Props = {
   isWide?: boolean;
   /** the width the hero should fill */
   contentWidth: number;
+  /** responsive scale multiplier (1 = desktop, ~0.7 on phones) */
+  scale?: number;
   /** override any of the placeholder copy */
   copy?: Partial<HeroCopy>;
 };
 
-export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, copy }: Props) {
+export default function Hero({ onPrimary, onSecondary, isWide = false, contentWidth, scale = 1, copy }: Props) {
   const c: HeroCopy = { ...HERO_COPY, ...copy };
   const orbW = isWide ? Math.min(460, contentWidth * 0.48) : Math.min(400, contentWidth * 0.94);
 
   return (
-    <View style={[styles.hero, { width: contentWidth }]}>
-      <View style={[styles.row, isWide && styles.rowWide]}>
+    <View style={[styles.hero, { width: contentWidth, paddingTop: 64 * scale }]}>
+      <View style={[styles.row, isWide && styles.rowWide, { gap: 44 * scale }]}>
         {/* ── left column — the statement ── */}
         <View style={[styles.text, isWide && styles.textWide]}>
           <Animated.View entering={FadeInDown.duration(600)}>
-            <Text style={[styles.h1, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line1}</Text>
-            <Text style={[styles.h1, styles.h1Green, WEB ? ({ fontFamily: headFont } as any) : null]}>
+            <Text style={[styles.h1, { fontSize: 54 * scale, lineHeight: 52 * scale }, WEB ? ({ fontFamily: headFont } as any) : null]}>
+              {c.line1}
+            </Text>
+            <Text style={[styles.h1, styles.h1Green, { fontSize: 54 * scale, lineHeight: 52 * scale }, WEB ? ({ fontFamily: headFont } as any) : null]}>
               {c.line2}
             </Text>
             <View style={styles.loopRow}>
-              <InfinityCrest size={isWide ? 64 : 48} bold />
-              <Text style={[styles.h1Loop, WEB ? ({ fontFamily: headFont } as any) : null]}>{c.line3}</Text>
+              <InfinityCrest size={(isWide ? 64 : 48) * scale} bold />
+              <Text style={[styles.h1Loop, { fontSize: 38 * scale, lineHeight: 40 * scale }, WEB ? ({ fontFamily: headFont } as any) : null]}>
+                {c.line3}
+              </Text>
             </View>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(60).duration(600)}>
-            <Text style={[styles.sub, WEB ? ({ fontFamily: bodyFace } as any) : null]}>{c.subtext}</Text>
+            <Text style={[styles.sub, { fontSize: 15 * scale, lineHeight: 24 * scale, marginTop: 26 * scale }, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+              {c.subtext}
+            </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(120).duration(600)} style={styles.ctas}>
+          <Animated.View entering={FadeInDown.delay(120).duration(600)} style={[styles.ctas, { marginTop: 28 * scale }]}>
             <CtaPrimary label={c.ctaPrimary} onPress={onPrimary} />
             <CtaSecondary label={c.ctaSecondary} onPress={onSecondary} />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(600)}>
-            <Text style={styles.penNote}>{c.microLabel}</Text>
+            <Text style={[styles.penNote, { fontSize: 11 * scale, marginTop: 24 * scale }]}>{c.microLabel}</Text>
           </Animated.View>
         </View>
 
@@ -106,10 +113,10 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
       </View>
 
       {/* ── the promise badge, centred under both columns ── */}
-      <Animated.View entering={FadeInDown.delay(280).duration(600)} style={styles.badgeRow}>
+      <Animated.View entering={FadeInDown.delay(280).duration(600)} style={[styles.badgeRow, { marginTop: 40 * scale }]}>
         <View style={styles.badge}>
-          <InfinityCrest size={26} />
-          <Text style={styles.badgeTxt}>{c.badge}</Text>
+          <InfinityCrest size={26 * Math.max(scale, 0.8)} />
+          <Text style={[styles.badgeTxt, { fontSize: 11 * Math.max(scale, 0.8) }]}>{c.badge}</Text>
         </View>
       </Animated.View>
     </View>
@@ -119,11 +126,9 @@ export default function Hero({ onPrimary, onSecondary, isWide = false, contentWi
 const styles = StyleSheet.create({
   hero: {
     alignSelf: 'center',
-    paddingTop: 64,
   },
   row: {
     flexDirection: 'column',
-    gap: 44,
   },
   rowWide: {
     flexDirection: 'row',
@@ -139,8 +144,6 @@ const styles = StyleSheet.create({
   /* headline — heavy condensed, tight leading (~0.95) */
   h1: {
     fontFamily: displayFont,
-    fontSize: 54,
-    lineHeight: 52,
     letterSpacing: 0.5,
     color: colors.fg,
     textTransform: 'uppercase',
@@ -158,8 +161,6 @@ const styles = StyleSheet.create({
   },
   h1Loop: {
     fontFamily: displayFont,
-    fontSize: 38,
-    lineHeight: 40,
     letterSpacing: 1,
     color: colors.primary,
     textTransform: 'uppercase',
@@ -167,24 +168,21 @@ const styles = StyleSheet.create({
   },
   sub: {
     fontFamily: bodyFont,
-    fontSize: 15,
-    lineHeight: 24,
     color: colors.muted,
     maxWidth: 380,
-    marginTop: 26,
   },
+  /* CTAs — centred so wrapped rows stay centred on small screens */
   ctas: {
     flexDirection: 'row',
     gap: 12,
     flexWrap: 'wrap',
-    marginTop: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   penNote: {
     fontFamily: monoFont,
-    fontSize: 11,
     letterSpacing: 1.6,
     color: colors.mutedDim,
-    marginTop: 24,
   },
   art: {
     alignItems: 'center',
@@ -197,7 +195,6 @@ const styles = StyleSheet.create({
   /* the promise badge */
   badgeRow: {
     alignItems: 'center',
-    marginTop: 40,
   },
   badge: {
     flexDirection: 'row',
@@ -217,7 +214,6 @@ const styles = StyleSheet.create({
   },
   badgeTxt: {
     fontFamily: monoFont,
-    fontSize: 11,
     letterSpacing: 2,
     color: colors.primary,
     textTransform: 'uppercase',

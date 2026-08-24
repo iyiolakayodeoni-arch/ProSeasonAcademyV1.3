@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,17 @@ import {
   Image,
   Platform,
   useWindowDimensions,
+  type LayoutChangeEvent,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  Easing,
+} from 'react-native-reanimated';
 import InfinityCrest from '../components/InfinityCrest';
 import Marquee from '../components/Marquee';
 import PitchBackdrop from '../components/PitchBackdrop';
@@ -19,11 +28,16 @@ import { useResponsive } from '../hooks/useResponsive';
 import { colors, monoFont, displayFont, bodyFont, bodyFontStrong, bodyFontBold } from '../theme';
 
 // ─────────────────────────────────────────────────────────────────────────
-// THE DOSSIER — ProSeasonAcademy's public door, modelled on a certain
-// developer platform's confidence. Same idea, our sport: a football pitch
-// of thin green stripes behind everything, mono HUD labels, and copy that
-// is sure of itself. The Mirror does not think for you. We're not subtle
-// about it. we cooked, yeah we know.
+// THE DOSSIER — ProSeasonAcademy's public door. A football pitch of thin
+// green stripes behind everything, mono HUD labels, copy that is sure of
+// itself.
+//
+// RESPONSIVE + ALIVE:
+//  · one scale factor (s) drives every font size, gap and padding, so the
+//    page re-centers itself from phone → desktop instead of overflowing
+//  · sections reveal with a rise + fade as they enter the viewport
+//  · ambient glow orbs drift slowly behind the content
+//  · glass cards lift on hover (web)
 // ─────────────────────────────────────────────────────────────────────────
 
 const WEB = Platform.OS === 'web';
@@ -39,89 +53,6 @@ const ILLUS = {
   moments: require('../../assets/art/illu-moments.png'),
 };
 
-/* ── small house primitives ── */
-function Eyebrow({ children }: { children: string }) {
-  return <Text style={styles.eyebrow}>{children}</Text>;
-}
-
-function H2({ children, center }: { children: React.ReactNode; center?: boolean }) {
-  return (
-    <Text style={[styles.h2, WEB ? ({ fontFamily: headFont } as any) : null, center && styles.center]}>
-      {children}
-    </Text>
-  );
-}
-
-function Muted({ children, center }: { children: React.ReactNode; center?: boolean }) {
-  return (
-    <Text style={[styles.muted, center && styles.center, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
-      {children}
-    </Text>
-  );
-}
-
-/* ── the little self-aware aside pxxl slips under its cards ── */
-function Aside({ children }: { children: string }) {
-  return <Text style={styles.aside}>// {children}</Text>;
-}
-
-function GlassCard({
-  children,
-  style,
-}: {
-  children?: React.ReactNode;
-  style?: object;
-}) {
-  return <View style={[styles.glassCard, style]}>{children}</View>;
-}
-
-/* ── sticky nav — minimal: logo left, /-separated links centre, one CTA ── */
-function WebsiteNav({
-  onEnter,
-  onNav,
-  showLinks,
-}: {
-  onEnter: () => void;
-  onNav: (id: string) => void;
-  showLinks: boolean;
-}) {
-  const links: [string, string][] = [
-    ['METHOD', 'method'],
-    ['JOURNEY', 'journey'],
-    ['EVIDENCE', 'evidence'],
-  ];
-  return (
-    <View style={[styles.nav, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
-      <Pressable onPress={onEnter} style={styles.navBrand}>
-        <InfinityCrest size={26} />
-        <Text style={styles.navBrandTxt}>PROSEASON ACADEMY</Text>
-      </Pressable>
-      {showLinks && (
-        <View style={styles.navLinks}>
-          {links.map(([label, id], i) => (
-            <React.Fragment key={id}>
-              {i > 0 && <Text style={styles.navSlash}>/</Text>}
-              <Pressable onPress={() => onNav(id)}>
-                <Text style={styles.navLink}>{label}</Text>
-              </Pressable>
-            </React.Fragment>
-          ))}
-        </View>
-      )}
-      <View style={styles.navActions}>
-        <Pressable onPress={onEnter}>
-          <Text style={styles.navSignIn}>SIGN IN</Text>
-        </Pressable>
-        <Pressable onPress={onEnter}>
-          <View style={styles.navCta}>
-            <Text style={styles.navCtaTxt}>GET STARTED</Text>
-          </View>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 const CHAPTERS = [
   { n: '01', title: 'PLAY THE MATCH', body: 'Drop in the footage. No setup, no spreadsheet. The session starts the second the whistle does.' },
   { n: '02', title: 'WATCH YOURSELF', body: 'The mirror holds no grudge. You review your own decisions before anyone else gets a word in.' },
@@ -131,17 +62,182 @@ const CHAPTERS = [
   { n: '06', title: 'COMPOUND', body: 'Week over week the ledger fills. Progress stops being a feeling and becomes an entry.' },
 ];
 
+/* ── small house primitives ── */
+function Eyebrow({ children, s = 1 }: { children: string; s?: number }) {
+  return <Text style={[styles.eyebrow, { fontSize: 10.5 * Math.max(s, 0.85) }]}>{children}</Text>;
+}
+
+function H2({ children, center, s = 1 }: { children: React.ReactNode; center?: boolean; s?: number }) {
+  return (
+    <Text style={[styles.h2, { fontSize: 34 * s, lineHeight: 40 * s }, WEB ? ({ fontFamily: headFont } as any) : null, center && styles.center]}>
+      {children}
+    </Text>
+  );
+}
+
+function Muted({ children, center, s = 1 }: { children: React.ReactNode; center?: boolean; s?: number }) {
+  return (
+    <Text style={[styles.muted, { fontSize: 16 * s, lineHeight: 25 * s }, center && styles.center, WEB ? ({ fontFamily: bodyFace } as any) : null]}>
+      {children}
+    </Text>
+  );
+}
+
+function Aside({ children, s = 1 }: { children: string; s?: number }) {
+  return <Text style={[styles.aside, { fontSize: 10 * Math.max(s, 0.85) }]}>{'// '}{children}</Text>;
+}
+
+/* glass card that lifts on hover (web) */
+function GlassCard({ children, style, s = 1 }: { children?: React.ReactNode; style?: object; s?: number }) {
+  const hov = useSharedValue(0);
+  const lift = useAnimatedStyle(() => ({
+    transform: [{ translateY: hov.value * -5 }],
+    borderColor: `rgba(57,255,106,${0.14 + hov.value * 0.3})`,
+  }));
+  return (
+    <Pressable
+      onHoverIn={() => (hov.value = withTiming(1, { duration: 180 }))}
+      onHoverOut={() => (hov.value = withTiming(0, { duration: 260 }))}
+      style={style}
+    >
+      <Animated.View style={[styles.glassCard, { padding: 22 * Math.max(s, 0.75), height: '100%' }, lift]}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/* scroll-reveal wrapper — hidden until the section enters the viewport,
+   then rises + fades in once */
+function Reveal({ on, children }: { on: boolean; children: React.ReactNode }) {
+  if (on) {
+    return <Animated.View entering={FadeInUp.duration(650).easing(Easing.out(Easing.cubic))}>{children}</Animated.View>;
+  }
+  return <View style={{ opacity: 0 }}>{children}</View>;
+}
+
+/* two big soft glows drifting slowly behind the page */
+function AmbientOrbs() {
+  const t1 = useSharedValue(0);
+  const t2 = useSharedValue(0);
+  useEffect(() => {
+    t1.value = withRepeat(withTiming(1, { duration: 7000, easing: Easing.inOut(Easing.ease) }), -1, true);
+    t2.value = withRepeat(withTiming(1, { duration: 9500, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [t1, t2]);
+  const s1 = useAnimatedStyle(() => ({
+    opacity: 0.55 + t1.value * 0.35,
+    transform: [{ translateY: t1.value * -44 }, { translateX: t1.value * 26 }],
+  }));
+  const s2 = useAnimatedStyle(() => ({
+    opacity: 0.45 + t2.value * 0.3,
+    transform: [{ translateY: t2.value * 40 }, { translateX: t2.value * -32 }],
+  }));
+  return (
+    <>
+      <Animated.View style={[styles.orb, styles.orbGreen, s1]} />
+      <Animated.View style={[styles.orb, styles.orbGold, s2]} />
+    </>
+  );
+}
+
+/* ── sticky nav — minimal: logo left, /-separated links centre, one CTA ── */
+function WebsiteNav({
+  onEnter,
+  onNav,
+  showLinks,
+  s,
+}: {
+  onEnter: () => void;
+  onNav: (id: string) => void;
+  showLinks: boolean;
+  s: number;
+}) {
+  const links: [string, string][] = [
+    ['METHOD', 'method'],
+    ['JOURNEY', 'journey'],
+    ['EVIDENCE', 'evidence'],
+  ];
+  return (
+    <View style={[styles.nav, { paddingHorizontal: Math.max(16, 28 * s) }, WEB ? ({ position: 'sticky', top: 0, zIndex: 60 } as any) : null]}>
+      <Pressable onPress={onEnter} style={styles.navBrand}>
+        <InfinityCrest size={26 * Math.max(s, 0.85)} />
+        <Text style={[styles.navBrandTxt, { fontSize: 13 * Math.max(s, 0.8) }]}>{'PROSEASON ACADEMY'}</Text>
+      </Pressable>
+      {showLinks && (
+        <View style={styles.navLinks}>
+          {links.map(([label, id], i) => (
+            <React.Fragment key={id}>
+              {i > 0 && <Text style={styles.navSlash}>{'/'}</Text>}
+              <Pressable onPress={() => onNav(id)}>
+                <Text style={styles.navLink}>{label}</Text>
+              </Pressable>
+            </React.Fragment>
+          ))}
+        </View>
+      )}
+      <View style={styles.navActions}>
+        <Pressable onPress={onEnter}>
+          <Text style={styles.navSignIn}>{'SIGN IN'}</Text>
+        </Pressable>
+        <Pressable onPress={onEnter}>
+          <View style={styles.navCta}>
+            <Text style={styles.navCtaTxt}>{'GET STARTED'}</Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const REVEAL_IDS = ['method', 'how', 'journey', 'evidence', 'cta'] as const;
+
 export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
   const { width: winW, height: winH } = useWindowDimensions();
   const { isWide, isDesktopUp } = useResponsive();
   const contentW = Math.min(winW, isDesktopUp ? 1200 : 900) - (isWide ? 48 : 28) * 2;
 
+  // one scale factor for the whole page — phones shrink, desktop stays
+  const s = winW < 480 ? 0.7 : winW < 768 ? 0.84 : winW < 1100 ? 0.92 : 1;
+
   const ref = useRef<ScrollView>(null);
   const [navH, setNavH] = useState(0);
-
-  // ScrollView on web needs an explicit height — the flex chain alone won't
-  // give it one. Measure the sticky nav, then give the scroller the rest.
   const scrollH = Math.max(0, winH - navH);
+
+  // ── scroll reveal state ──
+  const topsRef = useRef<Record<string, number>>({});
+  const offsetRef = useRef(0);
+  const revealedRef = useRef<Record<string, boolean>>({});
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+
+  const checkReveals = useCallback(() => {
+    let changed = false;
+    const next = { ...revealedRef.current };
+    for (const id of REVEAL_IDS) {
+      const top = topsRef.current[id];
+      if (!next[id] && typeof top === 'number' && offsetRef.current + winH * 0.85 > top) {
+        next[id] = true;
+        changed = true;
+      }
+    }
+    if (changed) {
+      revealedRef.current = next;
+      setRevealed(next);
+    }
+  }, [winH]);
+
+  const registerTop = (id: string) => (e: LayoutChangeEvent) => {
+    topsRef.current[id] = e.nativeEvent.layout.y;
+    checkReveals();
+  };
+
+  const onScrollEvt = (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    offsetRef.current = e.nativeEvent.contentOffset.y;
+    checkReveals();
+  };
+
+  useEffect(() => {
+    checkReveals();
+  }, [checkReveals]);
 
   // Nav anchor scroll
   const goSection = (id: string) => {
@@ -158,194 +254,181 @@ export default function LandingScreen({ onEnter }: { onEnter: () => void }) {
       {/* the pitch — a dimmed football-pitch photograph pinned behind the whole page */}
       <PitchBackdrop dim={0.72} fixed />
 
+      {/* ambient drifting glows */}
+      <AmbientOrbs />
+
       <View
+        style={{ zIndex: 2 }}
         onLayout={(e) => {
           const h = e.nativeEvent.layout.height;
           if (h > 0 && h !== navH) setNavH(h);
         }}
       >
-        <WebsiteNav onEnter={onEnter} onNav={goSection} showLinks={isWide} />
+        <WebsiteNav onEnter={onEnter} onNav={goSection} showLinks={isWide} s={s} />
       </View>
 
       <ScrollView
         ref={ref}
-        style={[styles.scroll, { height: scrollH }]}
+        style={[styles.scroll, { height: scrollH, zIndex: 2 }]}
         contentContainerStyle={styles.scrollInner}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onScroll={WEB ? onScrollEvt : undefined}
+        scrollEventThrottle={16}
       >
-        {/* ── HERO — see components/Hero.tsx (copy overridable there) ── */}
+        {/* ── HERO ── */}
         <View id="top">
-          <Hero
-            onPrimary={onEnter}
-            onSecondary={() => goSection('method')}
-            isWide={isWide}
-            contentWidth={contentW}
-          />
+          <Hero onPrimary={onEnter} onSecondary={() => goSection('method')} isWide={isWide} contentWidth={contentW} scale={s} />
         </View>
 
         {/* ── THE METHOD ── */}
-        <View style={styles.section} id="method">
-          <Eyebrow>[ METHOD ]</Eyebrow>
-          <H2 center>ESPORTS-GRADE REVIEW, ONE MATCH AT A TIME.</H2>
-          <Muted center>
-            No subscriptions to judgement. No scoreboard to impress. Just a discipline:
-            the match, the mirror, the journal, the next kick.
-          </Muted>
-          <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>01</Text>
-                <Text style={styles.cardTitle}>THE MIRROR</Text>
-                <Text style={styles.cardBody}>Review your own decisions on the clip, before the noise gets in.</Text>
-                <Aside>this was the designer's idea btw</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>02</Text>
-                <Text style={styles.cardTitle}>THE JOURNAL</Text>
-                <Text style={styles.cardBody}>Write the error, the intention, and the correction in one entry.</Text>
-                <Aside>we take the truth seriously. deal with it</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>03</Text>
-                <Text style={styles.cardTitle}>THE LEDGER</Text>
-                <Text style={styles.cardBody}>Your progress becomes entries — honest, dated, and yours.</Text>
-                <Aside>no fake percentages here</Aside>
-              </GlassCard>
-            </Animated.View>
-          </View>
+        <View style={styles.section} id="method" onLayout={registerTop('method')}>
+          <Reveal on={!!revealed.method}>
+            <View style={styles.sectionInner}>
+              <Eyebrow s={s}>{'[ METHOD ]'}</Eyebrow>
+              <H2 center s={s}>{'ESPORTS-GRADE REVIEW, ONE MATCH AT A TIME.'}</H2>
+              <Muted center s={s}>
+                {'No subscriptions to judgement. No scoreboard to impress. Just a discipline: the match, the mirror, the journal, the next kick.'}
+              </Muted>
+              <View style={[styles.cardRow, { maxWidth: contentW }]}>
+                {[
+                  { src: ILLUS.mirror, n: '01', t: 'THE MIRROR', b: 'Review your own decisions on the clip, before the noise gets in.', a: "this was the designer's idea btw" },
+                  { src: ILLUS.journal, n: '02', t: 'THE JOURNAL', b: 'Write the error, the intention, and the correction in one entry.', a: 'we take the truth seriously. deal with it' },
+                  { src: ILLUS.ledger, n: '03', t: 'THE LEDGER', b: 'Your progress becomes entries — honest, dated, and yours.', a: 'no fake percentages here' },
+                ].map((c, i) => (
+                  <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={[styles.card, { flexBasis: 250 * Math.max(s, 0.55) }]}>
+                    <GlassCard s={s} style={styles.cardFill}>
+                      <Image source={c.src} style={[styles.cardIllu, { height: 150 * Math.max(s, 0.7) }]} resizeMode="cover" />
+                      <Text style={styles.cardIndex}>{c.n}</Text>
+                      <Text style={[styles.cardTitle, { fontSize: 15 * Math.max(s, 0.85) }]}>{c.t}</Text>
+                      <Text style={[styles.cardBody, { fontSize: 14.5 * Math.max(s, 0.85), lineHeight: 22 * Math.max(s, 0.85) }]}>{c.b}</Text>
+                      <Aside s={s}>{c.a}</Aside>
+                    </GlassCard>
+                  </Animated.View>
+                ))}
+              </View>
+            </View>
+          </Reveal>
         </View>
 
         {/* ── HOW IT WORKS ── */}
-        <View style={styles.section} id="how">
-          <Eyebrow>[ HOW IT WORKS ]</Eyebrow>
-          <H2 center>PLAY → REVIEW → CARRY ONE LESSON FORWARD.</H2>
-          <Muted center>Your entire job, compressed to one honest loop.</Muted>
-          <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.intention} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>A</Text>
-                <Text style={styles.cardTitle}>SET ONE INTENTION</Text>
-                <Text style={styles.cardBody}>Before kick-off, name the one thing you're working on.</Text>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>B</Text>
-                <Text style={styles.cardTitle}>ANSWER IN YOUR OWN WORDS</Text>
-                <Text style={styles.cardBody}>Half-time and full-time — how it feels, what's happening.</Text>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.card}>
-              <GlassCard style={styles.cardFill}>
-                <Image source={ILLUS.moments} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.cardIndex}>C</Text>
-                <Text style={styles.cardTitle}>MARK YOUR MOMENTS</Text>
-                <Text style={styles.cardBody}>You pick the key moments. You review them. You compare four versions of your thinking against the evidence.</Text>
-              </GlassCard>
-            </Animated.View>
-          </View>
+        <View style={styles.section} id="how" onLayout={registerTop('how')}>
+          <Reveal on={!!revealed.how}>
+            <View style={styles.sectionInner}>
+              <Eyebrow s={s}>{'[ HOW IT WORKS ]'}</Eyebrow>
+              <H2 center s={s}>{'PLAY → REVIEW → CARRY ONE LESSON FORWARD.'}</H2>
+              <Muted center s={s}>{'Your entire job, compressed to one honest loop.'}</Muted>
+              <View style={[styles.cardRow, { maxWidth: contentW }]}>
+                {[
+                  { src: ILLUS.intention, n: 'A', t: 'SET ONE INTENTION', b: "Before kick-off, name the one thing you're working on." },
+                  { src: ILLUS.moments, n: 'B', t: 'ANSWER IN YOUR OWN WORDS', b: 'Half-time and full-time — how it feels, what is happening.' },
+                  { src: ILLUS.moments, n: 'C', t: 'MARK YOUR MOMENTS', b: 'You pick the key moments. You review them. You compare four versions of your thinking against the evidence.' },
+                ].map((c, i) => (
+                  <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={[styles.card, { flexBasis: 250 * Math.max(s, 0.55) }]}>
+                    <GlassCard s={s} style={styles.cardFill}>
+                      <Image source={c.src} style={[styles.cardIllu, { height: 150 * Math.max(s, 0.7) }]} resizeMode="cover" />
+                      <Text style={styles.cardIndex}>{c.n}</Text>
+                      <Text style={[styles.cardTitle, { fontSize: 15 * Math.max(s, 0.85) }]}>{c.t}</Text>
+                      <Text style={[styles.cardBody, { fontSize: 14.5 * Math.max(s, 0.85), lineHeight: 22 * Math.max(s, 0.85) }]}>{c.b}</Text>
+                    </GlassCard>
+                  </Animated.View>
+                ))}
+              </View>
+            </View>
+          </Reveal>
         </View>
 
         {/* ── THE JOURNEY ── */}
-        <View style={styles.section} id="journey">
-          <Eyebrow>[ THE JOURNEY ]</Eyebrow>
-          <H2 center>SIX CHAPTERS. THEN THE LOOP.</H2>
-          <Muted center>
-            No stop date, no graduation. Chapter six hands you back to chapter one — the loop
-            compounds forever, and the mistakes you make are the tuition.
-          </Muted>
-          <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            {CHAPTERS.map((c, i) => (
-              <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={styles.chapterCard}>
-                <GlassCard style={styles.cardFill}>
-                  <Image
-                    source={[ILLUS.mirror, ILLUS.journal, ILLUS.ledger, ILLUS.intention, ILLUS.moments, ILLUS.mirror][i % 6]}
-                    style={styles.cardIllu}
-                    resizeMode="cover"
-                  />
-                  <Text style={styles.chapterNum}>{c.n}</Text>
-                  <Text style={styles.cardTitle}>{c.title}</Text>
-                  <Text style={styles.cardBody}>{c.body}</Text>
-                </GlassCard>
-              </Animated.View>
-            ))}
-          </View>
+        <View style={styles.section} id="journey" onLayout={registerTop('journey')}>
+          <Reveal on={!!revealed.journey}>
+            <View style={styles.sectionInner}>
+              <Eyebrow s={s}>{'[ THE JOURNEY ]'}</Eyebrow>
+              <H2 center s={s}>{'SIX CHAPTERS. THEN THE LOOP.'}</H2>
+              <Muted center s={s}>
+                {'No stop date, no graduation. Chapter six hands you back to chapter one — the loop compounds forever, and the mistakes you make are the tuition.'}
+              </Muted>
+              <View style={[styles.cardRow, { maxWidth: contentW }]}>
+                {CHAPTERS.map((c, i) => (
+                  <Animated.View key={c.n} entering={FadeInDown.delay(100 + i * 70).duration(600)} style={[styles.chapterCard, { flexBasis: 250 * Math.max(s, 0.55) }]}>
+                    <GlassCard s={s} style={styles.cardFill}>
+                      <Image
+                        source={[ILLUS.mirror, ILLUS.journal, ILLUS.ledger, ILLUS.intention, ILLUS.moments, ILLUS.mirror][i % 6]}
+                        style={[styles.cardIllu, { height: 150 * Math.max(s, 0.7) }]}
+                        resizeMode="cover"
+                      />
+                      <Text style={[styles.chapterNum, { fontSize: 26 * Math.max(s, 0.8) }]}>{c.n}</Text>
+                      <Text style={[styles.cardTitle, { fontSize: 15 * Math.max(s, 0.85) }]}>{c.title}</Text>
+                      <Text style={[styles.cardBody, { fontSize: 14.5 * Math.max(s, 0.85), lineHeight: 22 * Math.max(s, 0.85) }]}>{c.body}</Text>
+                    </GlassCard>
+                  </Animated.View>
+                ))}
+              </View>
+            </View>
+          </Reveal>
         </View>
 
         {/* ── EVIDENCE ── */}
-        <View style={styles.section} id="evidence">
-          <Eyebrow>[ EVIDENCE ]</Eyebrow>
-          <H2 center>YOUR EVIDENCE MOVES YOU.</H2>
-          <View style={[styles.cardRow, { maxWidth: contentW }]}>
-            <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.mirror} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.evidenceStat}>100%</Text>
-                <Text style={[styles.cardBody, styles.center]}>of the review is yours. You see it, you name it, you keep it.</Text>
-                <Aside>no AI verdicts</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(180).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.journal} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.evidenceStat}>1×</Text>
-                <Text style={[styles.cardBody, styles.center]}>lesson per match. One lesson, earned, carried into the next.</Text>
-                <Aside>one is enough. we mean it</Aside>
-              </GlassCard>
-            </Animated.View>
-            <Animated.View entering={FadeInDown.delay(260).duration(600)} style={styles.evidenceCard}>
-              <GlassCard style={[styles.cardFill, styles.evidenceInner]}>
-                <Image source={ILLUS.ledger} style={styles.cardIllu} resizeMode="cover" />
-                <Text style={styles.evidenceStat}>∞</Text>
-                <Text style={[styles.cardBody, styles.center]}>the loop keeps compounding. Progress becomes an entry, then a habit.</Text>
-                <Aside>you cannot outrun your receipts</Aside>
-              </GlassCard>
-            </Animated.View>
-          </View>
+        <View style={styles.section} id="evidence" onLayout={registerTop('evidence')}>
+          <Reveal on={!!revealed.evidence}>
+            <View style={styles.sectionInner}>
+              <Eyebrow s={s}>{'[ EVIDENCE ]'}</Eyebrow>
+              <H2 center s={s}>{'YOUR EVIDENCE MOVES YOU.'}</H2>
+              <View style={[styles.cardRow, { maxWidth: contentW }]}>
+                {[
+                  { src: ILLUS.mirror, stat: '100%', b: 'of the review is yours. You see it, you name it, you keep it.', a: 'no AI verdicts' },
+                  { src: ILLUS.journal, stat: '1×', b: 'lesson per match. One lesson, earned, carried into the next.', a: 'one is enough. we mean it' },
+                  { src: ILLUS.ledger, stat: '∞', b: 'the loop keeps compounding. Progress becomes an entry, then a habit.', a: 'you cannot outrun your receipts' },
+                ].map((c, i) => (
+                  <Animated.View key={c.stat} entering={FadeInDown.delay(100 + i * 80).duration(600)} style={[styles.evidenceCard, { flexBasis: 250 * Math.max(s, 0.55) }]}>
+                    <GlassCard s={s} style={styles.cardFill}>
+                      <View style={styles.evidenceInner}>
+                        <Image source={c.src} style={[styles.cardIllu, { height: 150 * Math.max(s, 0.7) }]} resizeMode="cover" />
+                        <Text style={[styles.evidenceStat, { fontSize: 44 * Math.max(s, 0.8) }]}>{c.stat}</Text>
+                        <Text style={[styles.cardBody, styles.center, { fontSize: 14.5 * Math.max(s, 0.85), lineHeight: 22 * Math.max(s, 0.85) }]}>{c.b}</Text>
+                        <Aside s={s}>{c.a}</Aside>
+                      </View>
+                    </GlassCard>
+                  </Animated.View>
+                ))}
+              </View>
+            </View>
+          </Reveal>
         </View>
 
         {/* ── CTA ── */}
-        <View style={[styles.ctaBanner, { maxWidth: contentW }]}>
-          <Eyebrow>CLAIM YOUR SEAT</Eyebrow>
-          <Text style={[styles.ctaHead, WEB ? ({ fontFamily: headFont } as any) : null]}>
-            THE SEASON STARTS AT THE MIRROR.
-          </Text>
-          <Muted center>
-            One coach, locked permanently. One standard. One thousand seats — when it's
-            full, it's full. Sign in, lock in your coach, and get your baseline week sorted.
-          </Muted>
-          <View style={styles.heroCtas}>
-            <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
-            <CtaSecondary label="I ALREADY HAVE AN ACCOUNT" onPress={onEnter} />
-          </View>
-          <Aside>all of this, no hidden fees</Aside>
+        <View id="cta" onLayout={registerTop('cta')}>
+          <Reveal on={!!revealed.cta}>
+            <View style={[styles.ctaBanner, { maxWidth: contentW, padding: 40 * Math.max(s, 0.6), marginVertical: 48 * Math.max(s, 0.6) }]}>
+              <Eyebrow s={s}>{'CLAIM YOUR SEAT'}</Eyebrow>
+              <Text style={[styles.ctaHead, { fontSize: 40 * s, lineHeight: 46 * s }, WEB ? ({ fontFamily: headFont } as any) : null]}>
+                {'THE SEASON STARTS AT THE MIRROR.'}
+              </Text>
+              <Muted center s={s}>
+                {"One coach, locked permanently. One standard. One thousand seats — when it's full, it's full. Sign in, lock in your coach, and get your baseline week sorted."}
+              </Muted>
+              <View style={styles.heroCtas}>
+                <CtaPrimary label="CLAIM YOUR SEAT" onPress={onEnter} />
+                <CtaSecondary label="I ALREADY HAVE AN ACCOUNT" onPress={onEnter} />
+              </View>
+              <Aside s={s}>{'all of this, no hidden fees'}</Aside>
+            </View>
+          </Reveal>
         </View>
 
         {/* ── MARQUEE — bottom of the page ── */}
         <View style={{ width: '100%', paddingVertical: 30, marginTop: 8 }}>
           <Marquee pxPerSec={60}>
             <Text style={styles.marqueeTxt}>
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
-              PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT ·
+              {'PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT · PLAY THE MATCH · WATCH YOURSELF · WRITE THE TRUTH · CARRY ONE LESSON · REPEAT · '}
             </Text>
           </Marquee>
         </View>
 
         {/* ── FOOTER ── */}
-        <View style={styles.footer}>
-          <Text style={styles.footerBrand}>PROSEASON ACADEMY</Text>
-          <Text style={styles.footerTag}>THE CONSOLE COACHING ACADEMY · REVIEW ONE MATCH AT A TIME</Text>
-          <Text style={styles.footerNote}>we cooked, yeah we know · © {new Date().getFullYear()} ProSeason Academy</Text>
+        <View style={[styles.footer, { paddingVertical: 40 * Math.max(s, 0.6) }]}>
+          <Text style={styles.footerBrand}>{'PROSEASON ACADEMY'}</Text>
+          <Text style={styles.footerTag}>{'THE CONSOLE COACHING ACADEMY · REVIEW ONE MATCH AT A TIME'}</Text>
+          <Text style={styles.footerNote}>{`we cooked, yeah we know · © ${new Date().getFullYear()} ProSeason Academy`}</Text>
         </View>
       </ScrollView>
     </View>
@@ -357,6 +440,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
     overflow: 'hidden',
+    position: 'relative',
   },
   scroll: {
     flexShrink: 1,
@@ -364,9 +448,12 @@ const styles = StyleSheet.create({
   scrollInner: {
     paddingBottom: 40,
   },
+  sectionInner: {
+    width: '100%',
+    alignItems: 'center',
+  },
   eyebrow: {
     fontFamily: monoFont,
-    fontSize: 10.5,
     letterSpacing: 3.4,
     color: colors.primary,
     textTransform: 'uppercase',
@@ -377,8 +464,6 @@ const styles = StyleSheet.create({
   },
   h2: {
     fontFamily: displayFont,
-    fontSize: 34,
-    lineHeight: 40,
     letterSpacing: 0.5,
     color: colors.fg,
     textTransform: 'uppercase',
@@ -386,15 +471,12 @@ const styles = StyleSheet.create({
   },
   muted: {
     fontFamily: bodyFont,
-    fontSize: 16,
-    lineHeight: 25,
     color: colors.muted,
     marginBottom: 28,
     maxWidth: 620,
   },
   aside: {
     fontFamily: monoFont,
-    fontSize: 10,
     letterSpacing: 0.4,
     color: colors.primaryDim,
     marginTop: 12,
@@ -403,9 +485,8 @@ const styles = StyleSheet.create({
   glassCard: {
     backgroundColor: colors.surfaceGlass,
     borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    borderColor: 'rgba(143,184,155,0.14)',
     borderRadius: 16,
-    padding: 22,
   },
   cardFill: {
     height: '100%',
@@ -419,7 +500,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontFamily: bodyFontStrong,
-    fontSize: 15,
     letterSpacing: 1.5,
     color: colors.fg,
     textTransform: 'uppercase',
@@ -427,15 +507,12 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     fontFamily: bodyFont,
-    fontSize: 14.5,
-    lineHeight: 22,
     color: colors.muted,
   },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 28,
     paddingVertical: 14,
     backgroundColor: 'rgba(5,10,6,0.82)',
     borderBottomWidth: 1,
@@ -448,7 +525,6 @@ const styles = StyleSheet.create({
   },
   navBrandTxt: {
     fontFamily: bodyFontBold,
-    fontSize: 13,
     letterSpacing: 2,
     color: colors.fg,
   },
@@ -492,10 +568,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1.3,
     color: '#03140a',
   },
+  /* CTA rows — centred so wrapped buttons stay centred */
   heroCtas: {
     flexDirection: 'row',
     gap: 14,
     flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   marqueeTxt: {
     fontFamily: bodyFontBold,
@@ -505,8 +584,8 @@ const styles = StyleSheet.create({
   },
   section: {
     alignItems: 'center',
-    paddingHorizontal: 28,
     paddingVertical: 64,
+    paddingHorizontal: 28,
   },
   cardRow: {
     flexDirection: 'row',
@@ -516,37 +595,32 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   card: {
-    flexBasis: 250,
     flexGrow: 1,
   },
   cardIllu: {
     width: '100%',
-    height: 150,
     borderRadius: 10,
     marginBottom: 14,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
   },
   chapterCard: {
-    flexBasis: 250,
     flexGrow: 1,
   },
   chapterNum: {
     fontFamily: displayFont,
-    fontSize: 26,
     color: colors.primary,
     marginBottom: 8,
   },
   evidenceCard: {
-    flexBasis: 250,
     flexGrow: 1,
   },
   evidenceInner: {
     alignItems: 'center',
+    height: '100%',
   },
   evidenceStat: {
     fontFamily: displayFont,
-    fontSize: 44,
     color: colors.primary,
     marginBottom: 10,
   },
@@ -554,17 +628,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     alignItems: 'center',
-    padding: 40,
     backgroundColor: colors.surface,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    marginVertical: 48,
   },
   ctaHead: {
     fontFamily: displayFont,
-    fontSize: 40,
-    lineHeight: 46,
     letterSpacing: 1,
     color: colors.fg,
     textTransform: 'uppercase',
@@ -573,7 +643,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    paddingVertical: 40,
     borderTopWidth: 1,
     borderTopColor: colors.borderSubtle,
   },
@@ -595,5 +664,31 @@ const styles = StyleSheet.create({
     fontFamily: bodyFont,
     fontSize: 12,
     color: colors.mutedDim,
+  },
+  /* ambient glow orbs */
+  orb: {
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    borderRadius: 170,
+    zIndex: 1,
+  },
+  orbGreen: {
+    top: 140,
+    left: -120,
+    backgroundColor: 'rgba(57,255,106,0.05)',
+    shadowColor: colors.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 90,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  orbGold: {
+    bottom: 260,
+    right: -140,
+    backgroundColor: 'rgba(242,192,120,0.05)',
+    shadowColor: colors.accent,
+    shadowOpacity: 0.16,
+    shadowRadius: 90,
+    shadowOffset: { width: 0, height: 0 },
   },
 });
