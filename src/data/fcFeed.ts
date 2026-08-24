@@ -60,6 +60,8 @@ export interface FeedItem {
   likes: number;
   comments: number;
   metric: 'tries' | 'views';
+  /** set on 'All' feed items — the section label to render before the item */
+  sectionLabel?: string;
 }
 
 export interface FeedCategory {
@@ -801,33 +803,54 @@ const POOL: FeedItem[] = [
 
 const PAGE_SIZE = 4;
 
+// The 'All' feed is NOT a random mix — it reads as labelled blocks in
+// rotation: New Skill of the Week → FC News → ProSeason News → Creators,
+// then the cycle repeats (deeper into each section every pass).
+const SECTION_IDS = ['sotw', 'news', 'proseason', 'creators'] as const;
+const SECTION_TITLES: Record<string, string> = {
+  sotw: 'NEW SKILL OF THE WEEK',
+  news: 'FC NEWS',
+  proseason: 'PROSEASON NEWS',
+  creators: 'CREATORS',
+};
+
 export interface FeedPage {
   items: FeedItem[];
   hasMore: boolean;
+  section?: { id: string; title: string };
 }
 
 /**
- * "Server call". The 'All' feed loops the pool forever (like a real
- * For-You feed that keeps generating); category feeds end with
+ * "Server call". The 'All' feed serves one SECTION per page and loops
+ * forever (like a real For-You feed); category feeds end with
  * "all caught up" once exhausted.
  */
 export function fetchFeedPage(category: string, page: number): Promise<FeedPage> {
-  const base =
-    category === 'foryou'
-      ? POOL
-      : POOL.filter((i) => i.tags.includes(category));
+  let items: FeedItem[] = [];
+  let hasMore = false;
+  let section: { id: string; title: string } | undefined;
 
-  const items: FeedItem[] = [];
-  for (let i = 0; i < PAGE_SIZE; i++) {
-    if (base.length === 0) break;
-    const src = base[(page * PAGE_SIZE + i) % base.length];
-    // 'All' loops forever → unique ids per pass so React keys stay valid.
-    items.push({ ...src, id: category === 'foryou' ? `${src.id}-p${page}` : src.id });
+  if (category === 'foryou') {
+    const secId = SECTION_IDS[page % SECTION_IDS.length];
+    const base = POOL.filter((i) => i.tags.includes(secId));
+    const passes = Math.floor(page / SECTION_IDS.length);
+    const start = passes * PAGE_SIZE;
+    for (let i = 0; i < PAGE_SIZE && base.length > 0; i++) {
+      const src = base[(start + i) % base.length];
+      items.push({ ...src, id: `${src.id}-p${page}`, sectionLabel: SECTION_TITLES[secId] });
+    }
+    hasMore = base.length > 0;
+    section = { id: secId, title: SECTION_TITLES[secId] };
+  } else {
+    const base = POOL.filter((i) => i.tags.includes(category));
+    for (let i = 0; i < PAGE_SIZE; i++) {
+      const src = base[page * PAGE_SIZE + i];
+      if (!src) break;
+      items.push({ ...src });
+    }
+    hasMore = page * PAGE_SIZE + PAGE_SIZE < base.length;
   }
 
-  const hasMore =
-    category === 'foryou' ? base.length > 0 : page * PAGE_SIZE + PAGE_SIZE < base.length;
-
   const delay = 650 + Math.random() * 500;
-  return new Promise((resolve) => setTimeout(() => resolve({ items, hasMore }), delay));
+  return new Promise((resolve) => setTimeout(() => resolve({ items, hasMore, section }), delay));
 }

@@ -72,9 +72,11 @@ type Props = {
   item: FeedItem;
   compact: boolean;
   width: number;
+  /** uniform grid height (desktop); natural height when omitted (mobile) */
+  height?: number;
 };
 
-export default function FeedCard({ item, compact, width }: Props) {
+export default function FeedCard({ item, compact, width, height }: Props) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [following, setFollowing] = useState(false);
@@ -95,9 +97,9 @@ export default function FeedCard({ item, compact, width }: Props) {
     <Pressable
       onHoverIn={() => (hov.value = withTiming(1, { duration: 180 }))}
       onHoverOut={() => (hov.value = withTiming(0, { duration: 260 }))}
-      style={{ width }}
+      style={{ width, height }}
     >
-    <Animated.View style={[styles.card, lift]}>
+    <Animated.View style={[styles.card, lift, { height: '100%' }]}>
       {/* ── media ─ */}
       {!isCreator && !isNews && (
         <SkillMedia
@@ -154,7 +156,7 @@ export default function FeedCard({ item, compact, width }: Props) {
 
       {/* ── how to do it ── */}
       {compact && item.steps && item.steps.length > 0 ? (
-        <View style={{ marginTop: 10 }}>
+        <View style={{ marginTop: 10, flex: 1 }}>
           <ComboRow combos={item.steps[0].combo} />
         </View>
       ) : null}
@@ -180,7 +182,7 @@ export default function FeedCard({ item, compact, width }: Props) {
 
       {/* ── creator spotlight ── */}
       {isCreator && (
-        <View style={styles.creatorBlock}>
+        <View style={[styles.creatorBlock, { flex: 1, justifyContent: compact ? 'center' : 'flex-start' }]}>
           <View style={styles.creatorTopRow}>
             <CreatorAvatar color={item.creator.color} name={item.creator.name} size={56} />
             <View style={styles.creatorInfo}>
@@ -322,12 +324,14 @@ const styles = StyleSheet.create({
     color: colors.fgDim,
     marginTop: 8,
     lineHeight: 17.5,
+    flex: 1,
   },
   howBlock: {
     marginTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(143,184,155,0.14)',
     paddingTop: 10,
+    flex: 1,
   },
   howLabel: {
     fontFamily: monoFont,

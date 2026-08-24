@@ -167,22 +167,44 @@ function FeedGrid({
 }) {
   const { items, loading, hasMore, sentinelRef } = useInfiniteFeed(category);
 
+  // uniform card height (desktop grid): media aspect + fixed content
+  // allowance — every card in the grid is exactly the same size
+  const cardH = compact ? Math.round((cardW - 28) * 0.62 + 172) : undefined;
+
+  let prevLabel: string | undefined;
+
   return (
     <View style={styles.gridWrap}>
       <View style={styles.grid}>
-        {items.map((it: FeedItem, i) => (
-          <Animated.View
-            key={it.id}
-            entering={FadeInUp.delay(Math.min(i % 4, 3) * 70).duration(500)}
-            style={{ width: cardW }}
-          >
-            <FeedCard item={it} compact={compact} width={cardW} />
-          </Animated.View>
-        ))}
+        {items.map((it: FeedItem) => {
+          const showHeader = !!it.sectionLabel && it.sectionLabel !== prevLabel;
+          if (it.sectionLabel) prevLabel = it.sectionLabel;
+          return (
+            <React.Fragment key={it.id}>
+              {showHeader ? <SectionHeader label={it.sectionLabel as string} /> : null}
+              <Animated.View
+                entering={FadeInUp.delay(70).duration(500)}
+                style={{ width: cardW, height: cardH }}
+              >
+                <FeedCard item={it} compact={compact} width={cardW} height={cardH} />
+              </Animated.View>
+            </React.Fragment>
+          );
+        })}
       </View>
       {loading ? <LoadingMore /> : null}
       {!hasMore ? <CaughtUp /> : null}
       <View ref={sentinelRef} style={styles.sentinel} />
+    </View>
+  );
+}
+
+/* full-width labelled divider between feed sections */
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderTxt}>{`[ ${label} ]`}</Text>
+      <View style={styles.sectionHeaderLine} />
     </View>
   );
 }
@@ -433,6 +455,25 @@ const styles = StyleSheet.create({
     gap: 18,
     justifyContent: 'center',
     alignSelf: 'stretch',
+  },
+  sectionHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 6,
+  },
+  sectionHeaderTxt: {
+    fontFamily: monoFont,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: colors.primary,
+    letterSpacing: 2.6,
+  },
+  sectionHeaderLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(57,255,106,0.18)',
   },
   sentinel: {
     height: 2,
