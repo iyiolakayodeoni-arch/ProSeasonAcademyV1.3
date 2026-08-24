@@ -234,10 +234,9 @@ function FeedGrid({
 }) {
   const { items, loading, hasMore, sentinelRef } = useInfiniteFeed(category);
 
-  // uniform card height (desktop grid): media aspect + fixed content
-  // allowance — every card in the grid is exactly the same size
-  const cardH = compact ? Math.round((cardW - 28) * 0.62 + 172) : undefined;
-
+  // Cards size to their own content (no fixed height, no dead space).
+  // The wrap grid still aligns a row to its tallest card, so each row
+  // lines up — but the box is only as tall as the content needs.
   let prevLabel: string | undefined;
 
   return (
@@ -253,9 +252,9 @@ function FeedGrid({
               {showHeader ? <SectionHeader label={it.sectionLabel as string} /> : null}
               <Animated.View
                 entering={FadeInUp.delay(70).duration(500)}
-                style={{ width: cardW, height: cardH }}
+                style={{ width: cardW, alignSelf: 'stretch' }}
               >
-                <FeedCard item={it} compact={compact} width={cardW} height={cardH} />
+                <FeedCard item={it} compact={compact} width={cardW} />
               </Animated.View>
             </React.Fragment>
           );
@@ -459,8 +458,11 @@ const styles = StyleSheet.create({
   search: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
     height: 40,
+    minWidth: 260,
+    maxWidth: 560,
+    // hug its content — the bar is only as long as it needs to be
+    width: 'fit-content' as any,
     backgroundColor: 'rgba(12,20,14,0.9)',
     borderWidth: 1,
     borderColor: 'rgba(143,184,155,0.16)',
@@ -468,7 +470,6 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
   },
   searchWide: {
-    maxWidth: 560,
     marginLeft: 'auto',
     marginRight: 'auto',
   },
