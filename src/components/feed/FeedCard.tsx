@@ -11,18 +11,20 @@ import {
   CommentIcon,
   ShareIcon,
   BookmarkIcon,
+  DotsIcon,
   VerifiedIcon,
 } from './FeedIcons';
 import { colors, monoFont, bodyFont, bodyFontBold, bodyFontHeavy, bodyFontStrong } from '../../theme';
 import type { FeedItem } from '../../data/fcFeed';
 
 // ─────────────────────────────────────────────────────────────
-// FEED CARD — one unit of the infinite feed.
+// FEED CARD — YouTube home layout:
+//   media (16:9-ish) on top, then a row of
+//   [ channel avatar ] [ title · channel+verified · tries/time ]
+//   with a ⋮ menu top-right, then the card-specific body.
 //
-// compact (desktop grid):  media + channel + title + meta + the
-//   first step's button combo (the cheat-sheet line).
-// full (mobile column):    everything, plus the complete
-//   "HOW TO DO IT" step list and the action row.
+// compact (desktop grid): uniform height, first-step combo cheat-sheet
+// full (mobile column): full HOW TO DO IT steps + action row
 // ─────────────────────────────────────────────────────────────
 
 function ComboChip({ label }: { label: string }) {
@@ -33,28 +35,27 @@ function ComboChip({ label }: { label: string }) {
   );
 }
 
-function ComboRow({ combos, small = false }: { combos: string[]; small?: boolean }) {
+function ComboRow({ combos }: { combos: string[] }) {
   return (
     <View style={styles.comboRow}>
       {combos.map((c) => (
         <ComboChip key={c} label={c} />
       ))}
-      {small ? null : null}
     </View>
   );
 }
 
-function ProAvatar({ size = 28 }: { size?: number }) {
+function ProAvatar({ size = 36 }: { size?: number }) {
   return (
     <View style={[styles.avatar, { width: size, height: size, borderColor: colors.primary }]}>
-      <Text style={[styles.avatarGlyph, { fontSize: size * 0.52, color: colors.primary }]}>
+      <Text style={[styles.avatarGlyph, { fontSize: size * 0.5, color: colors.primary }]}>
         {'\u221E'}
       </Text>
     </View>
   );
 }
 
-function CreatorAvatar({ color, name, size = 28 }: { color: string; name: string; size?: number }) {
+function CreatorAvatar({ color, name, size = 36 }: { color: string; name: string; size?: number }) {
   const initials = name
     .split(' ')
     .map((w) => w[0])
@@ -63,7 +64,7 @@ function CreatorAvatar({ color, name, size = 28 }: { color: string; name: string
     .toUpperCase();
   return (
     <View style={[styles.avatar, { width: size, height: size, backgroundColor: color }]}>
-      <Text style={[styles.avatarInitials, { fontSize: size * 0.34, color: '#050a06' }]}>{initials}</Text>
+      <Text style={[styles.avatarInitials, { fontSize: size * 0.32, color: '#050a06' }]}>{initials}</Text>
     </View>
   );
 }
@@ -81,17 +82,19 @@ export default function FeedCard({ item, compact, width, height }: Props) {
   const [saved, setSaved] = useState(false);
   const [following, setFollowing] = useState(false);
 
-  // hover lift (web)
+  // hover: lift + lighter surface + green border (like the YouTube hover card)
   const hov = useSharedValue(0);
   const lift = useAnimatedStyle(() => ({
     transform: [{ translateY: hov.value * -5 }],
-    borderColor: `rgba(57,255,106,${0.14 + hov.value * 0.3})`,
+    borderColor: `rgba(57,255,106,${0.14 + hov.value * 0.32})`,
+    backgroundColor: `rgba(${Math.round(12 + 10 * hov.value)},${Math.round(20 + 14 * hov.value)},${Math.round(14 + 10 * hov.value)},0.94)`,
   }));
 
   const isCreator = item.kind === 'creator';
   const isNews = item.kind === 'news';
   const isProseasonNews = isNews && item.tags.includes('proseason');
   const mediaWidth = Math.max(120, width - 28);
+  const avatarSize = compact ? 36 : 40;
 
   return (
     <Pressable
@@ -99,141 +102,138 @@ export default function FeedCard({ item, compact, width, height }: Props) {
       onHoverOut={() => (hov.value = withTiming(0, { duration: 260 }))}
       style={{ width, height }}
     >
-    <Animated.View style={[styles.card, lift, { height: '100%' }]}>
-      {/* ── media ─ */}
-      {!isCreator && !isNews && (
-        <SkillMedia
-          kind={item.media}
-          width={mediaWidth}
-          tag={item.kind === 'tactic' ? 'TACTIC' : 'SKILL'}
-          difficulty={item.difficulty}
-        />
-      )}
-
-      {/* ── news header (gold tag + headline treatment) ── */}
-      {isNews && (
-        <View style={styles.newsHead}>
-          <View style={styles.goldTag}>
-            <Text style={styles.goldTagText}>{isProseasonNews ? 'PROSEASON NEWS' : 'FC NEWS'}</Text>
-          </View>
-        </View>
-      )}
-
-      {/* ── channel row ── */}
-      <View style={styles.channelRow}>
-        {item.creator.isPro ? (
-          <ProAvatar size={28} />
-        ) : (
-          <CreatorAvatar color={item.creator.color} name={item.creator.name} size={28} />
+      <Animated.View style={[styles.card, lift, { height: '100%' }]}>
+        {/* ── media ── */}
+        {!isCreator && !isNews && (
+          <SkillMedia
+            kind={item.media}
+            width={mediaWidth}
+            tag={item.kind === 'tactic' ? 'TACTIC' : 'SKILL'}
+            difficulty={item.difficulty}
+          />
         )}
-        <Text style={styles.channelName} numberOfLines={1}>
-          {item.creator.name}
-        </Text>
-        {item.creator.isPro ? <VerifiedIcon size={15} /> : null}
-      </View>
 
-      {/* ── title ── */}
-      <Text style={[styles.title, compact ? styles.titleCompact : null]} numberOfLines={compact ? 2 : 3}>
-        {item.title}
-      </Text>
-
-      {/* ── meta ── */}
-      <Text style={styles.meta}>
-        {item.likes.toLocaleString()} {item.metric} {'\u00B7'} {item.timeAgo}
-      </Text>
-
-      {/* ── subtitle / body ── */}
-      {!compact && item.subtitle ? (
-        <Text style={styles.subtitle} numberOfLines={2}>
-          {item.subtitle}
-        </Text>
-      ) : null}
-      {isNews && item.body ? (
-        <Text style={styles.newsBody} numberOfLines={compact ? 2 : 4}>
-          {item.body}
-        </Text>
-      ) : null}
-
-      {/* ── how to do it ── */}
-      {compact && item.steps && item.steps.length > 0 ? (
-        <View style={{ marginTop: 10, flex: 1 }}>
-          <ComboRow combos={item.steps[0].combo} />
-        </View>
-      ) : null}
-
-      {!compact && item.steps && item.steps.length > 0 ? (
-        <View style={styles.howBlock}>
-          <Text style={styles.howLabel}>{'HOW TO DO IT'}</Text>
-          {item.steps.map((s, i) => (
-            <View key={i} style={styles.stepRow}>
-              <Text style={styles.stepNum}>{String(i + 1)}</Text>
-              <Text style={styles.stepLabel} numberOfLines={2}>
-                {s.label}
+        {/* ── category tag (news / creator) ── */}
+        {(isNews || isCreator) && (
+          <View style={styles.newsHead}>
+            <View style={styles.goldTag}>
+              <Text style={styles.goldTagText}>
+                {isCreator ? 'CREATOR' : isProseasonNews ? 'PROSEASON NEWS' : 'FC NEWS'}
               </Text>
-              <View style={styles.stepCombos}>
-                {s.combo.map((c) => (
-                  <ComboChip key={c} label={c} />
-                ))}
-              </View>
             </View>
-          ))}
-        </View>
-      ) : null}
+          </View>
+        )}
 
-      {/* ── creator spotlight ── */}
-      {isCreator && (
-        <View style={[styles.creatorBlock, { flex: 1, justifyContent: compact ? 'center' : 'flex-start' }]}>
-          <View style={styles.creatorTopRow}>
-            <CreatorAvatar color={item.creator.color} name={item.creator.name} size={56} />
-            <View style={styles.creatorInfo}>
-              <View style={styles.goldTag}>
-                <Text style={styles.goldTagText}>{'CREATOR'}</Text>
-              </View>
-              <Text style={styles.creatorName} numberOfLines={1}>
+        {/* ── YouTube-style header row ── */}
+        <View style={styles.headerRow}>
+          {item.creator.isPro ? (
+            <ProAvatar size={avatarSize} />
+          ) : (
+            <CreatorAvatar color={item.creator.color} name={item.creator.name} size={avatarSize} />
+          )}
+          <View style={styles.headerText}>
+            <View style={styles.headerTitleRow}>
+              <Text style={[styles.title, compact ? styles.titleCompact : null]} numberOfLines={compact ? 2 : 3}>
+                {item.title}
+              </Text>
+              <TouchableOpacity hitSlop={8}>
+                <DotsIcon size={20} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.channelRow2}>
+              <Text style={styles.channelName} numberOfLines={1}>
                 {item.creator.name}
               </Text>
-              <Text style={styles.creatorHandle} numberOfLines={1}>
-                {item.creator.handle} {'\u00B7'} {item.creator.followers} followers
+              {item.creator.isPro ? <VerifiedIcon size={14} /> : null}
+            </View>
+            <Text style={styles.meta}>
+              {item.likes.toLocaleString()} {item.metric} {'\u00B7'} {item.timeAgo}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── subtitle (mobile cards) ── */}
+        {!compact && item.subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {item.subtitle}
+          </Text>
+        ) : null}
+
+        {/* ── news body ── */}
+        {isNews && item.body ? (
+          <Text style={styles.newsBody} numberOfLines={compact ? 3 : 5}>
+            {item.body}
+          </Text>
+        ) : null}
+
+        {/* ── how to do it ── */}
+        {compact && item.steps && item.steps.length > 0 ? (
+          <View style={{ marginTop: 10, flex: 1 }}>
+            <ComboRow combos={item.steps[0].combo} />
+          </View>
+        ) : null}
+
+        {!compact && item.steps && item.steps.length > 0 ? (
+          <View style={styles.howBlock}>
+            <Text style={styles.howLabel}>{'HOW TO DO IT'}</Text>
+            {item.steps.map((s, i) => (
+              <View key={i} style={styles.stepRow}>
+                <Text style={styles.stepNum}>{String(i + 1)}</Text>
+                <Text style={styles.stepLabel} numberOfLines={2}>
+                  {s.label}
+                </Text>
+                <View style={styles.stepCombos}>
+                  {s.combo.map((c) => (
+                    <ComboChip key={c} label={c} />
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* ── creator body (name+avatar are in the header row) ── */}
+        {isCreator && (
+          <View style={[styles.creatorBlock, { flex: 1, justifyContent: compact ? 'center' : 'flex-start' }]}>
+            {item.body ? (
+              <Text style={styles.creatorBio} numberOfLines={2}>
+                {item.body}
               </Text>
+            ) : null}
+            <View style={styles.followRow}>
+              <Text style={styles.creatorHandle}>{item.creator.followers} followers</Text>
+              <TouchableOpacity
+                style={[styles.followBtn, following ? styles.followBtnDone : null]}
+                onPress={() => setFollowing((f) => !f)}
+                hitSlop={6}
+              >
+                <Text style={[styles.followText, following ? styles.followTextDone : null]}>
+                  {following ? 'Following' : 'Follow'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-          {item.body ? (
-            <Text style={styles.creatorBio} numberOfLines={2}>
-              {item.body}
-            </Text>
-          ) : null}
-          <View style={styles.followRow}>
-            <TouchableOpacity
-              style={[styles.followBtn, following ? styles.followBtnDone : null]}
-              onPress={() => setFollowing((f) => !f)}
-            >
-              <Text style={[styles.followText, following ? styles.followTextDone : null]}>
-                {following ? 'Following' : 'Follow'}
-              </Text>
+        )}
+
+        {/* ── actions (mobile cards only) ── */}
+        {!compact && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={() => setLiked((l) => !l)} hitSlop={8}>
+              <HeartIcon color={liked ? colors.primary : colors.muted} size={23} filled={liked} />
+            </TouchableOpacity>
+            <TouchableOpacity hitSlop={8}>
+              <CommentIcon color={colors.muted} size={23} />
+            </TouchableOpacity>
+            <TouchableOpacity hitSlop={8}>
+              <ShareIcon color={colors.muted} size={23} />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }} />
+            <TouchableOpacity onPress={() => setSaved((s) => !s)} hitSlop={8}>
+              <BookmarkIcon color={saved ? colors.accent : colors.muted} size={23} filled={saved} />
             </TouchableOpacity>
           </View>
-        </View>
-      )}
-
-      {/* ── actions (full/mobile cards only) ── */}
-      {!compact && (
-        <View style={styles.actionRow}>
-          <TouchableOpacity onPress={() => setLiked((l) => !l)} hitSlop={8}>
-            <HeartIcon color={liked ? colors.primary : colors.muted} size={23} filled={liked} />
-          </TouchableOpacity>
-          <TouchableOpacity hitSlop={8}>
-            <CommentIcon color={colors.muted} size={23} />
-          </TouchableOpacity>
-          <TouchableOpacity hitSlop={8}>
-            <ShareIcon color={colors.muted} size={23} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }} />
-          <TouchableOpacity onPress={() => setSaved((s) => !s)} hitSlop={8}>
-            <BookmarkIcon color={saved ? colors.accent : colors.muted} size={23} filled={saved} />
-          </TouchableOpacity>
-        </View>
-      )}
-    </Animated.View>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 14,
   },
-  newsHead: { marginBottom: 10 },
+  newsHead: { marginBottom: 8 },
   goldTag: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(242,192,120,0.14)',
@@ -264,11 +264,19 @@ const styles = StyleSheet.create({
     color: colors.accent,
     letterSpacing: 1.6,
   },
-  channelRow: {
+  // header row — avatar left, text column right (YouTube layout)
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    gap: 10,
     marginBottom: 10,
+  },
+  headerText: {
+    flex: 1,
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
   },
   avatar: {
     borderRadius: 999,
@@ -285,49 +293,55 @@ const styles = StyleSheet.create({
     fontFamily: bodyFontBold,
     fontWeight: '800',
   },
-  channelName: {
-    flex: 1,
-    fontFamily: bodyFontStrong,
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.fg,
-  },
   title: {
+    flex: 1,
     fontFamily: bodyFontBold,
-    fontSize: 15.5,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.fg,
-    lineHeight: 20,
+    lineHeight: 19,
   },
   titleCompact: {
-    fontSize: 14.5,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  channelRow2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  channelName: {
+    fontFamily: bodyFontStrong,
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: colors.muted,
   },
   meta: {
     fontFamily: monoFont,
     fontSize: 10.5,
     fontWeight: '500',
     color: colors.mutedDim,
-    marginTop: 6,
+    marginTop: 2,
     letterSpacing: 0.4,
   },
   subtitle: {
     fontFamily: bodyFont,
     fontSize: 12.5,
     color: colors.muted,
-    marginTop: 6,
+    marginTop: -2,
     lineHeight: 17,
   },
   newsBody: {
     fontFamily: bodyFont,
     fontSize: 12.5,
     color: colors.fgDim,
-    marginTop: 8,
+    marginTop: 4,
     lineHeight: 17.5,
     flex: 1,
   },
   howBlock: {
-    marginTop: 12,
+    marginTop: 4,
     borderTopWidth: 1,
     borderTopColor: 'rgba(143,184,155,0.14)',
     paddingTop: 10,
@@ -390,20 +404,11 @@ const styles = StyleSheet.create({
   creatorBlock: {
     marginTop: 4,
   },
-  creatorTopRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  creatorInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  creatorName: {
-    fontFamily: bodyFontHeavy,
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.fg,
+  creatorBio: {
+    fontFamily: bodyFont,
+    fontSize: 12.5,
+    color: colors.muted,
+    lineHeight: 17.5,
   },
   creatorHandle: {
     fontFamily: monoFont,
@@ -411,16 +416,11 @@ const styles = StyleSheet.create({
     color: colors.mutedDim,
     letterSpacing: 0.4,
   },
-  creatorBio: {
-    fontFamily: bodyFont,
-    fontSize: 12.5,
-    color: colors.muted,
-    marginTop: 10,
-    lineHeight: 17.5,
-  },
   followRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
     marginTop: 10,
   },
   followBtn: {

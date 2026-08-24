@@ -799,6 +799,11 @@ const POOL: FeedItem[] = [
   },
 ];
 
+/** Portrait drill cards for the horizontal shelf (the "Shorts" equivalent). */
+export function getDrills(): FeedItem[] {
+  return POOL.filter((i) => i.media !== 'none' && i.kind !== 'creator').slice(0, 8);
+}
+
 // ── The simulated ranked feed endpoint ──
 
 const PAGE_SIZE = 4;

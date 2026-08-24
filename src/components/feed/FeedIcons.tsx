@@ -131,6 +131,16 @@ export function HomeIcon({ color = colors.fg, size = 22 }: IconProps) {
   );
 }
 
+export function DotsIcon({ color = colors.fgDim, size = 22 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx={12} cy={5.5} r={1.7} fill={color} />
+      <Circle cx={12} cy={12} r={1.7} fill={color} />
+      <Circle cx={12} cy={18.5} r={1.7} fill={color} />
+    </Svg>
+  );
+}
+
 export function VerifiedIcon({ color = colors.primary, size = 16 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
