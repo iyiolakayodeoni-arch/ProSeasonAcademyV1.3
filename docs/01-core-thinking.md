@@ -1,6 +1,6 @@
 # 01 — The Core Thinking
 
-**Onliversity in one line:** a university structure for creative kids in Africa — so that the ones
+**Onliversity in one line:** a university structure for creatives in Africa — so that the ones
 who were told their dreams don't count get the same scaffolding everybody else got.
 
 ---
